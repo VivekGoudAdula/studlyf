@@ -1,0 +1,105 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+% \usepackage{fontspec} % Requires xelatex
+\usepackage{fontawesome5}
+\usepackage[sfdefault]{roboto}
+\usepackage{calc}
+\usepackage{tikz}
+
+% Set page margins
+\geometry{
+    top=0.8in,
+    bottom=0.8in,
+    left=0.8in,
+    right=0.8in
+}
+
+% Define colors
+\definecolor{bluepurple}{RGB}{102, 102, 255}
+\definecolor{magenta}{RGB}{204, 51, 153}
+\definecolor{darkgray}{RGB}{85, 85, 85}
+\definecolor{lightgray}{RGB}{128, 128, 128}
+
+% Remove page numbering
+\pagestyle{empty}
+
+% Remove paragraph indentation
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\begin{document}
+
+% Header section
+{\color{bluepurple}\fontsize{24}{28}\selectfont\bfseries Vivek Goud Adula Vivek Goud Adula}
+
+\vspace{1em}
+
+% Contact information with icons
+\begin{minipage}[t]{0.5\textwidth}
+    \faPhone\ +919381118626\\[0.3em]
+    \faEnvelope\ adulavivekgoud@gmail.com\\[0.3em]
+    \faMapMarker\ Aurora deemed to be University, Parvathapur, Uppal, Hyderabad\\[0.3em]    \faLinkedin\ https://www.linkedin.com/in/vivekgoudadula/\end{minipage}
+
+\vspace{1.5em}
+
+% Summary Section
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries SUMMARY}
+\vspace{0.5em}
+Vivek Goud Adula is a proactive GenAI Intern with foundational experience in AI/ML development, proficient in Python, C, Git, and SQL. Adept at leveraging these technical skills, Vivek is eager to contribute to innovative projects and solve complex problems in dynamic environments.
+\vspace{1.5em}
+
+% Professional Experience Section
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries PROFESSIONAL EXPERIENCE}
+\vspace{0.8em}
+\begin{minipage}[t]{0.25\textwidth}
+    \raggedright
+    5 months
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.7\textwidth}
+    {\color{bluepurple}\bfseries GenAI Lakes, Hyderabad | GenAI Intern}
+    \begin{itemize}[leftmargin=1em, itemsep=0.3em]
+        \item 
+    \end{itemize}
+\end{minipage}
+\vspace{1em}
+
+\vspace{1.5em}
+
+% Education and Additional Skills sections
+\begin{minipage}[t]{0.48\textwidth}
+    {\color{magenta}\fontsize{14}{16}\selectfont\bfseries EDUCATION}
+    \vspace{0.5em}
+            \textbf{Aurora deemed University}\\
+    Btech CSE AIML, 2027
+        \end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+    {\color{magenta}\fontsize{14}{16}\selectfont\bfseries ADDITIONAL SKILLS}
+    \vspace{0.5em}
+    \begin{itemize}[leftmargin=1em, itemsep=0.2em]
+                \item Python
+                \item C
+                \item Git
+                \item SQL
+            \end{itemize}
+\end{minipage}
+
+% Decorative bottom design
+\vfill
+\noindent
+\begin{minipage}{\textwidth}
+    \begin{tikzpicture}[anchor=south west]
+        % Blue-purple horizontal bar across bottom
+        \fill[color=bluepurple] (0,0) rectangle (\textwidth,0.8cm);
+        % Magenta triangle cutting in from top right
+        \fill[color=magenta] (\textwidth-4cm,0.8cm) -- (\textwidth,0.8cm) -- (\textwidth,0) -- cycle;
+    \end{tikzpicture}
+\end{minipage}
+
+\end{document}

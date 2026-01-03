@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vivek | BOLD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600&display=swap');
+
+        :root {
+            --bg: #ffffff;
+            --text: #000000;
+            --accent: #FF3B30;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Manrope', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* Custom Cursor */
+        .cursor-dot {
+            width: 20px;
+            height: 20px;
+            background: var(--text);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Anton', sans-serif;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 0.9;
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4vw;
+            border-bottom: 2px solid black;
+        }
+
+        .hero h1 {
+            font-size: 15vw;
+        }
+
+        .hero p {
+            font-size: 2rem;
+            max-width: 50%;
+            margin-top: 2rem;
+        }
+
+        .marquee-section {
+            border-bottom: 2px solid black;
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 2rem 0;
+            background: var(--text);
+            color: var(--bg);
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+
+        .marquee-content span {
+            font-family: 'Anton', sans-serif;
+            font-size: 8rem;
+            margin-right: 4rem;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .grid-section {
+            padding: 4vw;
+            border-bottom: 2px solid black;
+        }
+
+        .section-title {
+            font-size: 8rem;
+            margin-bottom: 4rem;
+            border-bottom: 2px solid black;
+        }
+
+        .project-item {
+            border-bottom: 1px solid #ccc;
+            padding: 4rem 0;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .project-item:hover {
+            background: #f0f0f0;
+            padding-left: 2rem;
+        }
+
+        .project-item h3 {
+            font-size: 4rem;
+        }
+
+        .project-meta {
+            font-size: 1.2rem;
+            color: #666;
+            margin-top: 1rem;
+        }
+
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .skill-pill {
+            border: 2px solid black;
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-radius: 100px;
+            transition: 0.3s;
+        }
+
+        .skill-pill:hover {
+            background: black;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .contact-section {
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent);
+            color: white;
+        }
+
+        .contact-link {
+            font-family: 'Anton', sans-serif;
+            font-size: 10vw;
+            color: white;
+            text-decoration: none;
+            cursor: none;
+        }
+
+        .contact-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="cursor-dot"></div>
+
+    <header class="hero">
+        <h1>Vivek</h1>
+        <p> efforts, creating content like Instagram posts, Google AdSense templates. Cognifyz Technologies, Python development [Online] May 2024 • Crafted a Python-based automation scrip</p>
+    </header>
+
+    <div class="marquee-section">
+        <div class="marquee-content" id="skills-container">
+            
+            <span class="skill-item">Python</span>
+            
+            <span class="skill-item">C</span>
+            
+            <!-- Duplicate for smooth loop -->
+            
+            <span>Python</span>
+            
+            <span>C</span>
+            
+        </div>
+    </div>
+
+    <section class="grid-section" id="projects-container">
+        <h2 class="section-title">PROJECTS</h2>
+        
+        <div class="project-item">
+            <h3>Ml Prediction</h3>
+            <p style="font-size: 1.5rem; max-width: 800px;">project predications</p>
+            <div class="project-meta">React, Node</div>
+        </div>
+        
+    </section>
+
+    <section class="grid-section" id="experience-container">
+        <h2 class="section-title">EXPERIENCE</h2>
+        
+        <div class="project-item">
+            <div style="display:flex; justify-content:space-between; align-items: baseline;">
+                <h3>GenAI Lakes</h3>
+                <span style="font-family:'Anton'; font-size: 2rem;">2025 May</span>
+            </div>
+            <p style="font-size: 1.5rem; font-weight: bold;">GenAI Intern</p>
+            <p style="font-size: 1.2rem; margin-top: 1rem; max-width: 700px;">Did projects there</p>
+        </div>
+        
+    </section>
+
+    <footer class="contact-section">
+        <a href="mailto:adulavivekgoud@gmail.com" class="contact-link">LETS TALK -></a>
+    </footer>
+
+    <script>
+        // Cursor
+        const cursor = document.querySelector('.cursor-dot');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        // Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.project-item').forEach(item => {
+            gsap.from(item, {
+                scrollTrigger: {
+                    trigger: item,
+                    start: "top 80%"
+                },
+                y: 100,
+                opacity: 0,
+                duration: 1
+            });
+        });
+
+        // --- MAGIC EDIT SCRIPT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const createBtn = (text, id, bg, clickHandler) => {
+                const btn = document.createElement('button');
+                btn.innerText = text;
+                btn.id = id;
+                Object.assign(btn.style, {
+                    position: 'fixed', bottom: '30px', right: '30px', zIndex: '10000',
+                    padding: '16px 32px', background: 'white', color: 'black',
+                    border: '3px solid black', borderRadius: '0', cursor: 'pointer',
+                    fontFamily: 'Anton', fontSize: '1.2rem',
+                    boxShadow: '5px 5px 0px black', transition: 'all 0.2s'
+                });
+                btn.onclick = clickHandler;
+                return btn;
+            };
+
+            const toggleBtn = createBtn('EDIT PAGE', 'edit-toggle-btn', 'white', null);
+            document.body.appendChild(toggleBtn);
+
+            let isEditing = false;
+            const textSelect = 'h1, h2, h3, h4, p, span.skill-item, a';
+
+            const zones = [
+                // Skills is tricky due to marquee animation duplication. Edit the first set.
+                { id: 'skills', itemSel: 'span.skill-item', containerSel: '#skills-container', type: 'skill' },
+                { id: 'projects', itemSel: '.project-item', containerSel: '#projects-container', type: 'card' },
+                { id: 'experience', itemSel: '.project-item', containerSel: '#experience-container', type: 'card' }
+            ];
+
+            const cleanupUI = () => {
+                document.querySelectorAll('.edit-ui-element').forEach(el => el.remove());
+                document.querySelectorAll(textSelect).forEach(el => {
+                    el.contentEditable = 'false';
+                    el.style.outline = 'none';
+                    el.style.cursor = 'none'; // reset custom cursor
+                });
+                document.body.style.cursor = 'none';
+            };
+
+            const enableEditing = () => {
+                document.body.style.cursor = 'default'; // enable normal cursor for editing
+                document.querySelectorAll(textSelect).forEach(el => {
+                    el.contentEditable = 'true';
+                    el.style.outline = '2px dashed black';
+                    el.style.cursor = 'text';
+
+                    if (el.tagName === 'A') {
+                        el.onclick = (e) => {
+                            if (isEditing) {
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                                const newUrl = prompt('Edit Link URL:', el.getAttribute('href'));
+                                if (newUrl !== null) el.setAttribute('href', newUrl);
+                            }
+                        };
+                    }
+                });
+
+                zones.forEach(zone => {
+                    const container = document.querySelector(zone.containerSel);
+                    if (!container) return;
+
+                    container.querySelectorAll(zone.itemSel).forEach(item => {
+                        if (item.querySelector('.delete-btn')) return;
+                        item.style.position = 'relative';
+                        const delBtn = document.createElement('button');
+                        delBtn.innerHTML = '×';
+                        delBtn.className = 'edit-ui-element delete-btn';
+                        Object.assign(delBtn.style, {
+                            position: 'absolute', top: '10px', right: '10px',
+                            background: 'red', color: 'white', border: 'none',
+                            width: '30px', height: '30px', fontWeight: 'bold',
+                            zIndex: '10'
+                        });
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            if (confirm('Delete?')) item.remove();
+                        };
+                        item.appendChild(delBtn);
+                    });
+
+                    if (!container.parentElement.querySelector(`.add-btn-${zone.id}`) && zone.id !== 'skills') {
+                        const addBtn = document.createElement('button');
+                        addBtn.innerText = '+ ADD BLOCK';
+                        addBtn.className = `edit-ui-element add-btn-${zone.id}`;
+                        Object.assign(addBtn.style, {
+                            display: 'block', margin: '2rem 0', padding: '10px 20px',
+                            background: 'black', color: 'white', fontFamily: 'Anton'
+                        });
+                        addBtn.onclick = () => {
+                            const tempItem = container.querySelector(zone.itemSel);
+                            if (tempItem) {
+                                const clone = tempItem.cloneNode(true);
+                                clone.querySelectorAll('.edit-ui-element').forEach(e => e.remove());
+                                container.appendChild(clone);
+                                enableEditing();
+                            }
+                        }
+                        container.after(addBtn);
+                    }
+                });
+            };
+
+            const saveChanges = () => {
+                toggleBtn.innerText = 'SAVING...';
+                cleanupUI();
+                toggleBtn.remove();
+                const fullHtml = document.documentElement.outerHTML;
+                const filename = window.location.pathname.split('/').pop();
+
+                document.body.appendChild(toggleBtn);
+                toggleBtn.innerText = 'EDIT PAGE';
+
+                fetch('/update-portfolio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: filename, html: fullHtml })
+                })
+                    .then(res => res.json())
+                    .then(data => alert(data.status === 'success' ? 'SAVED!' : 'ERROR'));
+            };
+
+            toggleBtn.onclick = () => {
+                isEditing = !isEditing;
+                if (isEditing) {
+                    toggleBtn.innerText = 'SAVE';
+                    toggleBtn.style.background = '#FF3B30';
+                    toggleBtn.style.color = 'white';
+                    enableEditing();
+                } else {
+                    saveChanges();
+                }
+            };
+        });
+    </script>
+</body>
+
+</html>

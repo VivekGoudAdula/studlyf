@@ -1,0 +1,106 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+% \usepackage{fontspec} % Requires xelatex
+\usepackage{fontawesome5}
+\usepackage[sfdefault]{roboto}
+\usepackage{calc}
+\usepackage{tikz}
+
+% Set page margins
+\geometry{
+    top=0.8in,
+    bottom=0.8in,
+    left=0.8in,
+    right=0.8in
+}
+
+% Define colors
+\definecolor{bluepurple}{RGB}{102, 102, 255}
+\definecolor{magenta}{RGB}{204, 51, 153}
+\definecolor{darkgray}{RGB}{85, 85, 85}
+\definecolor{lightgray}{RGB}{128, 128, 128}
+
+% Remove page numbering
+\pagestyle{empty}
+
+% Remove paragraph indentation
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\begin{document}
+
+% Header section
+\begin{minipage}[b]{0.65\textwidth}
+    {\color{bluepurple}\fontsize{30}{34}\selectfont\bfseries Vivek Goud Adula }
+\end{minipage}
+\begin{minipage}[b]{0.35\textwidth}
+    \raggedleft
+    \small
+    \faPhone\ 9381118626\\
+    \faEnvelope\ adulavivekgoud@gmail.com\\
+    \faMapMarker\ Hyderabad\\     \faLinkedin\ https://www.linkedin.com/in/vivekgoudadula/\\     \faGithub\ https://github.com/VivekGoudAdula \end{minipage}
+
+\vspace{2em}
+
+% Summary Section
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries SUMMARY}
+\vspace{0.5em}
+Highly motivated professional with a robust technical foundation in C, Python, SQL, and Java, complemented by practical exposure as a GenAI Intern at GenAI Lakes. Demonstrated proficiency through projects like "Ml Prediction" and eager to apply strong problem-solving skills to drive innovative solutions.
+\vspace{2em}
+
+% Professional Experience Section
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries PROFESSIONAL EXPERIENCE}
+\vspace{0.8em}
+\noindent {\color{bluepurple}\fontsize{12}{14}\selectfont\bfseries GenAI Lakes} \hfill \textbf{5 months} \\
+\noindent \textit{GenAI Intern} \hfill Hyderabad\begin{itemize}[leftmargin=1.5em, itemsep=0.2em, topsep=0.2em]
+    \item Done 4 projects
+\end{itemize}
+\vspace{1em}
+
+\vspace{1em}
+
+% Education section
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries EDUCATION}
+\vspace{0.5em}
+\noindent \textbf{Aurora deemed University} \hfill 2027 \\
+\textit{Btech CSE AIML} \hfill \vspace{0.5em}
+
+\vspace{1.5em}
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries STRATEGIC PROJECTS}
+\vspace{0.8em}
+\noindent {\color{bluepurple}\fontsize{12}{14}\selectfont\bfseries Ml Prediction} \hfill \textit{SQL, Python, React, GIT} \\
+\begin{itemize}[leftmargin=1.5em, itemsep=0.2em, topsep=0.2em]
+    \item House price prediction
+\end{itemize}
+\vspace{0.8em}
+
+\vspace{1.5em}
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries CERTIFICATIONS}
+\vspace{0.5em}
+AWS Certification - Web Hosting
+
+\vspace{1.5em}
+
+% Additional Skills section
+{\color{magenta}\fontsize{14}{16}\selectfont\bfseries ADDITIONAL SKILLS}
+\vspace{0.5em}
+C • PYTHON • SQL • JAVA
+
+% Decorative bottom design
+\vfill
+\noindent
+\begin{minipage}{\textwidth}
+    \begin{tikzpicture}[anchor=south west]
+        % Blue-purple horizontal bar across bottom
+        \fill[color=bluepurple] (0,0) rectangle (\textwidth,0.8cm);
+        % Magenta triangle cutting in from top right
+        \fill[color=magenta] (\textwidth-4cm,0.8cm) -- (\textwidth,0.8cm) -- (\textwidth,0) -- cycle;
+    \end{tikzpicture}
+\end{minipage}
+
+\end{document}

@@ -1,0 +1,78 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+% Custom section command
+\titleformat{\section}
+  {\large\bfseries\uppercase}
+  {}{0em}{}[\titlerule]
+\titlespacing*{\section}{0pt}{*1.5}{*0.5}
+
+% Remove page numbers
+\pagenumbering{gobble}
+
+% Custom commands
+\newcommand{\name}[1]{
+  \begin{center}
+    \Huge\textbf{#1}
+  \end{center}
+  \vspace{-0.5em}
+  \hrule height 0.4pt width \textwidth
+  \vspace{0.5em}
+}
+\newcommand{\contact}[3]{
+  \begin{center}
+    #1 \\
+    #2 \\
+    #3
+  \end{center}
+  \vspace{-0.5em}
+  \hrule height 0.4pt width \textwidth
+  \vspace{0.5em}
+}
+\newcommand{\role}[4]{
+  \begin{center}
+  \textbf{#1} \hfill \textbf{#2} \\
+  \textit{#3} \hfill \textit{#4}
+}
+
+\begin{document}
+
+\name{Vivek Goud Adula Vivek Goud Adula}
+\vspace{-0.5em}
+\contact{Aurora deemed to be University, Parvathapur, Uppal, Hyderabad}{+919381118626}{adulavivekgoud@gmail.com}
+
+\vspace{-0.5em}
+\begin{center}
+\textit{Vivek Goud Adula is a dynamic GenAI Intern demonstrating robust proficiency across PYTHON, C, SQL, and JAVA. Leveraging these diverse programming and database skills, he is poised to contribute effectively to advanced technical projects and innovative solution development.}
+\end{center}
+
+\section{PROFESSIONAL EXPERIENCE}
+\vspace{1em}
+\role{GenAI Lakes}{Hyderabad}{GenAI Intern}{5 months}
+\begin{itemize}[leftmargin=*,nosep]
+  \item DID PROJECTS GENAI AIML
+\end{itemize}
+
+\vspace{1em}
+\section{EDUCATION}
+\vspace{0.5em}
+\role{Aurora deemed University}{}{Btech CSE AIML}{2027}
+
+\vspace{1em}
+\section{SKILLS}
+\vspace{0.5em}
+\begin{itemize}[leftmargin=*,nosep]
+    \item PYTHON
+    \item C
+    \item SQL
+    \item JAVA
+  \end{itemize}
+
+\end{document}

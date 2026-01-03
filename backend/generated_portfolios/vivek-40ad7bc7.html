@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vivek - Portfolio</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
+
+        :root {
+            --bg: #030014;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #7C3AED;
+            --text: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+            animation: pulse 10s infinite;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: #4F46E5;
+        }
+
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: #7C3AED;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+            margin-bottom: 4rem;
+        }
+
+        .logo {
+            font-weight: 900;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .hero {
+            position: relative;
+            padding: 4rem 0;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-size: 5rem;
+            line-height: 0.9;
+            font-weight: 900;
+            background: linear-gradient(to right, #fff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+        }
+
+        .role {
+            font-size: 1.5rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 2rem;
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            display: inline-block;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid var(--accent);
+            border-radius: 50px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="container">
+        <nav>
+            <div class="logo">Vivek</div>
+            <a href="mailto:adulavivekgoud@gmail.com" class="btn">Contact Me</a>
+        </nav>
+
+        <header class="hero">
+            <!-- Role removed -->
+            <h1>Vivek</h1>
+            <p style="font-size: 1.2rem; color: var(--text-dim); max-width: 600px; line-height: 1.6;">BHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDBHUIVTYRDV</p>
+        </header>
+
+        <section id="skills">
+            <h2 class="section-title">Skills & Expertise</h2>
+            <div class="glass-card">
+                
+                <span class="tag">Python</span>
+                
+                <span class="tag">C</span>
+                
+            </div>
+        </section>
+
+        <section id="projects">
+            <h2 class="section-title">Selected Works</h2>
+            <div class="grid">
+                
+                <div class="glass-card">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Ml Prediction</h3>
+                    <p style="color: var(--text-dim); margin-bottom: 1rem;">BHUIVTYRDBHUIVTYRDBHUIVTYRD</p>
+                    <div style="font-size: 0.9rem; color: var(--accent);">React, Node</div>
+                    
+                    <a href="https://github.com/SuraAkshaySagar" target="_blank"
+                        style="display:inline-block; margin-top:1rem; padding:0.5rem 1rem; background:rgba(255,255,255,0.1); border-radius:10px; color:white; text-decoration:none; font-size:0.9rem; transition:0.3s;"
+                        onmouseover="this.style.background='var(--accent)'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.1)'">View Live ↗</a>
+                    
+                </div>
+                
+            </div>
+        </section>
+
+        <section id="experience">
+            <h2 class="section-title">Experience</h2>
+            <div class="grid" id="experience-container">
+                
+                <div class="glass-card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                        <h3 style="font-size: 1.2rem;">GenAI Intern</h3>
+                        <span style="color:var(--accent);">2025 May</span>
+                    </div>
+                    <h4 style="color:var(--text-dim); margin-bottom:1rem;">GenAI Lakes</h4>
+                    <p style="color:var(--text-dim);">BHUIVTYRDBHUIVTYRDBHUIVTYRD</p>
+                </div>
+                
+            </div>
+        </section>
+
+        
+        <section id="certifications">
+            <h2 class="section-title">Certifications</h2>
+            <div class="grid" id="certifications-container">
+                
+                <div class="glass-card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                        <h3 style="font-size: 1.2rem;">AWS Web Services</h3>
+                        <span style="color:var(--accent);">2025</span>
+                    </div>
+                    <h4 style="color:var(--text-dim); margin-bottom:1rem;">AWS</h4>
+                    
+                    <a href="https://github.com/SuraAkshaySagar" target="_blank"
+                        style="color: var(--text-dim); font-size: 0.9rem; text-decoration: underline;">View
+                        Certificate</a>
+                    
+                </div>
+                
+            </div>
+        </section>
+        
+
+        <footer style="margin-top: 4rem; text-align: center; color: var(--text-dim); padding-bottom: 2rem;">
+            <p>&copy; 2024 Vivek. All rights reserved.</p>
+        </footer>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- UI HELPERS ---
+            const createBtn = (text, id, bg, clickHandler) => {
+                const btn = document.createElement('button');
+                btn.innerText = text;
+                btn.id = id;
+                Object.assign(btn.style, {
+                    position: 'fixed', bottom: '30px', right: '30px', zIndex: '10000',
+                    padding: '12px 24px', background: bg, color: 'white',
+                    border: 'none', borderRadius: '50px', cursor: 'pointer',
+                    fontFamily: 'inherit', fontWeight: 'bold',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.2)', transition: 'all 0.3s'
+                });
+                btn.onclick = clickHandler;
+                return btn;
+            };
+
+            const toggleBtn = createBtn('✎ Edit Magic', 'edit-toggle-btn', 'white', null);
+            toggleBtn.style.color = 'black';
+            document.body.appendChild(toggleBtn);
+
+            let isEditing = false;
+            const textSelect = 'h1, h2, h3, h4, p, span, li, a, div.role, div.subtitle';
+
+            // Define editable zones for structural editing
+            const zones = [
+                { id: 'skills', itemSel: '.tag', containerSel: '#skills .glass-card', type: 'skill' },
+                { id: 'projects', itemSel: '.glass-card', containerSel: '#projects .grid', type: 'card' },
+                { id: 'experience', itemSel: '.glass-card', containerSel: '#experience-container', type: 'card' },
+                { id: 'certifications', itemSel: '.glass-card', containerSel: '#certifications-container', type: 'card' }
+            ];
+
+            const cleanupUI = () => {
+                document.querySelectorAll('.edit-ui-element').forEach(el => el.remove());
+                document.querySelectorAll(textSelect).forEach(el => {
+                    el.contentEditable = 'false';
+                    el.style.outline = 'none';
+                    el.style.cursor = 'default';
+                });
+            };
+
+            const enableEditing = () => {
+                // 1. Text Editing
+                document.querySelectorAll(textSelect).forEach(el => {
+                    el.contentEditable = 'true';
+                    el.style.outline = '1px dashed rgba(255,255,255,0.2)';
+                    el.style.cursor = 'text';
+
+                    // Special Link Handling
+                    if (el.tagName === 'A') {
+                        el.onclick = (e) => {
+                            if (isEditing) {
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                                const newUrl = prompt('Edit Link URL:', el.getAttribute('href'));
+                                if (newUrl !== null) el.setAttribute('href', newUrl);
+                            }
+                        };
+                    }
+                });
+
+                // 2. Structural Editing (Add/Delete)
+                zones.forEach(zone => {
+                    const container = document.querySelector(zone.containerSel);
+                    if (!container) return;
+
+                    // A. Delete Buttons on existing items
+                    container.querySelectorAll(zone.itemSel).forEach(item => {
+                        if (item.querySelector('.delete-btn')) return; // already has one
+
+                        item.style.position = 'relative';
+                        const delBtn = document.createElement('button');
+                        delBtn.innerHTML = '×';
+                        delBtn.className = 'edit-ui-element delete-btn';
+                        Object.assign(delBtn.style, {
+                            position: 'absolute', top: '-10px', right: '-10px',
+                            width: '24px', height: '24px', borderRadius: '50%',
+                            background: '#ef4444', color: 'white', border: 'none',
+                            cursor: 'pointer', fontWeight: 'bold',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            zIndex: '10'
+                        });
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            if (confirm('Delete this item?')) item.remove();
+                        };
+                        item.appendChild(delBtn);
+                    });
+
+                    // B. Add Button for the container
+                    if (!container.parentElement.querySelector(`.add-btn-${zone.id}`)) {
+                        const addBtn = document.createElement('button');
+                        addBtn.innerText = '+ Add ' + (zone.type === 'skill' ? 'Skill' : 'Item');
+                        addBtn.className = `edit-ui-element add-btn-${zone.id}`;
+                        Object.assign(addBtn.style, {
+                            display: 'block', margin: '1rem auto', padding: '8px 16px',
+                            background: 'rgba(255,255,255,0.1)', color: '#a78bfa',
+                            border: '1px dashed #a78bfa', borderRadius: '8px', cursor: 'pointer'
+                        });
+
+                        addBtn.onclick = () => {
+                            // Clone the first item or create a template
+                            const tempItem = container.querySelector(zone.itemSel);
+                            if (tempItem) {
+                                const clone = tempItem.cloneNode(true);
+                                // Clean up clone
+                                clone.querySelectorAll('.edit-ui-element').forEach(e => e.remove());
+                                // Reset text content
+                                if (zone.type === 'skill') {
+                                    clone.innerText = 'New Skill';
+                                } else {
+                                    // Reset text in common tags for cards
+                                    clone.querySelectorAll('h3').forEach(h => h.innerText = 'New Title');
+                                    clone.querySelectorAll('p').forEach(p => p.innerText = 'Description goes here...');
+                                    clone.querySelectorAll('span').forEach(s => s.innerText = '2025');
+                                }
+                                container.appendChild(clone);
+                                // Re-enable editing for the new item
+                                enableEditing();
+                            } else {
+                                alert('No template item found to clone!');
+                            }
+                        };
+                        // Insert after container
+                        container.after(addBtn);
+                    }
+                });
+            };
+
+            const saveChanges = () => {
+                toggleBtn.innerText = 'Saving...';
+
+                // Remove UI helpers before saving
+                cleanupUI();
+                toggleBtn.remove(); // Remove main button too
+
+                const fullHtml = document.documentElement.outerHTML;
+                const filename = window.location.pathname.split('/').pop();
+
+                // Restore Button
+                document.body.appendChild(toggleBtn);
+                toggleBtn.innerText = '✎ Edit Magic';
+                toggleBtn.style.background = 'white';
+                toggleBtn.style.color = 'black';
+                toggleBtn.style.transform = 'scale(1)';
+
+                fetch('/update-portfolio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: filename, html: fullHtml })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') alert('✨ Magic Saved!');
+                        else alert('Error: ' + data.error);
+                    })
+                    .catch(e => alert('Net Error: ' + e));
+            };
+
+            toggleBtn.onclick = () => {
+                isEditing = !isEditing;
+                if (isEditing) {
+                    toggleBtn.innerText = '💾 Save Magic';
+                    toggleBtn.style.background = '#22c55e';
+                    toggleBtn.style.color = 'white';
+                    toggleBtn.style.transform = 'scale(1.1)';
+                    enableEditing();
+                } else {
+                    saveChanges();
+                }
+            };
+        });
+    </script>
+</body>
+
+</html>
