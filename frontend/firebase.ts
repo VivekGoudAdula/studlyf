@@ -4,12 +4,12 @@ import { getAuth, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyD0KJj-3Cb8cw-BQK38MpC4ceAK93qPeJ0",
-    authDomain: "studlyf-3baff.firebaseapp.com",
-    projectId: "studlyf-3baff",
-    storageBucket: "studlyf-3baff.firebasestorage.app",
-    messagingSenderId: "137955871642",
-    appId: "1:137955871642:web:5c935e3b3fd9562c708823"
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
 };
 
 // Initialize Firebase
