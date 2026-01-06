@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import WebImage from '../components/WebImage';
-import CourseHoverPanel from '../components/CourseHoverPanel';
-import { ShoppingCart } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface Course {
@@ -144,22 +142,22 @@ const Courses: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [userStates, setUserStates] = useState<{ [key: string]: string }>({});
-  const [cartLoading, setCartLoading] = useState(false);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const userId = user?.uid || 'test-user';
 
-  const handleCourseClick = (course: Course) => {
-    setSelectedCourse(course);
-    setIsPanelOpen(true);
+  const createSlug = (title: string, id: string) => {
+    const slug = title.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    // Append full ID for reliable extraction
+    return `${slug}--${id}`;
   };
 
-  const handleClosePanel = () => {
-    setIsPanelOpen(false);
-    // Delay clearing selected course for animation
-    setTimeout(() => setSelectedCourse(null), 200);
+  const handleCourseClick = (course: Course) => {
+    // Navigate to course detail page with slug
+    const slug = createSlug(course.title, course._id);
+    navigate(`/learn/courses/${slug}`);
   };
 
   // Fetch courses and user state
@@ -206,50 +204,6 @@ const Courses: React.FC = () => {
     if (activeCategory === 'All') return courses;
     return courses.filter(c => c.role_tag === activeCategory);
   }, [activeCategory, courses]);
-
-  const handleAddToCart = async () => {
-    if (!selectedCourse) return;
-
-    setCartLoading(true);
-    try {
-      const res = await fetch(`http://localhost:8000/api/cart/${userId}/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ course_id: selectedCourse._id }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.status === 'added') {
-        // Update state for this course
-        setUserStates(prev => ({
-          ...prev,
-          [selectedCourse._id]: 'IN_CART'
-        }));
-        // Update selected course state as well
-        setSelectedCourse(prev => prev ? { ...prev, user_state: 'IN_CART' } : null);
-      } else if (data.status === 'duplicate') {
-        alert('Course already in cart!');
-      } else if (data.status === 'enrolled') {
-        alert('You are already enrolled in this course!');
-      }
-    } catch (err) {
-      console.error('Error adding to cart:', err);
-      alert('Failed to add to cart. Please try again.');
-    } finally {
-      setCartLoading(false);
-    }
-  };
-
-  const handleGoToCart = () => {
-    navigate('/learn/cart');
-  };
-
-  const handleGotoCourse = () => {
-    if (selectedCourse) {
-      navigate(`/learn/course-player/${selectedCourse._id}`);
-    }
-  };
 
   if (loading) return <div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>;
 
@@ -316,18 +270,6 @@ const Courses: React.FC = () => {
           </AnimatePresence>
         </motion.div>
       </div>
-
-      {/* Course Preview Panel */}
-      <CourseHoverPanel
-        course={selectedCourse || {}}
-        isOpen={isPanelOpen}
-        onClose={handleClosePanel}
-        userState={(userStates[selectedCourse?._id || ''] || 'NOT_PURCHASED') as any}
-        onAddToCart={handleAddToCart}
-        onGoToCart={handleGoToCart}
-        onGotoCourse={handleGotoCourse}
-        loading={cartLoading}
-      />
     </div>
   );
 };

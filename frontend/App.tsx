@@ -11,6 +11,7 @@ import ProtectedRoute from './ProtectedRoute';
 // Pages
 import Home from './pages/Home';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 import CareerFit from './pages/CareerFit';
 import Assessment from './pages/Assessment';
 import JobSimulation from './pages/JobSimulation';
@@ -56,6 +57,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/learn/courses" element={<Courses />} />
+            <Route path="/learn/courses/:courseId" element={<CourseDetail />} />
             <Route path="/learn/course-player/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
             <Route path="/learn/career-fit" element={<CareerFit />} />
             <Route path="/learn/assessment" element={<Assessment />} />

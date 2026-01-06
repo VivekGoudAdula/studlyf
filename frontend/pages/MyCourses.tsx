@@ -219,10 +219,25 @@ const MyCourses: React.FC = () => {
 
                             <button
                               onClick={() => handleContinueLearning(course._id)}
-                              className="w-full py-3 bg-[#7C3AED] text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-lg hover:bg-[#6D28D9] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                              className="w-full py-3 bg-[#7C3AED] text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-lg hover:bg-[#6D28D9] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mb-2"
                             >
                               <BookOpen className="w-4 h-4" />
                               Continue Learning
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Unenroll from ${course.title}? You can re-enroll later.`)) {
+                                  fetch(`http://localhost:8000/api/enrollment/${user?.uid}/${course._id}`, {
+                                    method: 'DELETE'
+                                  }).then(() => {
+                                    setEnrolledCourses(enrolledCourses.filter(c => c._id !== course._id));
+                                  }).catch(err => console.error('Unenroll failed:', err));
+                                }
+                              }}
+                              className="w-full py-3 bg-red-50 text-red-600 font-black text-[10px] uppercase tracking-[0.2em] rounded-lg hover:bg-red-100 active:scale-[0.98] transition-all border border-red-200"
+                            >
+                              Unenroll
                             </button>
                           </div>
                         </motion.div>

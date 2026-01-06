@@ -70,15 +70,28 @@ const CoursePlayer: React.FC = () => {
     const [deployedLink, setDeployedLink] = useState('');
     const [githubLink, setGithubLink] = useState('');
 
+    const [completionPrompt, setCompletionPrompt] = useState<{ open: boolean; nextIndex: number | null; moduleName: string }>(
+        { open: false, nextIndex: null, moduleName: '' }
+    );
+
+    // Support slugged URLs: "course-name--<id>"
+    const extractCourseId = (slug?: string) => {
+        if (!slug) return '';
+        const parts = slug.split('--');
+        return parts.length > 1 ? parts[parts.length - 1] : slug;
+    };
+
+    const resolvedCourseId = extractCourseId(courseId);
+
     useEffect(() => {
-        if (courseId) {
+        if (resolvedCourseId) {
             fetchModules();
         }
-    }, [courseId, user]);
+    }, [resolvedCourseId, user]);
 
     const fetchModules = async () => {
         try {
-            const res = await fetch(`http://localhost:8000/api/courses/${courseId}/modules?user_id=${user?.uid}`);
+            const res = await fetch(`http://localhost:8000/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid}`);
             const data = await res.json();
             setModules(data);
 
@@ -90,8 +103,10 @@ const CoursePlayer: React.FC = () => {
             } else if (data.length > 0) {
                 setLoading(false);
             }
+            return data;
         } catch (err) {
             console.error(err);
+            return [];
         }
     };
 
@@ -136,12 +151,20 @@ const CoursePlayer: React.FC = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user?.uid,
-                course_id: courseId,
+                course_id: resolvedCourseId,
                 module_id: modules[activeModuleIndex]._id,
                 updates
             })
         });
         fetchModules();
+    };
+
+    const goToNextModule = () => {
+        const nextIndex = modules.findIndex((m, idx) => idx > activeModuleIndex && m.progress?.status !== 'locked');
+        if (nextIndex !== -1) {
+            setActiveModuleIndex(nextIndex);
+            setActiveStage('theory');
+        }
     };
 
     const handleQuizSubmit = async () => {
@@ -158,11 +181,18 @@ const CoursePlayer: React.FC = () => {
         setQuizResult(data);
         // Always update progress to lock the attempt
         setTimeout(() => updateProgress({ quiz_score: data.score }), 1500);
+        if (data.score >= 70) {
+            setActiveStage('project');
+        }
     };
 
     const handleProjectSubmit = async () => {
         if (!deployedLink || !deployedLink.trim()) {
             alert('Deployed link is required!');
+            return;
+        }
+        if (githubLink && !githubLink.includes('github.com')) {
+            alert('Please provide a valid GitHub repository link or leave it blank.');
             return;
         }
         
@@ -177,7 +207,17 @@ const CoursePlayer: React.FC = () => {
             })
         });
         if (res.ok) {
-            updateProgress({ project_status: 'submitted' });
+            await updateProgress({ project_status: 'submitted', status: 'completed' });
+            const updatedModules = await fetchModules();
+            const nextIndex = updatedModules.findIndex((m: any, idx: number) => idx > activeModuleIndex && m.progress?.status !== 'locked');
+            setCompletionPrompt({
+                open: true,
+                nextIndex: nextIndex !== -1 ? nextIndex : null,
+                moduleName: modules[activeModuleIndex].title || 'Current Module'
+            });
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert(err?.detail || 'Submission failed. Please check your links.');
         }
     };
 
@@ -350,16 +390,19 @@ const CoursePlayer: React.FC = () => {
                                              </div>
                                          </div>
 
-                                         <div className="flex flex-col justify-end">
-                                             <button
-                                                 onClick={() => updateProgress({ theory_completed: true })}
-                                                 className="w-full relative overflow-hidden py-9 bg-[#111827] text-white font-black text-[12px] uppercase tracking-[0.5em] rounded-[2.5rem] transition-all hover:scale-[1.03] shadow-2xl hover:bg-[#7C3AED]"
-                                             >
-                                                 <span className="relative z-10 transition-colors duration-500">
-                                                     {progress?.theory_completed ? 'Content Mastered ✓' : 'Mark as Complete'}
-                                                 </span>
-                                             </button>
-                                         </div>
+                                            <div className="flex flex-col justify-end">
+                                                <button
+                                                    onClick={async () => {
+                                                        await updateProgress({ theory_completed: true });
+                                                        setActiveStage('video');
+                                                    }}
+                                                    className="w-full relative overflow-hidden py-9 bg-[#111827] text-white font-black text-[12px] uppercase tracking-[0.5em] rounded-[2.5rem] transition-all hover:scale-[1.03] shadow-2xl hover:bg-[#7C3AED]"
+                                                >
+                                                    <span className="relative z-10 transition-colors duration-500">
+                                                        {progress?.theory_completed ? 'Content Mastered ✓' : 'Mark as Complete'}
+                                                    </span>
+                                                </button>
+                                            </div>
                                      </div>
                                 </div>
                             </motion.div>
@@ -384,7 +427,10 @@ const CoursePlayer: React.FC = () => {
 
                                 <div className="flex justify-center">
                                     <button
-                                        onClick={() => updateProgress({ video_completed: true })}
+                                        onClick={async () => {
+                                            await updateProgress({ video_completed: true });
+                                            setActiveStage('quiz');
+                                        }}
                                         className="px-24 py-9 bg-[#7C3AED] text-white font-black text-[12px] uppercase tracking-[0.6em] rounded-[2.5rem] hover:bg-[#111827] transition-all duration-500 shadow-xl shadow-[#7C3AED]/20"
                                     >
                                         Seal Visual Session
@@ -576,6 +622,48 @@ const CoursePlayer: React.FC = () => {
                     </AnimatePresence>
                 </div>
             </main>
+
+            <AnimatePresence>
+                {completionPrompt.open && (
+                    <motion.div
+                        key="completion-modal"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                            className="bg-white rounded-3xl p-10 shadow-2xl max-w-md w-full mx-4 text-center border border-gray-100"
+                        >
+                            <div className="text-5xl mb-4">🎉</div>
+                            <h3 className="text-2xl font-black text-[#111827] mb-2">Module Completed</h3>
+                            <p className="text-sm text-gray-600 mb-6">{completionPrompt.moduleName} is done.</p>
+                            {completionPrompt.nextIndex !== null ? (
+                                <button
+                                    onClick={() => {
+                                        setCompletionPrompt({ open: false, nextIndex: null, moduleName: '' });
+                                        setActiveModuleIndex(completionPrompt.nextIndex as number);
+                                        setActiveStage('theory');
+                                    }}
+                                    className="w-full py-4 bg-[#7C3AED] text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-2xl hover:bg-[#111827] transition-all"
+                                >
+                                    Go to Next Module
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setCompletionPrompt({ open: false, nextIndex: null, moduleName: '' })}
+                                    className="w-full py-4 bg-[#111827] text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-2xl hover:bg-[#7C3AED] transition-all"
+                                >
+                                    All Modules Completed
+                                </button>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {

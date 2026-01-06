@@ -59,7 +59,7 @@ app.add_middleware(
 )
 
 # Configure Gemini
-GENAI_API_KEY = "AIzaSyCgA0T3O4abVr8dsII3S7zjciFdXbnsAqc"
+GENAI_API_KEY = "AIzaSyCF5gZO2hgugOCBgpWC__mv5owhz9XcC3Y"
 genai.configure(api_key=GENAI_API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
 # Note: As of late 2024/early 2025, Gemini 1.5 Flash is standard. I will assume 1.5 Flash for stability unless I get an error.
@@ -399,21 +399,29 @@ async def submit_quiz(data: dict):
 async def submit_project(data: dict):
     user_id = data.get("user_id")
     module_id = data.get("module_id")
+    deployed_link = data.get("deployed_link")
     github_link = data.get("github_link")
-    
-    if not github_link:
-        raise HTTPException(status_code=400, detail="Missing GitHub link")
-        
-    # Simple check for now
-    if "github.com" not in github_link:
-         raise HTTPException(status_code=400, detail="Invalid GitHub repository link")
+
+    if not deployed_link:
+        raise HTTPException(status_code=400, detail="Missing deployed link")
+
+    # Validate GitHub link only if provided
+    if github_link and "github.com" not in github_link:
+        raise HTTPException(status_code=400, detail="Invalid GitHub repository link")
+
+    update_fields = {
+        "project_status": "submitted",
+        "deployed_link": deployed_link
+    }
+    if github_link:
+        update_fields["github_link"] = github_link
 
     await progress_col.update_one(
         {"user_id": user_id, "module_id": module_id},
-        {"$set": {"project_status": "submitted", "github_link": github_link}},
+        {"$set": update_fields},
         upsert=True
     )
-    
+
     return {"status": "submitted"}
 
 def extract_text_from_pdf(file_path):
@@ -1225,6 +1233,32 @@ async def checkout(user_id: str):
         "total_courses": len(formatted_courses),
         "enrolled_at": datetime.utcnow().isoformat()
     }
+
+@app.delete("/api/enrollment/{user_id}/{course_id}")
+async def unenroll_from_course(user_id: str, course_id: str):
+    """Unenroll user from a course and delete all progress records"""
+    # Delete enrollment record
+    enrollment_result = await enrollments_col.delete_one({
+        "user_id": user_id,
+        "course_id": course_id
+    })
+    
+    if enrollment_result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    
+    # Find all modules for this course and delete progress records
+    modules = []
+    async for module in modules_col.find({"course_id": course_id}):
+        modules.append(module)
+    
+    # Delete all progress records for this user in this course
+    for module in modules:
+        await progress_col.delete_one({
+            "user_id": user_id,
+            "module_id": str(module["_id"])
+        })
+    
+    return {"status": "unenrolled", "message": f"Successfully unenrolled from course {course_id}"}
 
 @app.get("/api/enrollments/{user_id}")
 async def get_user_enrollments(user_id: str):

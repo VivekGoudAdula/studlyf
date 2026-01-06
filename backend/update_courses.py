@@ -67,7 +67,7 @@ async def add_new_courses():
             "difficulty": "Advanced",
             "skills": ["Docker", "Kubernetes", "Terraform", "CI/CD", "AWS", "DevOps"],
             "duration": "40 hours",
-            "image": "https://via.placeholder.com/300x200?text=Cloud+DevOps",
+            "image": "https://www.spec-india.com/wp-content/uploads/2019/07/Infrastructure-as-a-code.png",
             "price": 69.99,
             "rating": 4.9,
             "total_reviews": 512,
@@ -97,7 +97,7 @@ async def add_new_courses():
             "difficulty": "Advanced",
             "skills": ["Web Security", "Penetration Testing", "OWASP", "Burp Suite", "Network Security", "Ethical Hacking"],
             "duration": "35 hours",
-            "image": "https://via.placeholder.com/300x200?text=Web+Security",
+            "image": "https://www.eccouncil.org/cybersecurity-exchange/wp-content/uploads/2022/04/%E2%80%AFTop-Penetration-Testing-Techniques-for-Security-Professionals.png",
             "price": 74.99,
             "rating": 4.7,
             "total_reviews": 289,
@@ -121,14 +121,36 @@ async def add_new_courses():
         }
     ]
 
-    # Insert new courses
-    result = await courses_col.insert_many(new_courses)
-    print(f"Added {len(result.inserted_ids)} new courses!")
-    for course_id in result.inserted_ids:
-        print(f"  - {course_id}")
+    # Upsert new courses to avoid duplicate key errors
+    for course in new_courses:
+        await courses_col.update_one(
+            {"_id": course["_id"]},
+            {"$set": course},
+            upsert=True
+        )
+    print(f"Upserted {len(new_courses)} courses!")
 
     client.close()
+
+async def update_course_images():
+    """Ensure course images are updated for existing records"""
+    client = AsyncIOMotorClient(MONGO_URL)
+    db = client[DB_NAME]
+    courses_col = db["courses"]
+
+    await courses_col.update_one(
+        {"_id": "cloud-devops-master"},
+        {"$set": {"image": "https://www.spec-india.com/wp-content/uploads/2019/07/Infrastructure-as-a-code.png"}}
+    )
+
+    await courses_col.update_one(
+        {"_id": "web-security-advanced"},
+        {"$set": {"image": "https://www.eccouncil.org/cybersecurity-exchange/wp-content/uploads/2022/04/%E2%80%AFTop-Penetration-Testing-Techniques-for-Security-Professionals.png"}}
+    )
+
+    print("Course images refreshed")
 
 if __name__ == "__main__":
     asyncio.run(add_marketplace_data())
     asyncio.run(add_new_courses())
+    asyncio.run(update_course_images())
