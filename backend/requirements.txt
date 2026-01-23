@@ -4,5 +4,5 @@ jinja2
 python-multipart
 pdfplumber
 python-docx
-google-generativeai
+google-genai
 requests
