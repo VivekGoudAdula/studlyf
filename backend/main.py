@@ -6,6 +6,7 @@ import pdfplumber
 import docx
 import tempfile
 import os
+from dotenv import load_dotenv
 import json
 import re
 import uuid
@@ -59,12 +60,12 @@ app.add_middleware(
 )
 
 
-# Configure Gemini (google-generativeai)
-# Set your Gemini API key as an environment variable or directly here (not recommended for production)
+# Load environment variables from .env file
+load_dotenv()
+# Get Gemini API key from environment
 GENAI_API_KEY = os.getenv("GENAI_API_KEY", "YOUR-API-KEY")
-genai.configure(api_key=GENAI_API_KEY)
 # Use the correct way to instantiate the model (for google-generativeai >=0.8.6)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.5-flash", api_key=GENAI_API_KEY)
 # Note: If you want to use a different model, update the model name accordingly.
 
 class GithubAnalysisRequest(BaseModel):

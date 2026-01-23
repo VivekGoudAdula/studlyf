@@ -8,3 +8,5 @@ google-genai
 requests
 motor
 google-generativeai
+python-dotenv
+dotenv
