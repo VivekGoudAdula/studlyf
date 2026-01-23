@@ -9,7 +9,7 @@ import os
 import json
 import re
 import uuid
-import google.generativeai as genai
+import google.genai as genai
 import requests
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime
