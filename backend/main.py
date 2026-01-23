@@ -60,12 +60,15 @@ app.add_middleware(
 )
 
 
+
 # Load environment variables from .env file
 load_dotenv()
 # Get Gemini API key from environment
 GENAI_API_KEY = os.getenv("GENAI_API_KEY", "YOUR-API-KEY")
-# Use the correct way to instantiate the model (for google-generativeai >=0.8.6)
-model = genai.GenerativeModel("gemini-1.5-flash", api_key=GENAI_API_KEY)
+# Configure the API key for google-generativeai
+genai.configure(api_key=GENAI_API_KEY)
+# Instantiate the model (for google-generativeai >=0.8.6)
+model = genai.GenerativeModel("gemini-1.5-flash")
 # Note: If you want to use a different model, update the model name accordingly.
 
 class GithubAnalysisRequest(BaseModel):
