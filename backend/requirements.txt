@@ -6,3 +6,4 @@ pdfplumber
 python-docx
 google-genai
 requests
+motor
