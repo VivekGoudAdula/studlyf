@@ -59,8 +59,9 @@ app.add_middleware(
 )
 
 # Configure Gemini
+# Set your Gemini API key as an environment variable for google-genai 1.x+
 GENAI_API_KEY = "YOUR-API-KEY"
-genai.configure(api_key=GENAI_API_KEY)
+os.environ["GOOGLE_API_KEY"] = GENAI_API_KEY
 model = genai.GenerativeModel('gemini-2.5-flash')
 # Note: As of late 2024/early 2025, Gemini 1.5 Flash is standard. I will assume 1.5 Flash for stability unless I get an error.
 
