@@ -1,3 +1,4 @@
+import subprocess
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -14,8 +15,7 @@ import google.genai as genai
 import requests
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime
-from db import courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, certificates_col, cart_col, enrollments_col
-from models import Course, Module, Theory, Video, Quiz, Project, UserProgress, CartItem, Enrollment
+from db import courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col
 
 # Request body model for add to cart
 class AddToCartRequest(BaseModel):
@@ -88,11 +88,14 @@ def get_github_data(token: str, endpoint: str, session=None):
         return None
 
 def analyze_readme(readme_content):
-    if not readme_content: return 0
+    if not readme_content:
+        return 0
     # Simple heuristic: length and presence of headers/sections
     score = min(20, len(readme_content) / 100)
-    if "#" in readme_content: score += 5
-    if "```" in readme_content: score += 5
+    if "#" in readme_content:
+        score += 5
+    if "```" in readme_content:
+        score += 5
     return score
 
 @app.post("/api/analyze-github")
@@ -130,7 +133,7 @@ async def analyze_github(request: GithubAnalysisRequest):
     }
 
     # Optimized parallel fetching
-    from concurrent.futures import ThreadPoolExecutor
+
 
     def fetch_repo_details(repo):
         owner = repo['owner']['login']
@@ -189,7 +192,8 @@ async def analyze_github(request: GithubAnalysisRequest):
                 for skill in repo_results["skills"]:
                     if skill in repo_iden:
                         repo_results["skills"][skill] += q_score * 100
-            except: pass
+            except Exception:
+                pass
 
         if "2025" in repo.get('updated_at', '') or "2026" in repo.get('updated_at', ''):
             for skill in repo_results["skills"]:
@@ -225,7 +229,8 @@ async def analyze_github(request: GithubAnalysisRequest):
     for skill, raw in skills_raw.items():
         limit = normalization_factor.get(skill, 20000)
         score = min(100, int((raw / limit) * 100))
-        if raw > 500: score = max(score, 12) 
+        if raw > 500:
+            score = max(score, 12)
         normalized_skills[skill] = score
 
     # Readiness Score = Weighted average of active skills
@@ -236,7 +241,7 @@ async def analyze_github(request: GithubAnalysisRequest):
     top_langs_list = sorted(language_stats.items(), key=lambda x: x[1], reverse=True)[:5]
     lang_percentages = {}
     if total_loc > 0:
-        lang_percentages = {l: round((c / total_loc) * 100, 1) for l, c in top_langs_list}
+        lang_percentages = {lang: round((count / total_loc) * 100, 1) for lang, count in top_langs_list}
 
     return {
         "username": user_data['login'],
@@ -547,21 +552,21 @@ async def generate_portfolio(
         if experience:
             try:
                 exp_list = json.loads(experience)
-            except:
+            except Exception:
                 pass
                 
         proj_list = []
         if projects:
             try:
                 proj_list = json.loads(projects)
-            except:
+            except Exception:
                 pass
 
         cert_list = []
         if certifications:
             try:
                 cert_list = json.loads(certifications)
-            except:
+            except Exception:
                 pass
 
         data = {
@@ -575,14 +580,17 @@ async def generate_portfolio(
         }
 
     # Ensure defaults if parsing missed something
-    if not data.get("name"): data["name"] = name or "Your Name"
-    if not data.get("email"): data["email"] = email or "email@example.com"
-    if not data.get("summary"): data["summary"] = summary or "Professional summary goes here."
-    if not data.get("skills"): 
-         if skills:
-             data["skills"] = [s.strip() for s in skills.split(',')]
-         else:
-             data["skills"] = ["Skill 1", "Skill 2"]
+    if not data.get("name"):
+        data["name"] = name or "Your Name"
+    if not data.get("email"):
+        data["email"] = email or "email@example.com"
+    if not data.get("summary"):
+        data["summary"] = summary or "Professional summary goes here."
+    if not data.get("skills"):
+        if skills:
+            data["skills"] = [s.strip() for s in skills.split(',')]
+        else:
+            data["skills"] = ["Skill 1", "Skill 2"]
     
     # 4. Load Template
     # Map template_id to filename
@@ -723,13 +731,10 @@ def parse_resume_text(text):
     sections = {"experience": [], "projects": []}
     
     # Identify Header Zones
-    header_indices = []
     exp_headers = ["EXPERIENCE", "WORK HISTORY", "INTERNSHIPS", "EMPLOYMENT"]
     proj_headers = ["PROJECTS", "ACADEMIC PROJECTS", "SELECTED WORKS"]
     edu_headers = ["EDUCATION", "ACADEMIC BACKGROUND"]
     sum_headers = ["SUMMARY", "PROFILE", "ABOUT", "OBJECTIVE"]
-    
-    section_map = {} # line_index -> section_name
     
     current_mode = "summary" 
     
@@ -757,8 +762,10 @@ def parse_resume_text(text):
         if current_mode == "summary":
             # Avoid name/contact info lines
             if len(line) > 50 and "@" not in line and "Phone" not in line:
-                 if not data["summary"]: data["summary"] = line
-                 else: data["summary"] += " " + line
+                if not data["summary"]:
+                    data["summary"] = line
+                else:
+                    data["summary"] += " " + line
         
         elif current_mode == "experience":
             # Heuristic: Line with Date is usually a Title/Company line
@@ -836,8 +843,6 @@ def parse_resume_text(text):
     return data
 
 # --- RESUME BUILDER LOGIC ---
-import subprocess
-from jinja2 import Environment, FileSystemLoader
 
 class ResumeData(BaseModel):
     name: str = "John Doe"
@@ -989,7 +994,7 @@ async def generate_resume(data: ResumeData):
         
         if compiler_found:
             # compile in the directory to handle aux files
-            cmd = ["pdflatex", "-interaction=nonstopmode", f"-output-directory=generated_resumes", tex_path]
+            cmd = ["pdflatex", "-interaction=nonstopmode", "-output-directory=generated_resumes", tex_path]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             if result.returncode == 0:
