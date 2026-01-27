@@ -12,7 +12,7 @@ import re
 import uuid
 import google.genai as genai
 import requests
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime
 from db import courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, certificates_col, cart_col, enrollments_col
 from models import Course, Module, Theory, Video, Quiz, Project, UserProgress, CartItem, Enrollment
