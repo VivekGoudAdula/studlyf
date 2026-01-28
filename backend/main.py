@@ -55,25 +55,46 @@ BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
 
 # Configure CORS
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studlyff.vercel.app")
-origins = [
+requested_origins = [
     FRONTEND_URL,
     "https://studlyff.vercel.app",
-    "http://localhost:5173",
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:8000"
 ]
 
-# Ensure uniqueness
+# Safely handle origins to avoid conflict with allow_credentials=True
+origins = []
+for o in requested_origins:
+    if o:
+        origins.append(o.rstrip('/'))
+
+# Remove duplicates
 origins = list(set(origins))
+
+# If "*" is in origins, we MUST set allow_credentials=False or remove "*"
+allow_all = "*" in origins
+if allow_all and True: # if we want credentials, we must remove "*"
+    origins = [o for o in origins if o != "*"]
+    if not origins: # If it was only "*", fall back to a safe default
+        origins = ["https://studlyff.vercel.app", "http://localhost:5173"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"] if allow_all and not True else origins, # simplified logic
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "allowed_origins": origins,
+        "base_url": BASE_URL
+    }
 
 
 
