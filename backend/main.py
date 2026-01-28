@@ -1222,7 +1222,7 @@ async def checkout(user_id: str):
             "user_id": user_id,
             "course_id": item["course_id"],
             "course_title": item["course_title"],
-            "enrolled_at": datetime.utcnow(),
+            "enrolled_at": datetime.now(timezone.utc),
             "progress": 0.0,
             "last_accessed": None,
             "last_accessed_module": None
@@ -1273,7 +1273,7 @@ async def checkout(user_id: str):
         "status": "checkout_successful",
         "enrolled_courses": formatted_courses,
         "total_courses": len(formatted_courses),
-        "enrolled_at": datetime.utcnow().isoformat()
+        "enrolled_at": datetime.now(timezone.utc).isoformat()
     }
 
 @app.delete("/api/enrollment/{user_id}/{course_id}")
