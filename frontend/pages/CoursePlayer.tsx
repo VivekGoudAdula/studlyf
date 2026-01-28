@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../AuthContext';
+import { API_BASE_URL } from '../apiConfig';
 import ReactMarkdown from 'react-markdown';
 
 interface Module {
@@ -91,7 +92,7 @@ const CoursePlayer: React.FC = () => {
 
     const fetchModules = async () => {
         try {
-            const res = await fetch(`http://localhost:8000/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid}`);
+            const res = await fetch(`${API_BASE_URL}/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid}`);
             const data = await res.json();
             setModules(data);
 
@@ -117,7 +118,7 @@ const CoursePlayer: React.FC = () => {
     }, [activeModuleIndex, modules]);
 
     const fetchModuleDetails = async (moduleId: string) => {
-        const res = await fetch(`http://localhost:8000/api/modules/${moduleId}`);
+        const res = await fetch(`${API_BASE_URL}/api/modules/${moduleId}`);
         const data = await res.json();
         setModuleDetails(data);
 
@@ -146,7 +147,7 @@ const CoursePlayer: React.FC = () => {
     };
 
     const updateProgress = async (updates: any) => {
-        await fetch('http://localhost:8000/api/progress/update', {
+        await fetch(`${API_BASE_URL}/api/progress/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -168,7 +169,7 @@ const CoursePlayer: React.FC = () => {
     };
 
     const handleQuizSubmit = async () => {
-        const res = await fetch('http://localhost:8000/api/quiz/submit', {
+        const res = await fetch(`${API_BASE_URL}/api/quiz/submit`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -195,8 +196,8 @@ const CoursePlayer: React.FC = () => {
             alert('Please provide a valid GitHub repository link or leave it blank.');
             return;
         }
-        
-        const res = await fetch('http://localhost:8000/api/project/submit', {
+
+        const res = await fetch(`${API_BASE_URL}/api/project/submit`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -357,53 +358,53 @@ const CoursePlayer: React.FC = () => {
                                 className="space-y-12 pb-24"
                             >
                                 <div className="bg-white border border-gray-100 rounded-[4rem] p-16 lg:p-24 shadow-2xl shadow-gray-200/50 relative overflow-hidden">
-                                     <div className="absolute top-0 right-0 p-12 font-black text-[9px] text-gray-100 uppercase tracking-[0.5em] rotate-90 origin-top-right">PROTOCOL_THEORY</div>
-                                     <article className="prose prose-purple max-w-none text-gray-600 leading-relaxed text-xl">
-                                         <ReactMarkdown
-                                             components={{
-                                                 h1: ({ node, ...props }) => <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900 mb-8 mt-6" {...props} />,
-                                                 h2: ({ node, ...props }) => <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 mb-6 mt-12" {...props} />,
-                                                 h3: ({ node, ...props }) => <h4 className="text-base font-black uppercase tracking-widest text-[#7C3AED] mb-4 mt-10" {...props} />,
-                                                 p: ({ node, ...props }) => <p className="mb-6" {...props} />,
-                                                 strong: ({ node, ...props }) => <strong className="text-gray-900 font-bold" {...props} />,
-                                                 li: ({ node, ...props }) => <li className="mb-4 marker:text-[#7C3AED]" {...props} />,
-                                                 code: ({ node, ...props }) => <code className="bg-gray-50 text-[#7C3AED] px-3 py-1 rounded-xl font-mono text-[16px] border border-gray-100" {...props} />
-                                             }}
-                                         >
-                                             {moduleDetails?.theory?.markdown_content}
-                                         </ReactMarkdown>
-                                     </article>
+                                    <div className="absolute top-0 right-0 p-12 font-black text-[9px] text-gray-100 uppercase tracking-[0.5em] rotate-90 origin-top-right">PROTOCOL_THEORY</div>
+                                    <article className="prose prose-purple max-w-none text-gray-600 leading-relaxed text-xl">
+                                        <ReactMarkdown
+                                            components={{
+                                                h1: ({ node, ...props }) => <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900 mb-8 mt-6" {...props} />,
+                                                h2: ({ node, ...props }) => <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 mb-6 mt-12" {...props} />,
+                                                h3: ({ node, ...props }) => <h4 className="text-base font-black uppercase tracking-widest text-[#7C3AED] mb-4 mt-10" {...props} />,
+                                                p: ({ node, ...props }) => <p className="mb-6" {...props} />,
+                                                strong: ({ node, ...props }) => <strong className="text-gray-900 font-bold" {...props} />,
+                                                li: ({ node, ...props }) => <li className="mb-4 marker:text-[#7C3AED]" {...props} />,
+                                                code: ({ node, ...props }) => <code className="bg-gray-50 text-[#7C3AED] px-3 py-1 rounded-xl font-mono text-[16px] border border-gray-100" {...props} />
+                                            }}
+                                        >
+                                            {moduleDetails?.theory?.markdown_content}
+                                        </ReactMarkdown>
+                                    </article>
 
-                                     <div className="mt-24 pt-16 border-t border-gray-50 grid lg:grid-cols-2 gap-20">
-                                         <div className="space-y-10">
-                                             <header>
-                                                 <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em] mb-3 block">Actionable Data</span>
-                                                 <h4 className="text-xl font-black uppercase tracking-tight text-gray-900">Key Considerations</h4>
-                                             </header>
-                                             <div className="grid gap-4">
-                                                 {moduleDetails?.theory?.key_takeaways.map((t: string, i: number) => (
-                                                     <div key={i} className="flex items-center gap-6 p-6 bg-gray-50 rounded-3xl border border-transparent hover:border-[#7C3AED]/20 hover:bg-white transition-all group">
-                                                         <div className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]/30 group-hover:bg-[#7C3AED] transition-colors" />
-                                                         <span className="text-sm text-gray-500 font-bold leading-tight">{t}</span>
-                                                     </div>
-                                                 ))}
-                                             </div>
-                                         </div>
-
-                                            <div className="flex flex-col justify-end">
-                                                <button
-                                                    onClick={async () => {
-                                                        await updateProgress({ theory_completed: true });
-                                                        setActiveStage('video');
-                                                    }}
-                                                    className="w-full relative overflow-hidden py-9 bg-[#111827] text-white font-black text-[12px] uppercase tracking-[0.5em] rounded-[2.5rem] transition-all hover:scale-[1.03] shadow-2xl hover:bg-[#7C3AED]"
-                                                >
-                                                    <span className="relative z-10 transition-colors duration-500">
-                                                        {progress?.theory_completed ? 'Content Mastered ✓' : 'Mark as Complete'}
-                                                    </span>
-                                                </button>
+                                    <div className="mt-24 pt-16 border-t border-gray-50 grid lg:grid-cols-2 gap-20">
+                                        <div className="space-y-10">
+                                            <header>
+                                                <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em] mb-3 block">Actionable Data</span>
+                                                <h4 className="text-xl font-black uppercase tracking-tight text-gray-900">Key Considerations</h4>
+                                            </header>
+                                            <div className="grid gap-4">
+                                                {moduleDetails?.theory?.key_takeaways.map((t: string, i: number) => (
+                                                    <div key={i} className="flex items-center gap-6 p-6 bg-gray-50 rounded-3xl border border-transparent hover:border-[#7C3AED]/20 hover:bg-white transition-all group">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]/30 group-hover:bg-[#7C3AED] transition-colors" />
+                                                        <span className="text-sm text-gray-500 font-bold leading-tight">{t}</span>
+                                                    </div>
+                                                ))}
                                             </div>
-                                     </div>
+                                        </div>
+
+                                        <div className="flex flex-col justify-end">
+                                            <button
+                                                onClick={async () => {
+                                                    await updateProgress({ theory_completed: true });
+                                                    setActiveStage('video');
+                                                }}
+                                                className="w-full relative overflow-hidden py-9 bg-[#111827] text-white font-black text-[12px] uppercase tracking-[0.5em] rounded-[2.5rem] transition-all hover:scale-[1.03] shadow-2xl hover:bg-[#7C3AED]"
+                                            >
+                                                <span className="relative z-10 transition-colors duration-500">
+                                                    {progress?.theory_completed ? 'Content Mastered ✓' : 'Mark as Complete'}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
@@ -440,10 +441,10 @@ const CoursePlayer: React.FC = () => {
                         )}
 
                         {activeStage === 'quiz' && (
-                            <motion.div 
-                                key="quiz" 
-                                initial={{ opacity: 0 }} 
-                                animate={{ opacity: 1 }} 
+                            <motion.div
+                                key="quiz"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 className="w-full space-y-10 pb-24"
                             >
@@ -461,11 +462,11 @@ const CoursePlayer: React.FC = () => {
                                                 const isSelected = quizAnswers[i]?.includes(optIdx);
                                                 const isCorrect = q.correct_answers.includes(optIdx);
                                                 const showFeedback = quizResult !== null;
-                                                
+
                                                 let borderColor = 'border-gray-50';
                                                 let bgColor = 'bg-gray-50/30';
                                                 let textColor = 'text-gray-400';
-                                                
+
                                                 if (showFeedback) {
                                                     if (isSelected && isCorrect) { borderColor = 'border-green-500'; bgColor = 'bg-green-50'; textColor = 'text-green-600'; }
                                                     else if (isSelected && !isCorrect) { borderColor = 'border-red-500'; bgColor = 'bg-red-50'; textColor = 'text-red-600'; }
@@ -481,7 +482,7 @@ const CoursePlayer: React.FC = () => {
                                                     <button
                                                         key={optIdx}
                                                         onClick={() => {
-                                                            if (quizResult) return; 
+                                                            if (quizResult) return;
                                                             const newAns = [...quizAnswers];
                                                             const current = newAns[i] || [];
                                                             if (current.includes(optIdx)) {
@@ -504,7 +505,7 @@ const CoursePlayer: React.FC = () => {
                                                 );
                                             })}
                                         </div>
-                                        
+
                                         {quizResult && (
                                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 p-8 bg-gray-50 rounded-3xl border border-gray-100">
                                                 <span className="text-[9px] font-black text-[#7C3AED] uppercase tracking-widest block mb-4">Verification Intelligence</span>
@@ -524,8 +525,8 @@ const CoursePlayer: React.FC = () => {
                                         </button>
                                     </div>
                                 ) : (
-                                    <motion.div 
-                                        initial={{ opacity: 0, scale: 0.9 }} 
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         className={`p-16 rounded-[4rem] text-center border-4 ${quizResult.passed ? 'border-green-500 bg-green-50/30' : 'border-red-500 bg-red-50/30'}`}
                                     >
@@ -535,17 +536,17 @@ const CoursePlayer: React.FC = () => {
                                         </div>
                                         <p className={`text-xl font-bold uppercase tracking-widest ${quizResult.passed ? 'text-green-600' : 'text-red-600'}`}>
                                             {quizResult.passed ? 'Phase Certification: Success' : 'Phase Certification: Insufficient Data'}
-                                         </p>
-                                         {quizResult.passed && (
-                                             <button 
-                                                 onClick={() => setActiveStage('project')}
-                                                 className="mt-12 px-12 py-6 bg-[#111827] text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#7C3AED] transition-all"
-                                             >
-                                                 Continue to Project Objective
-                                             </button>
-                                         )}
-                                     </motion.div>
-                                 )}
+                                        </p>
+                                        {quizResult.passed && (
+                                            <button
+                                                onClick={() => setActiveStage('project')}
+                                                className="mt-12 px-12 py-6 bg-[#111827] text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#7C3AED] transition-all"
+                                            >
+                                                Continue to Project Objective
+                                            </button>
+                                        )}
+                                    </motion.div>
+                                )}
                             </motion.div>
                         )}
 

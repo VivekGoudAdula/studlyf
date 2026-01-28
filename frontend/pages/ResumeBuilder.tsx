@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Download, Loader2, Plus, Trash2, Code, Layout, User, Briefcase, GraduationCap, Star, Rocket, Award } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 
 const ResumeBuilder: React.FC = () => {
     const [step, setStep] = useState(1); // 1: Template, 2: Details
@@ -50,7 +51,7 @@ const ResumeBuilder: React.FC = () => {
         };
 
         try {
-            const response = await fetch('http://localhost:8000/generate-resume/', {
+            const response = await fetch(`${API_BASE_URL}/generate-resume/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

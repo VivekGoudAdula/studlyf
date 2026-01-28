@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 import { useAuth } from '../AuthContext';
 
 interface CartItem {
@@ -26,7 +27,7 @@ const Cart: React.FC = () => {
     const fetchCart = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:8000/api/cart/${userId}`);
+        const res = await fetch(`${API_BASE_URL}/api/cart/${userId}`);
         const data = await res.json();
         setCartItems(data.items || []);
       } catch (err) {
@@ -42,7 +43,7 @@ const Cart: React.FC = () => {
   const handleRemoveItem = async (courseId: string) => {
     setRemoving(courseId);
     try {
-      await fetch(`http://localhost:8000/api/cart/${userId}/remove/${courseId}`, {
+      await fetch(`${API_BASE_URL}/api/cart/${userId}/remove/${courseId}`, {
         method: 'DELETE',
       });
       setCartItems(items => items.filter(item => item.course_id !== courseId));
@@ -58,7 +59,7 @@ const Cart: React.FC = () => {
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/checkout/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/checkout/${userId}`, {
         method: 'POST',
       });
 

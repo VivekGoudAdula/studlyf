@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../apiConfig';
 import WebImage from '../components/WebImage';
 import { useAuth } from '../AuthContext';
 
@@ -97,9 +98,8 @@ const CourseCard = ({
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
-                    className={`w-3 h-3 rounded-full ${
-                      i < Math.floor(rating) ? 'bg-yellow-400' : 'bg-gray-200'
-                    }`}
+                    className={`w-3 h-3 rounded-full ${i < Math.floor(rating) ? 'bg-yellow-400' : 'bg-gray-200'
+                      }`}
                   />
                 ))}
               </div>
@@ -166,13 +166,13 @@ const Courses: React.FC = () => {
       try {
         setLoading(true);
         // Get all courses
-        const coursesRes = await fetch('http://localhost:8000/api/courses');
+        const coursesRes = await fetch(`${API_BASE_URL}/api/courses`);
         const coursesData = await coursesRes.json();
         setCourses(coursesData);
 
         // Get user course states
         if (userId) {
-          const stateRes = await fetch(`http://localhost:8000/api/user-courses/${userId}`);
+          const stateRes = await fetch(`${API_BASE_URL}/api/user-courses/${userId}`);
           const stateData = await stateRes.json();
 
           const states: { [key: string]: string } = {};
@@ -246,8 +246,8 @@ const Courses: React.FC = () => {
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeCategory === cat
-                  ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10 scale-105'
-                  : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30 hover:text-gray-600'
+                ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10 scale-105'
+                : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30 hover:text-gray-600'
                 }`}
             >
               {cat}

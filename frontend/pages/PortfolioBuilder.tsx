@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Layout, Wand2, Loader2, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 
 const PortfolioBuilder: React.FC = () => {
     const [step, setStep] = useState(1);
@@ -71,7 +72,7 @@ const PortfolioBuilder: React.FC = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/generate-portfolio/', {
+            const response = await fetch(`${API_BASE_URL}/generate-portfolio/`, {
                 method: 'POST',
                 body: data,
             });

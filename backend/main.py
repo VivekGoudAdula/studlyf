@@ -51,6 +51,7 @@ def fix_progress(prog, default_status="locked"):
 app = FastAPI()
 
 # Configure CORS
+BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
 origins = [FRONTEND_URL] if FRONTEND_URL != "*" else ["*"]
 
@@ -652,7 +653,7 @@ async def generate_portfolio(
         f.write(rendered_html)
     
     # Return the URL
-    return {"portfolio_url": f"http://localhost:8000/view/{filename}"}
+    return {"portfolio_url": f"{BASE_URL}/view/{filename}"}
 
 
 
@@ -1020,7 +1021,7 @@ async def generate_resume(data: ResumeData):
             if result.returncode == 0:
                 return {
                     "status": "success", 
-                    "pdf_url": f"http://localhost:8000/download-resume/{filename_base}.pdf",
+                    "pdf_url": f"{BASE_URL}/download-resume/{filename_base}.pdf",
                     "preview_image": None
                 }
             else:
@@ -1101,7 +1102,7 @@ async def generate_resume(data: ResumeData):
         if cloud_success:
             return {
                 "status": "success", 
-                "pdf_url": f"http://localhost:8000/download-resume/{filename_base}.pdf",
+                "pdf_url": f"{BASE_URL}/download-resume/{filename_base}.pdf",
             }
 
         # Final Fallback
@@ -1109,7 +1110,7 @@ async def generate_resume(data: ResumeData):
             "status": "error", 
             "message": "PDF Generation Service Unavailable. Please simplify your content or ensure common LaTeX syntax is used.",
             "latex_source": latex_code,
-            "tex_url": f"http://localhost:8000/download-resume/{filename_base}.tex"
+            "tex_url": f"{BASE_URL}/download-resume/{filename_base}.tex"
         }
 
     except Exception as e:

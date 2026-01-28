@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  ShoppingCart, 
-  BookOpen, 
-  Clock, 
-  BarChart3, 
+import { useNavigate, useParams } from 'react-router-dom';
+import { API_BASE_URL } from '../apiConfig';
+import {
+  ArrowLeft,
+  ShoppingCart,
+  BookOpen,
+  Clock,
+  BarChart3,
   Calendar,
   Star,
   Users,
@@ -70,19 +71,19 @@ const CourseDetail: React.FC = () => {
       try {
         setLoading(true);
         // Get course details
-        const courseRes = await fetch(`http://localhost:8000/api/courses`);
+        const courseRes = await fetch(`${API_BASE_URL}/api/courses`);
         const coursesData = await courseRes.json();
-        
+
         // Extract ID from slug and find matching course
         const courseIdFromSlug = extractCourseId(courseId);
         const foundCourse = coursesData.find((c: Course) => c._id === courseIdFromSlug);
-        
+
         if (foundCourse) {
           setCourse(foundCourse);
-          
+
           // Get user state for this course
           if (userId) {
-            const stateRes = await fetch(`http://localhost:8000/api/user-courses/${userId}`);
+            const stateRes = await fetch(`${API_BASE_URL}/api/user-courses/${userId}`);
             const stateData = await stateRes.json();
 
             if (stateData.enrolled.some((c: Course) => c._id === foundCourse._id)) {
@@ -106,10 +107,10 @@ const CourseDetail: React.FC = () => {
 
   const handleAddToCart = async () => {
     if (!course) return;
-    
+
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/cart/${userId}/add`, {
+      const res = await fetch(`${API_BASE_URL}/api/cart/${userId}/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ course_id: course._id }),
@@ -176,7 +177,7 @@ const CourseDetail: React.FC = () => {
     <div className="min-h-screen bg-white text-gray-900 font-sans">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-[#7C3AED]/5 to-transparent pointer-events-none" />
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         {/* Back Button */}
         <motion.button

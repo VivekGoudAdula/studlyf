@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../apiConfig';
 import { BookOpen, Clock, ArrowRight, Plus } from 'lucide-react';
 import WebImage from '../components/WebImage';
 import { useAuth } from '../AuthContext';
@@ -41,7 +42,7 @@ const MyCourses: React.FC = () => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:8000/api/user-courses/${userId}`);
+        const res = await fetch(`${API_BASE_URL}/api/user-courses/${userId}`);
         const data = await res.json();
         setEnrolledCourses(data.enrolled || []);
         setAvailableCourses(data.available || []);
@@ -100,11 +101,10 @@ const MyCourses: React.FC = () => {
         >
           <button
             onClick={() => setActiveTab('applied')}
-            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${
-              activeTab === 'applied'
-                ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10'
-                : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30'
-            }`}
+            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${activeTab === 'applied'
+              ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10'
+              : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30'
+              }`}
           >
             <span className="flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
@@ -119,11 +119,10 @@ const MyCourses: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('available')}
-            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${
-              activeTab === 'available'
-                ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10'
-                : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30'
-            }`}
+            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${activeTab === 'available'
+              ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10'
+              : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30'
+              }`}
           >
             <span className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
@@ -228,7 +227,7 @@ const MyCourses: React.FC = () => {
                             <button
                               onClick={() => {
                                 if (window.confirm(`Unenroll from ${course.title}? You can re-enroll later.`)) {
-                                  fetch(`http://localhost:8000/api/enrollment/${user?.uid}/${course._id}`, {
+                                  fetch(`${API_BASE_URL}/api/enrollment/${user?.uid}/${course._id}`, {
                                     method: 'DELETE'
                                   }).then(() => {
                                     setEnrolledCourses(enrolledCourses.filter(c => c._id !== course._id));
