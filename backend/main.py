@@ -50,23 +50,22 @@ def fix_progress(prog, default_status="locked"):
 
 app = FastAPI()
 
-# Configure CORS
+# Base URL for backend links (portfolios, resumes)
 BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
-origins = [FRONTEND_URL] if FRONTEND_URL != "*" else ["*"]
 
-# Always allow these specific origins even if FRONTEND_URL is set
-additional_origins = [
+# Configure CORS
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studlyff.vercel.app")
+origins = [
+    FRONTEND_URL,
     "https://studlyff.vercel.app",
+    "http://localhost:5173",
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:8000"
 ]
 
-if FRONTEND_URL != "*":
-    for origin in additional_origins:
-        if origin not in origins:
-            origins.append(origin)
+# Ensure uniqueness
+origins = list(set(origins))
 
 app.add_middleware(
     CORSMiddleware,
