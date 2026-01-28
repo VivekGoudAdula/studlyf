@@ -1,4 +1,6 @@
 import subprocess
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -7,15 +9,14 @@ import pdfplumber
 import docx
 import tempfile
 import os
-from dotenv import load_dotenv
 import json
 import re
 import uuid
 from google import genai
 import requests
 from jinja2 import Environment, FileSystemLoader, Template
-from datetime import datetime
-from db import courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col
+from datetime import datetime, timezone
+from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col
 
 # Request body model for add to cart
 class AddToCartRequest(BaseModel):
@@ -48,8 +49,7 @@ def fix_progress(prog, default_status="locked"):
     # Merge defaults with actual data
     return {**defaults, **fix_id(prog)}
 
-# Load environment variables early
-load_dotenv()
+# (Middleware and App config remains here)
 
 app = FastAPI()
 
@@ -84,7 +84,7 @@ app.add_middleware(
 async def health_check():
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "database": "connected" if await db.command("ping") else "error",
         "allowed_origins": origins
     }
