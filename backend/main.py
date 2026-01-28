@@ -50,10 +50,26 @@ def fix_progress(prog, default_status="locked"):
 
 app = FastAPI()
 
-# Allow CORS for frontend
+# Configure CORS
+FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
+origins = [FRONTEND_URL] if FRONTEND_URL != "*" else ["*"]
+
+# Always allow these specific origins even if FRONTEND_URL is set
+additional_origins = [
+    "https://studlyff.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:8000"
+]
+
+if FRONTEND_URL != "*":
+    for origin in additional_origins:
+        if origin not in origins:
+            origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -492,7 +508,10 @@ def parse_with_gemini(text):
     {text}
     """
     
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=prompt
+    )
     json_str = clean_json_string(response.text)
     return json.loads(json_str)
 
