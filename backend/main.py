@@ -48,14 +48,19 @@ def fix_progress(prog, default_status="locked"):
     # Merge defaults with actual data
     return {**defaults, **fix_id(prog)}
 
+# Load environment variables early
+load_dotenv()
+
 app = FastAPI()
 
 # Base URL for backend links (portfolios, resumes)
 BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
 
 # Configure CORS
+# In production, set FRONTEND_URL environment variable to https://studlyff.vercel.app
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studlyff.vercel.app")
-requested_origins = [
+
+origins = [
     FRONTEND_URL,
     "https://studlyff.vercel.app",
     "http://localhost:5173",
@@ -63,25 +68,13 @@ requested_origins = [
     "http://localhost:8000"
 ]
 
-# Safely handle origins to avoid conflict with allow_credentials=True
-origins = []
-for o in requested_origins:
-    if o:
-        origins.append(o.rstrip('/'))
-
-# Remove duplicates
+# Clean up and ensure uniqueness
+origins = [o.rstrip('/') for o in origins if o and o != "*"]
 origins = list(set(origins))
-
-# If "*" is in origins, we MUST set allow_credentials=False or remove "*"
-allow_all = "*" in origins
-if allow_all and True: # if we want credentials, we must remove "*"
-    origins = [o for o in origins if o != "*"]
-    if not origins: # If it was only "*", fall back to a safe default
-        origins = ["https://studlyff.vercel.app", "http://localhost:5173"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if allow_all and not True else origins, # simplified logic
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -92,14 +85,10 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "allowed_origins": origins,
-        "base_url": BASE_URL
+        "database": "connected" if await db.command("ping") else "error",
+        "allowed_origins": origins
     }
 
-
-
-# Load environment variables from .env file
-load_dotenv()
 # Get Gemini API key from environment
 GENAI_API_KEY = os.getenv("GENAI_API_KEY", "YOUR-API-KEY")
 # Configure the Client for google.genai
