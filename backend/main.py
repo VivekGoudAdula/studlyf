@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 import json
 import re
 import uuid
-import google.genai as genai
+import google.generativeai as genai
 import requests
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime
