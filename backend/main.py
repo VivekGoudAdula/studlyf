@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 import json
 import re
 import uuid
-import google.generativeai as genai
+from google import genai
 import requests
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime
@@ -65,10 +65,8 @@ app.add_middleware(
 load_dotenv()
 # Get Gemini API key from environment
 GENAI_API_KEY = os.getenv("GENAI_API_KEY", "YOUR-API-KEY")
-# Configure the API key for google-generativeai
-genai.configure(api_key=GENAI_API_KEY)
-# Instantiate the model (for google-generativeai >=0.8.6)
-model = genai.GenerativeModel("gemini-1.5-flash")
+# Configure the Client for google.genai
+client = genai.Client(api_key=GENAI_API_KEY)
 # Note: If you want to use a different model, update the model name accordingly.
 
 class GithubAnalysisRequest(BaseModel):
@@ -302,7 +300,10 @@ async def generate_ai_quiz(module_id: str, theory_content: str):
     - Return ONLY the JSON.
     """
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         quiz_data = json.loads(clean_json_string(response.text))
         quiz_data["module_id"] = module_id
         await quizzes_col.insert_one(quiz_data)
@@ -1363,4 +1364,6 @@ async def get_course_full_details(course_id: str, user_id: Optional[str] = None)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
