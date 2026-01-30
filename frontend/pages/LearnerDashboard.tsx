@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../apiConfig';
 import { useAuth } from '../AuthContext';
 import { auth, githubProvider } from '../firebase';
-import { signOut, signInWithPopup, GithubAuthProvider } from 'firebase/auth';
+import { signOut, signInWithPopup, GithubAuthProvider, linkWithPopup } from 'firebase/auth';
 
 
 
@@ -56,8 +56,20 @@ const LearnerDashboard: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [githubData, setGithubData] = useState<any>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 1. Try to load existing analysis
+    const savedAnalysis = sessionStorage.getItem('github_analysis');
+    if (savedAnalysis) {
+      try {
+        setGithubData(JSON.parse(savedAnalysis));
+      } catch (e) {
+        console.error("Failed to parse saved analysis", e);
+      }
+    }
+
+    // 2. Check for token to trigger analysis if needed
     const token = sessionStorage.getItem('github_token');
     if (token && !githubData && !analyzing) {
       handleAnalyze(token);
@@ -66,19 +78,62 @@ const LearnerDashboard: React.FC = () => {
 
   const handleAnalyze = async (token: string) => {
     setAnalyzing(true);
+    setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/api/analyze-github`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       });
+
       const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || data.detail || 'Analysis protocol failed');
+      }
+
       setGithubData(data);
       sessionStorage.setItem('github_analysis', JSON.stringify(data));
-    } catch (err) {
+      sessionStorage.setItem('github_token', token); // Ensure it's saved
+    } catch (err: any) {
       console.error("Analysis failed", err);
+      setError(err.message);
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const handleConnectGitHub = async () => {
+    setError(null);
+    try {
+      let result;
+      if (auth.currentUser) {
+        // If already logged in (which they are on this page), use linkWithPopup
+        // to avoid "account-exists-with-different-credential" errors
+        try {
+          result = await linkWithPopup(auth.currentUser, githubProvider);
+        } catch (linkErr: any) {
+          // If already linked, or some other error, try to just sign in to get the token
+          if (linkErr.code === 'auth/credential-already-in-use' || linkErr.code === 'auth/provider-already-linked') {
+            result = await signInWithPopup(auth, githubProvider);
+          } else {
+            throw linkErr;
+          }
+        }
+      } else {
+        result = await signInWithPopup(auth, githubProvider);
+      }
+
+      const credential = GithubAuthProvider.credentialFromResult(result!);
+      if (credential?.accessToken) {
+        sessionStorage.setItem('github_token', credential.accessToken);
+        handleAnalyze(credential.accessToken);
+      } else {
+        throw new Error("No access token protocol received");
+      }
+    } catch (err: any) {
+      console.error("Connection failed", err);
+      setError(err.message);
     }
   };
 
@@ -192,10 +247,13 @@ const LearnerDashboard: React.FC = () => {
 
                     <div>
                       <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">GitHub Authority</label>
-                      <Link to="#" className="text-xs sm:text-sm font-bold text-[#7C3AED] hover:underline flex items-center justify-center lg:justify-start gap-2">
-                        {githubData?.username ? `github.com/${githubData.username}` : 'Not Connected'}
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      </Link>
+                      <button
+                        onClick={handleConnectGitHub}
+                        className="text-xs sm:text-sm font-bold text-[#7C3AED] hover:underline flex items-center justify-center lg:justify-start gap-2 group/gh"
+                      >
+                        {githubData?.username ? `github.com/${githubData.username}` : (analyzing ? 'Synchronizing...' : 'Not Connected')}
+                        <svg className={`w-3 h-3 ${analyzing ? 'animate-spin' : 'group-hover/gh:translate-x-0.5 transition-transform'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </button>
                     </div>
                     <div>
                       <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">Graduation Horizon</label>
@@ -292,19 +350,18 @@ const LearnerDashboard: React.FC = () => {
                     </div>
                   )}
                   {!githubData && !analyzing && (
-                    <div className="mt-8">
+                    <div className="mt-8 flex flex-col items-center gap-4">
+                      {error && (
+                        <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest bg-red-50 px-4 py-2 rounded-lg border border-red-100 italic">
+                          Error: {error}
+                        </p>
+                      )}
                       <button
-                        onClick={async () => {
-                          const result = await signInWithPopup(auth, githubProvider);
-                          const credential = GithubAuthProvider.credentialFromResult(result);
-                          if (credential?.accessToken) {
-                            sessionStorage.setItem('github_token', credential.accessToken);
-                            handleAnalyze(credential.accessToken);
-                          }
-                        }}
-                        className="px-8 py-4 bg-[#111827] text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:scale-105 transition-all shadow-xl"
+                        onClick={handleConnectGitHub}
+                        className="px-8 py-4 bg-[#111827] text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3"
                       >
-                        Connect GitHub to Verify
+                        <img src="https://www.vectorlogo.zone/logos/github/github-icon.svg" className="w-4 h-4 invert" alt="" />
+                        {analyzing ? 'Authenticating...' : 'Connect GitHub to Verify'}
                       </button>
                     </div>
                   )}
@@ -376,7 +433,7 @@ const LearnerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex font-sans text-[#111827] selection:bg-[#7C3AED] selection:text-white">
+    <div className="min-h-screen bg-[#FFFFFF] flex font-sans text-[#111827] selection:bg-[#7C3AED] selection:text-white pt-20 sm:pt-28 lg:pt-32">
       {/* Sidebar - Desktop Only */}
       <aside className="w-72 bg-[#FFFFFF] border-r border-gray-100 flex flex-col p-8 shrink-0 hidden lg:flex">
         <Link to="/" className="flex items-center gap-3 mb-16 px-2 group">

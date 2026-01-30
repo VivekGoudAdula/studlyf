@@ -51,27 +51,27 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white bg-white">
-      {(!isLoginPage && !isDashboard && !isPlayer && !isCheckout) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout) && <Navigation />}
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/learn/courses" element={<Courses />} />
-            <Route path="/learn/courses/:courseId" element={<CourseDetail />} />
+            <Route path="/learn/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+            <Route path="/learn/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
             <Route path="/learn/course-player/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
-            <Route path="/learn/career-fit" element={<CareerFit />} />
-            <Route path="/learn/assessment" element={<Assessment />} />
-            <Route path="/learn/company-modules" element={<CompanyModules />} />
+            <Route path="/learn/career-fit" element={<ProtectedRoute><CareerFit /></ProtectedRoute>} />
+            <Route path="/learn/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+            <Route path="/learn/company-modules" element={<ProtectedRoute><CompanyModules /></ProtectedRoute>} />
             <Route path="/learn/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
             <Route path="/learn/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
 
-            <Route path="/job-prep/job-simulation" element={<JobSimulation />} />
-            <Route path="/job-prep/portfolio" element={<PortfolioBuilder />} />
-            <Route path="/job-prep/projects" element={<Projects />} />
-            <Route path="/job-prep/mock-interview" element={<MockInterview />} />
-            <Route path="/job-prep/group-discussion" element={<GroupDiscussion />} />
-            <Route path="/job-prep/play-learn-earn" element={<PlayLearnEarn />} />
-            <Route path="/job-prep/resume-builder" element={<ResumeBuilder />} />
+            <Route path="/job-prep/job-simulation" element={<ProtectedRoute><JobSimulation /></ProtectedRoute>} />
+            <Route path="/job-prep/portfolio" element={<ProtectedRoute><PortfolioBuilder /></ProtectedRoute>} />
+            <Route path="/job-prep/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+            <Route path="/job-prep/mock-interview" element={<ProtectedRoute><MockInterview /></ProtectedRoute>} />
+            <Route path="/job-prep/group-discussion" element={<ProtectedRoute><GroupDiscussion /></ProtectedRoute>} />
+            <Route path="/job-prep/play-learn-earn" element={<ProtectedRoute><PlayLearnEarn /></ProtectedRoute>} />
+            <Route path="/job-prep/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
 
             <Route path="/employers/get-hired" element={<GetHired />} />
             <Route path="/employers/hire" element={<Hire />} />

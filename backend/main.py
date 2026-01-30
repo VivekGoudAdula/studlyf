@@ -99,17 +99,27 @@ class GithubAnalysisRequest(BaseModel):
     token: str
 
 def get_github_data(token: str, endpoint: str, session=None):
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    # Try both 'Bearer' and 'token' formats as GitHub can be picky depending on token type
     url = f"https://api.github.com{endpoint}"
-    try:
-        r = session or requests
-        response = r.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            return None
-        return response.json()
-    except Exception as e:
-        print(f"GitHub API Error for {endpoint}: {e}")
-        return None
+    formats = [f"Bearer {token}", f"token {token}"]
+    
+    for auth_header in formats:
+        headers = {
+            "Authorization": auth_header,
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Studlyf-Analysis-Agent"
+        }
+        try:
+            r = session or requests
+            response = r.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"GitHub API {endpoint} failed with {response.status_code} using {auth_header.split()[0]}")
+        except Exception as e:
+            print(f"GitHub API Error for {endpoint}: {e}")
+            
+    return None
 
 def analyze_readme(readme_content):
     if not readme_content:

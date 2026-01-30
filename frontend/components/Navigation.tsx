@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -123,11 +123,42 @@ const JobsDropdown = () => (
   </div>
 );
 
+const FeaturesDropdown = () => (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+    <div className="space-y-4">
+      <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.3em]">Learning Authority</h4>
+      <div className="grid gap-2">
+        <BentoCard to="/learn/courses" title="Hero Tracks" desc="Role-focused engineering specialization." className="h-[110px]" />
+        <BentoCard to="/learn/company-modules" title="Corporate Training" desc="Institutional internal modules." className="h-[110px]" />
+      </div>
+    </div>
+    <div className="space-y-4">
+      <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.3em]">Placement Protocol</h4>
+      <div className="grid gap-2">
+        <BentoCard to="/job-prep/portfolio" title="Proof of Skill" desc="Evidence-based developer portfolios." className="h-[110px]" />
+        <BentoCard to="/job-prep/resume-builder" title="Clinical Resumes" desc="Instant verification-ready resumes." className="h-[110px]" />
+        <BentoCard to="/learn/assessment" title="Calculated Scoring" desc="Clinical skill assessment." className="h-[110px]" />
+      </div>
+    </div>
+    <div className="space-y-4">
+      <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.3em]">Marketplace</h4>
+      <div className="grid gap-2">
+        <BentoCard to="/employers/get-hired" title="Elite Intake" desc="Direct pipeline to industry partners." className="h-[110px]" />
+        <BentoCard to="/employers/hire" title="Verified Supply" desc="Access clinically vetted talent." className="h-[110px]" />
+        <BentoCard to="/blog" title="Engineering Blog" desc="Technical insights on systems." className="h-[110px]" />
+      </div>
+    </div>
+  </div>
+);
+
 const Navigation: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isDashboard = pathname.startsWith('/dashboard') || pathname.startsWith('/learn') || pathname.startsWith('/job-prep');
 
   const timeoutRef = useRef<number | null>(null);
 
@@ -175,17 +206,38 @@ const Navigation: React.FC = () => {
             {/* Desktop Center Links */}
             <div className="flex-grow flex justify-center h-full">
               <div className="hidden lg:flex items-center space-x-12 h-full">
-                {['learn', 'jobprep', 'jobs'].map((id) => (
-                  <button
-                    key={id}
-                    onMouseEnter={() => handleMouseEnter(id)}
-                    className={`flex items-center space-x-2 transition-all h-full uppercase tracking-[0.25em] font-bold text-[11px] ${activeMenu === id ? 'text-white' : 'text-white/80'} hover:text-white`}
-                  >
-                    <span>{id === 'jobprep' ? 'Job Prep' : id.charAt(0).toUpperCase() + id.slice(1)}</span>
-                    <motion.svg animate={{ rotate: activeMenu === id ? 180 : 0 }} className="w-3.5 h-3.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></motion.svg>
-                  </button>
-                ))}
-                <Link to="/about" className="text-white/80 text-[11px] font-bold uppercase tracking-[0.25em] hover:text-white h-full flex items-center">About</Link>
+                {isDashboard ? (
+                  // Full Dashboard Navbar
+                  <>
+                    {['learn', 'jobprep', 'jobs'].map((id) => (
+                      <button
+                        key={id}
+                        onMouseEnter={() => handleMouseEnter(id)}
+                        className={`flex items-center space-x-2 transition-all h-full uppercase tracking-[0.25em] font-bold text-[11px] ${activeMenu === id ? 'text-white' : 'text-white/80'} hover:text-white`}
+                      >
+                        <span>{id === 'jobprep' ? 'Job Prep' : id.charAt(0).toUpperCase() + id.slice(1)}</span>
+                        <motion.svg animate={{ rotate: activeMenu === id ? 180 : 0 }} className="w-3.5 h-3.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></motion.svg>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  // Simplified Landing Navbar
+                  <>
+                    <Link to="/about" className="text-white/80 text-[11px] font-bold uppercase tracking-[0.25em] hover:text-white h-full flex items-center">About</Link>
+                    <button
+                      onMouseEnter={() => handleMouseEnter('features')}
+                      className={`flex items-center space-x-2 transition-all h-full uppercase tracking-[0.25em] font-bold text-[11px] ${activeMenu === 'features' ? 'text-white' : 'text-white/80'} hover:text-white`}
+                    >
+                      <span>Features</span>
+                      <motion.svg animate={{ rotate: activeMenu === 'features' ? 180 : 0 }} className="w-3.5 h-3.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></motion.svg>
+                    </button>
+                    {user && (
+                      <Link to="/dashboard/learner" className="text-white/90 text-[10px] font-black uppercase tracking-[0.3em] hover:text-white h-full flex items-center bg-white/10 px-6 rounded-xl border border-white/10 ml-4">
+                        My Console
+                      </Link>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
@@ -200,9 +252,8 @@ const Navigation: React.FC = () => {
                     title="View Cart"
                   >
                     <ShoppingCart className="w-5 h-5 text-white" />
-                    {/* You can add a badge here for cart count later */}
                   </Link>
-                  
+
                   <div className="hidden sm:flex flex-col items-end mr-1">
                     <span className="text-[8px] text-white font-black uppercase tracking-widest leading-none mb-0.5">{user.displayName || 'MEMBER'}</span>
                     <span className="text-[7px] text-white/60 font-medium truncate max-w-[100px]">{user.email}</span>
@@ -216,13 +267,21 @@ const Navigation: React.FC = () => {
                   </motion.button>
                 </div>
               ) : (
-                <motion.button
-                  onClick={() => navigate('/login')}
-                  whileHover={{ scale: 0.96, backgroundColor: '#f9fafb' }}
-                  className="bg-white text-[#7C3AED] px-4 py-2 sm:px-10 sm:py-2.5 rounded-lg sm:rounded-xl font-bold text-[8px] sm:text-[9px] uppercase tracking-[0.15em] sm:tracking-[0.25em] shadow-xl whitespace-nowrap"
-                >
-                  Get Started
-                </motion.button>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <button
+                    onClick={() => navigate('/login')}
+                    className="hidden sm:block text-white/80 text-[10px] font-bold uppercase tracking-[0.25em] hover:text-white px-4"
+                  >
+                    Login
+                  </button>
+                  <motion.button
+                    onClick={() => navigate('/login')}
+                    whileHover={{ scale: 0.96, backgroundColor: '#f9fafb' }}
+                    className="bg-white text-[#7C3AED] px-4 py-2 sm:px-10 sm:py-2.5 rounded-lg sm:rounded-xl font-bold text-[8px] sm:text-[9px] uppercase tracking-[0.15em] sm:tracking-[0.25em] shadow-xl whitespace-nowrap"
+                  >
+                    Get Started
+                  </motion.button>
+                </div>
               )}
             </div>
 
@@ -241,6 +300,7 @@ const Navigation: React.FC = () => {
                   onMouseEnter={() => handleMouseEnter(activeMenu)}
                 >
                   <div className="w-full">
+                    {activeMenu === 'features' && <FeaturesDropdown />}
                     {activeMenu === 'learn' && <LearnDropdown />}
                     {activeMenu === 'jobprep' && <JobPrepDropdown />}
                     {activeMenu === 'jobs' && <JobsDropdown />}
@@ -263,14 +323,17 @@ const Navigation: React.FC = () => {
                   <div className="space-y-4">
                     <p className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em] ml-2">Main Navigation</p>
                     <div className="grid gap-2">
-                      {[
+                      {(isDashboard ? [
+                        { to: '/dashboard/learner', label: 'My Console' },
+                        { to: '/learn/courses', label: 'Courses' },
+                        { to: '/job-prep/portfolio', label: 'Job Prep' },
+                        { to: '/employers/get-hired', label: 'Marketplace' },
+                        { to: '/about', label: 'About' }
+                      ] : [
                         { to: '/', label: 'Home' },
-                        { to: '/learn/courses', label: 'Explore Courses' },
-                        { to: '/learn/assessment', label: 'Skill Assessment' },
-                        { to: '/job-prep/portfolio', label: 'Build Portfolio' },
-                        { to: '/employers/hire', label: 'For Employers' },
-                        { to: '/about', label: 'About Studlyf' }
-                      ].map((link) => (
+                        { to: '/about', label: 'About Studlyf' },
+                        { to: '/learn/courses', label: 'Explore Features' }
+                      ]).map((link) => (
                         <Link
                           key={link.to}
                           to={link.to}
@@ -306,8 +369,8 @@ const Navigation: React.FC = () => {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </nav>
+        </div >
+      </nav >
     </>
   );
 };

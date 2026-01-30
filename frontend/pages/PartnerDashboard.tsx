@@ -7,7 +7,6 @@ import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
 
-
 const PartnerDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -169,7 +168,7 @@ const PartnerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex font-sans text-[#111827] selection:bg-[#7C3AED] selection:text-white">
+    <div className="min-h-screen bg-[#FFFFFF] flex font-sans text-[#111827] selection:bg-[#7C3AED] selection:text-white pt-20 sm:pt-28 lg:pt-32">
       {/* Sidebar - Desktop Only */}
       <aside className="w-72 bg-[#FFFFFF] border-r border-gray-100 flex flex-col p-8 shrink-0 hidden lg:flex">
         <Link to="/" className="flex items-center gap-3 mb-16 px-2 group">

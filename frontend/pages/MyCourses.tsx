@@ -73,7 +73,7 @@ const MyCourses: React.FC = () => {
   }
 
   return (
-    <div className="pt-40 pb-32 px-6 bg-white min-h-screen relative overflow-hidden">
+    <div className="pt-28 sm:pt-40 pb-32 px-6 bg-white min-h-screen relative overflow-hidden">
       <div className="absolute inset-0 bg-grid-tech opacity-[0.03] pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-[#7C3AED]/5 to-transparent pointer-events-none" />
 
