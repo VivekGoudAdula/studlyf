@@ -95,3 +95,32 @@ class Enrollment(BaseModel):
     progress: float = 0.0  # 0-100
     last_accessed: Optional[datetime] = None
     last_accessed_module: Optional[str] = None
+
+# Mock Interview Models
+
+class InterviewerPersona(BaseModel):
+    name: str
+    role: str
+    company_style: str
+    tone: str # formal, neutral, friendly, intense
+    depth: str # structured, conversational, deep-dive
+    follow_up_style: str # aggressive, probing, gentle
+
+class InterviewRound(BaseModel):
+    round_type: str # technical, behavioral, hr_voice
+    persona: InterviewerPersona
+    status: str = "pending" # pending, active, completed
+    score: Optional[float] = None
+    feedback: Optional[str] = None
+    assessment_metrics: Optional[dict] = None
+
+class InterviewSession(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    company: str
+    role: str
+    experience_level: str # Fresher, Mid, Senior
+    rounds: List[InterviewRound] = []
+    current_round_index: int = 0
+    status: str = "setup" # setup, in_progress, completed
+    created_at: datetime = Field(default_factory=datetime.utcnow)

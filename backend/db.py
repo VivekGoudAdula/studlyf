@@ -20,3 +20,6 @@ certificates_col = db["certificates"]
 # Marketplace Collections
 cart_col = db["cart"]
 enrollments_col = db["enrollments"]
+
+# Interview Collections
+interviews_col = db["interviews"]

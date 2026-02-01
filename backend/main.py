@@ -1,6 +1,9 @@
+import os
 import subprocess
 from dotenv import load_dotenv
+# Load from local or root .env
 load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -16,7 +19,7 @@ from google import genai
 import requests
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime, timezone
-from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col
+from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col, interviews_col
 
 # Request body model for add to cart
 class AddToCartRequest(BaseModel):
@@ -29,6 +32,17 @@ class AssessmentRequest(BaseModel):
     role: str
     company: str
     experience: str
+
+class InterviewSetupRequest(BaseModel):
+    user_id: str
+    company: str
+    role: str
+    experience_level: str
+
+class InterviewInteractionRequest(BaseModel):
+    session_id: str
+    user_response: str
+    round_index: int
 
 def fix_id(doc):
     if doc and "_id" in doc:
@@ -1462,6 +1476,266 @@ async def get_course_full_details(course_id: str, user_id: Optional[str] = None)
             course["user_state"] = "NOT_PURCHASED"
     
     return course
+
+# --- MOCK INTERVIEW SYSTEM ---
+
+async def generate_interviewer_persona(company: str, round_type: str, experience_level: str):
+    prompt = f"""
+    Create a highly realistic interviewer persona for a {round_type} interview at {company} for a {experience_level} position.
+    
+    The persona should reflect the company's culture:
+    - Big Tech (Google, Meta, etc.) -> structured, clinical, analytical, high technical bar.
+    - Startups -> conversational, fast-paced, deep dives into specific problems, practical.
+    - Service-based (TCS, Infosys, etc.) -> fundamentals-focused, clear communication, polite but structured.
+    
+    Output JSON ONLY:
+    {{
+        "name": "Full Name",
+        "role": "Current Role at Company",
+        "company_style": "brief description of company interview culture",
+        "tone": "formal" | "neutral" | "friendly" | "intense",
+        "depth": "structured" | "conversational" | "deep-dive",
+        "follow_up_style": "aggressive" | "probing" | "gentle"
+    }}
+    """
+    try:
+        response = client.models.generate_content(
+            model="gemini-flash-latest",
+            contents=prompt
+        )
+        persona_data = json.loads(clean_json_string(response.text))
+        return persona_data
+    except Exception as e:
+        print(f"Error generating persona: {e}")
+        return {
+            "name": "Alex Chen",
+            "role": "Senior Engineer",
+            "company_style": "Standard tech interview",
+            "tone": "neutral",
+            "depth": "structured",
+            "follow_up_style": "probing"
+        }
+
+@app.post("/api/interview/setup")
+async def setup_interview(req: InterviewSetupRequest):
+    # 1. Generate Personas for 3 rounds
+    tech_persona = await generate_interviewer_persona(req.company, "Technical", req.experience_level)
+    behavioral_persona = await generate_interviewer_persona(req.company, "Behavioral", req.experience_level)
+    hr_persona = await generate_interviewer_persona(req.company, "HR Voice Call", req.experience_level)
+    
+    # 2. Create Rounds
+    rounds = [
+        {"round_type": "technical", "persona": tech_persona, "status": "pending"},
+        {"round_type": "behavioral", "persona": behavioral_persona, "status": "pending"},
+        {"round_type": "hr_voice", "persona": hr_persona, "status": "pending"}
+    ]
+    
+    # 3. Create Session with explicit string ID
+    session_id = str(uuid.uuid4())
+    session = {
+        "_id": session_id,
+        "user_id": req.user_id,
+        "company": req.company,
+        "role": req.role,
+        "experience_level": req.experience_level,
+        "rounds": rounds,
+        "current_round_index": 0,
+        "status": "in_progress",
+        "created_at": datetime.now(timezone.utc),
+        "chat_history": [],
+        "voice_logs": [] 
+    }
+    
+    await interviews_col.insert_one(session)
+    return fix_id(session)
+
+@app.post("/api/interview/chat")
+async def interview_chat(req: InterviewInteractionRequest):
+    session = await interviews_col.find_one({"_id": req.session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    current_round = session["rounds"][req.round_index]
+    persona = current_round["persona"]
+    round_type = current_round["round_type"]
+    history = session.get("chat_history", [])
+    
+    # Update status to active if pending
+    if current_round["status"] == "pending":
+        await interviews_col.update_one(
+            {"_id": req.session_id},
+            {"$set": {f"rounds.{req.round_index}.status": "active"}}
+        )
+
+    # Build prompt for next interviewer response
+    prompt = f"""
+    You are {persona['name']}, a {persona['role']} at {session['company']}. 
+    You are conducting a {round_type} interview for a {session['experience_level']} {session['role']} position.
+    
+    Your Interviewing Style:
+    - Tone: {persona['tone']}
+    - Depth: {persona['depth']}
+    - Follow-up style: {persona['follow_up_style']}
+    - Company Style: {persona['company_style']}
+    
+    Current Round: {round_type}
+    
+    Interview Rules:
+    1. Stay in character. If the user gives a weak answer, probe deeper.
+    2. For Technical: Focus on {session['role']} core concepts, scenarios, and trade-offs.
+    3. For Behavioral: Focus on STAR method, company alignment, and soft skills.
+    4. If it's the start of the round (history is empty for this round), introduce yourself and ask the first question.
+    5. Be concise but maintain the persona's tone.
+    6. If the candidate is doing exceptionally well, increase the difficulty.
+    7. After ~5-6 questions, wrap up the round and say "This concludes our {round_type} round."
+
+    Full Conversation History:
+    {history[-10:] if history else "No history yet. Start the interview."}
+    
+    Latest Candidate Response:
+    "{req.user_response}"
+    
+    Response format (JSON ONLY):
+    {{
+        "interviewer_text": "Your response here",
+        "difficulty_adjustment": "higher" | "lower" | "stable",
+        "is_round_complete": false,
+        "assessment_hint": "Brief internal note on candidate's performance so far"
+    }}
+    """
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
+        data = json.loads(clean_json_string(response.text))
+        
+        # Update history
+        new_history = list(history)
+        if req.user_response:
+            new_history.append({"role": "candidate", "content": req.user_response})
+        new_history.append({"role": "interviewer", "content": data["interviewer_text"]})
+        
+        update_data = {"chat_history": new_history}
+        if data.get("is_round_complete"):
+            update_data[f"rounds.{req.round_index}.status"] = "completed"
+            
+        await interviews_col.update_one(
+            {"_id": req.session_id},
+            {"$set": update_data}
+        )
+        
+        return data
+    except Exception as e:
+        print(f"Chat Error: {e}")
+        return {"interviewer_text": "I'm sorry, I'm having a technical issue. Could you repeat that?", "is_round_complete": False}
+
+@app.post("/api/interview/voice-analysis")
+async def voice_analysis(req: InterviewInteractionRequest):
+    session = await interviews_col.find_one({"_id": req.session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    prompt = f"""
+    Analyze this HR voice call response from a candidate for a {session['role']} at {session['company']}.
+    User Response: "{req.user_response}"
+    
+    Evaluate based on:
+    - Confidence signals
+    - Clarity of speech
+    - Cultural fit
+    - Professionalism
+    
+    Return JSON ONLY:
+    {{
+        "interviewer_response": "Natural HR response with conversational pauses",
+        "metrics": {{
+            "confidence": 8,
+            "clarity": 9,
+            "professionalism": 7,
+            "hesitation_pattern": "none"
+        }},
+        "is_call_over": false
+    }}
+    """
+    try:
+        response = client.models.generate_content(
+            model="gemini-flash-latest",
+            contents=prompt
+        )
+        data = json.loads(clean_json_string(response.text))
+        
+        await interviews_col.update_one(
+            {"_id": req.session_id},
+            {"$push": {"voice_logs": {"text": req.user_response, "metrics": data["metrics"]}}}
+        )
+        
+        return data
+    except Exception as e:
+        print(f"Voice Analysis Error: {e}")
+        return {"interviewer_response": "Interesting point, please go on.", "metrics": {}, "is_call_over": False}
+
+@app.get("/api/interview/{session_id}/report")
+async def get_interview_report(session_id: str):
+    session = await interviews_col.find_one({"_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    prompt = f"""
+    Generate a comprehensive interview performance report for:
+    Candidate for {session['role']} @ {session['company']}
+    Experience Level: {session['experience_level']}
+    
+    Chat History: {session.get('chat_history', [])}
+    Voice Logs: {session.get('voice_logs', [])}
+    
+    Output JSON ONLY:
+    {{
+        "technical_readiness": "Score (e.g., Senior Level, Needs Improvement)",
+        "behavioral_fit": "High/Med/Low",
+        "communication_confidence": 0-100,
+        "company_readiness": "High/Med/Low",
+        "feedback": {{
+            "strengths": ["list"],
+            "weaknesses": ["list"],
+            "red_flags": ["list"],
+            "improvement_advice": "Detailed advice"
+        }},
+        "roadmap": [
+            {{ "topic": "Name", "action": "Specific drill or resource", "priority": "High/Med/Low" }}
+        ]
+    }}
+    """
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-flash", 
+            contents=prompt
+        )
+        report = json.loads(clean_json_string(response.text))
+        
+        await interviews_col.update_one(
+            {"_id": session_id},
+            {"$set": {"report": report, "status": "completed"}}
+        )
+        
+        return report
+    except Exception as e:
+        print(f"Report Generation Error: {e}")
+        # Return a fallback if generation fails
+        return {
+            "technical_readiness": "L2/Intermediate",
+            "behavioral_fit": "Medium",
+            "communication_confidence": 75,
+            "company_readiness": "Medium",
+            "feedback": {
+                "strengths": ["Good understanding of basics"],
+                "weaknesses": ["Could improve on system design"],
+                "red_flags": ["None"],
+                "improvement_advice": "Practice more scenario-based questions."
+            },
+            "roadmap": []
+        }
 
 if __name__ == "__main__":
     import uvicorn
