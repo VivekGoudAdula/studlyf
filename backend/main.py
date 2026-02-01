@@ -22,6 +22,14 @@ from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_c
 class AddToCartRequest(BaseModel):
     course_id: str
 
+class GithubAnalysisRequest(BaseModel):
+    token: str
+
+class AssessmentRequest(BaseModel):
+    role: str
+    company: str
+    experience: str
+
 def fix_id(doc):
     if doc and "_id" in doc:
         doc["_id"] = str(doc["_id"])
@@ -80,6 +88,62 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.post("/api/assessment/generate")
+async def generate_assessment(req: AssessmentRequest):
+    print(f"AI Assessment Triggered: {req.role} @ {req.company}")
+    prompt = f"""
+    Act as a Tier-1 Tech Recruiter and Technical Interviewer.
+    Generate a highly realistic, clinical-grade technical assessment protocol for:
+    Role: {req.role}
+    Target Company: {req.company}
+    Experience Level: {req.experience}
+
+    Target Company Context: Analyze the real-world interview style of {req.company} (e.g., Google favors DSA/Scalability, Amazon favors Leadership Principles/System Design).
+
+    Output a JSON object with this EXACT structure:
+    {{
+      "company_profile": {{
+        "style": "problem-solving" | "scenario-based" | "system-design" | "culture-fit",
+        "weights": {{ "DSA": 40, "System Design": 30, "Communication": 10, "Other": 20 }},
+        "difficultyBias": 1.2,
+        "tone": "clinical and fast-paced"
+      }},
+      "questions": [
+        {{
+          "id": "unique_string",
+          "type": "mcq" | "scenario" | "debug" | "design" | "task",
+          "skill": "Main Skill Category",
+          "subSkill": "Specific Topic",
+          "difficulty": "easy" | "medium" | "hard",
+          "text": "The actual question or problem statement",
+          "options": ["A", "B", "C", "D"], // Required for mcq, scenario, debug, design
+          "correctAnswer": 0, // Index 0-3
+          "timeLimit": 60,
+          "hint": "Subtle hint",
+          "code": "Code snippet if applicable",
+          "explanation": "Why it is correct"
+        }}
+      ]
+    }}
+
+    Rules:
+    1. Generate exactly 10 questions.
+    2. At least 2 questions must be 'task' type (Real-World Mini Tasks like 'Optimize this SQL', 'Refactor this API endpoint').
+    3. Questions must be clinical and reflect the actual technical bar of {req.company} for a {req.experience} {req.role} role.
+    4. For 'task' type, leave options as an empty list [].
+    5. Return ONLY valid JSON.
+    """
+    try:
+        response = client.models.generate_content(
+            model="gemini-flash-latest",
+            contents=prompt
+        )
+        data = json.loads(clean_json_string(response.text))
+        return data
+    except Exception as e:
+        print(f"Error generating assessment: {e}")
+        raise HTTPException(status_code=500, detail="AI generation failed. Using local fallback.")
+
 @app.get("/health")
 async def health_check():
     return {
@@ -93,10 +157,7 @@ async def health_check():
 GENAI_API_KEY = os.getenv("GENAI_API_KEY", "YOUR-API-KEY")
 # Configure the Client for google.genai
 client = genai.Client(api_key=GENAI_API_KEY)
-# Note: If you want to use a different model, update the model name accordingly.
 
-class GithubAnalysisRequest(BaseModel):
-    token: str
 
 def get_github_data(token: str, endpoint: str, session=None):
     # Try both 'Bearer' and 'token' formats as GitHub can be picky depending on token type
@@ -337,7 +398,7 @@ async def generate_ai_quiz(module_id: str, theory_content: str):
     """
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-flash-latest",
             contents=prompt
         )
         quiz_data = json.loads(clean_json_string(response.text))
@@ -347,6 +408,7 @@ async def generate_ai_quiz(module_id: str, theory_content: str):
     except Exception as e:
         print(f"Error generating AI Quiz: {e}")
         return None
+
 
 @app.get("/api/modules/{module_id}")
 async def get_module_details(module_id: str):

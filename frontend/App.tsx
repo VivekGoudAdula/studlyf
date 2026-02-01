@@ -5,7 +5,7 @@ import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import { AuthProvider } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
-
+import PublicRoute from './PublicRoute';
 
 
 // Pages
@@ -55,7 +55,7 @@ const App: React.FC = () => {
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
             <Route path="/learn/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
             <Route path="/learn/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
             <Route path="/learn/course-player/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
@@ -78,7 +78,7 @@ const App: React.FC = () => {
 
             <Route path="/about" element={<About />} />
             <Route path="/blog" element={<Blog />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
 
             {/* Dashboards */}
             <Route path="/dashboard/learner" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
@@ -104,4 +104,3 @@ const AppWrapper = () => (
 );
 
 export default AppWrapper;
-

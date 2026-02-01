@@ -18,6 +18,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setLoading(false);
+            if (!user) {
+                localStorage.removeItem('userRole');
+            }
         });
 
         return unsubscribe;

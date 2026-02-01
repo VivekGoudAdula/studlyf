@@ -1,14 +1,15 @@
-
-import google.genai as genai
+from google import genai
 import os
+from dotenv import load_dotenv
 
-key = "AIzaSyCgA0T3O4abVr8dsII3S7zjciFdXbnsAqc"
-genai.configure(api_key=key)
+load_dotenv()
 
-print("Listing available models...")
+api_key = os.getenv("GENAI_API_KEY")
+client = genai.Client(api_key=api_key)
+
+print("Listing available models using new SDK...")
 try:
-    for m in genai.list_models():
-        if 'generateContent' in m.supported_generation_methods:
-            print(f"- {m.name}")
+    for model in client.models.list():
+        print(f"- {model.name}")
 except Exception as e:
-    print(f"Error listing models: {e}")
+    print(f"Error: {e}")

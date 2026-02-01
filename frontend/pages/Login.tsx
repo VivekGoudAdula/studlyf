@@ -50,6 +50,7 @@ const Login: React.FC = () => {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
+      localStorage.setItem('userRole', role);
       navigate(roleConfigs[role].target);
     } catch (err: any) {
       setError(err.message);
@@ -75,6 +76,7 @@ const Login: React.FC = () => {
         }
       }
 
+      localStorage.setItem('userRole', role);
       navigate(roleConfigs[role].target);
     } catch (err: any) {
       setError(err.message);
