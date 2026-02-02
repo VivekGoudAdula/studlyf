@@ -1,9 +1,12 @@
 import os
 import subprocess
 from dotenv import load_dotenv
-# Load from local or root .env
-load_dotenv()
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+# Load from root .env specifically
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+print(f"Loading .env from: {root_env}")
+load_dotenv(root_env, override=True) # Use override=True to ensure it takes precedence over existing env vars
+
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -169,6 +172,7 @@ async def health_check():
 
 # Get Gemini API key from environment
 GENAI_API_KEY = os.getenv("GENAI_API_KEY", "YOUR-API-KEY")
+print(f"Using API Key: {GENAI_API_KEY[:5]}...{GENAI_API_KEY[-4:]}")
 # Configure the Client for google.genai
 client = genai.Client(api_key=GENAI_API_KEY)
 
@@ -1567,6 +1571,10 @@ async def interview_chat(req: InterviewInteractionRequest):
             {"$set": {f"rounds.{req.round_index}.status": "active"}}
         )
 
+    # Calculate how many questions have been asked in this SPECIFIC round
+    round_messages = [m for m in history if m.get("round_index") == req.round_index]
+    question_count = len([m for m in round_messages if m["role"] == "interviewer"])
+    
     # Build prompt for next interviewer response
     prompt = f"""
     You are {persona['name']}, a {persona['role']} at {session['company']}. 
@@ -1579,6 +1587,7 @@ async def interview_chat(req: InterviewInteractionRequest):
     - Company Style: {persona['company_style']}
     
     Current Round: {round_type}
+    Questions Asked So Far in this round: {question_count}
     
     Interview Rules:
     1. Stay in character. If the user gives a weak answer, probe deeper.
@@ -1587,10 +1596,11 @@ async def interview_chat(req: InterviewInteractionRequest):
     4. If it's the start of the round (history is empty for this round), introduce yourself and ask the first question.
     5. Be concise but maintain the persona's tone.
     6. If the candidate is doing exceptionally well, increase the difficulty.
-    7. After ~5-6 questions, wrap up the round and say "This concludes our {round_type} round."
+    7. STRICT RULE: After 3 questions (Current Count: {question_count}), you MUST wrap up. 
+    8. If question_count >= 3, set "is_round_complete": true and say "This concludes our {round_type} round."
 
-    Full Conversation History:
-    {history[-10:] if history else "No history yet. Start the interview."}
+    Conversation History (Recent):
+    {history[-6:] if history else "No history yet. Start the interview."}
     
     Latest Candidate Response:
     "{req.user_response}"
@@ -1599,14 +1609,14 @@ async def interview_chat(req: InterviewInteractionRequest):
     {{
         "interviewer_text": "Your response here",
         "difficulty_adjustment": "higher" | "lower" | "stable",
-        "is_round_complete": false,
+        "is_round_complete": true/false,
         "assessment_hint": "Brief internal note on candidate's performance so far"
     }}
     """
     
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-flash-latest",
             contents=prompt
         )
         data = json.loads(clean_json_string(response.text))
@@ -1614,11 +1624,15 @@ async def interview_chat(req: InterviewInteractionRequest):
         # Update history
         new_history = list(history)
         if req.user_response:
-            new_history.append({"role": "candidate", "content": req.user_response})
-        new_history.append({"role": "interviewer", "content": data["interviewer_text"]})
+            new_history.append({"role": "candidate", "content": req.user_response, "round_index": req.round_index})
+        new_history.append({"role": "interviewer", "content": data["interviewer_text"], "round_index": req.round_index})
+        
+        # Hard Force Completion if AI misses it
+        is_complete = data.get("is_round_complete") or (question_count >= 3)
         
         update_data = {"chat_history": new_history}
-        if data.get("is_round_complete"):
+        if is_complete:
+            data["is_round_complete"] = True
             update_data[f"rounds.{req.round_index}.status"] = "completed"
             
         await interviews_col.update_one(
@@ -1709,7 +1723,7 @@ async def get_interview_report(session_id: str):
     """
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash", 
+            model="gemini-flash-latest", 
             contents=prompt
         )
         report = json.loads(clean_json_string(response.text))
