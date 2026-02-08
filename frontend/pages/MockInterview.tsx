@@ -525,7 +525,7 @@ const MockInterview: React.FC = () => {
         setIsCallActive(false); // End call if round is complete or call is over
       }
 
-      if (session?.rounds[activeRoundIndex!].round_type === 'hr_voice' && interviewerText) {
+      if (session?.rounds[activeRoundIndex!].round_type === 'hr_voice' && interviewerText && isCallActive) {
         speak(interviewerText, true); // Auto-listen after speaking if it's an HR voice round
       }
     } catch (error) {

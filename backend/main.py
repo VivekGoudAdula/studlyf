@@ -18,7 +18,7 @@ import os
 import json
 import re
 import uuid
-from google import genai
+from groq import Groq
 import requests
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime, timezone
@@ -151,11 +151,11 @@ async def generate_assessment(req: AssessmentRequest):
     5. Return ONLY valid JSON.
     """
     try:
-        response = client.models.generate_content(
-            model="gemini-flash-latest",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}]
         )
-        data = json.loads(clean_json_string(response.text))
+        data = json.loads(clean_json_string(response.choices[0].message.content))
         return data
     except Exception as e:
         print(f"Error generating assessment: {e}")
@@ -170,11 +170,11 @@ async def health_check():
         "allowed_origins": origins
     }
 
-# Get Gemini API key from environment
-GENAI_API_KEY = os.getenv("GENAI_API_KEY", "YOUR-API-KEY")
-print(f"Using API Key: {GENAI_API_KEY[:5]}...{GENAI_API_KEY[-4:]}")
-# Configure the Client for google.genai
-client = genai.Client(api_key=GENAI_API_KEY)
+# Get Groq API key from environment
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "YOUR-GROQ-API-KEY")
+print(f"Using API Key: {GROQ_API_KEY[:5]}...{GROQ_API_KEY[-4:]}")
+# Configure the Client for Groq
+client = Groq(api_key=GROQ_API_KEY)
 
 
 def get_github_data(token: str, endpoint: str, session=None):
@@ -415,11 +415,12 @@ async def generate_ai_quiz(module_id: str, theory_content: str):
     - Return ONLY the JSON.
     """
     try:
-        response = client.models.generate_content(
-            model="gemini-flash-latest",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        quiz_data = json.loads(clean_json_string(response.text))
+        quiz_data = json.loads(response.choices[0].message.content)
         quiz_data["module_id"] = module_id
         await quizzes_col.insert_one(quiz_data)
         return fix_id(quiz_data)
@@ -579,7 +580,7 @@ def clean_json_string(json_str):
         json_str = json_str.split("```")[1].split("```")[0]
     return json_str.strip()
 
-def parse_with_gemini(text):
+def parse_with_groq(text):
     prompt = f"""
     You are an expert Resume Parser. Your job is to extract structured data from the provided resume text.
     
@@ -608,12 +609,17 @@ def parse_with_gemini(text):
     {text}
     """
     
-    response = client.models.generate_content(
-        model="gemini-1.5-flash",
-        contents=prompt
-    )
-    json_str = clean_json_string(response.text)
-    return json.loads(json_str)
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
+        )
+        json_str = clean_json_string(response.choices[0].message.content)
+        return json.loads(json_str)
+    except Exception as e:
+        print(f"AI Parse Error: {e}")
+        return parse_resume_text(text)
 
 @app.post("/generate-portfolio/")
 async def generate_portfolio(
@@ -644,23 +650,22 @@ async def generate_portfolio(
         
         os.remove(tmp_path)
     
-    # 2. Prepare Data for Gemini (Legacy unused prompt building removed for brevity/clarity if we are skipping AI)
-    # The prompt building block at lines 86-121 was unused since we switched to deterministic parsing at line 122.
+    # 2. Prepare Data for Groq
     
     # 3. Parse Data
     data = {}
     
     if extracted_text:
-        # Try Gemini AI First (User Request for 2.5 Flash behavior)
+        # Try Groq AI First
         try:
-            print("Attempting Gemini Parsing...")
-            data = parse_with_gemini(extracted_text)
+            print("Attempting Groq Parsing...")
+            data = parse_with_groq(extracted_text)
             # Validate essential fields
             if not data.get("name") and not data.get("email"):
-                 raise Exception("Gemini returned empty data")
-            print("Gemini Parsing Success")
+                 raise Exception("AI returned empty data")
+            print("Groq Parsing Success")
         except Exception as e:
-            print(f"Gemini Error (Fallback to Regex): {e}")
+            print(f"AI Parse Error (Fallback to Regex): {e}")
             # Fallback to deterministic parser
             data = parse_resume_text(extracted_text)
 
@@ -1022,7 +1027,6 @@ async def generate_summary(data: ResumeData):
     Generate a professional summary using AI based on the provided resume data.
     """
     try:
-        # Construct a detailed prompt for Gemini
         prompt = f"""
         You are a world-class Resume Writer. Write a 2-3 sentence professional summary for a candidate with the following details:
         Name: {data.name}
@@ -1038,13 +1042,17 @@ async def generate_summary(data: ResumeData):
         Do not use placeholders. Write only the summary text.
         """
         
-        response = model.generate_content(prompt)
-        summary = response.text.strip()
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        summary = response.choices[0].message.content.strip()
         
         return {"summary": summary}
     except Exception as e:
         print(f"Summary Gen Error: {e}")
         return {"summary": "Experienced professional dedicated to delivering high-quality solutions."}
+
 
 @app.post("/generate-resume/")
 async def generate_resume(data: ResumeData):
@@ -1073,10 +1081,14 @@ async def generate_resume(data: ResumeData):
                 The summary should be impactful, focus on key strengths, and use professional language. 
                 Do not use placeholders. Write only the summary text.
                 """
-                response = model.generate_content(prompt)
-                current_data["summary"] = response.text.strip()
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                current_data["summary"] = response.choices[0].message.content.strip()
             except Exception as e:
                 print(f"Auto Gen Summary Error: {e}")
+
 
         # 1. Map template_id to filename
         template_map = {
@@ -1503,11 +1515,12 @@ async def generate_interviewer_persona(company: str, round_type: str, experience
     }}
     """
     try:
-        response = client.models.generate_content(
-            model="gemini-flash-latest",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        persona_data = json.loads(clean_json_string(response.text))
+        persona_data = json.loads(response.choices[0].message.content)
         return persona_data
     except Exception as e:
         print(f"Error generating persona: {e}")
@@ -1519,6 +1532,7 @@ async def generate_interviewer_persona(company: str, round_type: str, experience
             "depth": "structured",
             "follow_up_style": "probing"
         }
+
 
 @app.post("/api/interview/setup")
 async def setup_interview(req: InterviewSetupRequest):
@@ -1575,65 +1589,66 @@ async def interview_chat(req: InterviewInteractionRequest):
     round_messages = [m for m in history if m.get("round_index") == req.round_index]
     question_count = len([m for m in round_messages if m["role"] == "interviewer"])
     
-    # Build prompt for next interviewer response
-    prompt = f"""
-    You are {persona['name']}, a {persona['role']} at {session['company']}. 
-    You are conducting a {round_type} interview for a {session['experience_level']} {session['role']} position.
+    # Determine Round Limits
+    round_limit = 3
     
-    Your Interviewing Style:
-    - Tone: {persona['tone']}
-    - Depth: {persona['depth']}
-    - Follow-up style: {persona['follow_up_style']}
-    - Company Style: {persona['company_style']}
-    
-    Current Round: {round_type}
-    Questions Asked So Far in this round: {question_count}
-    
-    Interview Rules:
-    1. Stay in character. If the user gives a weak answer, probe deeper.
-    2. For Technical: Focus on {session['role']} core concepts, scenarios, and trade-offs.
-    3. For Behavioral: Focus on STAR method, company alignment, and soft skills.
-    4. If it's the start of the round (history is empty for this round), introduce yourself and ask the first question.
-    5. Be concise but maintain the persona's tone.
-    6. If the candidate is doing exceptionally well, increase the difficulty.
-    7. STRICT RULE: After 3 questions (Current Count: {question_count}), you MUST wrap up. 
-    8. If question_count >= 3, set "is_round_complete": true and say "This concludes our {round_type} round."
+    # Select System Prompt based on round
+    if round_type == "technical":
+        system_prompt = f"You are a technical interviewer persona: {persona['name']}, {persona['role']} at {session['company']}. Ask role-specific technical questions for a {session['experience_level']} {session['role']} position. Ask one question at a time. Increase difficulty gradually. Do not provide feedback during the round. Stay in character: {persona['company_style']}."
+    else:
+        system_prompt = f"You are a behavioural interviewer persona: {persona['name']}, {persona['role']} at {session['company']}. Ask situational and experience-based questions for a {session['experience_level']} {session['role']} position. Focus on teamwork, conflict, ownership, and decision-making. Ask follow-up questions when answers are shallow. Do not provide feedback during the round. Stay in character: {persona['company_style']}."
 
-    Conversation History (Recent):
-    {history[-6:] if history else "No history yet. Start the interview."}
+    system_prompt += "\n\nReturn JSON ONLY:\n{{\n  \"interviewer_text\": \"Your response\",\n  \"is_round_complete\": true/false\n}}"
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for m in history[-8:]:
+        if m.get("round_index") == req.round_index:
+             messages.append({"role": "user" if m["role"] == "candidate" else "assistant", "content": m["content"]})
     
-    Latest Candidate Response:
-    "{req.user_response}"
+    if req.user_response:
+        messages.append({"role": "user", "content": req.user_response})
     
-    Response format (JSON ONLY):
-    {{
-        "interviewer_text": "Your response here",
-        "difficulty_adjustment": "higher" | "lower" | "stable",
-        "is_round_complete": true/false,
-        "assessment_hint": "Brief internal note on candidate's performance so far"
-    }}
-    """
-    
+    prompt_instruction = f"\n\nInterview Status: Round {req.round_index + 1} ({round_type}), Question {question_count + 1} of {round_limit}. "
+    if question_count >= round_limit:
+        prompt_instruction += f"\nSTRICT RULE: You MUST wrap up and end this round. Set is_round_complete to true."
+    else:
+        prompt_instruction += "\nAsk the next question. Set is_round_complete to false."
+
+    messages[-1]["content"] += prompt_instruction
+
     try:
-        response = client.models.generate_content(
-            model="gemini-flash-latest",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            response_format={"type": "json_object"}
         )
-        data = json.loads(clean_json_string(response.text))
         
+        # Groq might return raw text if model doesn't support json_object well, but 70b does.
+        # However, we need to wrap the response in the expected format if the AI doesn't.
+        raw_response = response.choices[0].message.content
+        try:
+            data = json.loads(raw_response)
+        except:
+            # Fallback if it's not JSON
+            data = {
+                "interviewer_text": raw_response,
+                "is_round_complete": question_count >= round_limit
+            }
+
         # Update history
         new_history = list(history)
         if req.user_response:
             new_history.append({"role": "candidate", "content": req.user_response, "round_index": req.round_index})
-        new_history.append({"role": "interviewer", "content": data["interviewer_text"], "round_index": req.round_index})
         
-        # Hard Force Completion if AI misses it
-        is_complete = data.get("is_round_complete") or (question_count >= 3)
+        interviewer_text = data.get("interviewer_text", raw_response if isinstance(data, str) else "I see. Let's move on.")
+        new_history.append({"role": "interviewer", "content": interviewer_text, "round_index": req.round_index})
+        
+        is_complete = data.get("is_round_complete") or (question_count >= round_limit)
         
         update_data = {"chat_history": new_history}
         if is_complete:
-            data["is_round_complete"] = True
             update_data[f"rounds.{req.round_index}.status"] = "completed"
+            data["is_round_complete"] = True
             
         await interviews_col.update_one(
             {"_id": req.session_id},
@@ -1643,7 +1658,8 @@ async def interview_chat(req: InterviewInteractionRequest):
         return data
     except Exception as e:
         print(f"Chat Error: {e}")
-        return {"interviewer_text": "I'm sorry, I'm having a technical issue. Could you repeat that?", "is_round_complete": False}
+        return {"interviewer_text": "I see. Could you elaborate on that?", "is_round_complete": False}
+
 
 @app.post("/api/interview/voice-analysis")
 async def voice_analysis(req: InterviewInteractionRequest):
@@ -1651,44 +1667,94 @@ async def voice_analysis(req: InterviewInteractionRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    prompt = f"""
-    Analyze this HR voice call response from a candidate for a {session['role']} at {session['company']}.
-    User Response: "{req.user_response}"
+    current_round = session["rounds"][req.round_index]
+    persona = current_round["persona"]
+    history = session.get("chat_history", [])
+    voice_logs = session.get("voice_logs", [])
     
-    Evaluate based on:
-    - Confidence signals
-    - Clarity of speech
-    - Cultural fit
-    - Professionalism
+    round_messages = [m for m in history if m.get("round_index") == req.round_index]
+    question_count = len([m for m in round_messages if m["role"] == "interviewer"])
+    round_limit = 3
+
+    system_prompt = f"""You are a professional HR interviewer conducting the final round of a job interview.
+    Company: {session['company']}
+    Role: {session['role']}
+    Experience: {session['experience_level']} years
     
-    Return JSON ONLY:
+    Context:
+    - Previous rounds (technical + behavioural) are already completed.
+    
+    Rules:
+    - Ask one question at a time.
+    - Wait for the candidate's answer.
+    - Ask follow-up questions if answers are vague.
+    - Keep a calm, professional tone.
+    - Do NOT give feedback during the interview.
+    - This round is voice-based, so be concise and conversational.
+
+    Output JSON ONLY:
     {{
-        "interviewer_response": "Natural HR response with conversational pauses",
-        "metrics": {{
-            "confidence": 8,
-            "clarity": 9,
-            "professionalism": 7,
-            "hesitation_pattern": "none"
-        }},
-        "is_call_over": false
+        "interviewer_response": "Your next question or closing statement",
+        "is_call_over": true/false
     }}
     """
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for m in history[-6:]:
+        if m.get("round_index") == req.round_index:
+             messages.append({"role": "user" if m["role"] == "candidate" else "assistant", "content": m["content"]})
+    
+    if req.user_response:
+        messages.append({"role": "user", "content": req.user_response})
+
+    prompt_instruction = f"\n\nInterview Progress: Question {question_count + 1} of {round_limit}. "
+    if question_count >= round_limit:
+        prompt_instruction += "\nSTRICT RULE: Thank the candidate and end the interview politely. Set is_call_over to true."
+    else:
+        prompt_instruction += "\nProvide the next HR question. Set is_call_over to false."
+
+    messages[-1]["content"] += prompt_instruction
+
     try:
-        response = client.models.generate_content(
-            model="gemini-flash-latest",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            response_format={"type": "json_object"}
         )
-        data = json.loads(clean_json_string(response.text))
+        raw_response = response.choices[0].message.content
+        data = json.loads(raw_response)
+        
+        interviewer_text = data.get("interviewer_response") or data.get("interviewer_text", "Thank you for sharing that.")
+        is_over = data.get("is_call_over") or (question_count >= round_limit)
+
+        # Update history (using chat_history for voice too for coherence)
+        new_history = list(history)
+        if req.user_response:
+            new_history.append({"role": "candidate", "content": req.user_response, "round_index": req.round_index})
+        new_history.append({"role": "interviewer", "content": interviewer_text, "round_index": req.round_index})
+
+        update_data = {
+            "chat_history": new_history,
+            "voice_logs": voice_logs + [{"text": req.user_response, "round_index": req.round_index}]
+        }
+        
+        if is_over:
+             update_data[f"rounds.{req.round_index}.status"] = "completed"
         
         await interviews_col.update_one(
             {"_id": req.session_id},
-            {"$push": {"voice_logs": {"text": req.user_response, "metrics": data["metrics"]}}}
+            {"$set": update_data}
         )
         
-        return data
+        return {
+            "interviewer_response": interviewer_text,
+            "is_call_over": is_over,
+            "is_round_complete": is_over
+        }
     except Exception as e:
         print(f"Voice Analysis Error: {e}")
-        return {"interviewer_response": "Interesting point, please go on.", "metrics": {}, "is_call_over": False}
+        return {"interviewer_response": "I see. Thank you for that. Let's wrap up.", "is_call_over": True, "is_round_complete": True}
+
 
 @app.get("/api/interview/{session_id}/report")
 async def get_interview_report(session_id: str):
@@ -1703,6 +1769,12 @@ async def get_interview_report(session_id: str):
     
     Chat History: {session.get('chat_history', [])}
     Voice Logs: {session.get('voice_logs', [])}
+    
+    Provide structured feedback on:
+    - Communication (Clarity, Tone)
+    - Confidence
+    - Technical Knowledge / Behavioural Alignment
+    - Overall HR readiness
     
     Output JSON ONLY:
     {{
@@ -1722,11 +1794,12 @@ async def get_interview_report(session_id: str):
     }}
     """
     try:
-        response = client.models.generate_content(
-            model="gemini-flash-latest", 
-            contents=prompt
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        report = json.loads(clean_json_string(response.text))
+        report = json.loads(response.choices[0].message.content)
         
         await interviews_col.update_one(
             {"_id": session_id},
@@ -1736,20 +1809,20 @@ async def get_interview_report(session_id: str):
         return report
     except Exception as e:
         print(f"Report Generation Error: {e}")
-        # Return a fallback if generation fails
         return {
-            "technical_readiness": "L2/Intermediate",
+            "technical_readiness": "Evaluation Pending",
             "behavioral_fit": "Medium",
-            "communication_confidence": 75,
+            "communication_confidence": 70,
             "company_readiness": "Medium",
             "feedback": {
-                "strengths": ["Good understanding of basics"],
-                "weaknesses": ["Could improve on system design"],
-                "red_flags": ["None"],
-                "improvement_advice": "Practice more scenario-based questions."
+                "strengths": ["Completed all rounds"],
+                "weaknesses": ["Data analysis incomplete"],
+                "red_flags": [],
+                "improvement_advice": "Consult interviewer feedback directly."
             },
             "roadmap": []
         }
+
 
 if __name__ == "__main__":
     import uvicorn
