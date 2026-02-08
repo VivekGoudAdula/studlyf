@@ -9,7 +9,7 @@ A comprehensive interview simulation powered by **Groq LLM (Llama 3.3 70B)** and
 - **Round 1: Technical Interview (Text)** - 3 deep-dive technical questions tailored to your role.
 - **Round 2: Behavioural Interview (Text)** - 3 situational questions focusing on leadership and STAR methods.
 - **Round 3: HR Voice Interview (Voice)** - A hands-free voice round where the AI speaks and listens, simulating a real HR call.
-- **Automated Feedback**: Generates a detailed "Clinical Report" with Technical Readiness, Communication scores, and a learning roadmap.
+- **Automated Feedback**: Generates a detailed "Clinical Report" with Technical Readiness, Communication scores, and a learning roadmap and even the key areas of improvements and strgenths.
 
 ### 2. 📝 AI Assessment Generation
 Generates clinical-grade technical MCQ and task-based assessments based on specific company cultures (e.g., Google's DSA focus vs. Amazon's Leadership focus).
