@@ -12,7 +12,6 @@ View your app in AI Studio: https://ai.studio/apps/drive/17Erjm7JoEdaRjnDjTK2csI
 
 **Prerequisites:**  Node.js
 
-
 1. Install dependencies:
    `npm install`
 2. Set the `GROQ_API_KEY` in [.env.local](.env.local) to your Gemini API key
