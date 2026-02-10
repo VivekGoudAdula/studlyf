@@ -2,7 +2,7 @@
 import React from 'react';
 import LandingNavbar from '../components/LandingNavbar';
 import LandingHero from '../components/LandingHero';
-import CategoryBar from '../components/CategoryBar';
+import PurpleNavbar from '../components/PurpleNavbar';
 import StatsSection from '../components/StatsSection';
 import ProblemSection from '../components/ProblemSection';
 import AIReality from '../components/AIReality';
@@ -21,7 +21,7 @@ const Home: React.FC = () => {
       <div className="h-screen flex flex-col relative overflow-hidden">
         <LandingNavbar />
         <LandingHero />
-        <CategoryBar />
+        <PurpleNavbar />
       </div>
 
       {/* Scrollable content starts here */}

@@ -33,6 +33,7 @@ import CoursePlayer from './pages/CoursePlayer';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import MyCourses from './pages/MyCourses';
+import FeaturePreview from './pages/FeaturePreview';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -49,10 +50,11 @@ const App: React.FC = () => {
   const isPlayer = pathname.startsWith('/learn/course-player');
   const isCheckout = pathname === '/learn/checkout';
   const isHome = pathname === '/';
+  const isFeaturePreview = pathname.startsWith('/feature-preview');
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white bg-white">
-      {(!isLoginPage && !isPlayer && !isCheckout && !isHome) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview) && <Navigation />}
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
           <Routes>
@@ -79,6 +81,7 @@ const App: React.FC = () => {
 
             <Route path="/about" element={<About />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/feature-preview/:id" element={<PublicRoute><FeaturePreview /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
 
             {/* Dashboards */}
