@@ -1,6 +1,8 @@
 
 import React from 'react';
-import Hero from '../components/Hero';
+import LandingNavbar from '../components/LandingNavbar';
+import LandingHero from '../components/LandingHero';
+import CategoryBar from '../components/CategoryBar';
 import StatsSection from '../components/StatsSection';
 import ProblemSection from '../components/ProblemSection';
 import AIReality from '../components/AIReality';
@@ -14,8 +16,15 @@ import FinalCTA from '../components/FinalCTA';
 
 const Home: React.FC = () => {
   return (
-    <>
-      <Hero />
+    <div className="bg-white min-h-screen">
+      {/* First Fold */}
+      <div className="h-screen flex flex-col relative overflow-hidden">
+        <LandingNavbar />
+        <LandingHero />
+        <CategoryBar />
+      </div>
+
+      {/* Scrollable content starts here */}
       <StatsSection />
       <ProblemSection />
       <AIReality />
@@ -26,7 +35,7 @@ const Home: React.FC = () => {
       <SocialProof />
       <FAQ />
       <FinalCTA />
-    </>
+    </div>
   );
 };
 

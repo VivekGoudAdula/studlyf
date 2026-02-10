@@ -48,10 +48,11 @@ const App: React.FC = () => {
   const isDashboard = pathname.startsWith('/dashboard');
   const isPlayer = pathname.startsWith('/learn/course-player');
   const isCheckout = pathname === '/learn/checkout';
+  const isHome = pathname === '/';
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white bg-white">
-      {(!isLoginPage && !isPlayer && !isCheckout) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isHome) && <Navigation />}
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
           <Routes>
