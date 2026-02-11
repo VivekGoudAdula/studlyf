@@ -3,6 +3,7 @@ import React from 'react';
 import LandingNavbar from '../components/LandingNavbar';
 import LandingHero from '../components/LandingHero';
 import PurpleNavbar from '../components/PurpleNavbar';
+import WhatIsStudlyf from '../components/WhatIsStudlyf';
 import StatsSection from '../components/StatsSection';
 import ProblemSection from '../components/ProblemSection';
 import AIReality from '../components/AIReality';
@@ -25,6 +26,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* Scrollable content starts here */}
+      <WhatIsStudlyf />
       <StatsSection />
       <ProblemSection />
       <AIReality />
