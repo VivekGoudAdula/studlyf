@@ -6,6 +6,7 @@ import PurpleNavbar from '../components/PurpleNavbar';
 import WhatIsStudlyf from '../components/WhatIsStudlyf';
 import VoicesThatInspire from '../components/VoicesThatInspire';
 import OldVsNewSection from '../components/OldVsNewSection';
+import MentorCredibility from '../components/MentorCredibility';
 import StatsSection from '../components/StatsSection';
 import ProblemSection from '../components/ProblemSection';
 import AIReality from '../components/AIReality';
@@ -31,6 +32,7 @@ const Home: React.FC = () => {
       <WhatIsStudlyf />
       <VoicesThatInspire />
       <OldVsNewSection />
+      <MentorCredibility />
       <StatsSection />
       <ProblemSection />
       <AIReality />
