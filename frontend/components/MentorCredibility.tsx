@@ -125,6 +125,9 @@ const MentorCredibility: React.FC = () => {
                                     src={`/images/${logo.fileName}`}
                                     alt={`${logo.name} logo`}
                                     className="w-full h-full object-contain relative z-10 transition-all duration-500 group-hover:drop-shadow-md"
+                                    decoding="async"
+                                    loading={index < 8 ? "eager" : "lazy"}
+                                    fetchPriority={index < 8 ? "high" : "low"}
                                     style={{
                                         filter: 'grayscale(0%) brightness(1) opacity(1)'
                                     }}
@@ -177,7 +180,13 @@ const MentorCredibility: React.FC = () => {
                                 className="flex justify-center"
                             >
                                 <div className="w-24 h-24 bg-white/60 backdrop-blur-md rounded-full shadow-lg border border-white flex items-center justify-center p-4">
-                                    <img src={`/images/${logo.fileName}`} alt={logo.name} className="w-full h-full object-contain" />
+                                    <img
+                                        src={`/images/${logo.fileName}`}
+                                        alt={logo.name}
+                                        className="w-full h-full object-contain"
+                                        decoding="async"
+                                        loading="lazy"
+                                    />
                                 </div>
                             </motion.div>
                         ))}
@@ -190,7 +199,13 @@ const MentorCredibility: React.FC = () => {
                         {companyLogos.slice(0, 12).map((logo) => (
                             <div key={logo.name} className="flex flex-col items-center gap-2">
                                 <div className="w-20 h-20 bg-white/60 backdrop-blur-md rounded-full shadow-md border border-white flex items-center justify-center p-3">
-                                    <img src={`/images/${logo.fileName}`} alt={logo.name} className="w-full h-full object-contain" />
+                                    <img
+                                        src={`/images/${logo.fileName}`}
+                                        alt={logo.name}
+                                        className="w-full h-full object-contain"
+                                        decoding="async"
+                                        loading="lazy"
+                                    />
                                 </div>
                             </div>
                         ))}
