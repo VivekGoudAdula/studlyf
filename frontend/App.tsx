@@ -35,6 +35,10 @@ import Checkout from './pages/Checkout';
 import MyCourses from './pages/MyCourses';
 import FeaturePreview from './pages/FeaturePreview';
 
+// Unique Components
+import EnquiryForm from './components/EnquiryForm';
+import ResourceCenter from './components/ResourceCenter';
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -91,7 +95,13 @@ const App: React.FC = () => {
           </Routes>
         </Suspense>
       </main>
-      {(!isLoginPage && !isDashboard && !isCheckout) && <Footer />}
+      {(!isLoginPage && !isDashboard && !isCheckout) && (
+        <>
+          <ResourceCenter />
+          <EnquiryForm />
+          <Footer />
+        </>
+      )}
     </div>
   );
 };

@@ -2,7 +2,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
-const InteractiveCreature: React.FC = () => {
+interface InteractiveCreatureProps {
+    targetButtonText?: string;
+    className?: string;
+}
+
+const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
+    targetButtonText = 'Try now',
+    className = ""
+}) => {
     const [isNearButton, setIsNearButton] = useState(false);
     const [isActive, setIsActive] = useState(false);
     const [eyeDirection, setEyeDirection] = useState({ x: 0, y: 0 });
@@ -27,9 +35,9 @@ const InteractiveCreature: React.FC = () => {
 
             if (!creatureRef.current) return;
 
-            // Find the "Try now" button
-            const tryNowButton = Array.from(document.querySelectorAll('button')).find(
-                btn => btn.textContent?.includes('Try now')
+            // Find the target button
+            const targetButton = Array.from(document.querySelectorAll('button')).find(
+                btn => btn.textContent?.toLowerCase().includes(targetButtonText.toLowerCase())
             );
 
             let targetX = 0;
@@ -39,8 +47,8 @@ const InteractiveCreature: React.FC = () => {
                 targetY = 20; // Active state - pops up slightly to look around
             }
 
-            if (tryNowButton) {
-                const buttonRect = tryNowButton.getBoundingClientRect();
+            if (targetButton) {
+                const buttonRect = targetButton.getBoundingClientRect();
                 const buttonCenterX = buttonRect.left + buttonRect.width / 2;
                 const buttonCenterY = buttonRect.top + buttonRect.height / 2;
 
@@ -76,19 +84,11 @@ const InteractiveCreature: React.FC = () => {
                     const rawProgress = Math.max(0, (triggerDistance - distanceToButton) / triggerDistance);
                     const proximityFactor = rawProgress * rawProgress;
 
-                    // Calculate direction from creature to button
-                    // Note: Since we are in a fixed navbar container, moving Y up implies negative values relative to container
-                    // But we want to move towards the button which is usually above the navbar
-                    // So targetY should decrease (move up screen) significantly
-
                     // X Movement
                     targetX = (e.clientX - window.innerWidth / 2) * 0.15; // Increased parallax
 
                     // Y Movement - "Coming out" logic
-                    // If near button, pop up fully and reach high, but just touch!
                     targetY = -70 * proximityFactor;
-
-                    // We don't want it to fly away from navbar completely, just pop out enthusiastically
                 } else {
                     setIsNearButton(false);
                 }
@@ -103,13 +103,13 @@ const InteractiveCreature: React.FC = () => {
             window.removeEventListener('mousemove', handleMouseMove);
             if (activityTimeoutRef.current) clearTimeout(activityTimeoutRef.current);
         };
-    }, [x, y, isActive]);
+    }, [x, y, isActive, targetButtonText]);
 
     return (
         <motion.div
             ref={creatureRef}
             style={{ x: xSpring, y: ySpring }}
-            className="relative pointer-events-none" // Relative because it lives inside the flex container now
+            className={`relative pointer-events-none ${className}`}
         >
             {/* Creature Body Animation */}
             <motion.div
