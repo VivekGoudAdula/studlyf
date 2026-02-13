@@ -11,10 +11,10 @@ const TrackPreview: React.FC = () => {
   return (
     <section id="tracks" className="bg-[#7C3AED] py-40 px-6 overflow-hidden relative">
       <div className="absolute inset-0 bg-grid-tech opacity-10"></div>
-      
+
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="mb-24 text-center lg:text-left">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -22,7 +22,7 @@ const TrackPreview: React.FC = () => {
           >
             Standard Library
           </motion.h2>
-          <motion.h3 
+          <motion.h3
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -34,7 +34,7 @@ const TrackPreview: React.FC = () => {
 
         <div className="grid lg:grid-cols-3 gap-10">
           {tracks.map((track, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -53,13 +53,13 @@ const TrackPreview: React.FC = () => {
                   {track.standard}
                 </span>
               </div>
-              
+
               <div className="flex-grow relative z-10">
                 <h4 className="text-4xl font-bold text-white mb-8 tracking-tight leading-tight group-hover:translate-x-2 transition-transform">{track.title}</h4>
                 <p className="text-white/70 text-lg font-medium leading-relaxed">{track.desc}</p>
               </div>
 
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 0.96 }}
                 whileTap={{ scale: 0.92 }}
                 className="mt-12 w-full py-6 bg-white text-[#7C3AED] font-bold curved-edge shadow-2xl text-[10px] tracking-[0.4em] uppercase hover:bg-gray-50 transition-colors relative z-10"

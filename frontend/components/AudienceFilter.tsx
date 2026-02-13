@@ -17,7 +17,7 @@ const AudienceFilter: React.FC = () => {
         <div className="grid lg:grid-cols-2 gap-24 items-center">
           <div className="grid grid-cols-2 gap-4">
             {images.map((src, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 whileInView={{ opacity: 1, scale: 1, y: 0 }}
@@ -40,7 +40,7 @@ const AudienceFilter: React.FC = () => {
               <h3 className="text-xl font-bold text-[#111827] mb-12 uppercase tracking-[0.2em] border-l-4 border-[#7C3AED] pl-6 font-sans">
                 Institutional Selection
               </h3>
-              
+
               <div className="space-y-12">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}

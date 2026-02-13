@@ -17,6 +17,8 @@ import AudienceFilter from '../components/AudienceFilter';
 import SocialProof from '../components/SocialProof';
 import FAQ from '../components/FAQ';
 import FinalCTA from '../components/FinalCTA';
+import RoadmapSection from '../components/RoadmapSection';
+
 
 const Home: React.FC = () => {
   return (
@@ -33,6 +35,8 @@ const Home: React.FC = () => {
       <VoicesThatInspire />
       <OldVsNewSection />
       <MentorCredibility />
+      <RoadmapSection />
+
       <StatsSection />
       <ProblemSection />
       <AIReality />

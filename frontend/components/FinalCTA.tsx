@@ -8,15 +8,15 @@ const FinalCTA: React.FC = () => {
   return (
     <section className="bg-white py-20 sm:py-32 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           className="relative bg-[#0F172A] rounded-[2.5rem] sm:rounded-[4rem] overflow-hidden py-24 sm:py-40 px-6 sm:px-10 text-center shadow-3xl shadow-[#7C3AED]/20"
         >
           <div className="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=2000" 
+            <img
+              src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=2000"
               className="w-full h-full object-cover opacity-20 grayscale mix-blend-screen"
               alt="Interconnected Systems"
             />
@@ -35,15 +35,15 @@ const FinalCTA: React.FC = () => {
             </motion.div>
 
             <h2 className="font-display text-5xl sm:text-7xl lg:text-[9rem] italic text-white mb-8 sm:mb-12 tracking-tight">
-              Verify <br/><span className="text-[#7C3AED] not-italic font-sans font-bold tracking-tighter uppercase text-4xl sm:text-6xl lg:text-[7rem] block mt-2 sm:mt-0">Your Limit.</span>
+              Verify <br /><span className="text-[#7C3AED] not-italic font-sans font-bold tracking-tighter uppercase text-4xl sm:text-6xl lg:text-[7rem] block mt-2 sm:mt-0">Your Limit.</span>
             </h2>
-            
+
             <p className="text-base sm:text-xl lg:text-2xl text-gray-400 mb-12 sm:mb-20 font-medium max-w-2xl mx-auto leading-relaxed">
               Resumes and prompts make claims. We provide the proof. Join the institutional standard for engineering readiness.
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8">
-              <motion.button 
+              <motion.button
                 onClick={() => navigate('/learn/assessment')}
                 whileHover={{ scale: 0.96 }}
                 whileTap={{ scale: 0.92 }}
@@ -52,7 +52,7 @@ const FinalCTA: React.FC = () => {
                 <span className="relative z-10">Start Assessment</span>
                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
               </motion.button>
-              <motion.button 
+              <motion.button
                 onClick={() => navigate('/about')}
                 whileHover={{ scale: 0.96 }}
                 whileTap={{ scale: 0.92 }}
