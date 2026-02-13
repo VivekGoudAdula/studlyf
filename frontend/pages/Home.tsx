@@ -7,17 +7,8 @@ import WhatIsStudlyf from '../components/WhatIsStudlyf';
 import VoicesThatInspire from '../components/VoicesThatInspire';
 import OldVsNewSection from '../components/OldVsNewSection';
 import MentorCredibility from '../components/MentorCredibility';
-import StatsSection from '../components/StatsSection';
-import ProblemSection from '../components/ProblemSection';
-import AIReality from '../components/AIReality';
-import VerificationProcess from '../components/VerificationProcess';
-import Differentiation from '../components/Differentiation';
-import TrackPreview from '../components/TrackPreview';
-import AudienceFilter from '../components/AudienceFilter';
-import SocialProof from '../components/SocialProof';
-import FAQ from '../components/FAQ';
-import FinalCTA from '../components/FinalCTA';
 import RoadmapSection from '../components/RoadmapSection';
+
 
 
 const Home: React.FC = () => {
@@ -36,17 +27,6 @@ const Home: React.FC = () => {
       <OldVsNewSection />
       <MentorCredibility />
       <RoadmapSection />
-
-      <StatsSection />
-      <ProblemSection />
-      <AIReality />
-      <VerificationProcess />
-      <Differentiation />
-      <TrackPreview />
-      <AudienceFilter />
-      <SocialProof />
-      <FAQ />
-      <FinalCTA />
     </div>
   );
 };
