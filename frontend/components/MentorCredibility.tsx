@@ -151,7 +151,7 @@ const MentorCredibility: React.FC = () => {
                         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                         className="inline-block"
                     >
-                        <h2 className="text-3xl md:text-5xl font-['Syne'] font-extrabold text-black mb-6 tracking-tight uppercase leading-[1.1]">
+                        <h2 className="text-3xl md:text-5xl font-['Poppins'] font-extrabold text-black mb-6 tracking-tight uppercase leading-[1.1]">
                             OUR MENTORS<br />
                             ARE FROM<br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">50K+ MNCs</span>
@@ -162,7 +162,7 @@ const MentorCredibility: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, delay: 0.4 }}
-                        className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto font-['Inter'] font-medium"
+                        className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto font-['Poppins'] font-medium"
                     >
                         Guided by professionals shaping the world's leading organizations.
                     </motion.p>

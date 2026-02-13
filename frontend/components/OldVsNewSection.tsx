@@ -117,7 +117,7 @@ const OldVsNewSection: React.FC = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, ease: "easeOut" }}
-                            className="text-4xl md:text-6xl font-['Syne'] font-extrabold text-white mb-6 tracking-tight uppercase"
+                            className="text-4xl md:text-6xl font-['Poppins'] font-extrabold text-white mb-6 tracking-tight uppercase"
                         >
                             The Era of Human Authority
                         </motion.h2>
@@ -126,7 +126,7 @@ const OldVsNewSection: React.FC = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-['Inter']"
+                            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-['Poppins']"
                         >
                             From outdated methods to intelligent, outcome-driven learning.
                         </motion.p>
@@ -189,7 +189,7 @@ const OldVsNewSection: React.FC = () => {
                             transition={{ duration: 0.8, ease: "easeOut" }}
                             className="bg-zinc-900/50 backdrop-blur-sm rounded-[2.5rem] p-10 border border-white/5 relative z-20 shadow-2xl"
                         >
-                            <h3 className="text-red-500 text-lg md:text-xl font-['Syne'] uppercase tracking-[0.2em] mb-10 text-center font-extrabold drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">Old Way</h3>
+                            <h3 className="text-red-500 text-lg md:text-xl font-['Poppins'] uppercase tracking-[0.2em] mb-10 text-center font-extrabold drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">Old Way</h3>
                             <div className="space-y-6">
                                 {learningMethods.map((item, i) => (
                                     <div
@@ -204,7 +204,7 @@ const OldVsNewSection: React.FC = () => {
                                                 : 'opacity-100 blur-0'
                                             }`}
                                     >
-                                        <p className={`text-lg font-['Inter'] transition-colors duration-300 ${hoveredIndex === i ? 'text-white font-medium' : 'text-gray-500'
+                                        <p className={`text-lg font-['Poppins'] transition-colors duration-300 ${hoveredIndex === i ? 'text-white font-medium' : 'text-gray-500'
                                             }`}>
                                             {item.old}
                                         </p>
@@ -240,7 +240,7 @@ const OldVsNewSection: React.FC = () => {
                             transition={{ duration: 0.8, ease: "easeOut" }}
                             className="bg-zinc-900/50 backdrop-blur-sm rounded-[2.5rem] p-10 border border-white/5 relative z-20 shadow-2xl"
                         >
-                            <h3 className="text-green-500 text-lg md:text-xl font-['Syne'] uppercase tracking-[0.2em] mb-10 text-center font-extrabold drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]">New Way</h3>
+                            <h3 className="text-green-500 text-lg md:text-xl font-['Poppins'] uppercase tracking-[0.2em] mb-10 text-center font-extrabold drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]">New Way</h3>
                             <div className="space-y-4">
                                 {learningMethods.map((item, i) => (
                                     <motion.div
@@ -262,7 +262,7 @@ const OldVsNewSection: React.FC = () => {
                                             }`}>
                                             <Check className="w-4 h-4" />
                                         </div>
-                                        <p className={`text-lg font-['Inter'] font-semibold transition-all duration-300 ${hoveredIndex === i ? 'text-white' : 'text-gray-300'
+                                        <p className={`text-lg font-['Poppins'] font-semibold transition-all duration-300 ${hoveredIndex === i ? 'text-white' : 'text-gray-300'
                                             }`}>
                                             {item.new}
                                         </p>
@@ -275,10 +275,10 @@ const OldVsNewSection: React.FC = () => {
                     {/* Mobile Layout */}
                     <div className="md:hidden flex flex-col gap-8">
                         <div className="bg-zinc-900 rounded-3xl p-8 border border-white/5">
-                            <h3 className="text-red-400 text-xs font-['Syne'] uppercase tracking-widest mb-8 text-center font-bold">Old Way</h3>
+                            <h3 className="text-red-400 text-xs font-['Poppins'] uppercase tracking-widest mb-8 text-center font-bold">Old Way</h3>
                             <div className="space-y-4 text-center">
                                 {learningMethods.map((item, i) => (
-                                    <p key={i} className="text-gray-500 text-lg font-['Inter']">{item.old}</p>
+                                    <p key={i} className="text-gray-500 text-lg font-['Poppins']">{item.old}</p>
                                 ))}
                             </div>
                         </div>
@@ -290,14 +290,14 @@ const OldVsNewSection: React.FC = () => {
                         </div>
 
                         <div className="bg-zinc-900 rounded-3xl p-8 border border-white/5 shadow-2xl">
-                            <h3 className="text-green-400 text-xs font-['Syne'] uppercase tracking-widest mb-8 text-center font-bold">New Way</h3>
+                            <h3 className="text-green-400 text-xs font-['Poppins'] uppercase tracking-widest mb-8 text-center font-bold">New Way</h3>
                             <div className="space-y-6">
                                 {learningMethods.map((item, i) => (
                                     <div key={i} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl shadow-sm border border-white/5">
                                         <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center">
                                             <Check className="w-3.5 h-3.5 text-white" />
                                         </div>
-                                        <p className="text-white text-base font-['Inter'] font-semibold">{item.new}</p>
+                                        <p className="text-white text-base font-['Poppins'] font-semibold">{item.new}</p>
                                     </div>
                                 ))}
                             </div>
