@@ -69,12 +69,8 @@ const ImpactCard = ({ title, stat, illustration, lottiePath, className = "", gra
             </div>
 
             {/* Content Area */}
-            <div className={`relative z-10 flex flex-col ${isLarge ? 'mb-8 items-center text-center' : 'md:w-1/2 md:pr-4 justify-center mb-6 md:mb-0'}`}>
-                <motion.div
-                    initial={{ opacity: 0, x: isLarge ? 0 : -10, y: isLarge ? 10 : 0 }}
-                    whileInView={{ opacity: 1, x: 0, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                >
+            <div className={`relative z-10 flex flex-col ${isLarge ? 'mb-8 items-center text-center pt-16 md:pt-20' : 'md:w-1/2 md:pr-4 justify-center mb-6 md:mb-0'}`}>
+                <motion.div>
                     <h3 className="text-white font-poppins font-bold text-4xl md:text-5xl lg:text-6xl tracking-tighter leading-none mb-3 drop-shadow-2xl">
                         {stat}
                     </h3>

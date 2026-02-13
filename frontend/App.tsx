@@ -40,6 +40,7 @@ import EnquiryForm from './components/EnquiryForm';
 import ResourceCenter from './components/ResourceCenter';
 import Testimonials from './components/Testimonials';
 import Impact from './components/Impact';
+import Achievements from './components/Achievements';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -99,6 +100,7 @@ const App: React.FC = () => {
       </main>
       {(!isLoginPage && !isDashboard && !isCheckout) && (
         <>
+          <Achievements />
           <Impact />
           <Testimonials />
           <ResourceCenter />
