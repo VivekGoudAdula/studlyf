@@ -24,7 +24,7 @@ const ProblemSection: React.FC = () => {
             transition={{ duration: 0.8 }}
             className="order-2 lg:order-1"
           >
-            <WebImage 
+            <WebImage
               src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200"
               alt="Corporate Tech Building"
               aspectRatio="aspect-[4/3]"
@@ -33,7 +33,7 @@ const ProblemSection: React.FC = () => {
           </motion.div>
 
           <div className="order-1 lg:order-2 text-left">
-            <motion.h2 
+            <motion.h2
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -42,7 +42,7 @@ const ProblemSection: React.FC = () => {
             >
               The Trust Gap
             </motion.h2>
-            <motion.h3 
+            <motion.h3
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -52,7 +52,7 @@ const ProblemSection: React.FC = () => {
               Capability is rare. <br />
               <span className="text-[#7C3AED] not-italic font-sans font-bold tracking-tighter uppercase text-4xl">Claims are everywhere.</span>
             </motion.h3>
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -61,13 +61,13 @@ const ProblemSection: React.FC = () => {
             >
               Resumes and certificates have lost their signaling power. In a world of generative noise, elite engineering teams require proof of system ownership, not just line production.
             </motion.p>
-            
+
             <div className="space-y-4">
               {[
                 { title: "Verifiable Autonomy", desc: "Prove you can steer the ship, not just follow the map." },
                 { title: "Judgment Verification", desc: "Testing the tradeoffs humans make between prompts." }
               ].map((item, i) => (
-                <motion.div 
+                <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -76,7 +76,7 @@ const ProblemSection: React.FC = () => {
                   className="p-6 bg-white rounded-2xl shadow-sm border border-[#7C3AED]/5 flex items-center gap-6 group hover:border-[#7C3AED]/30 transition-all"
                 >
                   <div className="w-10 h-10 rounded-full bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-[#7C3AED] group-hover:text-white transition-colors">
-                    0{i+1}
+                    0{i + 1}
                   </div>
                   <div>
                     <h4 className="font-bold text-[#0F172A] text-sm uppercase tracking-widest">{item.title}</h4>

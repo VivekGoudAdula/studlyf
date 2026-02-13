@@ -35,7 +35,7 @@ interface FAQItemProps {
 const FAQItem: React.FC<FAQItemProps> = ({ question, answer, isOpen, toggle }) => {
   return (
     <div className="border-b border-gray-100 last:border-0">
-      <button 
+      <button
         onClick={toggle}
         className="w-full py-5 sm:py-6 flex items-center justify-between text-left group"
       >
@@ -74,7 +74,7 @@ const FAQ: React.FC = () => {
     <section className="bg-white py-12 sm:py-20 px-6">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10 sm:mb-14">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -82,7 +82,7 @@ const FAQ: React.FC = () => {
           >
             FAQ
           </motion.h2>
-          <motion.h3 
+          <motion.h3
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -95,17 +95,17 @@ const FAQ: React.FC = () => {
 
         <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100 p-1 sm:p-8 shadow-sm">
           {faqData.map((item, index) => (
-            <FAQItem 
-              key={index} 
-              question={item.question} 
-              answer={item.answer} 
+            <FAQItem
+              key={index}
+              question={item.question}
+              answer={item.answer}
               isOpen={openIndex === index}
               toggle={() => setOpenIndex(openIndex === index ? null : index)}
             />
           ))}
         </div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}

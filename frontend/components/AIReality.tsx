@@ -24,8 +24,8 @@ const AIReality: React.FC = () => {
     <section className="relative py-20 sm:py-32 px-6 overflow-hidden bg-[#F5F3FF]">
       {/* Section Background Image */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=2000" 
+        <img
+          src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=2000"
           className="w-full h-full object-cover opacity-[0.03] grayscale"
           alt="Technical Background"
         />
@@ -34,20 +34,20 @@ const AIReality: React.FC = () => {
 
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center mb-16 sm:mb-20">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="font-display text-4xl sm:text-6xl italic text-[#0F172A] leading-none mb-4"
           >
-            The Era of <br className="hidden sm:block"/><span className="not-italic font-sans font-black tracking-tighter uppercase text-[#7C3AED]">Human Authority.</span>
+            The Era of <br className="hidden sm:block" /><span className="not-italic font-sans font-black tracking-tighter uppercase text-[#7C3AED]">Human Authority.</span>
           </motion.h2>
         </div>
 
         <div className="relative flex flex-col lg:flex-row items-center justify-between min-h-[400px] lg:min-h-[500px]">
-          
+
           {/* Box 01: BEFORE (Square - Far Left) */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -60 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -59,7 +59,7 @@ const AIReality: React.FC = () => {
             </div>
             <div className="flex flex-col gap-2 w-full flex-grow justify-center">
               {beforeItems.map((item, i) => (
-                <motion.div 
+                <motion.div
                   key={i}
                   whileHover={{ x: 8, backgroundColor: "rgba(255, 255, 255, 0.12)" }}
                   className="w-full flex items-center justify-between px-5 py-3.5 bg-white/5 border border-white/5 rounded-xl group transition-all cursor-default"
@@ -82,7 +82,7 @@ const AIReality: React.FC = () => {
             className="hidden lg:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
           >
             <div className="w-36 h-36 xl:w-44 xl:h-44 rounded-[2.5rem] border-[8px] border-white shadow-3xl overflow-hidden bg-white rotate-6 hover:rotate-0 transition-transform duration-700 group ring-1 ring-[#7C3AED]/10">
-              <WebImage 
+              <WebImage
                 src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=600"
                 alt="Verification Anchor"
                 aspectRatio="h-full w-full"
@@ -92,7 +92,7 @@ const AIReality: React.FC = () => {
           </motion.div>
 
           {/* Box 02: AFTER (Square - Far Right) */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 60 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -104,7 +104,7 @@ const AIReality: React.FC = () => {
             </div>
             <div className="flex flex-col gap-2 w-full flex-grow justify-center">
               {afterItems.map((item, i) => (
-                <motion.div 
+                <motion.div
                   key={i}
                   whileHover={{ x: -8, backgroundColor: "rgba(124, 58, 237, 0.15)" }}
                   className="w-full flex items-center justify-between px-5 py-3.5 bg-white/5 border border-white/5 rounded-xl group transition-all cursor-default hover:border-[#7C3AED]/40"
@@ -120,7 +120,7 @@ const AIReality: React.FC = () => {
 
         </div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
