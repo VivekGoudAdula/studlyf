@@ -38,6 +38,8 @@ import FeaturePreview from './pages/FeaturePreview';
 // Unique Components
 import EnquiryForm from './components/EnquiryForm';
 import ResourceCenter from './components/ResourceCenter';
+import Testimonials from './components/Testimonials';
+import Impact from './components/Impact';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -97,6 +99,8 @@ const App: React.FC = () => {
       </main>
       {(!isLoginPage && !isDashboard && !isCheckout) && (
         <>
+          <Impact />
+          <Testimonials />
           <ResourceCenter />
           <EnquiryForm />
           <Footer />
