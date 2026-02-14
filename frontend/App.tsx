@@ -100,7 +100,6 @@ const App: React.FC = () => {
       </main>
       {(!isLoginPage && !isDashboard && !isCheckout) && (
         <>
-          <Achievements />
           <Impact />
           <Testimonials />
           <ResourceCenter />
