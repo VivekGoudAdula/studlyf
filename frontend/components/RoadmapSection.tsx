@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { Search, BookOpen, Laptop, Rocket, ChevronRight } from 'lucide-react';
+import { Search, BookOpen, Laptop, Rocket, Trophy, ChevronRight } from 'lucide-react';
 import InteractiveCreature from './InteractiveCreature';
 
 const steps = [
@@ -8,32 +8,40 @@ const steps = [
         id: '01',
         title: 'Discover',
         icon: <Search className="w-5 h-5" />,
-        text: 'Explore career paths based on your interests.',
-        details: 'Deep analysis of market trends.',
+        text: 'Explore career paths.',
+        details: 'Deep analysis of trends.',
         color: '#FFFFFF'
     },
     {
         id: '02',
         title: 'Learn',
         icon: <BookOpen className="w-5 h-5" />,
-        text: 'Structured modules for real-world mastery.',
-        details: 'Curated by industry veterans.',
+        text: 'Structured modules.',
+        details: 'Curated by veterans.',
         color: '#FFFFFF'
     },
     {
         id: '03',
         title: 'Practice',
         icon: <Laptop className="w-5 h-5" />,
-        text: 'Hands-on projects and simulations.',
-        details: 'Build a portfolio that speaks.',
+        text: 'Hands-on projects.',
+        details: 'Build your portfolio.',
         color: '#FFFFFF'
     },
     {
         id: '04',
         title: 'Launch',
         icon: <Rocket className="w-5 h-5" />,
-        text: 'Interview prep and job readiness.',
-        details: 'Connect with hiring partners.',
+        text: 'Job readiness.',
+        details: 'Connect with partners.',
+        color: '#FFFFFF'
+    },
+    {
+        id: '05',
+        title: 'Excel',
+        icon: <Trophy className="w-5 h-5" />,
+        text: 'Lead and inspire.',
+        details: 'Become an industry icon.',
         color: '#FFFFFF'
     },
 ];
@@ -64,12 +72,13 @@ const RoadmapSection: React.FC = () => {
     // Full Width Straight Line Path (0 to 1000)
     const pathD = "M 0 100 L 1000 100";
 
-    // Balanced distribution along the full path
+    // Balanced distribution along the full path for 5 items
     const nodePositions = [
-        { left: '200px', top: '100px', cardDir: 'up' },
-        { left: '400px', top: '100px', cardDir: 'down' },
-        { left: '600px', top: '100px', cardDir: 'up' },
-        { left: '800px', top: '100px', cardDir: 'down' },
+        { left: '10%', top: '100px', cardDir: 'up' },
+        { left: '30%', top: '100px', cardDir: 'down' },
+        { left: '50%', top: '100px', cardDir: 'up' },
+        { left: '70%', top: '100px', cardDir: 'down' },
+        { left: '90%', top: '100px', cardDir: 'up' },
     ];
 
     return (

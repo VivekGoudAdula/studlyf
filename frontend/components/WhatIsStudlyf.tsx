@@ -38,7 +38,7 @@ const WhatIsStudlyf: React.FC = () => {
     const activeItem = items.find((item) => item.id === activeId) || items[0];
 
     return (
-        <section className="bg-white py-12 md:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+        <section className="bg-white pt-12 md:pt-16 pb-0 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
             {/* Header Section */}
             <div className="text-center mb-12 max-w-4xl mx-auto">
                 <motion.div

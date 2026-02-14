@@ -147,7 +147,7 @@ const ResourceCenter: React.FC = () => {
             </div>
 
             {/* ⚪ Premium Light Body Area */}
-            <div className="pb-24 -mt-24 pt-0 px-4 md:px-12 relative z-20">
+            <div className="pb-8 -mt-24 pt-0 px-4 md:px-12 relative z-20">
                 <div className="max-w-[1300px] mx-auto">
                     <motion.div
                         variants={containerVariants}
@@ -206,7 +206,7 @@ const ResourceCenter: React.FC = () => {
                     </motion.div>
 
                     {/* ✨ Premium Animated Footer Button */}
-                    <div className="mt-20 flex justify-center">
+                    <div className="mt-10 flex justify-center">
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}

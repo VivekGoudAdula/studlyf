@@ -173,7 +173,7 @@ const Testimonials: React.FC = () => {
         offset: ["start end", "end start"]
     });
 
-    const translateY = useTransform(scrollYProgress, [0, 0.2], [100, 0]);
+    const translateY = useTransform(scrollYProgress, [0, 0.2], [30, 0]);
     const opacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
 
     // Double for marquee
@@ -182,7 +182,7 @@ const Testimonials: React.FC = () => {
     return (
         <section
             ref={sectionRef}
-            className="w-full bg-white py-32 px-4 overflow-hidden relative"
+            className="w-full bg-white py-12 px-4 overflow-hidden relative"
             id="testimonials"
         >
             {/* Background Glow */}
