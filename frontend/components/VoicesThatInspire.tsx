@@ -120,7 +120,7 @@ const VoicesThatInspire: React.FC = () => {
     const allPersonalities = [...personalities, ...personalities, ...personalities];
 
     return (
-        <section className="bg-white py-20 overflow-hidden relative">
+        <section className="bg-white py-12 md:py-16 overflow-hidden relative">
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @keyframes scroll {
@@ -149,7 +149,7 @@ const VoicesThatInspire: React.FC = () => {
                 <div className="absolute inset-y-0 left-0 w-32 md:w-64 bg-gradient-to-r from-white via-white/20 to-transparent z-30 pointer-events-none"></div>
                 <div className="absolute inset-y-0 right-0 w-32 md:w-64 bg-gradient-to-l from-white via-white/20 to-transparent z-30 pointer-events-none"></div>
 
-                <div className="scroll-container py-12 px-4">
+                <div className="scroll-container py-4 px-4">
                     {allPersonalities.map((person, index) => (
                         <QuoteCard key={`${person.name}-${index}`} person={person} />
                     ))}

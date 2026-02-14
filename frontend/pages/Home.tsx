@@ -8,6 +8,8 @@ import VoicesThatInspire from '../components/VoicesThatInspire';
 import OldVsNewSection from '../components/OldVsNewSection';
 import MentorCredibility from '../components/MentorCredibility';
 import RoadmapSection from '../components/RoadmapSection';
+import FeaturedInstitutions from '../components/FeaturedInstitutions';
+import OurPartners from '../components/OurPartners';
 
 
 
@@ -27,6 +29,8 @@ const Home: React.FC = () => {
       <OldVsNewSection />
       <MentorCredibility />
       <RoadmapSection />
+      <FeaturedInstitutions />
+      <OurPartners />
     </div>
   );
 };

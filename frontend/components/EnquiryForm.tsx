@@ -66,7 +66,7 @@ const EnquiryForm: React.FC = () => {
     `;
 
     return (
-        <section className="relative w-full overflow-hidden bg-white py-20 px-4 md:px-8 font-poppins min-h-screen flex items-center justify-center">
+        <section className="relative w-full overflow-hidden bg-white py-2 px-4 md:px-8 font-poppins">
             {/* 🌌 Animated Background Elements */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {/* Seamless Section Blend (Fade from pure white) */}
@@ -119,7 +119,7 @@ const EnquiryForm: React.FC = () => {
                 whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                className="max-w-4xl w-full relative z-10"
+                className="max-w-4xl w-full relative z-10 mx-auto"
             >
                 {/* 🌈 Form Box with Purple Background */}
                 <div className="relative bg-[#7C3AED] backdrop-blur-2xl border border-white/20 rounded-[2.5rem] p-8 md:p-14 overflow-hidden shadow-[0_40px_100px_rgba(124,58,237,0.3)] group">
