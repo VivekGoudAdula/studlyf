@@ -125,7 +125,7 @@ const ImpactCard = ({ title, stat, illustration, lottiePath, className = "", gra
 
 const Impact: React.FC = () => {
     return (
-        <section className="w-full bg-white py-24 px-4 md:px-8 lg:px-12 overflow-hidden relative" id="impact">
+        <section className="w-full bg-white pt-0 pb-24 px-4 md:px-8 lg:px-12 overflow-hidden relative" id="impact">
             {/* Background Radial Glows - Premium Softness */}
             <div className="absolute top-[5%] left-[-5%] w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[180px] pointer-events-none" />
             <div className="absolute bottom-[5%] right-[-5%] w-[900px] h-[900px] bg-blue-50/50 rounded-full blur-[200px] pointer-events-none" />
