@@ -235,6 +235,7 @@ const Navigation: React.FC = () => {
                       <Link to="/dashboard/learner" className="text-white/90 text-[10px] font-black uppercase tracking-[0.3em] hover:text-white h-full flex items-center bg-white/10 px-6 rounded-xl border border-white/10 ml-4">
                         My Console
                       </Link>
+
                     )}
                   </>
                 )}
@@ -254,10 +255,15 @@ const Navigation: React.FC = () => {
                     <ShoppingCart className="w-5 h-5 text-white" />
                   </Link>
 
-                  <div className="hidden sm:flex flex-col items-end mr-1">
-                    <span className="text-[8px] text-white font-black uppercase tracking-widest leading-none mb-0.5">{user.displayName || 'MEMBER'}</span>
+                  <Link
+                    to="/dashboard"
+                    className="hidden sm:flex flex-col items-end mr-1 group/profile hover:opacity-80 transition-opacity"
+                  >
+
+                    <span className="text-[8px] text-white font-black uppercase tracking-widest leading-none mb-0.5 group-hover/profile:text-[#A78BFA] transition-colors">{user.displayName || 'MEMBER'}</span>
                     <span className="text-[7px] text-white/60 font-medium truncate max-w-[100px]">{user.email}</span>
-                  </div>
+                  </Link>
+
                   <motion.button
                     onClick={() => signOut(auth)}
                     whileHover={{ scale: 0.96 }}

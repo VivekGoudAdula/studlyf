@@ -26,6 +26,7 @@ import About from './pages/About';
 import Login from './pages/Login';
 import LearnerDashboard from './pages/LearnerDashboard';
 import PartnerDashboard from './pages/PartnerDashboard';
+import DashboardHome from './pages/DashboardHome';
 import Blog from './pages/Blog';
 import CompanyModules from './pages/CompanyModules';
 import ResumeBuilder from './pages/ResumeBuilder';
@@ -92,10 +93,13 @@ const App: React.FC = () => {
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
 
             {/* Dashboards */}
-            <Route path="/dashboard/learner" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
+
           </Routes>
+
         </Suspense>
       </main>
       {(!isLoginPage && !isDashboard && !isCheckout) && (
