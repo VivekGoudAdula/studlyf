@@ -120,7 +120,7 @@ const VoicesThatInspire: React.FC = () => {
     const allPersonalities = [...personalities, ...personalities, ...personalities];
 
     return (
-        <section className="bg-white py-12 md:py-16 overflow-hidden relative">
+        <section className="bg-white pt-0 pb-12 md:pb-16 overflow-hidden relative">
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @keyframes scroll {

@@ -66,7 +66,7 @@ const EnquiryForm: React.FC = () => {
     `;
 
     return (
-        <section className="relative w-full overflow-hidden bg-white py-2 px-4 md:px-8 font-poppins">
+        <section id="enquiry-form" className="relative w-full overflow-hidden bg-white py-2 px-4 md:px-8 font-poppins">
             {/* 🌌 Animated Background Elements */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {/* Seamless Section Blend (Fade from pure white) */}

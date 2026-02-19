@@ -8,6 +8,7 @@ import VoicesThatInspire from '../components/VoicesThatInspire';
 import OldVsNewSection from '../components/OldVsNewSection';
 import MentorCredibility from '../components/MentorCredibility';
 import RoadmapSection from '../components/RoadmapSection';
+import WhoWeServe from '../components/WhoWeServe';
 import FeaturedInstitutions from '../components/FeaturedInstitutions';
 import OurPartners from '../components/OurPartners';
 
@@ -28,6 +29,7 @@ const Home: React.FC = () => {
       <VoicesThatInspire />
       <OldVsNewSection />
       <MentorCredibility />
+      <WhoWeServe />
       <RoadmapSection />
       <FeaturedInstitutions />
       <OurPartners />
