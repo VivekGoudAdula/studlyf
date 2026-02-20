@@ -61,7 +61,7 @@ const App: React.FC = () => {
   const isFeaturePreview = pathname.startsWith('/feature-preview');
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white bg-white">
+    <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard ? 'bg-transparent' : 'bg-white'}`}>
       {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview) && <Navigation />}
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
