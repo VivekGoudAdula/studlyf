@@ -35,6 +35,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import MyCourses from './pages/MyCourses';
 import FeaturePreview from './pages/FeaturePreview';
+import CareerOnboarding from './pages/CareerOnboarding';
 
 // Unique Components
 import EnquiryForm from './components/EnquiryForm';
@@ -59,10 +60,11 @@ const App: React.FC = () => {
   const isCheckout = pathname === '/learn/checkout';
   const isHome = pathname === '/';
   const isFeaturePreview = pathname.startsWith('/feature-preview');
+  const isOnboarding = pathname === '/learn/career-onboarding';
 
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard ? 'bg-transparent' : 'bg-white'}`}>
-      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding) && <Navigation />}
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
           <Routes>
@@ -97,12 +99,13 @@ const App: React.FC = () => {
             <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
+            <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
           </Routes>
 
         </Suspense>
       </main>
-      {(!isLoginPage && !isDashboard && !isCheckout) && (
+      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding) && (
         <>
           <Impact />
           <Testimonials />
