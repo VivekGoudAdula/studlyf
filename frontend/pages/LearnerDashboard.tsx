@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../apiConfig';
 import { useAuth } from '../AuthContext';
 import { auth, githubProvider } from '../firebase';
 import { signOut, signInWithPopup, GithubAuthProvider, linkWithPopup } from 'firebase/auth';
+import DashboardFooter from '../components/DashboardFooter';
 
 const CircularProgress = ({ value, size = 180, strokeWidth = 12, color = "#7C3AED", label = "Score" }: { value: number, size?: number, strokeWidth?: number, color?: string, label: string }) => {
   const radius = (size - strokeWidth) / 2;
@@ -121,11 +122,42 @@ const LearnerDashboard: React.FC = () => {
         return (
           <div className="space-y-8">
             <h2 className="text-4xl font-black uppercase tracking-tighter text-[#111827]">Knowledge Graph</h2>
-            <div className="bg-white border border-gray-100 rounded-[2rem] p-12 flex flex-col items-center justify-center text-center space-y-6 shadow-sm">
-              <div className="w-24 h-24 bg-[#F5F3FF] rounded-full flex items-center justify-center text-4xl">🕸️</div>
-              <p className="text-gray-500 max-w-sm uppercase tracking-widest text-xs font-bold">Visualizing your skill entropy. This interactive map displays your architectural reach across the Studlyf Standard.</p>
-              <div className="grid grid-cols-3 gap-4 w-full max-w-lg">
-                {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-20 bg-gray-50 rounded-xl border border-gray-100 animate-pulse"></div>)}
+            <div className="bg-white border border-gray-100 rounded-[2rem] p-12 flex flex-col items-center text-center space-y-8 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#7C3AED] to-[#A78BFA]" />
+              <div className="w-24 h-24 bg-[#F5F3FF] rounded-full flex items-center justify-center text-4xl shadow-inner relative">
+                <span className="relative z-10">🕸️</span>
+                <div className="absolute inset-0 rounded-full border-4 border-[#7C3AED]/10" />
+              </div>
+              <div className="max-w-xl space-y-4">
+                <h3 className="text-2xl font-black uppercase tracking-tight text-[#111827]">Skill Entropy Map</h3>
+                <p className="text-gray-500 uppercase tracking-widest text-xs font-bold leading-relaxed">
+                  Visualizing your architectural reach across the Studlyf Standard.
+                  <br />
+                  <span className="text-[#7C3AED]">Current Entropy: Low (Highly Organized)</span>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl mt-8">
+                {[
+                  { label: "System Design", score: 92, draft: "High" },
+                  { label: "Algorithms", score: 85, draft: "Mid" },
+                  { label: "Database Arch", score: 88, draft: "High" },
+                  { label: "Cloud Native", score: 76, draft: "Mid" },
+                  { label: "Security", score: 95, draft: "Elite" },
+                  { label: "DevOps", score: 82, draft: "Mid" }
+                ].map((skill, i) => (
+                  <div key={i} className="bg-gray-50 rounded-2xl p-6 border border-gray-100 flex flex-col items-start gap-3 hover:border-[#7C3AED]/30 transition-all group cursor-default">
+                    <div className="w-full flex justify-between items-start">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{skill.draft} Tier</span>
+                      <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
+                    </div>
+                    <h4 className="text-lg font-bold text-[#111827] uppercase tracking-tight group-hover:text-[#7C3AED] transition-colors">{skill.label}</h4>
+                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-2">
+                      <div className="h-full bg-[#7C3AED]" style={{ width: `${skill.score}%` }} />
+                    </div>
+                    <span className="text-xs font-mono font-bold text-gray-500 mt-1">{skill.score}% Coverage</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -136,23 +168,34 @@ const LearnerDashboard: React.FC = () => {
             <h2 className="text-4xl font-black uppercase tracking-tighter text-[#111827]">Global Rankings</h2>
             <div className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm">
               {[
-                { rank: 1, name: "Sarah Q.", score: 98.2, status: "Verified" },
-                { rank: 2, name: "James L.", score: 96.5, status: "Verified" },
-                { rank: 3, name: "Alex P.", score: 75.4, status: "Active", highlighted: true },
-                { rank: 4, name: "Mira K.", score: 74.1, status: "Active" }
+                { rank: 1, name: "Sarah Q.", score: 98.2, status: "Verified", movement: "▲" },
+                { rank: 2, name: "James L.", score: 96.5, status: "Verified", movement: "-" },
+                { rank: 3, name: "Alex P.", score: 75.4, status: "Active", highlighted: true, movement: "▲" },
+                { rank: 4, name: "Mira K.", score: 74.1, status: "Active", movement: "▼" },
+                { rank: 5, name: "Chen W.", score: 72.8, status: "Active", movement: "▲" }
               ].map((u, i) => (
-                <div key={i} className={`flex items-center justify-between p-6 border-b border-gray-50 last:border-0 ${u.highlighted ? 'bg-[#F5F3FF]' : ''}`}>
+                <div key={i} className={`flex items-center justify-between p-6 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors ${u.highlighted ? 'bg-[#F5F3FF] hover:bg-[#F5F3FF]' : ''}`}>
                   <div className="flex items-center gap-6">
-                    <span className="font-mono font-bold text-gray-400">#0{u.rank}</span>
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs">{u.name[0]}</div>
-                    <span className="font-bold text-sm uppercase tracking-tight">{u.name}</span>
+                    <div className={`w-8 h-8 flex items-center justify-center font-black ${i < 3 ? 'text-[#7C3AED]' : 'text-gray-400'}`}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#0${u.rank}`}
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center font-bold text-xs text-gray-500 border-2 border-white shadow-sm">
+                      {u.name[0]}
+                    </div>
+                    <span className="font-bold text-sm uppercase tracking-tight text-[#111827]">{u.name}</span>
                   </div>
                   <div className="flex items-center gap-8">
-                    <span className="text-[10px] font-bold text-[#7C3AED] uppercase tracking-widest bg-white px-3 py-1 rounded-md border border-[#7C3AED]/10">{u.status}</span>
-                    <span className="font-black text-lg tracking-tighter">{u.score}</span>
+                    <span className="hidden sm:inline-block text-[10px] font-bold text-[#7C3AED] uppercase tracking-widest bg-white px-3 py-1 rounded-md border border-[#7C3AED]/10">{u.status}</span>
+                    <div className="text-right">
+                      <span className="block font-black text-lg tracking-tighter text-[#111827]">{u.score}</span>
+                      <span className={`text-[10px] font-bold ${u.movement === '▲' ? 'text-green-500' : u.movement === '▼' ? 'text-red-500' : 'text-gray-400'}`}>{u.movement} This Week</span>
+                    </div>
                   </div>
                 </div>
               ))}
+              <div className="p-4 bg-gray-50 text-center">
+                <button className="text-[10px] font-black uppercase tracking-widest text-[#7C3AED] hover:underline">View Top 100</button>
+              </div>
             </div>
           </div>
         );
@@ -162,18 +205,27 @@ const LearnerDashboard: React.FC = () => {
             <h2 className="text-4xl font-black uppercase tracking-tighter text-[#111827]">Job Matches</h2>
             <div className="grid gap-6">
               {[
-                { company: "Nirvaha", role: "Junior Architect", match: "89%", pay: "$85k - $110k" },
-                { company: "DataFlow", role: "Systems Engineer", match: "72%", pay: "$90k - $125k" }
+                { company: "Nirvaha", role: "Junior Architect", match: "89%", pay: "$85k - $110k", tags: ["React", "Node.js"] },
+                { company: "DataFlow", role: "Systems Engineer", match: "72%", pay: "$90k - $125k", tags: ["Python", "AWS"] },
+                { company: "TechCorp", role: "Frontend Dev", match: "65%", pay: "$75k - $95k", tags: ["Vue", "CSS"] }
               ].map((job, i) => (
-                <div key={i} className="bg-white border border-gray-100 rounded-3xl p-8 flex items-center justify-between shadow-sm hover:border-[#7C3AED]/30 transition-all group">
-                  <div>
+                <div key={i} className="bg-white border border-gray-100 rounded-3xl p-8 flex flex-col sm:flex-row items-center justify-between shadow-sm hover:border-[#7C3AED]/30 hover:shadow-lg hover:shadow-[#7C3AED]/5 transition-all group">
+                  <div className="mb-4 sm:mb-0 text-center sm:text-left">
                     <span className="text-[9px] font-black text-[#7C3AED] uppercase tracking-[0.3em] mb-2 block">{job.company}</span>
                     <h3 className="text-xl font-bold uppercase tracking-tight mb-2 group-hover:text-[#7C3AED] transition-colors">{job.role}</h3>
-                    <p className="text-xs text-gray-400 font-mono">{job.pay}</p>
+                    <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
+                      <span className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded-md">{job.pay}</span>
+                      {job.tags.map(t => <span key={t} className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border border-gray-100 px-2 py-1 rounded-md">{t}</span>)}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="block text-2xl font-black tracking-tighter text-[#111827]">{job.match}</span>
-                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Match Strength</span>
+                  <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-3">
+                    <div>
+                      <span className="block text-3xl font-black tracking-tighter text-[#111827]">{job.match}</span>
+                      <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Match Strength</span>
+                    </div>
+                    <button className="bg-[#111827] text-white px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#7C3AED] transition-colors shadow-lg">
+                      Apply Now
+                    </button>
                   </div>
                 </div>
               ))}
@@ -377,6 +429,7 @@ const LearnerDashboard: React.FC = () => {
             </motion.div>
           </AnimatePresence>
         </div>
+        <DashboardFooter />
       </main>
     </div>
   );
