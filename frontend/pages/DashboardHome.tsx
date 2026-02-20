@@ -6,9 +6,17 @@ import { useAuth } from '../AuthContext';
 import { Target, Zap, Shield, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ScrollVelocityContainer, ScrollVelocityRow } from '../registry/magicui/scroll-based-velocity';
 import { AuroraText } from '../registry/magicui/aurora-text';
+import { TypewriterEffectSmooth } from '../registry/aceternity/typewriter-effect';
 
 const DashboardHome: React.FC = () => {
     const { user } = useAuth();
+
+    const typewriterWords = [
+        { text: "YOUR" },
+        { text: "CAREER" },
+        { text: "STARTS" },
+        { text: "HERE", className: "text-[#7C3AED]" },
+    ];
 
     const features = [
         {
@@ -77,81 +85,75 @@ const DashboardHome: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen relative overflow-x-hidden">
-            {/* ── Global Background Video Engine ── */}
-            <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-                <video
-                    src="/videos/grok-video-5d92d925-3329-4a1d-9278-b909d93b37ef (1).mp4"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover opacity-[0.65]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/20" />
-            </div>
-
-            {/* ── Brighter Horizontal Greeting Card (Expanded & More Transparent) ── */}
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 relative z-10 pt-32">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6 }}
-                    className="mb-16 rounded-[4rem] overflow-hidden py-24 flex flex-col items-center justify-center gap-16 relative bg-transparent shadow-2xl"
-                >
-                    <div className="flex flex-col items-center gap-6 relative z-20">
-                        <span className="text-7xl sm:text-8xl font-black uppercase tracking-[0.8em] text-[#111827] ml-[0.8em] opacity-90">
-                            Hi
-                        </span>
-                        <p className="text-[11px] sm:text-[14px] font-bold text-gray-800 uppercase tracking-[0.3em] max-w-2xl text-center leading-relaxed opacity-70">
-                            STUDLYF—a platform built by students, for students. <br />
-                            <span className="text-[#7C3AED]">Next generation of student internet !!!</span>
-                        </p>
-                    </div>
-
-                    {/* Trust Section */}
-                    <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-16 relative z-20 mt-4 px-8 sm:px-16">
-                        {/* Built by Group */}
-                        <div className="flex flex-col items-center gap-10">
-                            <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Built by alumni of</span>
-                            <div className="flex items-center gap-16">
-                                <div className="flex items-center gap-4">
-                                    <img src="https://cdn.simpleicons.org/google/000000" className="h-8" alt="Google" />
-                                    <span className="font-bold text-black tracking-tight text-lg">Google</span>
+        <div className="min-h-screen overflow-x-hidden">
+            {/* Confined Background Video and Overlay for First Two Sections Only */}
+            <div className="relative overflow-hidden">
+                {/* Video background only for this wrapper */}
+                <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden h-full">
+                    <video
+                        src="/videos/grok-video-5d92d925-3329-4a1d-9278-b909d93b37ef (1).mp4"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover opacity-[0.65]"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/20" />
+                </div>
+                {/* ── Brighter Horizontal Greeting Card (Expanded & More Transparent) ── */}
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 relative z-10 pt-32">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.6 }}
+                        className="mb-16 rounded-[4rem] overflow-hidden py-24 flex flex-col items-center justify-center gap-16 relative bg-transparent shadow-2xl"
+                    >
+                        <div className="flex flex-col items-center gap-6 relative z-20">
+                            <TypewriterEffectSmooth words={typewriterWords} />
+                            <p className="text-[11px] sm:text-[14px] font-bold text-gray-800 uppercase tracking-[0.3em] max-w-2xl text-center leading-relaxed opacity-70">
+                                Studlyf -- Building the student internet <br />
+                                <span className="text-blue-600">for Next generation</span>
+                            </p>
+                        </div>
+                        {/* Trust Section */}
+                        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-16 relative z-20 mt-4 px-8 sm:px-16">
+                            {/* Built by Group */}
+                            <div className="flex flex-col items-center gap-10">
+                                <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Built by alumni of</span>
+                                <div className="flex items-center gap-16">
+                                    <div className="flex items-center gap-4">
+                                        <img src="https://cdn.simpleicons.org/google/000000" className="h-8" alt="Google" />
+                                        <span className="font-bold text-black tracking-tight text-lg">Google</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <img src="https://cdn.simpleicons.org/amazon/000000" className="h-8" alt="Amazon" />
+                                        <span className="font-bold text-black tracking-tight text-lg uppercase">amazon</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <img src="https://cdn.simpleicons.org/amazon/000000" className="h-8" alt="Amazon" />
-                                    <span className="font-bold text-black tracking-tight text-lg uppercase">amazon</span>
+                            </div>
+                            {/* Backed by Group */}
+                            <div className="flex flex-col items-center gap-10">
+                                <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Backed by</span>
+                                <div className="flex items-center gap-16 justify-center">
+                                    <div className="flex items-center gap-4">
+                                        <img src="https://cdn.simpleicons.org/ycombinator/000000" className="h-8" alt="Y Combinator" />
+                                        <span className="font-bold text-black tracking-tight text-lg">Combinator</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Zap className="w-7 h-7 text-black fill-current" />
+                                        <span className="font-bold text-black tracking-tight text-lg">Rebright</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Backed by Group */}
-                        <div className="flex flex-col items-center gap-10">
-                            <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Backed by</span>
-                            <div className="flex items-center gap-16 justify-center">
-                                <div className="flex items-center gap-4">
-                                    <img src="https://cdn.simpleicons.org/ycombinator/000000" className="h-8" alt="Y Combinator" />
-                                    <span className="font-bold text-black tracking-tight text-lg">Combinator</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <Zap className="w-7 h-7 text-black fill-current" />
-                                    <span className="font-bold text-black tracking-tight text-lg">Rebright</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {/* Interior Glow */}
-                    <div className="absolute top-0 left-1/4 w-1/2 h-full bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-                </motion.div>
-            </div>
-
-            <div className="max-w-7xl mx-auto pb-20 px-4 sm:px-8 lg:px-12 relative z-10">
-
+                        {/* Interior Glow */}
+                        <div className="absolute top-0 left-1/4 w-1/2 h-full bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+                    </motion.div>
+                </div>
                 {/* ── Courses Carousel Section ── */}
                 <section className="mb-12 relative">
-                    <div className="flex flex-col lg:flex-row items-start gap-16 mb-8">
-                        <div className="lg:w-1/4 pt-32">
+                    <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-start gap-16 mb-8">
+                        <div className="lg:w-1/4 pt-32 lg:pl-8">
                             <h2 className="text-4xl sm:text-5xl font-black text-[#111827] leading-[0.85] mb-8 tracking-tighter uppercase">
                                 Courses <br />
                                 For Every <br />
@@ -161,7 +163,6 @@ const DashboardHome: React.FC = () => {
                                 Global training for <br /> role-ready excellence.
                             </p>
                         </div>
-
                         <div className="lg:w-3/4 w-full relative group">
                             {/* Carousel Content */}
                             <div
@@ -172,7 +173,7 @@ const DashboardHome: React.FC = () => {
                                     <motion.div
                                         key={idx}
                                         whileHover={{ y: -10 }}
-                                        className="min-w-[260px] sm:min-w-[280px] h-[400px] snap-start rounded-[2.2rem] overflow-hidden relative group/card shadow-lg transition-all duration-700 cursor-pointer"
+                                        className="min-w-[calc(100%-1rem)] sm:min-w-[calc(50%-0.75rem)] lg:min-w-[calc(33.333%-1rem)] h-[400px] flex-shrink-0 snap-start rounded-[2.2rem] overflow-hidden relative group/card shadow-lg transition-all duration-700 cursor-pointer"
                                     >
                                         {/* Full Card Background Image */}
                                         <div className="absolute inset-0">
@@ -183,7 +184,6 @@ const DashboardHome: React.FC = () => {
                                             />
                                             <div className="absolute inset-0 bg-black/5 group-hover/card:bg-black/15 transition-colors duration-500" />
                                         </div>
-
                                         {/* Further Compact Sub-Card Pod */}
                                         <div className="absolute inset-x-5 bottom-5">
                                             <div className="bg-white rounded-[1.5rem] p-4 shadow-[0_12px_35px_rgba(0,0,0,0.1)] transform translate-y-1 group-hover/card:translate-y-0 transition-all duration-500">
@@ -195,7 +195,6 @@ const DashboardHome: React.FC = () => {
                                                         {course.title}
                                                     </h3>
                                                 </div>
-
                                                 <div className="flex items-center justify-between border-t border-gray-50 pt-3">
                                                     <div className="flex flex-col">
                                                         <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">
@@ -214,7 +213,6 @@ const DashboardHome: React.FC = () => {
                                     </motion.div>
                                 ))}
                             </div>
-
                             {/* Enhanced Centered Navigation Controls at Bottom */}
                             <div className="flex items-center justify-center gap-10 mt-4">
                                 <button
@@ -230,10 +228,15 @@ const DashboardHome: React.FC = () => {
                                     <ChevronRight className="w-7 h-7 group-hover/btn:translate-x-1 transition-transform" />
                                 </button>
                             </div>
-
                         </div>
                     </div>
+                    {/* ...existing code... */}
                 </section>
+            </div>
+            {/* The rest of the dashboard content, without the background video */}
+            <div className="max-w-7xl mx-auto pb-20 px-4 sm:px-8 lg:px-12 relative z-10">
+
+                {/* Courses Carousel Section removed (duplicate) */}
 
 
                 {/* Trust & Certification Section */}
