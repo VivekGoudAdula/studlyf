@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext';
 import { Target, Zap, Shield, BookOpen } from 'lucide-react';
 import DashboardFooter from '../components/DashboardFooter';
 import FAQCarousel from '../components/FAQCarousel';
+import WhyUsSection from '../components/WhyUsSection';
 
 const DashboardHome: React.FC = () => {
     const { user } = useAuth();
@@ -172,6 +173,7 @@ const DashboardHome: React.FC = () => {
                 </div>
             </div>
 
+            <WhyUsSection />
             <FAQCarousel />
             <DashboardFooter />
         </>
