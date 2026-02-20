@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { Target, Zap, Shield, BookOpen } from 'lucide-react';
 import DashboardFooter from '../components/DashboardFooter';
+import FAQCarousel from '../components/FAQCarousel';
 
 const DashboardHome: React.FC = () => {
     const { user } = useAuth();
@@ -53,8 +54,8 @@ const DashboardHome: React.FC = () => {
                                 </h1>
 
                                 <p className="text-xl text-gray-500 leading-relaxed mb-10">
-                                    Welcome to the Studlyf Console, {user?.displayName || 'Elite Member'}. 
-                                    This platform is designed to transform your engineering potential 
+                                    Welcome to the Studlyf Console, {user?.displayName || 'Elite Member'}.
+                                    This platform is designed to transform your engineering potential
                                     into verified excellence through clinical evidence and role-focused training.
                                 </p>
 
@@ -122,8 +123,8 @@ const DashboardHome: React.FC = () => {
                                 </h2>
 
                                 <p className="text-white/60 leading-relaxed mb-8">
-                                    Theoretical knowledge is entropy. We value verified skill sets 
-                                    deconstructed from real-world systems. Every track on Studlyf 
+                                    Theoretical knowledge is entropy. We value verified skill sets
+                                    deconstructed from real-world systems. Every track on Studlyf
                                     is designed to build clinical evidence for your engineering authority.
                                 </p>
 
@@ -154,8 +155,8 @@ const DashboardHome: React.FC = () => {
                             </h2>
 
                             <p className="text-gray-600 leading-relaxed mb-8">
-                                Connect your professional identity, verify your code through our AI 
-                                analysis protocol, and get directly matched with our ecosystem of 
+                                Connect your professional identity, verify your code through our AI
+                                analysis protocol, and get directly matched with our ecosystem of
                                 hiring partners.
                             </p>
 
@@ -171,6 +172,7 @@ const DashboardHome: React.FC = () => {
                 </div>
             </div>
 
+            <FAQCarousel />
             <DashboardFooter />
         </>
     );
