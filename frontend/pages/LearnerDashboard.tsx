@@ -414,6 +414,9 @@ const LearnerDashboard: React.FC = () => {
 
       <main className="flex-grow overflow-y-auto bg-gray-50/30">
         <div className="p-4 sm:p-6 lg:p-12">
+
+
+
           <AnimatePresence mode="wait">
             <motion.div
               key={activeView}

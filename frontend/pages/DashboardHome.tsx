@@ -2,182 +2,245 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { Target, Zap, Shield, BookOpen } from 'lucide-react';
+import {
+  Target,
+  Zap,
+  Shield,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+
+import { ScrollVelocityContainer, ScrollVelocityRow } from '../registry/magicui/scroll-based-velocity';
+import { AuroraText } from '../registry/magicui/aurora-text';
+import { TypewriterEffectSmooth } from '../registry/aceternity/typewriter-effect';
+
 import DashboardFooter from '../components/DashboardFooter';
 import FAQCarousel from '../components/FAQCarousel';
 import WhyUsSection from '../components/WhyUsSection';
 
 const DashboardHome: React.FC = () => {
-    const { user } = useAuth();
+  const { user } = useAuth();
 
-    const features = [
-        {
-            title: "Hero Tracks",
-            desc: "Role-focused engineering specialization for elite readiness.",
-            icon: <Zap className="w-6 h-6 text-[#7C3AED]" />,
-            to: "/learn/courses"
-        },
-        {
-            title: "Skill Assessment",
-            desc: "Identify your strengths with clinical scoring maps.",
-            icon: <Target className="w-6 h-6 text-[#7C3AED]" />,
-            to: "/learn/assessment"
-        },
-        {
-            title: "Proof of Skill",
-            desc: "Build evidence-based developer portfolios.",
-            icon: <Shield className="w-6 h-6 text-[#7C3AED]" />,
-            to: "/job-prep/portfolio"
-        },
-        {
-            title: "Clinical Resumes",
-            desc: "Instant verification-ready resumes for partners.",
-            icon: <BookOpen className="w-6 h-6 text-[#7C3AED]" />,
-            to: "/job-prep/resume-builder"
-        }
-    ];
+  const typewriterWords = [
+    { text: 'YOUR' },
+    { text: 'CAREER' },
+    { text: 'STARTS' },
+    { text: 'HERE', className: 'text-[#7C3AED]' },
+  ];
 
-    return (
-        <>
-            <div className="min-h-screen bg-gray-50/30 pt-32 pb-20 px-4 sm:px-8 lg:px-12">
-                <div className="max-w-7xl mx-auto">
+  const features = [
+    {
+      title: 'Hero Tracks',
+      desc: 'Role-focused engineering specialization for elite readiness.',
+      icon: Zap,
+      to: '/learn/courses',
+    },
+    {
+      title: 'Skill Assessment',
+      desc: 'Identify your strengths with clinical scoring maps.',
+      icon: Target,
+      to: '/learn/assessment',
+    },
+    {
+      title: 'Proof of Skill',
+      desc: 'Build evidence-based developer portfolios.',
+      icon: Shield,
+      to: '/job-prep/portfolio',
+    },
+    {
+      title: 'Clinical Resumes',
+      desc: 'Instant verification-ready resumes for partners.',
+      icon: BookOpen,
+      to: '/job-prep/resume-builder',
+    },
+  ];
 
-                    {/* Hero Section */}
-                    <section className="mb-16">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-white rounded-[3rem] p-12 border border-gray-100 shadow-sm relative overflow-hidden"
-                        >
-                            <div className="relative z-10 max-w-3xl">
-                                <h1 className="text-5xl sm:text-7xl font-black tracking-tighter text-[#111827] uppercase mb-6">
-                                    Your <span className="text-[#7C3AED]">Command</span> Center.
-                                </h1>
+  const courses = [
+    {
+      title: 'Software Engineering',
+      school: 'Engineering',
+      image:
+        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
+    },
+    {
+      title: 'Artificial Intelligence',
+      school: 'Intelligence',
+      image:
+        'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
+    },
+    {
+      title: 'Product Management',
+      school: 'Management',
+      image:
+        'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
+    },
+    {
+      title: 'Data & Analytics',
+      school: 'Data Science',
+      image:
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
+    },
+    {
+      title: 'Cyber Security',
+      school: 'Security',
+      image:
+        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
+    },
+  ];
 
-                                <p className="text-xl text-gray-500 leading-relaxed mb-10">
-                                    Welcome to the Studlyf Console, {user?.displayName || 'Elite Member'}.
-                                    This platform is designed to transform your engineering potential
-                                    into verified excellence through clinical evidence and role-focused training.
-                                </p>
+  const scrollCarousel = (id: string, direction: 'left' | 'right') => {
+    const container = document.getElementById(id);
+    if (container) {
+      container.scrollBy({
+        left: direction === 'left' ? -400 : 400,
+        behavior: 'smooth',
+      });
+    }
+  };
 
-                                <div className="flex flex-wrap gap-4">
-                                    <Link
-                                        to="/learn/courses"
-                                        className="bg-[#7C3AED] text-white px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-[#7C3AED]/20"
-                                    >
-                                        Explore Hero Tracks
-                                    </Link>
+  return (
+    <>
+      {/* HERO SECTION WITH VIDEO */}
+      <div className="relative overflow-hidden min-h-screen pt-32">
+        <div className="absolute inset-0 -z-10">
+          <video
+            src="/videos/hero.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover opacity-60"
+          />
+        </div>
 
-                                    <Link
-                                        to="/dashboard"
-                                        className="bg-white text-[#7C3AED] border border-[#7C3AED]/20 px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-gray-50 transition-all"
-                                    >
-                                        View My Profile
-                                    </Link>
-                                </div>
-                            </div>
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center mb-20"
+          >
+            <TypewriterEffectSmooth words={typewriterWords} />
 
-                            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#F5F3FF] to-transparent pointer-events-none opacity-50" />
-                            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-[#7C3AED] rounded-full blur-[120px] opacity-10" />
-                        </motion.div>
-                    </section>
+            <p className="mt-6 text-gray-700 text-sm uppercase tracking-widest">
+              Welcome back, {user?.displayName || 'Elite Member'}
+            </p>
+          </motion.div>
 
-                    {/* Feature Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-                        {features.map((feature, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                className="group bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm hover:border-[#7C3AED]/30 transition-all cursor-pointer"
-                            >
-                                <Link to={feature.to}>
-                                    <div className="w-14 h-14 bg-[#F5F3FF] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                        {feature.icon}
-                                    </div>
-                                    <h3 className="text-lg font-bold text-[#111827] uppercase mb-2 tracking-tight group-hover:text-[#7C3AED] transition-colors">
-                                        {feature.title}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 leading-relaxed">
-                                        {feature.desc}
-                                    </p>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
+          {/* COURSES CAROUSEL */}
+          <section className="mb-24">
+            <div
+              id="course-carousel"
+              className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth"
+            >
+              {courses.map((course, idx) => (
+                <div
+                  key={idx}
+                  className="min-w-[300px] h-[380px] rounded-3xl overflow-hidden relative shadow-lg"
+                >
+                  <img
+                    src={course.image}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
 
-                    {/* Informational Section */}
-                    <section className="grid lg:grid-cols-2 gap-8">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="bg-[#111827] rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl"
-                        >
-                            <div className="relative z-10">
-                                <span className="text-[10px] font-black text-[#A78BFA] uppercase tracking-[0.4em] mb-4 block">
-                                    Our Philosophy
-                                </span>
-
-                                <h2 className="text-3xl font-bold uppercase tracking-tight mb-6 leading-tight">
-                                    Engineering Excellence Through Clinical Evidence.
-                                </h2>
-
-                                <p className="text-white/60 leading-relaxed mb-8">
-                                    Theoretical knowledge is entropy. We value verified skill sets
-                                    deconstructed from real-world systems. Every track on Studlyf
-                                    is designed to build clinical evidence for your engineering authority.
-                                </p>
-
-                                <ul className="space-y-4">
-                                    {[
-                                        'System Deconstruction',
-                                        'Clinical Readiness scoring',
-                                        'GitHub Verification Protocol'
-                                    ].map((text, i) => (
-                                        <li key={i} className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-[#A78BFA]">
-                                            <div className="w-1.5 h-1.5 bg-[#A78BFA] rounded-full" />
-                                            {text}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-[#7C3AED] rounded-full blur-[100px] opacity-20" />
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="bg-[#F5F3FF] rounded-[2.5rem] p-10 border border-[#7C3AED]/10 flex flex-col justify-center"
-                        >
-                            <h2 className="text-3xl font-bold text-[#111827] uppercase tracking-tight mb-6 leading-tight">
-                                Unlock Your Career Growth.
-                            </h2>
-
-                            <p className="text-gray-600 leading-relaxed mb-8">
-                                Connect your professional identity, verify your code through our AI
-                                analysis protocol, and get directly matched with our ecosystem of
-                                hiring partners.
-                            </p>
-
-                            <Link
-                                to="/dashboard"
-                                className="w-fit bg-white text-[#7C3AED] px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-[10px] border border-[#7C3AED]/20 hover:shadow-lg transition-all"
-                            >
-                                Start Verification
-                            </Link>
-                        </motion.div>
-                    </section>
-
+                  <div className="absolute bottom-6 left-6 bg-white rounded-2xl p-4 shadow-lg">
+                    <p className="text-xs uppercase font-bold text-[#7C3AED]">
+                      School of {course.school}
+                    </p>
+                    <h3 className="text-lg font-bold">{course.title}</h3>
+                  </div>
                 </div>
+              ))}
             </div>
 
-            <WhyUsSection />
-            <FAQCarousel />
-            <DashboardFooter />
-        </>
-    );
+            <div className="flex justify-center gap-6 mt-6">
+              <button
+                onClick={() => scrollCarousel('course-carousel', 'left')}
+                className="p-4 bg-white rounded-full shadow"
+              >
+                <ChevronLeft />
+              </button>
+              <button
+                onClick={() => scrollCarousel('course-carousel', 'right')}
+                className="p-4 bg-white rounded-full shadow"
+              >
+                <ChevronRight />
+              </button>
+            </div>
+          </section>
+
+          {/* FEATURE GRID */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
+            {features.map((feature, i) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-white p-8 rounded-3xl shadow-sm"
+                >
+                  <Link to={feature.to}>
+                    <div className="w-14 h-14 bg-[#F5F3FF] rounded-xl flex items-center justify-center mb-6">
+                      <Icon className="w-6 h-6 text-[#7C3AED]" />
+                    </div>
+                    <h3 className="font-bold mb-2">{feature.title}</h3>
+                    <p className="text-sm text-gray-500">{feature.desc}</p>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* PHILOSOPHY SECTION */}
+          <section className="grid lg:grid-cols-2 gap-10 mb-24">
+            <div className="bg-black text-white p-12 rounded-3xl">
+              <h2 className="text-3xl font-bold mb-6">
+                Engineering Excellence Through Evidence
+              </h2>
+              <p className="text-gray-400">
+                Theoretical knowledge alone is not enough. Every track builds
+                verified skill authority through system-level deconstruction and
+                proof-based evaluation.
+              </p>
+            </div>
+
+            <div className="bg-[#F5F3FF] p-12 rounded-3xl">
+              <h2 className="text-3xl font-bold mb-6">
+                Streamline Your Career in AI Era
+              </h2>
+
+              <h3 className="text-4xl font-bold mb-6">
+                <AuroraText>career dreamer</AuroraText>
+              </h3>
+
+              <Link
+                to="/learn/courses"
+                className="bg-[#7C3AED] text-white px-8 py-4 rounded-2xl font-bold"
+              >
+                Start Now
+              </Link>
+            </div>
+          </section>
+
+          {/* SCROLL VELOCITY */}
+          <div className="mb-20">
+            <ScrollVelocityContainer className="text-4xl font-black uppercase">
+              <ScrollVelocityRow baseVelocity={-1}>
+                Studlyf &nbsp;&nbsp; Studlyf &nbsp;&nbsp; Studlyf
+              </ScrollVelocityRow>
+            </ScrollVelocityContainer>
+          </div>
+        </div>
+      </div>
+
+      <WhyUsSection />
+      <FAQCarousel />
+      <DashboardFooter />
+    </>
+  );
 };
 
 export default DashboardHome;
