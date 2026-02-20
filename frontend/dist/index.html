@@ -16,6 +16,7 @@
             theme: {
                 extend: {
                     fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
                         poppins: ['Poppins', 'sans-serif'],
                         display: ['Instrument Serif', 'serif'],
                         syne: ['Syne', 'sans-serif'],
@@ -32,7 +33,7 @@
         }
 
         body {
-            font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Poppins', sans-serif;
             -webkit-font-smoothing: antialiased;
             background-color: #FFFFFF;
             color: #374151;
@@ -123,8 +124,31 @@
         .animate-shine {
             animation: shine 2s infinite;
         }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: marquee 40s linear infinite;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
     </style>
-  <script type="module" crossorigin src="/assets/index-CcQYbb65.js"></script>
+  <script type="module" crossorigin src="/assets/index-BI7r9l0n.js"></script>
 </head>
 
 <body class="text-[#374151]">
