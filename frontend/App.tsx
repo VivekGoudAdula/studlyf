@@ -120,13 +120,17 @@ const App: React.FC = () => {
 
 
 
+import { HeroUIProvider } from "@heroui/react";
+
 const AppWrapper = () => (
-  <Router>
-    <AuthProvider>
-      <ScrollToTop />
-      <App />
-    </AuthProvider>
-  </Router>
+  <HeroUIProvider>
+    <Router>
+      <AuthProvider>
+        <ScrollToTop />
+        <App />
+      </AuthProvider>
+    </Router>
+  </HeroUIProvider>
 );
 
 export default AppWrapper;

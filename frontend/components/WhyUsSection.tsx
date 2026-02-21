@@ -203,16 +203,16 @@ const WhyUsSection: React.FC = () => {
     };
 
     return (
-        <section className="py-24 bg-white overflow-hidden relative font-poppins">
-            <div className="max-w-7xl mx-auto px-6">
+        <section className="py-12 bg-white overflow-hidden relative font-poppins">
+            <div className="max-w-5xl mx-auto px-6">
 
                 {/* Title */}
-                <div className="text-center mb-16">
+                <div className="text-center mb-6">
                     <motion.h2
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-5xl sm:text-7xl font-black text-[#111827] uppercase tracking-tighter"
+                        className="text-4xl sm:text-5xl font-black text-[#111827] uppercase tracking-tighter"
                     >
                         Why <span className="text-[#7C3AED]">Us?</span>
                     </motion.h2>
@@ -223,7 +223,7 @@ const WhyUsSection: React.FC = () => {
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="bg-white rounded-[2.5rem] p-8 mb-16 flex flex-wrap justify-around items-center border border-gray-100 shadow-[0_32px_64px_-16px_rgba(124,58,237,0.1)] relative overflow-hidden group"
+                    className="bg-white rounded-[2rem] p-6 mb-12 flex flex-wrap justify-around items-center border border-gray-100 shadow-[0_24px_48px_-12px_rgba(124,58,237,0.1)] relative overflow-hidden group"
                 >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#7C3AED]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
@@ -231,22 +231,22 @@ const WhyUsSection: React.FC = () => {
                         <motion.div
                             key={i}
                             whileHover={{ y: -5, scale: 1.05 }}
-                            className="flex flex-col items-center px-10 py-4 border-r border-gray-100 last:border-none relative z-10"
+                            className="flex flex-col items-center px-6 py-2 border-r border-gray-100 last:border-none relative z-10"
                         >
                             <motion.div
                                 initial={{ scale: 0 }}
                                 whileInView={{ scale: 1 }}
                                 transition={{ delay: i * 0.1 + 0.5, type: 'spring' }}
-                                className="w-12 h-12 bg-[#F5F3FF] rounded-2xl flex items-center justify-center mb-4 text-[#7C3AED]"
+                                className="w-10 h-10 bg-[#F5F3FF] rounded-xl flex items-center justify-center mb-3 text-[#7C3AED]"
                             >
                                 {stat.icon}
                             </motion.div>
                             <div className="flex items-center gap-1 mb-1">
-                                <span className="text-5xl sm:text-6xl font-black text-[#111827] tracking-tighter">
+                                <span className="text-4xl sm:text-5xl font-black text-[#111827] tracking-tighter">
                                     <Counter value={stat.value} delay={i * 0.2 + 0.3} />
                                 </span>
                             </div>
-                            <span className="text-xs font-black text-[#7C3AED] uppercase tracking-[0.3em] opacity-80">{stat.label}</span>
+                            <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.2em] opacity-80">{stat.label}</span>
                         </motion.div>
                     ))}
                 </motion.div>
@@ -263,19 +263,19 @@ const WhyUsSection: React.FC = () => {
                     >
                         {/* Image Container */}
                         <div className="relative group">
-                            <div className="absolute -inset-4 bg-gradient-to-r from-[#7C3AED]/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem]" />
-                            <div className="relative bg-white rounded-[3rem] overflow-hidden border border-gray-100 shadow-xl">
+                            <div className="absolute -inset-4 bg-gradient-to-r from-[#7C3AED]/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem] border-" />
+                            <div className="relative bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-xl">
                                 <img
                                     src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800"
                                     alt="Why Us Illustration"
-                                    className="w-full h-[450px] object-cover transform group-hover:scale-105 transition-transform duration-700"
+                                    className="w-full h-[250px] object-cover transform group-hover:scale-105 transition-transform duration-700"
                                 />
                             </div>
                         </div>
 
                         {/* Text Content - Pushed to Bottom */}
-                        <div className="mt-auto pt-12 space-y-6">
-                            <h3 className="text-3xl font-bold text-[#111827] uppercase tracking-tight">The Growth Engine for Engineers.</h3>
+                        <div className="mt-auto pt-8 space-y-4">
+                            <h3 className="text-2xl font-bold text-[#111827] uppercase tracking-tight">The Growth Engine for Engineers.</h3>
                             <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {features.map((feature, i) => (
                                     <motion.li
@@ -294,12 +294,12 @@ const WhyUsSection: React.FC = () => {
                     </motion.div>
 
                     {/* Right: Stripe Animation */}
-                    <div className="relative h-[600px] flex items-end justify-center bg-gradient-to-b from-transparent to-[#F5F3FF]/30 rounded-[3rem]">
+                    <div className="relative h-[380px] flex items-end justify-center bg-gradient-to-b from-transparent to-[#F5F3FF]/30 rounded-[2.5rem]">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
-                            className="absolute inset-0 z-0 bg-white shadow-inner rounded-[3rem] border border-[#7C3AED]/10 overflow-hidden"
+                            className="absolute inset-0 z-0 bg-white shadow-inner rounded-[2.5rem] border border-[#7C3AED]/10 overflow-hidden"
                         >
                             <StripeBurst isPaused={isPaused} theme={currentTheme} />
                         </motion.div>
