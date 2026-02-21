@@ -18,6 +18,7 @@ import { TypewriterEffectSmooth } from '../registry/aceternity/typewriter-effect
 import DashboardFooter from '../components/DashboardFooter';
 import FAQCarousel from '../components/FAQCarousel';
 import WhyUsSection from '../components/WhyUsSection';
+import IndustryProjects from '../components/IndustryProjects';
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
@@ -400,6 +401,7 @@ const DashboardHome: React.FC = () => {
         </section>
       </div>
 
+      <IndustryProjects />
       <WhyUsSection />
       <FAQCarousel />
       <DashboardFooter />
