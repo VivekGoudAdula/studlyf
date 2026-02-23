@@ -585,20 +585,20 @@ const DashboardHome: React.FC = () => {
 
         {/* GET Hired Section with Background Image */}
         <section
-          className="mb-32 relative min-h-[520px] flex items-center justify-center overflow-hidden"
+          className="mb-32 relative min-h-[650px] flex items-center justify-center overflow-hidden"
         >
           {/* Background Image Layer */}
           <div className="absolute inset-0 z-0">
             <img
               src="/images/aftproduct.png"
               alt="Hiring Background"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover blur-[2px]"
             />
             {/* Subtle overlay to help text legibility if needed */}
-            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 bg-black/40" />
           </div>
 
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-16 py-20">
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-16 pt-8 pb-32">
             {/* Left Side: Text and Button */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -620,6 +620,7 @@ const DashboardHome: React.FC = () => {
               >
                 Get Started
               </Link>
+
             </motion.div>
 
             {/* Right Side: Comparison Card */}
@@ -630,41 +631,47 @@ const DashboardHome: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="flex-1 w-full max-w-xl"
             >
-              <div className="relative p-10 rounded-[3rem] border border-white/20 bg-transparent overflow-hidden">
-                <div className="relative z-10 grid grid-cols-2 gap-8 items-center">
-                  <div className="space-y-6 relative h-full flex flex-col justify-center">
+              <div className="liquid-glass-container p-10 rounded-[3rem] overflow-hidden">
+                <div className="glass-filter" />
+                <div className="glass-distortion-overlay" />
+                <div className="glass-overlay opacity-20" />
+                <div className="glass-specular" />
+
+                <div className="glass-content-inner relative z-10 grid grid-cols-2 gap-16 items-center">
+                  {/* Liquid Glass Violet Divider - Adjusted Positioning */}
+                  <div className="absolute left-1/2 top-[-2.5rem] bottom-[-2.5rem] w-[2px] bg-gradient-to-b from-transparent via-violet-400/80 to-transparent shadow-[0_0_15px_rgba(167,139,250,0.6)] z-20 -translate-x-1/2" />
+
+                  <div className="space-y-6 relative h-full flex flex-col justify-center pr-8 sm:pr-12">
                     <h3 className="text-2xl font-black text-white uppercase tracking-tighter">MNC</h3>
-                    <ul className="space-y-4 text-sm text-white/90 font-bold">
-                      <li className="flex items-center gap-2">
+                    <ul className="space-y-4 text-sm text-white font-bold">
+                      <li className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
                         Structured Growth
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
                         Global Exposure
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
                         Tiered Authority
                       </li>
                     </ul>
-                    {/* Violet Divider */}
-                    <div className="absolute right-[-1rem] top-1/2 -translate-y-1/2 w-[2px] h-[80%] bg-violet-400/40" />
                   </div>
 
-                  <div className="pl-8 space-y-6 flex flex-col justify-center">
-                    <h3 className="text-2xl font-black text-violet-300 uppercase tracking-tighter">Startups</h3>
-                    <ul className="space-y-4 text-sm text-violet-100 font-bold">
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-violet-400 rounded-full" />
+                  <div className="space-y-6 relative h-full flex flex-col justify-center pl-8 sm:pl-12">
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Startups</h3>
+                    <ul className="space-y-4 text-sm text-white font-bold">
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
                         Rapid Execution
                       </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-violet-400 rounded-full" />
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
                         Dynamic Roles
                       </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-violet-400 rounded-full" />
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
                         High Ownership
                       </li>
                     </ul>
@@ -672,6 +679,56 @@ const DashboardHome: React.FC = () => {
                 </div>
               </div>
             </motion.div>
+          </div>
+
+          {/* Stat Tags Spanning Entire Row - Elevated & Enlarged */}
+          <div className="absolute bottom-24 left-0 w-full z-20 px-8 sm:px-16 lg:px-24">
+            <div className="max-w-[1600px] mx-auto flex flex-row items-center justify-between gap-8">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-3 h-3 bg-[#1D74F2] rounded-full shadow-[0_0_15px_#1D74F2]" />
+                <span
+                  className="text-white text-[14px] sm:text-[18px] font-bold uppercase tracking-[0.4em] whitespace-nowrap"
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                  starts at 10k+
+                </span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-3 h-3 bg-violet-400 rounded-full shadow-[0_0_15px_rgba(167,139,250,0.8)]" />
+                <span
+                  className="text-white text-[14px] sm:text-[18px] font-bold uppercase tracking-[0.4em] whitespace-nowrap"
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                  10+ Startup&apos;s
+                </span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_#34d399]" />
+                <span
+                  className="text-white text-[14px] sm:text-[18px] font-bold uppercase tracking-[0.4em] whitespace-nowrap"
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                  80% Success rate
+                </span>
+              </motion.div>
+            </div>
           </div>
         </section>
 
