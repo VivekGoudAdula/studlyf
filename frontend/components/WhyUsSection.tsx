@@ -94,9 +94,7 @@ const StripeBurst: React.FC<StripeBurstProps> = ({ isPaused, theme }) => {
                 if (isPaused) return;
                 this.length += this.speed;
                 this.opacity -= 0.003;
-                if (this.opacity <= 0) {
-                    this.reset();
-                }
+                if (this.opacity <= 0) this.reset();
             }
 
             reset() {
@@ -163,10 +161,7 @@ const Counter: React.FC<{ value: string; delay: number }> = ({ value, delay }) =
             const progress = Math.min((timestamp - startTime) / duration, 1);
             const easeProgress = 1 - (1 - progress) * (1 - progress);
             setCount(Math.floor(easeProgress * target));
-
-            if (progress < 1) {
-                rafRef.current = requestAnimationFrame(animate);
-            }
+            if (progress < 1) rafRef.current = requestAnimationFrame(animate);
         };
 
         const timeoutId = setTimeout(() => {
@@ -175,17 +170,11 @@ const Counter: React.FC<{ value: string; delay: number }> = ({ value, delay }) =
 
         return () => {
             clearTimeout(timeoutId);
-            if (rafRef.current !== null) {
-                cancelAnimationFrame(rafRef.current);
-            }
+            if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
         };
     }, [target, delay]);
 
-    return (
-        <span>
-            {count}{suffix}
-        </span>
-    );
+    return <span>{count}{suffix}</span>;
 };
 
 const WhyUsSection: React.FC = () => {
@@ -206,7 +195,6 @@ const WhyUsSection: React.FC = () => {
         <section className="py-16 bg-white overflow-hidden relative font-poppins">
             <div className="max-w-7xl mx-auto px-6">
 
-                {/* Title */}
                 <div className="text-center mb-8">
                     <motion.h2
                         initial={{ opacity: 0, y: 20 }}
@@ -218,7 +206,6 @@ const WhyUsSection: React.FC = () => {
                     </motion.h2>
                 </div>
 
-                {/* Stats Bar */}
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -241,30 +228,27 @@ const WhyUsSection: React.FC = () => {
                             >
                                 {stat.icon}
                             </motion.div>
-                            <div className="flex items-center gap-1 mb-1">
-                                <span className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tighter">
-                                    <Counter value={stat.value} delay={i * 0.2 + 0.3} />
-                                </span>
-                            </div>
-                            <span className="text-xs font-black text-[#7C3AED] uppercase tracking-[0.3em] opacity-80">{stat.label}</span>
+                            <span className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tighter">
+                                <Counter value={stat.value} delay={i * 0.2 + 0.3} />
+                            </span>
+                            <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.2em] opacity-80">
+                                {stat.label}
+                            </span>
                         </motion.div>
                     ))}
                 </motion.div>
 
-                {/* Content & Animation */}
                 <div className="grid lg:grid-cols-2 gap-8 items-stretch">
 
-                    {/* Left: Content */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         className="flex flex-col h-full"
                     >
-                        {/* Image Container */}
                         <div className="relative group">
-                            <div className="absolute -inset-4 bg-gradient-to-r from-[#7C3AED]/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem]" />
-                            <div className="relative bg-white rounded-[3rem] overflow-hidden border border-gray-100 shadow-xl">
+                            <div className="absolute -inset-4 bg-gradient-to-r from-[#7C3AED]/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem]" />
+                            <div className="relative bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-xl">
                                 <img
                                     src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800"
                                     alt="Why Us Illustration"
@@ -273,9 +257,11 @@ const WhyUsSection: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Text Content - Pushed to Bottom */}
                         <div className="mt-auto pt-6 space-y-4">
-                            <h3 className="text-3xl font-bold text-[#111827] uppercase tracking-tight">The Growth Engine for Engineers.</h3>
+                            <h3 className="text-3xl font-bold text-[#111827] uppercase tracking-tight">
+                                The Growth Engine for Engineers.
+                            </h3>
+
                             <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {features.map((feature, i) => (
                                     <motion.li
@@ -286,33 +272,36 @@ const WhyUsSection: React.FC = () => {
                                         className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-2xl hover:bg-[#F5F3FF] transition-colors group"
                                     >
                                         <div className="w-2 h-2 bg-[#7C3AED] rounded-full group-hover:scale-150 transition-transform" />
-                                        <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">{feature}</span>
+                                        <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                                            {feature}
+                                        </span>
                                     </motion.li>
                                 ))}
                             </ul>
                         </div>
                     </motion.div>
 
-                    {/* Right: Stripe Animation */}
                     <div className="relative h-full min-h-[400px] flex items-end justify-center bg-gradient-to-b from-transparent to-[#F5F3FF]/30 rounded-[3rem]">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
-                            className="absolute inset-0 z-0 bg-white shadow-inner rounded-[3rem] border border-[#7C3AED]/10 overflow-hidden"
+                            className="absolute inset-0 z-0 bg-white shadow-inner rounded-[2.5rem] border border-[#7C3AED]/10 overflow-hidden"
                         >
                             <StripeBurst isPaused={isPaused} theme={currentTheme} />
                         </motion.div>
 
-                        {/* Controls Overlay */}
                         <div className="absolute top-8 right-8 z-20 flex flex-col gap-2 items-end">
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setIsPaused(!isPaused)}
                                     className="p-3 bg-white/80 backdrop-blur-md rounded-xl border border-gray-100 text-gray-600 hover:text-[#7C3AED] hover:shadow-lg transition-all shadow-sm"
                                 >
-                                    {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />}
+                                    {isPaused
+                                        ? <Play className="w-4 h-4 fill-current" />
+                                        : <Pause className="w-4 h-4 fill-current" />}
                                 </button>
+
                                 <button
                                     onClick={() => setShowThemePanel(!showThemePanel)}
                                     className="p-3 bg-white/80 backdrop-blur-md rounded-xl border border-gray-100 text-gray-600 hover:text-[#7C3AED] hover:shadow-lg transition-all shadow-sm"
@@ -321,7 +310,6 @@ const WhyUsSection: React.FC = () => {
                                 </button>
                             </div>
 
-                            {/* Theme Selector Panel */}
                             {showThemePanel && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -335,10 +323,11 @@ const WhyUsSection: React.FC = () => {
                                                 setCurrentTheme(theme);
                                                 setShowThemePanel(false);
                                             }}
-                                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${currentTheme === theme
-                                                ? 'bg-[#7C3AED] text-white shadow-lg'
-                                                : 'text-gray-500 hover:bg-[#F5F3FF] hover:text-[#7C3AED]'
-                                                }`}
+                                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                                currentTheme === theme
+                                                    ? 'bg-[#7C3AED] text-white shadow-lg'
+                                                    : 'text-gray-500 hover:bg-[#F5F3FF] hover:text-[#7C3AED]'
+                                            }`}
                                         >
                                             {themeIcons[theme]}
                                             {theme}

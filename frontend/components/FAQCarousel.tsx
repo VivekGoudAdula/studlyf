@@ -62,7 +62,7 @@ const FAQCarousel: React.FC = () => {
           </motion.h3>
         </div>
 
-        <div className="relative flex items-center justify-center min-h-[500px]">
+        <div className="relative flex items-center justify-center min-h-[400px]">
           {/* Navigation Arrows */}
           <button
             onClick={handlePrev}
@@ -116,14 +116,14 @@ const FAQCarousel: React.FC = () => {
                       damping: 30,
                       opacity: { duration: 0.2 }
                     }}
-                    className="absolute max-w-2xl w-full px-4"
+                    className="absolute max-w-xl w-full px-4"
                   >
                     <div
                       onClick={() => !isCenter && (isLeft ? handlePrev() : handleNext())}
-                      className={`bg-white rounded-[3.5rem] p-12 border border-gray-100 shadow-[0_32px_64px_-16px_rgba(124,58,237,0.08)] overflow-hidden group cursor-pointer transition-all duration-500 font-poppins ${isCenter ? 'ring-2 ring-[#7C3AED]/20 shadow-[0_32px_80px_-20px_rgba(124,58,237,0.15)] bg-white/95 backdrop-blur-sm' : 'hover:scale-[1.02]'
+                      className={`bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-[0_24px_48px_-12px_rgba(124,58,237,0.08)] overflow-hidden group cursor-pointer transition-all duration-500 font-poppins ${isCenter ? 'ring-2 ring-[#7C3AED]/20 shadow-[0_24px_56px_-14px_rgba(124,58,237,0.15)] bg-white/95 backdrop-blur-sm' : 'hover:scale-[1.02]'
                         }`}
                     >
-                      <div className="h-64 rounded-3xl mb-10 overflow-hidden bg-gray-100">
+                      <div className="h-48 rounded-2xl mb-8 overflow-hidden bg-gray-100">
                         <img
                           src={item.image}
                           alt={item.question}
@@ -131,11 +131,11 @@ const FAQCarousel: React.FC = () => {
                         />
                       </div>
 
-                      <h4 className="text-3xl font-black text-[#111827] uppercase mb-6 tracking-tight leading-[1.1] font-poppins">
+                      <h4 className="text-2xl font-black text-[#111827] uppercase mb-4 tracking-tight leading-[1.1] font-poppins">
                         {item.question}
                       </h4>
 
-                      <p className="text-gray-500 leading-relaxed text-base font-sans font-medium">
+                      <p className="text-gray-500 leading-relaxed text-sm font-sans font-medium">
                         {item.answer}
                       </p>
 
@@ -143,9 +143,9 @@ const FAQCarousel: React.FC = () => {
                         <motion.button
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="mt-10 text-xs font-black text-[#7C3AED] uppercase tracking-[0.2em] flex items-center gap-3 hover:gap-5 transition-all group/btn font-poppins"
+                          className="mt-8 text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.2em] flex items-center gap-3 hover:gap-5 transition-all group/btn font-poppins"
                         >
-                          Deep Dive Logic <ChevronRight className="w-5 h-5 transition-transform group-hover/btn:translate-x-1" />
+                          Deep Dive Logic <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                         </motion.button>
                       )}
                     </div>

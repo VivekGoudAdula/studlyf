@@ -352,14 +352,7 @@ const CareerOnboarding: React.FC = () => {
 
                         <div className="absolute inset-0 z-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                     </div>
-                    <div className="text-center p-12 relative z-50">
-                        <button
-                            onClick={() => { setActiveTab('Gemini'); setStep(5); }}
-                            className="px-16 py-6 bg-[#1D74F2] text-white rounded-[2rem] font-bold text-xl hover:scale-105 transition-all shadow-xl shadow-blue-500/20"
-                        >
-                            Continue session
-                        </button>
-                    </div>
+
                 </motion.div>
             );
         }

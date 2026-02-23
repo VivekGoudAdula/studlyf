@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import {
@@ -9,19 +9,58 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 import { ScrollVelocityContainer, ScrollVelocityRow } from '../registry/magicui/scroll-based-velocity';
 import { AuroraText } from '../registry/magicui/aurora-text';
 import { TypewriterEffectSmooth } from '../registry/aceternity/typewriter-effect';
+import { Button } from "@heroui/react";
 
 import DashboardFooter from '../components/DashboardFooter';
 import FAQCarousel from '../components/FAQCarousel';
 import WhyUsSection from '../components/WhyUsSection';
-import IndustryProjects from '../components/IndustryProjects';
+import { NeonBackground } from '../components/NeonBackground';
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
+  const [activeBrief, setActiveBrief] = useState<string>('Cognition');
+  const [isMuted, setIsMuted] = useState(true);
+
+  const briefDetails: Record<string, { title: string; desc: React.ReactNode; image: string; video?: string; images?: string[] }> = {
+    'Cognition': {
+      title: 'Cognition',
+      desc: 'Studlyf understands people beyond resumes. Our AI analyzes skills, experience, learning patterns, and career intent to create meaningful connections between talent and opportunity. It delivers intelligent career guidance while helping recruiters discover true potential, not just keywords.',
+      image: '/images/producrbriefCONG.png'
+    },
+    'Protocol': {
+      title: 'Protocol',
+      desc: 'Every interaction follows a structured AI workflow — from resume analysis to hiring decisions. Automated protocols ensure fairness, transparency, and consistency across recruitment, skill evaluation, and personalized learning recommendations.',
+      image: '/images/protocol.png'
+    },
+    'Verification': {
+      title: 'Verification',
+      desc: 'Trust is built through verification. Studlyf validates skills, certifications, and professional experience using intelligent document parsing and contextual analysis. Recruiters receive confidence-based insights to make accurate hiring decisions.',
+      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
+      video: '/videos/verification.mp4'
+    },
+    'Blueprint': {
+      title: 'Blueprint',
+      desc: 'Studlyf transforms insights into action. Candidates receive personalized learning paths and growth plans, while recruiters gain structured hiring blueprints aligned with real job requirements and organizational goals.',
+      image: '/images/blueprint.png'
+    },
+    'Clinical': {
+      title: 'Clinical',
+      desc: 'Precision matters. Advanced analytics evaluate performance trends, interview outcomes, and behavioral signals to provide measurable improvement strategies for both candidates and hiring teams.',
+      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800'
+    },
+    'Evidence': {
+      title: 'Evidence',
+      desc: 'Every recommendation is explainable and data-backed. Matching scores, learning suggestions, and hiring insights are supported by transparent reasoning and industry benchmarks, ensuring trust at every step.',
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'
+    }
+  };
 
   const typewriterWords = [
     { text: 'YOUR', className: 'text-black' },
@@ -93,8 +132,9 @@ const DashboardHome: React.FC = () => {
   const scrollCarousel = (id: string, direction: 'left' | 'right') => {
     const container = document.getElementById(id);
     if (container) {
+      const scrollAmount = container.clientWidth + 24;
       container.scrollBy({
-        left: direction === 'left' ? -400 : 400,
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth',
       });
     }
@@ -102,6 +142,78 @@ const DashboardHome: React.FC = () => {
 
   return (
     <>
+      {/* SVG Filter for Liquid Glass Distortion */}
+      <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+        <filter id="glass-distortion">
+          <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" />
+        </filter>
+      </svg>
+
+      <style>
+        {`
+          .liquid-glass-container {
+            --bg-color: rgba(255, 255, 255, 0.1);
+            --highlight: rgba(255, 255, 255, 0.5);
+            position: relative;
+            isolation: isolate;
+          }
+
+          .glass-filter {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            backdrop-filter: blur(6px);
+            filter: url(#glass-distortion) saturate(120%) brightness(1.1);
+            border-radius: inherit;
+          }
+
+          .glass-distortion-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            background-size: 300% 300%;
+            animation: floatDistort 15s infinite ease-in-out;
+            mix-blend-mode: overlay;
+            z-index: 2;
+            pointer-events: none;
+            border-radius: inherit;
+          }
+
+          @keyframes floatDistort {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 0%; }
+          }
+
+          .glass-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            background: var(--bg-color);
+            border-radius: inherit;
+          }
+
+          .glass-specular {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            box-shadow: inset 1px 1px 1px var(--highlight);
+            border-radius: inherit;
+            border: 1px solid rgba(255,255,255,0.15);
+          }
+
+          .glass-content-inner {
+            position: relative;
+            z-index: 4;
+            display: flex;
+            width: 100%;
+            height: 100%;
+          }
+        `}
+      </style>
+
       <div className="min-h-screen overflow-x-hidden">
         {/* FIRST SECTION: HERO + TRUST CARD */}
         <div className="relative overflow-hidden min-h-screen">
@@ -125,7 +237,6 @@ const DashboardHome: React.FC = () => {
               transition={{ duration: 0.8 }}
               className="mb-16 rounded-[4rem] overflow-hidden py-24 flex flex-col items-center justify-center gap-16 relative bg-transparent border border-white/10 shadow-2xl"
             >
-              {/* Liquid Shine Effect */}
               <motion.div
                 animate={{ x: ['100%', '-100%'], opacity: [0, 1, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
@@ -140,9 +251,7 @@ const DashboardHome: React.FC = () => {
                 </p>
               </div>
 
-              {/* Trust Section */}
               <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-16 relative z-20 mt-4 px-8 sm:px-16">
-                {/* Built by Group */}
                 <div className="flex flex-col items-center gap-10">
                   <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Built by alumni of</span>
                   <div className="flex items-center gap-16">
@@ -156,7 +265,6 @@ const DashboardHome: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {/* Backed by Group */}
                 <div className="flex flex-col items-center gap-10">
                   <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Backed by</span>
                   <div className="flex items-center gap-16 justify-center">
@@ -172,13 +280,12 @@ const DashboardHome: React.FC = () => {
                 </div>
               </div>
 
-              {/* Interior Glow Overlay */}
               <div className="absolute top-0 left-1/4 w-1/2 h-full bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
             </motion.div>
           </div>
 
           {/* SECOND SECTION: COURSES CAROUSEL */}
-          <section className="mb-24 relative z-10">
+          <section className="mb-24 relative z-10 w-full overflow-hidden">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-start gap-16">
               <div className="lg:w-1/4 pt-24 lg:pl-8">
                 <h2 className="text-4xl sm:text-5xl font-black text-[#111827] leading-[0.85] mb-8 tracking-tighter uppercase">
@@ -190,15 +297,15 @@ const DashboardHome: React.FC = () => {
                 </p>
               </div>
 
-              <div className="lg:w-3/4 w-full relative">
+              <div className="lg:w-3/4 w-full relative group">
                 <div
                   id="course-carousel"
-                  className="flex gap-6 overflow-x-auto pb-4 pt-4 no-scrollbar scroll-smooth snap-x"
+                  className="flex gap-6 overflow-x-auto pb-8 pt-4 no-scrollbar scroll-smooth snap-x"
                 >
-                  {courses.map((course, idx) => (
-                    <motion.div
+                  {[...courses, ...courses, ...courses, ...courses, ...courses].map((course, idx) => (
+                    <div
                       key={idx}
-                      className="min-w-[calc(100%-1rem)] sm:min-w-[calc(50%-0.75rem)] lg:min-w-[calc(33.333%-1rem)] h-[350px] flex-shrink-0 snap-start rounded-[2.2rem] overflow-hidden relative group/card shadow-lg cursor-pointer"
+                      className="w-full sm:w-[calc(50%-12px)] lg:w-[calc((100%-48px)/3)] h-[350px] flex-shrink-0 snap-start rounded-[2.2rem] overflow-hidden relative group/card shadow-lg cursor-pointer"
                     >
                       <div className="absolute inset-0">
                         <img src={course.image} alt={course.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover/card:scale-110" />
@@ -226,11 +333,11 @@ const DashboardHome: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
 
-                <div className="flex items-center justify-center gap-10 mt-8 mb-16">
+                <div className="flex items-center justify-center gap-10 mt-2 mb-16">
                   <button
                     onClick={() => scrollCarousel('course-carousel', 'left')}
                     className="w-14 h-14 rounded-full flex items-center justify-center text-gray-800 transition-all bg-white/80 backdrop-blur-xl shadow-lg hover:shadow-purple-500/20 active:scale-95"
@@ -271,7 +378,7 @@ const DashboardHome: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION 3: FEATURES (New Separate Section) */}
+      {/* SECTION 3: FEATURES */}
       <div className="max-w-7xl mx-auto px-6 py-24 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, i) => {
@@ -305,7 +412,16 @@ const DashboardHome: React.FC = () => {
 
       {/* SECTION 4: REST OF CONTENT */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 relative z-10 pb-20">
-        {/* AI Era Integration */}
+        {/* Scroll Velocity (Studlyf text) above AI Era Integration */}
+        <div className="mb-24 relative flex w-full flex-col items-center justify-center overflow-hidden py-10 border-b border-black/5">
+          <ScrollVelocityContainer className="text-3xl font-black tracking-[-0.05em] md:text-6xl md:leading-[4rem] text-black uppercase italic">
+            <ScrollVelocityRow baseVelocity={-2}>
+              Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf
+            </ScrollVelocityRow>
+          </ScrollVelocityContainer>
+        </div>
+
+        {/* AI Era Integration (Career Synergy) */}
         <section className="mb-24">
           <motion.div
             initial={{ opacity: 0 }}
@@ -328,7 +444,7 @@ const DashboardHome: React.FC = () => {
               <div className="lg:w-1/2 flex flex-col items-end justify-center gap-0 pt-8">
                 <h2 className="text-4xl sm:text-7xl font-bold tracking-tighter text-right lowercase flex flex-col items-end">
                   <span className="text-black mr-20 sm:mr-32">i am</span>
-                  <AuroraText className="bg-gradient-to-r from-[#84CC16] via-[#06B6D4] to-[#10B981] px-2 py-2">career dreamer</AuroraText>
+                  <AuroraText className="bg-gradient-to-r from-[#84CC16] via-[#06B6D4] to-[#10B981] px-2 py-2 -translate-x-8 sm:-translate-x-16">career dreamer</AuroraText>
                 </h2>
                 <Link
                   to="/learn/career-onboarding"
@@ -341,14 +457,280 @@ const DashboardHome: React.FC = () => {
           </motion.div>
         </section>
 
-        {/* Scroll Velocity */}
-        <div className="mb-24 relative flex w-full flex-col items-center justify-center overflow-hidden py-10 border-b border-black/5">
-          <ScrollVelocityContainer className="text-3xl font-black tracking-[-0.05em] md:text-6xl md:leading-[4rem] text-black uppercase italic">
-            <ScrollVelocityRow baseVelocity={-1}>
-              Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf
-            </ScrollVelocityRow>
-          </ScrollVelocityContainer>
-        </div>
+
+
+        {/* Product Brief Section */}
+        <section className="mb-24 mt-20 px-4 sm:px-0">
+          <div className="flex flex-col items-center text-center">
+            {/* Product Brief Header */}
+            <div className="flex flex-col items-center gap-4 mb-12">
+              <h2 className="text-3xl sm:text-5xl font-black text-black uppercase tracking-tighter inline-block relative w-fit">
+                Product Brief
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: '100%' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1, ease: "circOut", delay: 0.2 }}
+                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-1.5 bg-[#A78BFA] rounded-full"
+                />
+              </h2>
+            </div>
+
+            {/* HeroUI Ghost Buttons Section */}
+            <div className="mb-4 flex flex-wrap justify-center gap-4">
+              {['Cognition', 'Protocol', 'Verification', 'Blueprint', 'Clinical', 'Evidence'].map((label) => (
+                <Button
+                  key={label}
+                  onClick={() => setActiveBrief(label)}
+                  className={`px-8 h-12 rounded-full border transition-all duration-300 font-bold text-sm shadow-sm ${activeBrief === label
+                    ? 'bg-[#1D74F2] text-white border-[#1D74F2] scale-110 shadow-blue-500/20'
+                    : 'bg-white text-black border-black/10 hover:border-[#1D74F2] hover:bg-neutral-50 shadow-sm'
+                    }`}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+
+            {/* Dynamic Content Display with Background */}
+            <div
+              className="max-w-[1600px] w-full mx-auto min-h-[620px] relative rounded-[4rem] overflow-hidden flex items-center justify-center transition-all duration-700 py-12 px-4 sm:px-12"
+            >
+              <div className="relative z-10 w-full h-full max-w-7xl flex items-center justify-center">
+                <AnimatePresence mode="wait">
+                  {activeBrief && briefDetails[activeBrief] && (
+                    <motion.div
+                      key={activeBrief}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.02 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      className="relative w-full rounded-[3.5rem] overflow-hidden flex items-center justify-center p-8 sm:p-16 border border-white/20 bg-white/10 backdrop-blur-2xl"
+                      style={{
+                        backgroundImage: 'url("/images/PD2M.png")',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    >
+                      <div className="glass-overlay opacity-30" />
+
+                      <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12 lg:gap-20 w-full">
+                        <div className="flex-1 text-left order-2 lg:order-1">
+                          <motion.p
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.3 }}
+                            className="text-black text-lg sm:text-xl leading-relaxed tracking-tight"
+                            style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}
+                          >
+                            {briefDetails[activeBrief].desc}
+                          </motion.p>
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3, duration: 0.3 }}
+                            className="mt-8"
+                          >
+                            <Button
+                              className="bg-[#1D74F2] text-white font-bold px-10 py-5 rounded-full text-sm shadow-xl hover:bg-[#1D74F2]/90 hover:scale-105 transition-all"
+                            >
+                              Start Journey
+                            </Button>
+                          </motion.div>
+                        </div>
+
+                        {(briefDetails[activeBrief].image || briefDetails[activeBrief].video) && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.1, duration: 0.4 }}
+                            className="lg:w-[380px] w-full flex-shrink-0 relative group order-1 lg:order-2 flex items-center justify-center"
+                          >
+                            {briefDetails[activeBrief].video ? (
+                              <div className="relative w-full aspect-square flex items-center justify-center">
+                                <video
+                                  src={briefDetails[activeBrief].video}
+                                  autoPlay
+                                  loop
+                                  muted={isMuted}
+                                  playsInline
+                                  className="w-full h-full object-contain relative z-10"
+                                />
+                                <button
+                                  onClick={() => setIsMuted(!isMuted)}
+                                  className="absolute bottom-4 right-4 p-3 bg-black/30 backdrop-blur-xl rounded-full text-white hover:bg-black/50 border border-white/20 transition-all z-20 shadow-xl"
+                                >
+                                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="relative w-full aspect-square flex items-center justify-center">
+                                <img
+                                  src={briefDetails[activeBrief].image}
+                                  alt={briefDetails[activeBrief].title}
+                                  className="w-full h-full object-contain relative z-10 transform group-hover:scale-105 transition-transform duration-1000"
+                                />
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* GET Hired Section with Background Image */}
+        <section
+          className="mb-32 relative min-h-[650px] flex items-center justify-center overflow-hidden"
+        >
+          {/* Background Image Layer */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/images/aftproduct.png"
+              alt="Hiring Background"
+              className="w-full h-full object-cover blur-[2px]"
+            />
+            {/* Subtle overlay to help text legibility if needed */}
+            <div className="absolute inset-0 bg-black/40" />
+          </div>
+
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-16 pt-8 pb-32">
+            {/* Left Side: Text and Button */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="flex-1 text-left"
+            >
+              <h2
+                className="text-white text-5xl sm:text-7xl leading-tight tracking-tight uppercase mb-8"
+                style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}
+              >
+                GET Hired! <br />
+                In Startup&apos;s
+              </h2>
+              <Link
+                to="/dashboard"
+                className="inline-block bg-[#1D74F2] text-white px-12 py-5 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-[#1D74F2]/90 hover:scale-105 transition-all"
+              >
+                Get Started
+              </Link>
+
+            </motion.div>
+
+            {/* Right Side: Comparison Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="flex-1 w-full max-w-xl"
+            >
+              <div className="liquid-glass-container p-10 rounded-[3rem] overflow-hidden">
+                <div className="glass-filter" />
+                <div className="glass-distortion-overlay" />
+                <div className="glass-overlay opacity-20" />
+                <div className="glass-specular" />
+
+                <div className="glass-content-inner relative z-10 grid grid-cols-2 gap-16 items-center">
+                  {/* Liquid Glass Violet Divider - Adjusted Positioning */}
+                  <div className="absolute left-1/2 top-[-2.5rem] bottom-[-2.5rem] w-[2px] bg-gradient-to-b from-transparent via-violet-400/80 to-transparent shadow-[0_0_15px_rgba(167,139,250,0.6)] z-20 -translate-x-1/2" />
+
+                  <div className="space-y-6 relative h-full flex flex-col justify-center pr-8 sm:pr-12">
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">MNC</h3>
+                    <ul className="space-y-4 text-sm text-white font-bold">
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
+                        Structured Growth
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
+                        Global Exposure
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
+                        Tiered Authority
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-6 relative h-full flex flex-col justify-center pl-8 sm:pl-12">
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Startups</h3>
+                    <ul className="space-y-4 text-sm text-white font-bold">
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
+                        Rapid Execution
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
+                        Dynamic Roles
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
+                        High Ownership
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Stat Tags Spanning Entire Row - Elevated & Enlarged */}
+          <div className="absolute bottom-24 left-0 w-full z-20 px-8 sm:px-16 lg:px-24">
+            <div className="max-w-[1600px] mx-auto flex flex-row items-center justify-between gap-8">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-3 h-3 bg-[#1D74F2] rounded-full shadow-[0_0_15px_#1D74F2]" />
+                <span
+                  className="text-white text-[14px] sm:text-[18px] font-bold uppercase tracking-[0.4em] whitespace-nowrap"
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                  starts at 10k+
+                </span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-3 h-3 bg-violet-400 rounded-full shadow-[0_0_15px_rgba(167,139,250,0.8)]" />
+                <span
+                  className="text-white text-[14px] sm:text-[18px] font-bold uppercase tracking-[0.4em] whitespace-nowrap"
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                  10+ Startup&apos;s
+                </span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_#34d399]" />
+                <span
+                  className="text-white text-[14px] sm:text-[18px] font-bold uppercase tracking-[0.4em] whitespace-nowrap"
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                  80% Success rate
+                </span>
+              </motion.div>
+            </div>
+          </div>
+        </section>
 
         {/* Philosophy Section */}
         <section className="grid lg:grid-cols-2 gap-8 mb-24">
@@ -356,14 +738,14 @@ const DashboardHome: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="bg-[#111827] rounded-[4rem] p-12 sm:p-16 text-white relative overflow-hidden shadow-2xl"
+            className="bg-[#111827] rounded-[2.5rem] p-10 sm:p-12 text-white relative overflow-hidden shadow-2xl"
           >
             <div className="relative z-10">
               <span className="text-[10px] font-black text-[#A78BFA] uppercase tracking-[0.5em] mb-6 block">Our Philosophy</span>
-              <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-tighter mb-8 leading-tight">
+              <h2 className="text-3xl sm:text-4xl font-bold uppercase tracking-tighter mb-6 leading-tight">
                 Engineering Excellence <br /> Through Clinical Evidence.
               </h2>
-              <p className="text-white/60 leading-relaxed mb-10 text-lg">
+              <p className="text-white/60 leading-relaxed mb-8 text-base">
                 Theoretical knowledge is entropy. We value verified skill sets deconstructed from real-world systems. Every track on Studlyf is designed to build clinical evidence for your engineering authority.
               </p>
               <ul className="space-y-6">
@@ -382,12 +764,12 @@ const DashboardHome: React.FC = () => {
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="bg-[#F5F3FF] rounded-[4rem] p-12 sm:p-16 flex flex-col justify-center relative overflow-hidden"
+            className="bg-[#F5F3FF] rounded-[2.5rem] p-10 sm:p-12 flex flex-col justify-center relative overflow-hidden"
           >
-            <h2 className="text-4xl font-bold text-[#111827] uppercase tracking-tighter mb-8 leading-tight">
+            <h2 className="text-3xl font-bold text-[#111827] uppercase tracking-tighter mb-6 leading-tight">
               Unlock Your <br /> Career Growth.
             </h2>
-            <p className="text-gray-600 leading-relaxed mb-12 text-lg">
+            <p className="text-gray-600 leading-relaxed mb-10 text-base">
               Connect your professional identity, verify your code through our AI analysis protocol, and get directly matched with our ecosystem of hiring partners like Nirvaha, DataFlow, and more.
             </p>
             <Link
@@ -399,9 +781,8 @@ const DashboardHome: React.FC = () => {
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/50 rounded-full blur-3xl opacity-50" />
           </motion.div>
         </section>
-      </div>
+      </div >
 
-      <IndustryProjects />
       <WhyUsSection />
       <FAQCarousel />
       <DashboardFooter />
