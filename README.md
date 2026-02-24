@@ -24,9 +24,7 @@ Generates clinical-grade technical MCQ and task-based assessments based on speci
 - **Backend**: FastAPI (Python), MongoDB (Motor).
 - **AI**: Groq Cloud (Llama 3.3 70B).
 - **Voice**: Web Speech API (Recognition + Synthesis).
-
 ---
-
 ## ⚠️ Known Issues & Limitations (For GitHub)
 
 ### 1. Browser Speech API Dependencies
