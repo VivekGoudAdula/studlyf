@@ -68,10 +68,17 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                 return;
             }
 
-            // Original logic for non-cursor mode
-            const targetButton = Array.from(document.querySelectorAll('button')).find(
-                btn => btn.textContent?.toLowerCase().includes(targetButtonText.toLowerCase())
-            );
+            // Enhanced logic for auth flow: React to ANY button
+            const buttons = Array.from(document.querySelectorAll('button'));
+            const targetButton = buttons.find(btn => {
+                const text = btn.textContent?.toLowerCase() || '';
+                return text.includes('log in') ||
+                    text.includes('sign up') ||
+                    text.includes('create account') ||
+                    text.includes('google') ||
+                    text.includes('github') ||
+                    text.includes(targetButtonText.toLowerCase());
+            });
 
             let targetX = 0;
             let targetY = 30;
@@ -82,7 +89,9 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                 const buttonRect = targetButton.getBoundingClientRect();
                 const buttonCenterX = buttonRect.left + buttonRect.width / 2;
                 const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-                const distanceToButton = Math.sqrt(
+
+                // Distance from mouse to button
+                const mouseToButtonDist = Math.sqrt(
                     Math.pow(e.clientX - buttonCenterX, 2) + Math.pow(e.clientY - buttonCenterY, 2)
                 );
 
@@ -100,19 +109,15 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     y: Math.sin(angle) * distance * 5
                 });
 
-                const triggerDistance = 400;
-                if (distanceToButton < triggerDistance) {
-                    setIsNearButton(true);
-                    const proximityFactor = Math.pow(Math.max(0, (triggerDistance - distanceToButton) / triggerDistance), 2);
-                    targetX = (e.clientX - window.innerWidth / 2) * 0.15;
-                    targetY = -70 * proximityFactor;
-                } else {
-                    setIsNearButton(false);
-                }
+                // If mouse is near one of our target buttons, keep the reaction (blinking/scaling)
+                // but we fixed the creature position to (0, 30) or center.
+                const triggerDistance = 450;
+                setIsNearButton(mouseToButtonDist < triggerDistance);
             }
 
-            x.set(targetX);
-            y.set(targetY);
+            // Fix position to center
+            x.set(0);
+            y.set(30);
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -182,8 +187,8 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     />
 
                     {/* Cheeks */}
-                    <div className="absolute top-12 left-2 w-4 h-2.5 bg-pink-400 rounded-full blur-[3px] opacity-40" />
-                    <div className="absolute top-12 right-2 w-4 h-2.5 bg-pink-400 rounded-full blur-[3px] opacity-40" />
+                    <div className="absolute top-12 left-2 w-4 h-2.5 bg-purple-300 rounded-full blur-[3px] opacity-40" />
+                    <div className="absolute top-12 right-2 w-4 h-2.5 bg-purple-300 rounded-full blur-[3px] opacity-40" />
 
                     {/* Arms */}
                     <motion.div
