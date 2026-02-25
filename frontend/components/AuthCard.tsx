@@ -6,33 +6,28 @@ interface AuthCardProps {
     title: string;
     subtitle?: string;
     children: React.ReactNode;
+    maxWidth?: string;
 }
 
-const AuthCard: React.FC<AuthCardProps> = ({ title, subtitle, children }) => {
+const AuthCard: React.FC<AuthCardProps> = ({ title, subtitle, children, maxWidth = "max-w-[480px]" }) => {
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-[400px] relative group"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className={`w-full ${maxWidth} bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-gray-100 p-8 sm:p-12 backdrop-blur-sm bg-white/95`}
         >
-            {/* Multi-layered Glass Effect */}
-            <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-3xl rounded-[32px] border border-white/20 shadow-[0_32px_120px_rgba(0,0,0,0.5)] transition-all duration-700 group-hover:border-white/30" />
-
-            {/* Inner Glow / Specular Highlight */}
-            <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-
-            {/* Content Container */}
-            <div className="relative z-10 p-8 sm:p-10">
-                <div className="mb-8">
-                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase mb-1">{title}</h2>
-                    {subtitle && <p className="text-gray-400 font-medium text-sm tracking-wide">{subtitle}</p>}
-
-                    {/* Decorative Line */}
-                    <div className="w-12 h-1 bg-purple-500/50 rounded-full mt-4" />
-                </div>
-                {children}
+            <div className="mb-10 text-center">
+                <h1 className="text-3xl font-black text-purple-600 tracking-tighter uppercase">
+                    {title}
+                </h1>
+                {subtitle && (
+                    <p className="text-gray-500 text-sm mt-1">
+                        {subtitle}
+                    </p>
+                )}
             </div>
+            {children}
         </motion.div>
     );
 };

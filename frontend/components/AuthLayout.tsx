@@ -6,91 +6,74 @@ import InteractiveCreature from './InteractiveCreature';
 
 interface AuthLayoutProps {
     children: React.ReactNode;
-    targetButtonText?: string;
 }
 
-const AuthLayout: React.FC<AuthLayoutProps> = ({ children, targetButtonText }) => {
+const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
     return (
-        <div className="min-h-screen w-full bg-[#0A0518] flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen relative flex items-center justify-center bg-[radial-gradient(circle_at_center,_#1e1b4b_0%,_#09090b_100%)] overflow-hidden py-12 px-4 sm:px-6">
+            {/* Top Logo */}
+            <Link to="/" className="absolute top-8 left-8 z-50 group transition-transform active:scale-95">
+                <div className="flex items-center">
+                    <span className="font-syne font-black text-white italic tracking-tighter text-2xl sm:text-3xl group-hover:text-purple-400 transition-colors">STUDLYF</span>
+                </div>
+            </Link>
 
-            {/* Immersive Background Layer */}
-            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                {/* Deep Purple Base Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0A0518] via-[#120726] to-[#010101]" />
+            {/* Subtle Glows */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute -top-20 -left-20 w-96 h-96 bg-purple-900/20 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-indigo-900/20 rounded-full blur-[100px] pointer-events-none" />
 
-                {/* Dynamic Orbs */}
-                <motion.div
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.15, 0.3, 0.15],
-                    }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500/30 blur-[180px] rounded-full"
-                />
-                <motion.div
-                    animate={{
-                        scale: [1, 1.3, 1],
-                        opacity: [0.1, 0.2, 0.1],
-                    }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear", delay: 2 }}
-                    className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-indigo-500/20 blur-[200px] rounded-full"
-                />
+            <div className="relative z-10 w-full max-w-[1200px] flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24">
 
-                {/* Grid Pattern */}
-                <div className="absolute inset-0 opacity-[0.03]"
-                    style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}
-                />
-
-                {/* Content Layer (Desktop only positioning for branding) */}
-                <div className="hidden lg:flex absolute inset-0 items-center pl-40 pr-24">
-                    <div className="max-w-xl">
-                        {/* Logo */}
-                        <Link to="/" className="inline-flex items-center gap-3 mb-16 group pointer-events-auto">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.4)] group-hover:rotate-6 transition-all duration-500">
-                                <span className="text-white font-syne font-black text-xs">S</span>
-                            </div>
-                            <span className="text-white font-syne font-black tracking-tight text-lg">STUDLYF.</span>
-                        </Link>
-
-                        <div className="mb-8 flex translate-x-10">
-                            <InteractiveCreature className="scale-125 md:scale-150 origin-left" targetButtonText={targetButtonText} />
+                {/* Branding Section */}
+                <div className="w-full lg:w-[50%] text-center space-y-8 lg:pl-24">
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="flex justify-center"
+                    >
+                        <div className="relative">
+                            <InteractiveCreature className="scale-110 lg:scale-[1.35] origin-center" />
+                            {/* Glow behind creature */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl -z-10" />
                         </div>
+                    </motion.div>
 
-                        <motion.div
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.3, duration: 0.8 }}
-                        >
-                            <h1 className="text-white text-7xl font-black leading-[0.9] mb-6 tracking-tighter">
-                                Own Your <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300">Capability.</span>
-                            </h1>
-                            <p className="text-gray-500 text-xl max-w-md leading-relaxed font-medium">
-                                Access your dashboard, skill assessments, and career tools in the next-gen professional hub.
-                            </p>
-                        </motion.div>
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8, delay: 0.3 }}
+                        className="space-y-4"
+                    >
+                        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.1] tracking-tight">
+                            Own Your <br className="hidden lg:block" />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300">Capability.</span>
+                        </h2>
+                        <p className="text-gray-400 text-lg lg:text-xl max-w-md mx-auto font-medium leading-relaxed">
+                            Access your dashboard, skill assessments, and career tools.
+                        </p>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        className="flex flex-wrap gap-3 justify-center"
+                    >
+                        {["Verified Skills", "Career Growth", "Elite Talent"].map((tag) => (
+                            <span key={tag} className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] sm:text-[11px] font-bold text-purple-300/80 uppercase tracking-[0.2em] backdrop-blur-sm">
+                                {tag}
+                            </span>
+                        ))}
+                    </motion.div>
                 </div>
 
-                {/* Mobile Background Content */}
-                <div className="lg:hidden absolute top-12 left-0 right-0 flex flex-col items-center">
-                    <InteractiveCreature className="scale-75 mb-4" targetButtonText={targetButtonText} />
-                    <h1 className="text-white text-3xl font-black uppercase tracking-tighter">Own Your Capability.</h1>
-                </div>
-
-                {/* Decorative labels */}
-                <div className="absolute bottom-12 left-12 hidden lg:flex gap-8 opacity-20">
-                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white">INTELLIGENT</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white">VERIFIED</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white">PREMIUM</span>
+                {/* Auth Card Section */}
+                <div className="w-full lg:w-[50%] flex justify-center">
+                    {children}
                 </div>
             </div>
-
-            {/* Auth Card Container */}
-            <div className="relative z-10 w-full flex justify-center lg:justify-end lg:pr-[8%]">
-                {children}
-            </div>
-
         </div>
     );
 };

@@ -281,7 +281,7 @@ const Navigation: React.FC = () => {
                     Login
                   </button>
                   <motion.button
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate('/signup')}
                     whileHover={{ scale: 0.96, backgroundColor: '#f9fafb' }}
                     className="bg-white text-[#7C3AED] px-4 py-2 sm:px-10 sm:py-2.5 rounded-lg sm:rounded-xl font-bold text-[8px] sm:text-[9px] uppercase tracking-[0.15em] sm:tracking-[0.25em] shadow-xl whitespace-nowrap"
                   >
