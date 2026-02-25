@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
@@ -66,28 +67,20 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
             const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / 100, 1);
 
             setEyeDirection({
-                x: Math.cos(angle) * distance * 8, // Increased look range
+                x: Math.cos(angle) * distance * 8, // High fidelity look range
                 y: Math.sin(angle) * distance * 8
             });
 
-            // Button interaction
-            const targetButton = Array.from(document.querySelectorAll('button')).find(
-                btn => {
-                    const rect = btn.getBoundingClientRect();
-                    return e.clientX > rect.left && e.clientX < rect.right &&
-                        e.clientY > rect.top && e.clientY < rect.bottom;
-                }
-            );
-            setIsNearButton(!!targetButton || isActive);
-
-            if (!isCursor) {
-                // Keep body fixed
-                x.set(0);
-                y.set(20);
-            }
-            // Enhanced logic for auth flow: React to ANY button
+            // Button interaction logic
             const buttons = Array.from(document.querySelectorAll('button'));
-            const targetButton = buttons.find(btn => {
+            const hoveredButton = buttons.find(btn => {
+                const rect = btn.getBoundingClientRect();
+                return e.clientX > rect.left && e.clientX < rect.right &&
+                    e.clientY > rect.top && e.clientY < rect.bottom;
+            });
+
+            // Enhanced check for specific target buttons if none is hovered directly
+            const targetButton = hoveredButton || buttons.find(btn => {
                 const text = btn.textContent?.toLowerCase() || '';
                 return text.includes('log in') ||
                     text.includes('sign up') ||
@@ -96,11 +89,6 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     text.includes('github') ||
                     text.includes(targetButtonText.toLowerCase());
             });
-
-            let targetX = 0;
-            let targetY = 30;
-
-            if (isActive) targetY = 20;
 
             if (targetButton) {
                 const buttonRect = targetButton.getBoundingClientRect();
@@ -112,29 +100,17 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     Math.pow(e.clientX - buttonCenterX, 2) + Math.pow(e.clientY - buttonCenterY, 2)
                 );
 
-                const creatureRect = creatureRef.current.getBoundingClientRect();
-                const creatureCenterX = creatureRect.left + creatureRect.width / 2;
-                const creatureCenterY = creatureRect.top + creatureRect.height / 2;
-
-                const deltaX = e.clientX - creatureCenterX;
-                const deltaY = e.clientY - creatureCenterY;
-                const angle = Math.atan2(deltaY, deltaX);
-                const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / 100, 1);
-
-                setEyeDirection({
-                    x: Math.cos(angle) * distance * 5,
-                    y: Math.sin(angle) * distance * 5
-                });
-
-                // If mouse is near one of our target buttons, keep the reaction (blinking/scaling)
-                // but we fixed the creature position to (0, 30) or center.
-                const triggerDistance = 450;
-                setIsNearButton(mouseToButtonDist < triggerDistance);
+                const triggerDistance = isCursor ? 100 : 450;
+                setIsNearButton(mouseToButtonDist < triggerDistance || !!hoveredButton || isActive);
+            } else {
+                setIsNearButton(isActive);
             }
 
-            // Fix position to center
-            x.set(0);
-            y.set(30);
+            if (!isCursor) {
+                // Keep body stabilized but slightly reactive to activity
+                x.set(0);
+                y.set(isActive ? 25 : 30);
+            }
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -161,7 +137,11 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
         >
             <motion.div
                 animate={{
-                    scale: 1,
+                    scale: isNearButton ? 1.05 : 1,
+                    rotate: isNearButton ? [0, -1, 1, 0] : 0
+                }}
+                transition={{
+                    rotate: { repeat: isNearButton ? Infinity : 0, duration: 2, ease: "easeInOut" }
                 }}
             >
                 {/* Main Body - Premium Purple 3D Look */}
