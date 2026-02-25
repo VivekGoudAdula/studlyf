@@ -133,6 +133,15 @@ const DashboardHome: React.FC = () => {
               />
 
               <div className="flex flex-col items-center gap-6 relative z-20">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-2xl font-black uppercase tracking-[0.2em] mb-2"
+                >
+                  <span className="text-black">Welcome ! </span>
+                  <span className="text-[#7C3AED]">{user?.displayName || 'User'}</span>
+                </motion.div>
                 <TypewriterEffectSmooth words={typewriterWords} />
                 <p className="text-[11px] sm:text-[14px] font-bold text-black uppercase tracking-[0.3em] max-w-2xl text-center leading-relaxed">
                   Studlyf -- Building the student internet <br />
@@ -147,12 +156,12 @@ const DashboardHome: React.FC = () => {
                   <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Built by alumni of</span>
                   <div className="flex items-center gap-16">
                     <div className="flex items-center gap-4 group">
-                      <img src="https://cdn.simpleicons.org/google/000000" className="h-8 transition-transform group-hover:scale-110" alt="Google" />
-                      <span className="font-bold text-black tracking-tight text-lg">Google</span>
+                      <img src="/images/google.png" className="h-8 transition-transform group-hover:scale-110" alt="Google" />
+                      <span className="font-bold text-black tracking-tight text-xl">Google</span>
                     </div>
                     <div className="flex items-center gap-4 group">
-                      <img src="https://cdn.simpleicons.org/amazon/000000" className="h-8 transition-transform group-hover:scale-110" alt="Amazon" />
-                      <span className="font-bold text-black tracking-tight text-lg uppercase">amazon</span>
+                      <img src="/images/amazon.png" className="h-8 transition-transform group-hover:scale-110" alt="Amazon" />
+                      <span className="font-bold text-black tracking-tight text-xl">Amazon</span>
                     </div>
                   </div>
                 </div>
@@ -161,7 +170,7 @@ const DashboardHome: React.FC = () => {
                   <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Backed by</span>
                   <div className="flex items-center gap-16 justify-center">
                     <div className="flex items-center gap-4 group">
-                      <img src="https://cdn.simpleicons.org/ycombinator/000000" className="h-8 transition-transform group-hover:scale-110" alt="Y Combinator" />
+                      <img src="https://cdn.simpleicons.org/ycombinator" className="h-8 transition-transform group-hover:scale-110" alt="Y Combinator" />
                       <span className="font-bold text-black tracking-tight text-lg">Combinator</span>
                     </div>
                     <div className="flex items-center gap-4 group">
