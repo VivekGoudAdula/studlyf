@@ -55,7 +55,6 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                 y.set(e.clientY);
             }
 
-<<<<<<< HEAD
             // Always track cursor with eyes
             const creatureRect = creatureRef.current.getBoundingClientRect();
             const creatureCenterX = creatureRect.left + creatureRect.width / 2;
@@ -86,7 +85,6 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                 x.set(0);
                 y.set(20);
             }
-=======
             // Enhanced logic for auth flow: React to ANY button
             const buttons = Array.from(document.querySelectorAll('button'));
             const targetButton = buttons.find(btn => {
@@ -137,7 +135,6 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
             // Fix position to center
             x.set(0);
             y.set(30);
->>>>>>> 3d20c699417e5a0cc02ad4c71134f2f96620cdd8
         };
 
         window.addEventListener('mousemove', handleMouseMove);
