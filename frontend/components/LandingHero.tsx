@@ -201,7 +201,7 @@ const LandingHero: React.FC = () => {
                     <motion.button
                         whileHover={{ scale: 1.05, backgroundColor: '#6D28D9' }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate('/signup')}
                         className="bg-[#7C3AED] text-white px-12 py-5 rounded-full text-lg font-bold shadow-2xl shadow-purple-500/40 transition-all flex items-center justify-center z-30"
                     >
                         Try now

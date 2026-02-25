@@ -14,6 +14,7 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
 }) => {
     const [isNearButton, setIsNearButton] = useState(false);
     const [isActive, setIsActive] = useState(false);
+    const [isBlinking, setIsBlinking] = useState(false);
     const [eyeDirection, setEyeDirection] = useState({ x: 0, y: 0 });
     const creatureRef = useRef<HTMLDivElement>(null);
     const activityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -23,11 +24,22 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
     const y = useMotionValue(isCursor ? 0 : 30);
 
     const springConfig = isCursor
-        ? { damping: 25, stiffness: 200, mass: 0.5 } // More responsive for cursor
+        ? { damping: 25, stiffness: 200, mass: 0.5 }
         : { damping: 20, stiffness: 100, mass: 0.8 };
 
     const xSpring = useSpring(x, springConfig);
     const ySpring = useSpring(y, springConfig);
+
+    // Blinking logic
+    useEffect(() => {
+        const blinkInterval = setInterval(() => {
+            if (Math.random() > 0.8) {
+                setIsBlinking(true);
+                setTimeout(() => setIsBlinking(false), 150);
+            }
+        }, 3000);
+        return () => clearInterval(blinkInterval);
+    }, []);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -37,82 +49,42 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
 
             if (!creatureRef.current) return;
 
+            // Follow mouse coordinates directly for cursor mode
             if (isCursor) {
-                // For cursor mode, follow mouse coordinates directly
                 x.set(e.clientX);
                 y.set(e.clientY);
-
-                // Look at the center of the viewport
-                const centerX = window.innerWidth / 2;
-                const centerY = window.innerHeight / 2;
-                const deltaX = centerX - e.clientX;
-                const deltaY = centerY - e.clientY;
-                const angle = Math.atan2(deltaY, deltaX);
-                const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / 100, 1);
-
-                setEyeDirection({
-                    x: Math.cos(angle) * distance * 5,
-                    y: Math.sin(angle) * distance * 5
-                });
-
-                // Interaction with buttons even in cursor mode
-                const targetButton = Array.from(document.querySelectorAll('button')).find(
-                    btn => {
-                        const rect = btn.getBoundingClientRect();
-                        return e.clientX > rect.left && e.clientX < rect.right &&
-                            e.clientY > rect.top && e.clientY < rect.bottom;
-                    }
-                );
-                setIsNearButton(!!targetButton);
-
-                return;
             }
 
-            // Original logic for non-cursor mode
+            // Always track cursor with eyes
+            const creatureRect = creatureRef.current.getBoundingClientRect();
+            const creatureCenterX = creatureRect.left + creatureRect.width / 2;
+            const creatureCenterY = creatureRect.top + creatureRect.height / 2;
+
+            const deltaX = e.clientX - creatureCenterX;
+            const deltaY = e.clientY - creatureCenterY;
+            const angle = Math.atan2(deltaY, deltaX);
+            const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / 100, 1);
+
+            setEyeDirection({
+                x: Math.cos(angle) * distance * 8, // Increased look range
+                y: Math.sin(angle) * distance * 8
+            });
+
+            // Button interaction
             const targetButton = Array.from(document.querySelectorAll('button')).find(
-                btn => btn.textContent?.toLowerCase().includes(targetButtonText.toLowerCase())
-            );
-
-            let targetX = 0;
-            let targetY = 30;
-
-            if (isActive) targetY = 20;
-
-            if (targetButton) {
-                const buttonRect = targetButton.getBoundingClientRect();
-                const buttonCenterX = buttonRect.left + buttonRect.width / 2;
-                const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-                const distanceToButton = Math.sqrt(
-                    Math.pow(e.clientX - buttonCenterX, 2) + Math.pow(e.clientY - buttonCenterY, 2)
-                );
-
-                const creatureRect = creatureRef.current.getBoundingClientRect();
-                const creatureCenterX = creatureRect.left + creatureRect.width / 2;
-                const creatureCenterY = creatureRect.top + creatureRect.height / 2;
-
-                const deltaX = e.clientX - creatureCenterX;
-                const deltaY = e.clientY - creatureCenterY;
-                const angle = Math.atan2(deltaY, deltaX);
-                const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / 100, 1);
-
-                setEyeDirection({
-                    x: Math.cos(angle) * distance * 5,
-                    y: Math.sin(angle) * distance * 5
-                });
-
-                const triggerDistance = 400;
-                if (distanceToButton < triggerDistance) {
-                    setIsNearButton(true);
-                    const proximityFactor = Math.pow(Math.max(0, (triggerDistance - distanceToButton) / triggerDistance), 2);
-                    targetX = (e.clientX - window.innerWidth / 2) * 0.15;
-                    targetY = -70 * proximityFactor;
-                } else {
-                    setIsNearButton(false);
+                btn => {
+                    const rect = btn.getBoundingClientRect();
+                    return e.clientX > rect.left && e.clientX < rect.right &&
+                        e.clientY > rect.top && e.clientY < rect.bottom;
                 }
-            }
+            );
+            setIsNearButton(!!targetButton || isActive);
 
-            x.set(targetX);
-            y.set(targetY);
+            if (!isCursor) {
+                // Keep body fixed
+                x.set(0);
+                y.set(20);
+            }
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -139,11 +111,7 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
         >
             <motion.div
                 animate={{
-                    rotate: isNearButton ? [0, -10, 10, -10, 0] : 0,
-                    scale: isNearButton ? 0.7 : isCursor ? 0.6 : 1, // Scaled down for cursor
-                }}
-                transition={{
-                    rotate: { duration: 0.4, repeat: isNearButton ? Infinity : 0 },
+                    scale: 1,
                 }}
             >
                 {/* Main Body - Premium Purple 3D Look */}
@@ -151,32 +119,33 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
 
                     {/* Eyes Container */}
                     <div className="absolute top-8 left-1/2 -translate-x-1/2 flex gap-3">
-                        <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-inner relative overflow-hidden">
-                            <motion.div
-                                animate={{ x: eyeDirection.x, y: eyeDirection.y }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                className="w-4 h-4 bg-[#4C1D95] rounded-full"
-                            >
-                                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-80" />
-                            </motion.div>
-                        </div>
-                        <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-inner relative overflow-hidden">
-                            <motion.div
-                                animate={{ x: eyeDirection.x, y: eyeDirection.y }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                className="w-4 h-4 bg-[#4C1D95] rounded-full"
-                            >
-                                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-80" />
-                            </motion.div>
-                        </div>
+                        {[1, 2].map((i) => (
+                            <div key={i} className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-inner relative overflow-hidden">
+                                <motion.div
+                                    animate={{
+                                        x: eyeDirection.x,
+                                        y: eyeDirection.y,
+                                        scaleY: isBlinking ? 0.1 : 1
+                                    }}
+                                    transition={{
+                                        x: { type: "spring", stiffness: 400, damping: 25 },
+                                        y: { type: "spring", stiffness: 400, damping: 25 },
+                                        scaleY: { duration: 0.1 }
+                                    }}
+                                    className="w-4 h-4 bg-[#4C1D95] rounded-full flex items-center justify-center"
+                                >
+                                    <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-80" />
+                                </motion.div>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Mouth */}
                     <motion.div
                         animate={{
                             height: isNearButton ? 14 : 10,
-                            width: isNearButton ? 28 : 20,
-                            borderRadius: isNearButton ? "0 0 20px 20px" : "0 0 10px 10px"
+                            width: 24,
+                            borderRadius: "0 0 20px 20px"
                         }}
                         className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#4C1D95] opacity-80"
                     />
@@ -185,16 +154,12 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     <div className="absolute top-12 left-2 w-4 h-2.5 bg-pink-400 rounded-full blur-[3px] opacity-40" />
                     <div className="absolute top-12 right-2 w-4 h-2.5 bg-pink-400 rounded-full blur-[3px] opacity-40" />
 
-                    {/* Arms */}
-                    <motion.div
-                        animate={{ rotate: isNearButton ? [0, -45, 0] : 0 }}
-                        transition={{ duration: 0.4, repeat: isNearButton ? Infinity : 0 }}
-                        className="absolute -left-1 top-12 w-5 h-8 bg-[#7C3AED] rounded-full border-2 border-white/80 origin-top-right transform -translate-x-1"
+                    {/* Arms - Fixed */}
+                    <div
+                        className="absolute -left-2 top-10 w-5 h-10 bg-[#7C3AED] rounded-full border-2 border-white/80 origin-top-right shadow-lg -rotate-[15deg]"
                     />
-                    <motion.div
-                        animate={{ rotate: isNearButton ? [0, 45, 0] : 0 }}
-                        transition={{ duration: 0.4, repeat: isNearButton ? Infinity : 0 }}
-                        className="absolute -right-1 top-12 w-5 h-8 bg-[#7C3AED] rounded-full border-2 border-white/80 origin-top-left transform translate-x-1"
+                    <div
+                        className="absolute -right-2 top-10 w-5 h-10 bg-[#7C3AED] rounded-full border-2 border-white/80 origin-top-left shadow-lg rotate-[15deg]"
                     />
                 </div>
             </motion.div>

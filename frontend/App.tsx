@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import { AuthProvider } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
+import { HeroUIProvider } from "@heroui/react";
 
 
 // Pages
@@ -24,6 +25,7 @@ import GetHired from './pages/GetHired';
 import Hire from './pages/Hire';
 import About from './pages/About';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import LearnerDashboard from './pages/LearnerDashboard';
 import PartnerDashboard from './pages/PartnerDashboard';
 import DashboardHome from './pages/DashboardHome';
@@ -54,7 +56,7 @@ const ScrollToTop = () => {
 
 const App: React.FC = () => {
   const { pathname } = useLocation();
-  const isLoginPage = pathname === '/login';
+  const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboard = pathname.startsWith('/dashboard');
   const isPlayer = pathname.startsWith('/learn/course-player');
   const isCheckout = pathname === '/learn/checkout';
@@ -93,6 +95,7 @@ const App: React.FC = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/feature-preview/:id" element={<PublicRoute><FeaturePreview /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
             {/* Dashboards */}
             <Route path="/dashboard" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
@@ -120,7 +123,6 @@ const App: React.FC = () => {
 
 
 
-import { HeroUIProvider } from "@heroui/react";
 
 const AppWrapper = () => (
   <HeroUIProvider>
