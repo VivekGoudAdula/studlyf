@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
-import { auth } from '../firebase';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider, githubProvider } from '../firebase';
 import AuthLayout from '../components/AuthLayout';
 import AuthCard from '../components/AuthCard';
 
@@ -31,7 +31,7 @@ const Signup: React.FC = () => {
             await updateProfile(userCredential.user, {
                 displayName: name
             });
-            navigate('/dashboard');
+            navigate('/dashboard/learner');
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
         } finally {
@@ -40,10 +40,10 @@ const Signup: React.FC = () => {
     };
 
     const handleSocialLogin = async (type: 'google' | 'github') => {
-        const provider = type === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider();
+        const provider = type === 'google' ? googleProvider : githubProvider;
         try {
             await signInWithPopup(auth, provider);
-            navigate('/dashboard');
+            navigate('/dashboard/learner');
         } catch (err: any) {
             setError(err.message || `${type} sign-in failed`);
         }

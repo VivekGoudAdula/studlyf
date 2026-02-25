@@ -55,6 +55,7 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                 y.set(e.clientY);
             }
 
+<<<<<<< HEAD
             // Always track cursor with eyes
             const creatureRect = creatureRef.current.getBoundingClientRect();
             const creatureCenterX = creatureRect.left + creatureRect.width / 2;
@@ -85,6 +86,58 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                 x.set(0);
                 y.set(20);
             }
+=======
+            // Enhanced logic for auth flow: React to ANY button
+            const buttons = Array.from(document.querySelectorAll('button'));
+            const targetButton = buttons.find(btn => {
+                const text = btn.textContent?.toLowerCase() || '';
+                return text.includes('log in') ||
+                    text.includes('sign up') ||
+                    text.includes('create account') ||
+                    text.includes('google') ||
+                    text.includes('github') ||
+                    text.includes(targetButtonText.toLowerCase());
+            });
+
+            let targetX = 0;
+            let targetY = 30;
+
+            if (isActive) targetY = 20;
+
+            if (targetButton) {
+                const buttonRect = targetButton.getBoundingClientRect();
+                const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+                const buttonCenterY = buttonRect.top + buttonRect.height / 2;
+
+                // Distance from mouse to button
+                const mouseToButtonDist = Math.sqrt(
+                    Math.pow(e.clientX - buttonCenterX, 2) + Math.pow(e.clientY - buttonCenterY, 2)
+                );
+
+                const creatureRect = creatureRef.current.getBoundingClientRect();
+                const creatureCenterX = creatureRect.left + creatureRect.width / 2;
+                const creatureCenterY = creatureRect.top + creatureRect.height / 2;
+
+                const deltaX = e.clientX - creatureCenterX;
+                const deltaY = e.clientY - creatureCenterY;
+                const angle = Math.atan2(deltaY, deltaX);
+                const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / 100, 1);
+
+                setEyeDirection({
+                    x: Math.cos(angle) * distance * 5,
+                    y: Math.sin(angle) * distance * 5
+                });
+
+                // If mouse is near one of our target buttons, keep the reaction (blinking/scaling)
+                // but we fixed the creature position to (0, 30) or center.
+                const triggerDistance = 450;
+                setIsNearButton(mouseToButtonDist < triggerDistance);
+            }
+
+            // Fix position to center
+            x.set(0);
+            y.set(30);
+>>>>>>> 3d20c699417e5a0cc02ad4c71134f2f96620cdd8
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -151,8 +204,8 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     />
 
                     {/* Cheeks */}
-                    <div className="absolute top-12 left-2 w-4 h-2.5 bg-pink-400 rounded-full blur-[3px] opacity-40" />
-                    <div className="absolute top-12 right-2 w-4 h-2.5 bg-pink-400 rounded-full blur-[3px] opacity-40" />
+                    <div className="absolute top-12 left-2 w-4 h-2.5 bg-purple-300 rounded-full blur-[3px] opacity-40" />
+                    <div className="absolute top-12 right-2 w-4 h-2.5 bg-purple-300 rounded-full blur-[3px] opacity-40" />
 
                     {/* Arms - Fixed */}
                     <div
