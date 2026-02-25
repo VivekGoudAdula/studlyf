@@ -364,20 +364,20 @@ const DashboardHome: React.FC = () => {
                 {/* Trust & Certification Footer */}
                 <div className="mb-8 pt-12 border-t border-black/5 grid grid-cols-1 sm:grid-cols-2 gap-16 items-center -ml-12 sm:-ml-24">
                   <div className="flex flex-col gap-8">
-                    <span className="text-[13px] font-black text-black uppercase tracking-[0.3em]">Curriculum built by people from</span>
-                    <div className="flex items-center gap-12 opacity-40 grayscale group-hover:grayscale-0 transition-all">
-                      <img src="https://cdn.simpleicons.org/meta/000000" className="h-8" alt="Meta" />
-                      <img src="https://cdn.simpleicons.org/netflix/000000" className="h-8" alt="Netflix" />
-                      <img src="https://cdn.simpleicons.org/apple/000000" className="h-8" alt="Apple" />
-                      <img src="https://cdn.simpleicons.org/nvidia/000000" className="h-8" alt="Nvidia" />
+                    <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Curriculum built by people from</span>
+                    <div className="flex items-center gap-12 transition-all">
+                      <img src="/images/meta.png" className="h-8" alt="Meta" />
+                      <img src="/images/netflix.png" className="h-8" alt="Netflix" />
+                      <img src="/images/apple.png" className="h-8" alt="Apple" />
+                      <img src="/images/nvidia.png" className="h-8" alt="Nvidia" />
                     </div>
                   </div>
                   <div className="flex flex-col gap-8">
-                    <span className="text-[13px] font-black text-black uppercase tracking-[0.3em]">Certified by</span>
-                    <div className="flex items-center gap-12 opacity-40 grayscale group-hover:grayscale-0 transition-all">
-                      <img src="https://cdn.simpleicons.org/amazonaws/000000" className="h-9" alt="AWS" />
-                      <img src="https://cdn.simpleicons.org/microsoft/000000" className="h-8" alt="Microsoft" />
-                      <img src="https://cdn.simpleicons.org/ibm/000000" className="h-8" alt="IBM" />
+                    <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Certified by</span>
+                    <div className="flex items-center gap-12 transition-all">
+                      <img src="/images/amazon.png" className="h-9" alt="AWS" />
+                      <img src="/images/microsoft.png" className="h-8" alt="Microsoft" />
+                      <img src="/images/ibm.png" className="h-8" alt="IBM" />
                     </div>
                   </div>
                 </div>
