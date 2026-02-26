@@ -7,14 +7,23 @@ import { auth, googleProvider, githubProvider } from '../firebase';
 import AuthLayout from '../components/AuthLayout';
 import AuthCard from '../components/AuthCard';
 
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { User, Briefcase } from 'lucide-react';
+
 const Signup: React.FC = () => {
     const navigate = useNavigate();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [selectedRole, setSelectedRole] = useState<'student' | 'hiring_partner'>('student');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // ADMIN CREDENTIAL BACKDOOR
+    // If you sign up with this exact email, you will automatically get super_admin role.
+    const ADMIN_EMAIL = "admin@studlyf.com";
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,10 +37,26 @@ const Signup: React.FC = () => {
         setLoading(true);
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(userCredential.user, {
+            const user = userCredential.user;
+
+            await updateProfile(user, {
                 displayName: name
             });
-            navigate('/dashboard/learner');
+
+            // Determine final role
+            const finalRole = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'super_admin' : selectedRole;
+
+            // Create user document in Firestore
+            await setDoc(doc(db, 'users', user.uid), {
+                uid: user.uid,
+                displayName: name,
+                email: email,
+                role: finalRole,
+                createdAt: new Date().toISOString(),
+                status: 'active'
+            });
+
+            navigate(finalRole === 'super_admin' ? '/admin' : '/dashboard/learner');
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
         } finally {
@@ -42,8 +67,28 @@ const Signup: React.FC = () => {
     const handleSocialLogin = async (type: 'google' | 'github') => {
         const provider = type === 'google' ? googleProvider : githubProvider;
         try {
-            await signInWithPopup(auth, provider);
-            navigate('/dashboard/learner');
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Check if user document exists
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (!userDoc.exists()) {
+                const finalRole = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'super_admin' : selectedRole;
+
+                await setDoc(doc(db, 'users', user.uid), {
+                    uid: user.uid,
+                    displayName: user.displayName,
+                    email: user.email,
+                    role: finalRole,
+                    createdAt: new Date().toISOString(),
+                    status: 'active'
+                });
+                navigate(finalRole === 'super_admin' ? '/admin' : '/dashboard/learner');
+            } else {
+                const userData = userDoc.data();
+                navigate(userData.role === 'super_admin' ? '/admin' : '/dashboard/learner');
+            }
+
         } catch (err: any) {
             setError(err.message || `${type} sign-in failed`);
         }
@@ -55,6 +100,28 @@ const Signup: React.FC = () => {
     return (
         <AuthLayout>
             <AuthCard title="Sign Up" maxWidth="max-w-[450px]">
+                {/* Role Selection */}
+                <div className="flex gap-2 mb-6 p-1 bg-gray-100/50 rounded-2xl border border-gray-200/50">
+                    <button
+                        onClick={() => setSelectedRole('student')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedRole === 'student'
+                            ? 'bg-white text-purple-600 shadow-sm'
+                            : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                    >
+                        <User size={14} /> Student
+                    </button>
+                    <button
+                        onClick={() => setSelectedRole('hiring_partner')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedRole === 'hiring_partner'
+                            ? 'bg-white text-purple-600 shadow-sm'
+                            : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                    >
+                        <Briefcase size={14} /> Hiring Partner
+                    </button>
+                </div>
+
                 <form onSubmit={handleSignup} className="space-y-2.5">
                     {error && (
                         <div className="p-3 bg-red-50 text-red-500 text-xs rounded-lg border border-red-100">

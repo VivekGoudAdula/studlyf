@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider, githubProvider } from '../firebase';
+import { auth, googleProvider, githubProvider, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import AuthLayout from '../components/AuthLayout';
 import AuthCard from '../components/AuthCard';
 
@@ -19,8 +20,27 @@ const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard/learner');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // IMMEDIATE BACKDOOR REDIRECT
+      if (user.email?.toLowerCase() === 'admin@studlyf.com') {
+        navigate('/admin');
+        return;
+      }
+
+      // Fetch role and redirect for others
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.role === 'super_admin' || userData.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard/learner');
+        }
+      } else {
+        navigate('/dashboard/learner');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
     } finally {
@@ -31,8 +51,27 @@ const Login: React.FC = () => {
   const handleSocialLogin = async (type: 'google' | 'github') => {
     const provider = type === 'google' ? googleProvider : githubProvider;
     try {
-      await signInWithPopup(auth, provider);
-      navigate('/dashboard/learner');
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // IMMEDIATE BACKDOOR REDIRECT
+      if (user.email?.toLowerCase() === 'admin@studlyf.com') {
+        navigate('/admin');
+        return;
+      }
+
+      // Fetch role and redirect for others
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.role === 'super_admin' || userData.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard/learner');
+        }
+      } else {
+        navigate('/dashboard/learner');
+      }
     } catch (err: any) {
       setError(err.message || `${type} sign-in failed`);
     }

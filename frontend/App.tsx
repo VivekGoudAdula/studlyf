@@ -1,9 +1,9 @@
 
 import React, { Suspense, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
-import { AuthProvider } from './AuthContext';
+import { AuthProvider, useAuth } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
 import { HeroUIProvider } from "@heroui/react";
@@ -46,6 +46,17 @@ import Testimonials from './components/Testimonials';
 import Impact from './components/Impact';
 import Achievements from './components/Achievements';
 
+// Admin Pages
+import AdminLayout from './pages/admin/layout/AdminLayout';
+import AdminDashboardOverview from './pages/admin/dashboard/Overview';
+import AdminStudentManagement from './pages/admin/students/StudentManagement';
+import AdminCourseManagement from './pages/admin/courses/CourseManagement';
+import AdminAssessmentManagement from './pages/admin/assessments/AssessmentManagement';
+import AdminHiringPipeline from './pages/admin/hiring/HiringPipeline';
+import AdminAnalytics from './pages/admin/analytics/Analytics';
+import AdminMockInterviews from './pages/admin/interviews/MockInterviews';
+import AdminProtectedRoute from './AdminProtectedRoute';
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -56,17 +67,31 @@ const ScrollToTop = () => {
 
 const App: React.FC = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user, role, loading } = useAuth();
+
   const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboard = pathname.startsWith('/dashboard');
+  const isAdmin = pathname.startsWith('/admin');
   const isPlayer = pathname.startsWith('/learn/course-player');
   const isCheckout = pathname === '/learn/checkout';
   const isHome = pathname === '/';
   const isFeaturePreview = pathname.startsWith('/feature-preview');
   const isOnboarding = pathname === '/learn/career-onboarding';
 
+  // GLOBAL ADMIN SENTINEL
+  // If you are the admin, you should NOT be anywhere else but /admin
+  useEffect(() => {
+    if (!loading && user?.email?.toLowerCase() === 'admin@studlyf.com') {
+      if (!pathname.startsWith('/admin')) {
+        navigate('/admin', { replace: true });
+      }
+    }
+  }, [user, pathname, loading, navigate]);
+
   return (
-    <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard ? 'bg-transparent' : 'bg-white'}`}>
-      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding) && <Navigation />}
+    <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
+      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding && !isAdmin) && <Navigation />}
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
           <Routes>
@@ -104,11 +129,29 @@ const App: React.FC = () => {
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
+            {/* Admin System */}
+            <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboardOverview />} />
+              <Route path="students" element={<AdminStudentManagement />} />
+              <Route path="courses" element={<AdminCourseManagement />} />
+              <Route path="assessments" element={<AdminAssessmentManagement />} />
+              <Route path="mock-interviews" element={<AdminMockInterviews />} />
+              <Route path="hiring" element={<AdminHiringPipeline />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="mentors" element={<div className="p-8"><h1>Mentor Management Coming Soon</h1></div>} />
+              <Route path="companies" element={<div className="p-8"><h1>Company Management Coming Soon</h1></div>} />
+              <Route path="payments" element={<div className="p-8"><h1>Payment Management Coming Soon</h1></div>} />
+              <Route path="content" element={<div className="p-8"><h1>CMS Management Coming Soon</h1></div>} />
+              <Route path="settings" element={<div className="p-8"><h1>System Settings Coming Soon</h1></div>} />
+              <Route path="audit-logs" element={<div className="p-8"><h1>Audit Logs Coming Soon</h1></div>} />
+            </Route>
+
           </Routes>
 
         </Suspense>
       </main>
-      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding) && (
+      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding && !isAdmin) && (
         <>
           <Impact />
           <Testimonials />
