@@ -35,7 +35,7 @@ const BentoCard = ({ title, desc, children, className = "", to = "#" }: BentoCar
 
 const LearnDropdown = () => (
   <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
-    <BentoCard to="/learn/courses" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[160px] md:min-h-[180px]">
+    <BentoCard to="/learn/courses-overview" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[160px] md:min-h-[180px]">
       <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/2 h-full object-cover grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt="Courses" />
     </BentoCard>
     <BentoCard to="/learn/company-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="md:col-span-2 h-[88px]">
@@ -97,7 +97,7 @@ const JobPrepDropdown = () => (
         </div>
       </div>
     </BentoCard>
-    <BentoCard to="/learn/assessment" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-2 h-[88px]">
+    <BentoCard to="/learn/assessment-intro" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-2 h-[88px]">
       <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/4 h-full object-cover opacity-10 group-hover:opacity-60 transition-all" alt="Assessment" />
     </BentoCard>
     <BentoCard to="/job-prep/mock-interview" title="Mock tests & interviews" desc="Practice clinical logic defense." className="h-[88px]">
@@ -114,12 +114,13 @@ const JobPrepDropdown = () => (
 
 const JobsDropdown = () => (
   <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
-    <BentoCard to="/employers/get-hired" title="Get Hired" desc="Connect with partners looking for verified talent." className="md:col-span-2 h-[120px]">
+    <BentoCard to="/jobs/get-hired" title="Get Hired" desc="Activate your elite hiring profile today." className="md:col-span-2 h-[120px]">
       <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/3 h-full object-cover grayscale opacity-20 group-hover:opacity-100 transition-all" alt="Get Hired" />
     </BentoCard>
-    <BentoCard to="/employers/hire" title="Hire Talent" desc="Access verified engineering professionals." className="md:col-span-2 h-[120px]">
-      <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/3 h-full object-cover grayscale opacity-20 group-hover:opacity-100 transition-all" alt="Hire" />
+    <BentoCard to="/jobs/matches" title="Matching Dashboard" desc="Review active interview invites & matches." className="md:col-span-1 h-[120px]">
+      <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
     </BentoCard>
+    <BentoCard to="/employers/hire" title="Hire Talent" desc="Institutional partner intake portal." className="md:col-span-1 h-[120px]" />
   </div>
 );
 
@@ -128,7 +129,7 @@ const FeaturesDropdown = () => (
     <div className="space-y-4">
       <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.3em]">Learning Authority</h4>
       <div className="grid gap-2">
-        <BentoCard to="/learn/courses" title="Hero Tracks" desc="Role-focused engineering specialization." className="h-[110px]" />
+        <BentoCard to="/learn/courses-overview" title="Hero Tracks" desc="Role-focused engineering specialization." className="h-[110px]" />
         <BentoCard to="/learn/company-modules" title="Corporate Training" desc="Institutional internal modules." className="h-[110px]" />
       </div>
     </div>
@@ -137,14 +138,14 @@ const FeaturesDropdown = () => (
       <div className="grid gap-2">
         <BentoCard to="/job-prep/portfolio" title="Proof of Skill" desc="Evidence-based developer portfolios." className="h-[110px]" />
         <BentoCard to="/job-prep/resume-builder" title="Clinical Resumes" desc="Instant verification-ready resumes." className="h-[110px]" />
-        <BentoCard to="/learn/assessment" title="Calculated Scoring" desc="Clinical skill assessment." className="h-[110px]" />
+        <BentoCard to="/learn/assessment-intro" title="Calculated Scoring" desc="Clinical skill assessment." className="h-[110px]" />
       </div>
     </div>
     <div className="space-y-4">
       <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.3em]">Marketplace</h4>
       <div className="grid gap-2">
-        <BentoCard to="/employers/get-hired" title="Elite Intake" desc="Direct pipeline to industry partners." className="h-[110px]" />
-        <BentoCard to="/employers/hire" title="Verified Supply" desc="Access clinically vetted talent." className="h-[110px]" />
+        <BentoCard to="/jobs/matches" title="Matching Dashboard" desc="Active companies & recruiter views." className="h-[110px]" />
+        <BentoCard to="/jobs/get-hired" title="Hiring Pipeline" desc="Direct intake to industry partners." className="h-[110px]" />
         <BentoCard to="/blog" title="Engineering Blog" desc="Technical insights on systems." className="h-[110px]" />
       </div>
     </div>
@@ -331,14 +332,14 @@ const Navigation: React.FC = () => {
                     <div className="grid gap-2">
                       {(isDashboard ? [
                         { to: '/dashboard/learner', label: 'My Console' },
-                        { to: '/learn/courses', label: 'Courses' },
+                        { to: '/learn/courses-overview', label: 'Courses' },
                         { to: '/job-prep/portfolio', label: 'Job Prep' },
-                        { to: '/employers/get-hired', label: 'Marketplace' },
+                        { to: '/jobs/get-hired', label: 'Marketplace' },
                         { to: '/about', label: 'About' }
                       ] : [
                         { to: '/', label: 'Home' },
                         { to: '/about', label: 'About Studlyf' },
-                        { to: '/learn/courses', label: 'Explore Features' }
+                        { to: '/learn/courses-overview', label: 'Explore Features' }
                       ]).map((link) => (
                         <Link
                           key={link.to}

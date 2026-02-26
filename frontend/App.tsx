@@ -1,6 +1,7 @@
-
+// Studlyf Engineering Protocol - Core Routing Engine
 import React, { Suspense, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
+
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import { AuthProvider, useAuth } from './AuthContext';
@@ -8,20 +9,23 @@ import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
 import { HeroUIProvider } from "@heroui/react";
 
-
 // Pages
 import Home from './pages/Home';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
 import CareerFit from './pages/CareerFit';
 import Assessment from './pages/Assessment';
+import AssessmentIntro from './pages/AssessmentIntro';
 import JobSimulation from './pages/JobSimulation';
 import PortfolioBuilder from './pages/PortfolioBuilder';
 import Projects from './pages/Projects';
 import MockInterview from './pages/MockInterview';
 import GroupDiscussion from './pages/GroupDiscussion';
 import PlayLearnEarn from './pages/PlayLearnEarn';
-import GetHired from './pages/GetHired';
+import GetHiredLanding from './pages/GetHiredLanding';
+import GetHiredFlow from './pages/GetHiredFlow';
+import GetHiredDashboard from './pages/GetHiredDashboard';
+import GoalSelector from './pages/GoalSelector';
 import Hire from './pages/Hire';
 import About from './pages/About';
 import Login from './pages/Login';
@@ -34,10 +38,14 @@ import CompanyModules from './pages/CompanyModules';
 import ResumeBuilder from './pages/ResumeBuilder';
 import CoursePlayer from './pages/CoursePlayer';
 import Cart from './pages/Cart';
+import JobDetail from './pages/JobDetail';
 import Checkout from './pages/Checkout';
 import MyCourses from './pages/MyCourses';
 import FeaturePreview from './pages/FeaturePreview';
 import CareerOnboarding from './pages/CareerOnboarding';
+import CoursesOverview from './pages/CoursesOverview';
+import TrackDetail from './pages/TrackDetail';
+import EnrollmentFlow from './pages/EnrollmentFlow';
 
 // Unique Components
 import EnquiryForm from './components/EnquiryForm';
@@ -68,7 +76,7 @@ const ScrollToTop = () => {
 const App: React.FC = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, role, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboard = pathname.startsWith('/dashboard');
@@ -79,8 +87,7 @@ const App: React.FC = () => {
   const isFeaturePreview = pathname.startsWith('/feature-preview');
   const isOnboarding = pathname === '/learn/career-onboarding';
 
-  // GLOBAL ADMIN SENTINEL
-  // If you are the admin, you should NOT be anywhere else but /admin
+  // Admin Redirect Logic
   useEffect(() => {
     if (!loading && user?.email?.toLowerCase() === 'admin@studlyf.com') {
       if (!pathname.startsWith('/admin')) {
@@ -91,15 +98,27 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
+      
       {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding && !isAdmin) && <Navigation />}
+      
       <main className="flex-grow">
-        <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
+        <Suspense fallback={
+          <div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">
+            Synchronizing Protocol...
+          </div>
+        }>
           <Routes>
+
             <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
+
+            <Route path="/learn/courses-overview" element={<ProtectedRoute><CoursesOverview /></ProtectedRoute>} />
+            <Route path="/learn/track/:trackId" element={<ProtectedRoute><TrackDetail /></ProtectedRoute>} />
+            <Route path="/learn/enroll/:trackId" element={<ProtectedRoute><EnrollmentFlow /></ProtectedRoute>} />
             <Route path="/learn/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
             <Route path="/learn/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
             <Route path="/learn/course-player/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
             <Route path="/learn/career-fit" element={<ProtectedRoute><CareerFit /></ProtectedRoute>} />
+            <Route path="/learn/assessment-intro" element={<ProtectedRoute><AssessmentIntro /></ProtectedRoute>} />
             <Route path="/learn/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
             <Route path="/learn/company-modules" element={<ProtectedRoute><CompanyModules /></ProtectedRoute>} />
             <Route path="/learn/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
@@ -113,7 +132,13 @@ const App: React.FC = () => {
             <Route path="/job-prep/play-learn-earn" element={<ProtectedRoute><PlayLearnEarn /></ProtectedRoute>} />
             <Route path="/job-prep/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
 
-            <Route path="/employers/get-hired" element={<GetHired />} />
+            <Route path="/jobs/get-hired" element={<ProtectedRoute><GetHiredLanding /></ProtectedRoute>} />
+            <Route path="/jobs/profile" element={<ProtectedRoute><GetHiredFlow /></ProtectedRoute>} />
+            <Route path="/jobs/detail" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
+            <Route path="/jobs/matches" element={<ProtectedRoute><GetHiredDashboard /></ProtectedRoute>} />
+            <Route path="/goal-selector" element={<ProtectedRoute><GoalSelector /></ProtectedRoute>} />
+
+            <Route path="/employers/get-hired" element={<Navigate to="/jobs/get-hired" replace />} />
             <Route path="/employers/hire" element={<Hire />} />
 
             <Route path="/about" element={<About />} />
@@ -122,14 +147,13 @@ const App: React.FC = () => {
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
-            {/* Dashboards */}
             <Route path="/dashboard" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
-            {/* Admin System */}
+            {/* Admin */}
             <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboardOverview />} />
@@ -148,9 +172,9 @@ const App: React.FC = () => {
             </Route>
 
           </Routes>
-
         </Suspense>
       </main>
+
       {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding && !isAdmin) && (
         <>
           <Impact />
@@ -163,9 +187,6 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-
-
 
 const AppWrapper = () => (
   <HeroUIProvider>

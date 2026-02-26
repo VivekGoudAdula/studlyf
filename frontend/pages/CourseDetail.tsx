@@ -4,20 +4,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL } from '../apiConfig';
 import {
   ArrowLeft,
-  ShoppingCart,
-  BookOpen,
-  Clock,
-  BarChart3,
-  Calendar,
-  Star,
-  Users,
   CheckCircle2,
   PlayCircle,
   FileText,
   Award,
   Globe,
   Smartphone,
-  Infinity
+  Infinity,
+  Zap,
+  Target,
+  Star,
+  Users,
+  Clock,
+  Calendar,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -43,6 +43,94 @@ interface Course {
   is_premium?: boolean;
   user_state?: 'NOT_PURCHASED' | 'IN_CART' | 'ENROLLED';
 }
+
+/* ─────────────────────────── mock fallback data ─────────────────────────── */
+const MOCK_COURSES: Course[] = [
+  {
+    _id: 'm1',
+    title: 'Transformer Architectures',
+    description: 'Deep dive into the architecture that powered the AI revolution. Build GPT-like models from scratch.',
+    role_tag: 'AI',
+    difficulty: 'Advanced',
+    skills: ['PyTorch', 'LLMs', 'Neural Networks'],
+    duration: '6 Weeks',
+    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
+    standard: 'AI_PROTOCOL_01',
+    price: 49.99,
+    rating: 4.9,
+    total_reviews: 1250,
+  },
+  {
+    _id: 'm2',
+    title: 'Distributed System Design',
+    description: 'Master the art of building systems that handle millions of requests. CAP theorem, consensus, and sharding.',
+    role_tag: 'Software Engineering',
+    difficulty: 'Advanced',
+    skills: ['Microservices', 'System Design', 'Redis'],
+    duration: '8 Weeks',
+    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
+    standard: 'SWE_PROTOCOL_04',
+    price: 59.99,
+    rating: 4.8,
+    total_reviews: 850,
+  },
+  {
+    _id: 'm3',
+    title: 'Data Engineering Pipelines',
+    description: 'Build production-grade ETL pipelines using Spark, Airflow, and Snowflake.',
+    role_tag: 'Data',
+    difficulty: 'Intermediate',
+    skills: ['Spark', 'Airflow', 'SQL'],
+    duration: '5 Weeks',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
+    standard: 'DATA_PROTOCOL_02',
+    price: 39.99,
+    rating: 4.7,
+    total_reviews: 620,
+  },
+  {
+    _id: 'm4',
+    title: 'Product Discovery Protocols',
+    description: 'Learn to find product-market fit using data-driven discovery techniques and user research.',
+    role_tag: 'PM',
+    difficulty: 'Beginner',
+    skills: ['Discovery', 'Strategy', 'Analytics'],
+    duration: '4 Weeks',
+    image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
+    standard: 'PM_PROTOCOL_01',
+    price: 29.99,
+    rating: 4.9,
+    total_reviews: 430,
+  },
+  {
+    _id: 'm5',
+    title: 'Offensive Security Ops',
+    description: 'Become a certified defender by mastering offensive tactics, penetration testing, and vulnerability research.',
+    role_tag: 'Cyber',
+    difficulty: 'Advanced',
+    skills: ['Pentesting', 'Metasploit', 'Linux'],
+    duration: '10 Weeks',
+    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
+    standard: 'CYBER_PROTOCOL_09',
+    price: 69.99,
+    rating: 4.9,
+    total_reviews: 890,
+  },
+  {
+    _id: 'm6',
+    title: 'React Performance Mastery',
+    description: 'Go beyond basic hooks. Master fiber architectue, concurrent rendering, and high-entropy UI optimization.',
+    role_tag: 'Frontend',
+    difficulty: 'Intermediate',
+    skills: ['React', 'Performance', 'WASM'],
+    duration: '4 Weeks',
+    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop',
+    standard: 'FE_PROTOCOL_03',
+    price: 34.99,
+    rating: 4.8,
+    total_reviews: 740,
+  }
+];
 
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -72,11 +160,14 @@ const CourseDetail: React.FC = () => {
         setLoading(true);
         // Get course details
         const courseRes = await fetch(`${API_BASE_URL}/api/courses`);
-        const coursesData = await courseRes.json();
+        const coursesDataFromApi = await courseRes.json();
+
+        // Merge API data with MOCK data for fallback
+        const allCourses = [...MOCK_COURSES, ...(coursesDataFromApi || [])];
 
         // Extract ID from slug and find matching course
         const courseIdFromSlug = extractCourseId(courseId);
-        const foundCourse = coursesData.find((c: Course) => c._id === courseIdFromSlug);
+        const foundCourse = allCourses.find((c: Course) => c._id === courseIdFromSlug);
 
         if (foundCourse) {
           setCourse(foundCourse);
@@ -97,6 +188,10 @@ const CourseDetail: React.FC = () => {
         }
       } catch (err) {
         console.error('Error fetching course:', err);
+        // Direct fallback if fetch fails
+        const courseIdFromSlug = extractCourseId(courseId);
+        const fallbackCourse = MOCK_COURSES.find(c => c._id === courseIdFromSlug);
+        if (fallbackCourse) setCourse(fallbackCourse);
       } finally {
         setLoading(false);
       }
@@ -105,31 +200,22 @@ const CourseDetail: React.FC = () => {
     fetchCourseDetails();
   }, [courseId, userId]);
 
-  const handleAddToCart = async () => {
+  const handleEnrollNow = () => {
     if (!course) return;
 
-    setActionLoading(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/cart/${userId}/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ course_id: course._id }),
-      });
+    // Map role_tag to track slug
+    const roleMap: Record<string, string> = {
+      'AI': 'ai',
+      'Software Engineering': 'swe',
+      'Data': 'data',
+      'PM': 'pm',
+      'Cyber': 'cyber',
+      'Frontend': 'swe', // Default complex roles to SWE
+      'Backend': 'swe'
+    };
 
-      const data = await res.json();
-      if (res.ok && data.status === 'added') {
-        setUserState('IN_CART');
-      } else if (data.status === 'duplicate') {
-        alert('Course already in cart!');
-      } else if (data.status === 'enrolled') {
-        alert('You are already enrolled in this course!');
-      }
-    } catch (err) {
-      console.error('Error adding to cart:', err);
-      alert('Failed to add to cart. Please try again.');
-    } finally {
-      setActionLoading(false);
-    }
+    const trackSlug = roleMap[course.role_tag] || 'swe';
+    navigate(`/learn/enroll/${trackSlug}`);
   };
 
   const handleGoToCart = () => {
@@ -411,22 +497,20 @@ const CourseDetail: React.FC = () => {
                   <div className="space-y-3 mb-6">
                     {userState === 'NOT_PURCHASED' && (
                       <button
-                        onClick={handleAddToCart}
-                        disabled={actionLoading}
-                        className="w-full py-4 bg-[#7C3AED] text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-[#6D28D9] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#7C3AED]/30 flex items-center justify-center gap-2"
+                        onClick={handleEnrollNow}
+                        className="w-full py-4 bg-[#7C3AED] text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-[#6D28D9] active:scale-[0.98] transition-all shadow-lg shadow-[#7C3AED]/30 flex items-center justify-center gap-2"
                       >
-                        <ShoppingCart className="w-5 h-5" />
-                        Add to Cart
+                        <Zap className="w-5 h-5" />
+                        Enroll Now
                       </button>
                     )}
 
                     {userState === 'IN_CART' && (
                       <button
-                        onClick={handleGoToCart}
-                        disabled={actionLoading}
-                        className="w-full py-4 bg-[#111827] text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-[#1F2937] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/20"
+                        onClick={handleEnrollNow}
+                        className="w-full py-4 bg-[#111827] text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-[#1F2937] active:scale-[0.98] transition-all shadow-lg shadow-black/20"
                       >
-                        Go to Cart
+                        Complete Enrollment
                       </button>
                     )}
 
