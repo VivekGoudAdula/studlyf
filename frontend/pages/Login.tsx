@@ -20,7 +20,7 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard/learner');
+      navigate('/goal-selector');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
     } finally {
@@ -32,7 +32,7 @@ const Login: React.FC = () => {
     const provider = type === 'google' ? googleProvider : githubProvider;
     try {
       await signInWithPopup(auth, provider);
-      navigate('/dashboard/learner');
+      navigate('/goal-selector');
     } catch (err: any) {
       setError(err.message || `${type} sign-in failed`);
     }

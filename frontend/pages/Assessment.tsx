@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Building2,
   Briefcase,
@@ -22,7 +23,10 @@ import {
   LineChart,
   Terminal,
   Search,
-  Timer
+  Timer,
+  BarChart3,
+  Award,
+  RefreshCw
 } from 'lucide-react';
 
 // --- DATA STRUCTURES ---
@@ -32,8 +36,8 @@ interface CompanyProfile {
   name: string;
   logo: string;
   style: 'problem-solving' | 'scenario-based' | 'system-design' | 'culture-fit';
-  weights: { [key: string]: number }; // e.g., DSA: 40
-  difficultyBias: number; // 0.8 (easier) to 1.2 (harder)
+  weights: { [key: string]: number };
+  difficultyBias: number;
   tone: string;
 }
 
@@ -46,6 +50,7 @@ interface RoleMapping {
 
 interface Question {
   id: string;
+  section: 'Logic' | 'Code' | 'System Thinking';
   type: 'mcq' | 'scenario' | 'debug' | 'design' | 'task';
   text: string;
   options?: string[];
@@ -53,7 +58,7 @@ interface Question {
   skill: string;
   subSkill: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  timeLimit: number; // in seconds
+  timeLimit: number;
   hint?: string;
   scenario?: string;
   code?: string;
@@ -66,7 +71,7 @@ const COMPANIES: CompanyProfile[] = [
     name: 'Google',
     logo: 'https://www.vectorlogo.zone/logos/google/google-icon.svg',
     style: 'problem-solving',
-    weights: { 'DSA': 50, 'System Design': 30, 'Behavioral': 20 },
+    weights: { 'Logic': 40, 'Code': 30, 'System Thinking': 30 },
     difficultyBias: 1.2,
     tone: 'analytical'
   },
@@ -75,7 +80,7 @@ const COMPANIES: CompanyProfile[] = [
     name: 'Amazon',
     logo: 'https://www.vectorlogo.zone/logos/amazon/amazon-icon.svg',
     style: 'scenario-based',
-    weights: { 'Leadership Principles': 40, 'System Design': 30, 'DSA': 30 },
+    weights: { 'Logic': 30, 'Code': 30, 'System Thinking': 40 },
     difficultyBias: 1.1,
     tone: 'fast-paced'
   },
@@ -84,7 +89,7 @@ const COMPANIES: CompanyProfile[] = [
     name: 'Microsoft',
     logo: 'https://www.vectorlogo.zone/logos/microsoft/microsoft-icon.svg',
     style: 'system-design',
-    weights: { 'System Design': 40, 'DSA': 40, 'Collaborative': 20 },
+    weights: { 'System Design': 40, 'Logic': 40, 'Collaborative': 20 },
     difficultyBias: 1.0,
     tone: 'collaborative'
   },
@@ -93,7 +98,7 @@ const COMPANIES: CompanyProfile[] = [
     name: 'Stripe',
     logo: 'https://www.vectorlogo.zone/logos/stripe/stripe-icon.svg',
     style: 'problem-solving',
-    weights: { 'API Design': 40, 'Product Thinking': 30, 'Code Quality': 30 },
+    weights: { 'Logic': 30, 'Code': 50, 'System Thinking': 20 },
     difficultyBias: 1.15,
     tone: 'meticulous'
   }
@@ -103,7 +108,7 @@ const ROLES: RoleMapping[] = [
   {
     id: 'backend',
     name: 'Backend Developer',
-    skills: ['DSA', 'System Design', 'Databases', 'APIs'],
+    skills: ['Logic', 'System Design', 'Databases', 'APIs'],
     subSkills: {
       'Databases': ['Indexing', 'ACID', 'NoSQL', 'Transactions'],
       'APIs': ['REST', 'gRPC', 'Throttling', 'Idempotency']
@@ -112,7 +117,7 @@ const ROLES: RoleMapping[] = [
   {
     id: 'frontend',
     name: 'Frontend Developer',
-    skills: ['Performance', 'State Management', 'Architecture', 'Accessibility'],
+    skills: ['Logic', 'Performance', 'Architecture', 'Accessibility'],
     subSkills: {
       'Architecture': ['Component Design', 'Rendering Patterns', 'Micro-frontends'],
       'Performance': ['Core Web Vitals', 'Bundling', 'Lazy Loading']
@@ -121,7 +126,7 @@ const ROLES: RoleMapping[] = [
   {
     id: 'data-analyst',
     name: 'Data Analyst',
-    skills: ['SQL', 'Statistics', 'Visualization', 'Logical Reasoning'],
+    skills: ['Logic', 'SQL', 'Statistics', 'Visualization'],
     subSkills: {
       'SQL': ['Window Functions', 'Joins', 'Aggregations'],
       'Statistics': ['Probability', 'Distribution', 'Hypothesis Testing']
@@ -129,10 +134,10 @@ const ROLES: RoleMapping[] = [
   }
 ];
 
-// Mock Question Bank
-const QUESTION_BANK: Question[] = [
+const QUESTION_POOL: Question[] = [
   {
-    id: 'q1',
+    id: 'l1',
+    section: 'Logic',
     type: 'mcq',
     skill: 'Databases',
     subSkill: 'Indexing',
@@ -144,7 +149,8 @@ const QUESTION_BANK: Question[] = [
     explanation: "B-Trees maintain sorted order, making them O(log n) for range searches."
   },
   {
-    id: 'q2',
+    id: 's1',
+    section: 'System Thinking',
     type: 'scenario',
     skill: 'System Design',
     subSkill: 'Throttling',
@@ -161,7 +167,8 @@ const QUESTION_BANK: Question[] = [
     explanation: "Hierarchical throttling allows you to isolate the blast radius at broader network levels during distributed attacks."
   },
   {
-    id: 'q3',
+    id: 'c1',
+    section: 'Code',
     type: 'debug',
     skill: 'APIs',
     subSkill: 'Idempotency',
@@ -179,7 +186,8 @@ const QUESTION_BANK: Question[] = [
     explanation: "Without an idempotency key, retries could result in duplicate charges if the first request succeeded but the response timed out."
   },
   {
-    id: 'q4',
+    id: 's2',
+    section: 'System Thinking',
     type: 'design',
     skill: 'System Design',
     subSkill: 'Micro-frontends',
@@ -196,7 +204,8 @@ const QUESTION_BANK: Question[] = [
     explanation: "Custom browser events decouple the applications while allowing reactive communication."
   },
   {
-    id: 'q5',
+    id: 'l2',
+    section: 'Logic',
     type: 'mcq',
     skill: 'DSA',
     subSkill: 'Trees',
@@ -206,6 +215,19 @@ const QUESTION_BANK: Question[] = [
     correctAnswer: 0,
     timeLimit: 45,
     explanation: "In a balanced BST, you can find LCA by traversing down, taking O(height) which is O(log N)."
+  },
+  {
+    id: 'c2',
+    section: 'Code',
+    type: 'mcq',
+    skill: 'General',
+    subSkill: 'Architectural Logic',
+    difficulty: 'hard',
+    text: "When scaling a read-heavy application, which strategy provides the most immediate latency improvement?",
+    options: ["Database Sharding", "Read Replicas with Load Balancing", "Horizontal Pod Autoscaling", "Message Queue Implementation"],
+    correctAnswer: 1,
+    timeLimit: 60,
+    explanation: "Read replicas allow you to distribute the read load, reducing latency for query-heavy workloads."
   }
 ];
 
@@ -231,175 +253,120 @@ const RadialProgress = ({ value, label }: { value: number; label: string }) => (
   </div>
 );
 
+const HeatmapItem = ({ label, score, color }: { label: string; score: number; color: string }) => (
+  <div className="space-y-2">
+    <div className="flex justify-between items-center">
+      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] font-bold text-gray-900">{score}%</span>
+    </div>
+    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${score}%` }}
+        transition={{ duration: 1, ease: 'easeOut' }}
+        className="h-full"
+        style={{ backgroundColor: color }}
+      />
+    </div>
+  </div>
+);
+
 const Assessment: React.FC = () => {
-  // Navigation & Config State
+  const navigate = useNavigate();
   const [step, setStep] = useState<'config' | 'prep' | 'active' | 'analysis' | 'results'>('config');
+
+  // Old UI Config State
   const [roleInput, setRoleInput] = useState('');
   const [companyInput, setCompanyInput] = useState('');
   const [selectedRole, setSelectedRole] = useState<RoleMapping | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<CompanyProfile | null>(null);
   const [experience, setExperience] = useState<'fresher' | 'mid' | 'senior'>('fresher');
 
-  // Suggestions state
   const [showRoleSuggestions, setShowRoleSuggestions] = useState(false);
   const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
 
   const filteredRoles = ROLES.filter(r => r.name.toLowerCase().includes(roleInput.toLowerCase()));
   const filteredCompanies = COMPANIES.filter(c => c.name.toLowerCase().includes(companyInput.toLowerCase()));
 
-  // Assessment Active State
+  // Active state
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [responses, setResponses] = useState<{ id: string; correct: boolean; time: number; usedHint: boolean }[]>([]);
+  const [currentSection, setCurrentSection] = useState<'Logic' | 'Code' | 'System Thinking'>('Logic');
+  const [responses, setResponses] = useState<{ id: string; correct: boolean; time: number; section: string }[]>([]);
   const [timer, setTimer] = useState(0);
-  const [usedHint, setUsedHint] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiQuestionPool, setAiQuestionPool] = useState<Question[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [results, setResults] = useState<any>(null);
 
-  // Results State
-  const [finalAnalysis, setFinalAnalysis] = useState<any>(null);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (step === 'active' && timer > 0) {
+      interval = setInterval(() => setTimer(t => t - 1), 1000);
+    } else if (step === 'active' && timer === 0) {
+      handleNext(false);
+    }
+    return () => clearInterval(interval);
+  }, [step, timer]);
 
   const resolveInputs = () => {
     const finalRole = selectedRole || ROLES.find(r => r.name.toLowerCase() === roleInput.toLowerCase()) || { id: 'custom', name: roleInput, skills: ['Technical Logic'], subSkills: {} };
     const finalCompany = selectedCompany || COMPANIES.find(c => c.name.toLowerCase() === companyInput.toLowerCase()) || { id: 'custom', name: companyInput, logo: '', style: 'problem-solving', weights: {}, difficultyBias: 1.0, tone: 'neutral' };
-
     setSelectedRole(finalRole as any);
     setSelectedCompany(finalCompany as any);
     return { finalRole, finalCompany };
   };
 
-  const fetchAIQuestions = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch('http://localhost:8000/api/assessment/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          role: roleInput,
-          company: companyInput,
-          experience: experience
-        })
-      });
-      const data = await response.json();
-
-      if (data.questions && data.questions.length > 0) {
-        // Normalize data: Ensure options exist and correctAnswer is a number
-        const normalized = data.questions.map((q: any) => ({
-          ...q,
-          type: q.type || 'mcq',
-          options: q.options || q.choices || [],
-          correctAnswer: q.correctAnswer !== undefined ? Number(q.correctAnswer) : 0,
-          skill: q.skill || 'General',
-          subSkill: q.subSkill || 'Core Logic'
-        }));
-
-        setAiQuestionPool(normalized);
-        if (data.company_profile) {
-          setSelectedCompany(prev => ({ ...prev, ...data.company_profile } as any));
-        }
-        return normalized;
-      }
-    } catch (err) {
-      console.error("AI Generation failed:", err);
-    } finally {
-      setIsGenerating(false);
-    }
-    return QUESTION_BANK; // Fallback
-  };
-
-  // Timer Effect
-  useEffect(() => {
-    if (step === 'active' && timer > 0) {
-      const id = setInterval(() => {
-        setTimer(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(id);
-    } else if (step === 'active' && timer === 0) {
-      handleNext(false, true);
-    }
-  }, [step, timer]);
-
-
-  // 1. Initial Question Selection (Medium start)
-  const startAssessment = async () => {
+  const startAssessment = () => {
     resolveInputs();
-    const pool = await fetchAIQuestions();
-
-    // Start with a medium question from the pool
-    const initialQuestions = pool.filter((q: Question) => q.difficulty === 'medium').slice(0, 1);
-    const startQ = initialQuestions.length > 0 ? initialQuestions[0] : pool[0];
-
+    const selected = [
+      ...QUESTION_POOL.filter(q => q.section === 'Logic').slice(0, 2),
+      ...QUESTION_POOL.filter(q => q.section === 'Code').slice(0, 2),
+      ...QUESTION_POOL.filter(q => q.section === 'System Thinking').slice(0, 2)
+    ];
+    setQuestions(selected);
     setCurrentIndex(0);
-    setQuestions([startQ]);
+    setCurrentSection(selected[0].section);
+    setTimer(selected[0].timeLimit);
     setStep('active');
-    setTimer(startQ.timeLimit);
   };
 
-  const handleNext = (isCorrect: boolean, isTimeout = false) => {
+  const handleNext = (isCorrect: boolean) => {
     const currentQ = questions[currentIndex];
-    if (!currentQ) return;
-
-    const response = {
-      id: currentQ.id,
-      correct: isCorrect,
-      time: currentQ.timeLimit - timer,
-      usedHint: usedHint
-    };
-
-    const newResponses = [...responses, response];
+    const newResponses = [...responses, { id: currentQ.id, correct: isCorrect, time: currentQ.timeLimit - timer, section: currentQ.section }];
     setResponses(newResponses);
 
-    // ADAPTIVE LOGIC: Select next question difficulty
-    if (newResponses.length >= 5) {
-      setStep('analysis');
-      setTimeout(() => generateResults(newResponses), 2000);
-      return;
-    }
-
-    // Determine next difficulty
-    let nextDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
-    if (isCorrect && timer > currentQ.timeLimit / 2) nextDifficulty = 'hard';
-    else if (!isCorrect) nextDifficulty = 'easy';
-
-    // Find a new question from AI pool that hasn't been used
-    const usedIds = newResponses.map(r => r.id);
-    const pool = aiQuestionPool.length > 0 ? aiQuestionPool : QUESTION_BANK;
-    const nextQ = pool.find(q => q.difficulty === nextDifficulty && !usedIds.includes(q.id))
-      || pool.find(q => !usedIds.includes(q.id));
-
-    if (nextQ) {
-      setQuestions([...questions, nextQ]);
-      setCurrentIndex(prev => prev + 1);
-      setTimer(nextQ.timeLimit);
-      setUsedHint(false);
-      setShowExplanation(false);
+    if (currentIndex < questions.length - 1) {
+      const nextIdx = currentIndex + 1;
+      setCurrentIndex(nextIdx);
+      setCurrentSection(questions[nextIdx].section);
+      setTimer(questions[nextIdx].timeLimit);
     } else {
       setStep('analysis');
-      setTimeout(() => generateResults(newResponses), 2000);
+      setTimeout(() => processResults(newResponses), 2000);
     }
   };
 
-  const generateResults = (finalResponses: any[]) => {
-    const score = (finalResponses.filter(r => r.correct).length / finalResponses.length) * 100;
-    const avgTime = finalResponses.reduce((acc, r) => acc + r.time, 0) / finalResponses.length;
+  const processResults = (finalResponses: any[]) => {
+    const logicScore = Math.round((finalResponses.filter(r => r.section === 'Logic' && r.correct).length / 2) * 100);
+    const codeScore = Math.round((finalResponses.filter(r => r.section === 'Code' && r.correct).length / 2) * 100);
+    const systemScore = Math.round((finalResponses.filter(r => r.section === 'System Thinking' && r.correct).length / 2) * 100);
 
-    // Use guaranteed non-null role/company for final calculations
-    const finalRole = selectedRole || ROLES[0];
-    const finalCompany = selectedCompany || COMPANIES[0];
+    const overall = Math.round((logicScore + codeScore + systemScore) / 3);
+    const alignment = Math.round(overall * (selectedCompany?.difficultyBias || 1) * 0.8 + 10);
 
-    setFinalAnalysis({
-      overallScore: Math.round(score),
-      roleReadiness: Math.round(score * 0.9 + (finalCompany.difficultyBias > 1 ? 5 : 0)),
-      companyMatch: Math.round(score * (1 / finalCompany.difficultyBias) + 10),
-      avgSpeed: Math.round(avgTime),
-      strengths: [finalRole.skills[0], 'Logical Defense'],
-      weaknesses: ['Scenario Handling', 'Pressure Resilience'],
-      recommendations: [
-        { title: 'Advanced System Designs', type: 'Course', link: '#' },
-        { title: 'Database Optimization', type: 'Practice', link: '#' }
-      ]
+    setResults({
+      overall,
+      alignment,
+      heatmap: [
+        { label: 'Analytical Logic', score: logicScore, color: '#7C3AED' },
+        { label: 'Clinical Coding', score: codeScore, color: '#1D74F2' },
+        { label: 'System Design', score: systemScore, color: '#059669' }
+      ],
+      weaknesses: codeScore < 70 ? ['Memory Management', 'Closure Scope'] : ['High Scale Latency'],
+      strengths: logicScore > 70 ? ['Distributed Inference', 'Probabilistic Thinking'] : ['Core Reliability'],
     });
     setStep('results');
   };
@@ -409,7 +376,7 @@ const Assessment: React.FC = () => {
       <div className="max-w-6xl w-full mx-auto">
         <AnimatePresence mode="wait">
 
-          {/* STEP 1: CONFIGURATION */}
+          {/* STEP 1: CONFIGURATION (RESTORED OLD UI) */}
           {step === 'config' && (
             <motion.div
               key="config"
@@ -430,7 +397,6 @@ const Assessment: React.FC = () => {
               </div>
 
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 sm:p-12 shadow-2xl space-y-8 relative">
-
                 {/* ROLE INPUT */}
                 <div className="relative">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Target Role</label>
@@ -473,23 +439,9 @@ const Assessment: React.FC = () => {
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Custom Role Mode Active</p>
                           </div>
                         )}
-                        <div className="p-2 border-t border-gray-50 mt-2">
-                          <button onClick={() => setShowRoleSuggestions(false)} className="w-full text-center text-[9px] font-black text-[#7C3AED] uppercase tracking-widest hover:underline">Close Suggestions</button>
-                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {ROLES.slice(0, 3).map(r => (
-                      <button
-                        key={r.id}
-                        onClick={() => { setRoleInput(r.name); setSelectedRole(r); }}
-                        className="text-[9px] font-bold text-gray-400 hover:text-[#7C3AED] hover:bg-[#7C3AED]/5 px-3 py-1.5 rounded-full border border-gray-100 transition-all uppercase tracking-widest"
-                      >
-                        {r.name}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* COMPANY INPUT */}
@@ -534,23 +486,9 @@ const Assessment: React.FC = () => {
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Standard Market Bias Applied</p>
                           </div>
                         )}
-                        <div className="p-2 border-t border-gray-50 mt-2">
-                          <button onClick={() => setShowCompanySuggestions(false)} className="w-full text-center text-[9px] font-black text-[#7C3AED] uppercase tracking-widest hover:underline">Close Suggestions</button>
-                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {COMPANIES.map(c => (
-                      <button
-                        key={c.id}
-                        onClick={() => { setCompanyInput(c.name); setSelectedCompany(c); }}
-                        className="text-[9px] font-bold text-gray-400 hover:text-[#7C3AED] hover:bg-[#7C3AED]/5 px-3 py-1.5 rounded-full border border-gray-100 transition-all uppercase tracking-widest"
-                      >
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* EXPERIENCE LEVEL */}
@@ -585,13 +523,12 @@ const Assessment: React.FC = () => {
                   >
                     Generate Protocol <ArrowRight className="w-4 h-4" />
                   </button>
-                  <p className="text-center mt-4 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Encryption Level: AES-256 Validated</p>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 2: PREPARATION / BRIEFING */}
+          {/* STEP 2: PREPARATION */}
           {step === 'prep' && (
             <motion.div
               key="prep"
@@ -603,254 +540,155 @@ const Assessment: React.FC = () => {
               </div>
               <h2 className="text-4xl sm:text-5xl font-black text-[#111827] mb-6 uppercase tracking-tighter">Protocol <span className="text-[#7C3AED]">Synchronized.</span></h2>
               <p className="text-gray-500 text-lg mb-12 max-w-2xl mx-auto font-medium">
-                We have synthesized an adaptive assessment for <span className="text-[#111827] font-bold">{selectedRole?.name}</span> at <span className="text-[#111827] font-bold">{selectedCompany?.name}</span>. The difficulty will pivot based on your performance.
+                We have synthesized an adaptive assessment for <span className="text-[#111827] font-bold">{selectedRole?.name}</span> at <span className="text-[#111827] font-bold">{selectedCompany?.name}</span>.
               </p>
-
-              <div className="grid sm:grid-cols-3 gap-6 mb-16 text-left">
-                {[
-                  { icon: Brain, label: 'Style', val: selectedCompany?.style || 'standard' },
-                  { icon: Clock, label: 'Adaptive', val: 'On' },
-                  { icon: ShieldCheck, label: 'Verification', val: 'Clinical' }
-                ].map((item, i) => (
-                  <div key={i} className="bg-white border border-gray-100 p-8 rounded-3xl shadow-sm">
-                    <item.icon className="w-6 h-6 text-[#7C3AED] mb-4" />
-                    <span className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{item.label}</span>
-                    <span className="text-sm font-bold text-[#111827] uppercase">{item.val}</span>
-                  </div>
-                ))}
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onClick={() => setStep('config')} className="px-10 py-5 bg-white border border-gray-200 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:border-gray-400 transition-all">Re-Calibrate</button>
+                <button onClick={() => setStep('config')} className="px-10 py-5 bg-white border border-gray-200 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Re-Calibrate</button>
                 <button
                   onClick={startAssessment}
-                  disabled={isGenerating}
-                  className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:grayscale"
+                  className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:scale-105 transition-all"
                 >
-                  {isGenerating ? 'Synthesizing Protocol...' : 'Initiate Audit'}
+                  Initiate Audit
                 </button>
               </div>
             </motion.div>
           )}
 
           {/* STEP 3: ACTIVE ASSESSMENT */}
-          {step === 'active' && (
+          {step === 'active' && questions.length > 0 && (
             <motion.div
               key="active"
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-              className="relative"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="max-w-4xl w-full mx-auto"
             >
-              {/* Top Progress Bar */}
-              <div className="fixed top-0 left-0 w-full h-1 bg-gray-100 z-[150]">
-                <motion.div
-                  className="h-full bg-[#7C3AED]"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${((currentIndex + 1) / 5) * 100}%` }}
-                />
+              <div className="flex justify-between items-center mb-12">
+                {['Logic', 'Code', 'System Thinking'].map((section, idx) => (
+                  <div key={section} className="flex flex-col items-center gap-2">
+                    <div className={`h-1 w-24 rounded-full transition-all duration-500 ${currentSection === section ? 'bg-[#7C3AED] shadow-lg shadow-[#7C3AED]/40' : idx < ['Logic', 'Code', 'System Thinking'].indexOf(currentSection) ? 'bg-[#111827]' : 'bg-gray-200'}`} />
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${currentSection === section ? 'text-[#7C3AED]' : 'text-gray-400'}`}>{section}</span>
+                  </div>
+                ))}
               </div>
 
-              <div className="grid lg:grid-cols-3 gap-8">
-                {/* Main Question Area */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 sm:p-12 shadow-xl relative overflow-hidden">
-                    <div className="flex justify-between items-center mb-10">
-                      <div className="flex items-center gap-4">
-                        <span className="bg-[#7C3AED] text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">Gate {currentIndex + 1}</span>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{questions[currentIndex].skill} // {questions[currentIndex].subSkill}</span>
-                      </div>
-                      <div className={`flex items-center gap-2 font-mono font-bold text-sm ${timer < 10 ? 'text-red-500 animate-pulse' : 'text-[#7C3AED]'}`}>
-                        <Timer className="w-4 h-4" /> {timer}s
-                      </div>
-                    </div>
-
-                    <h2 className="text-2xl sm:text-3xl font-bold text-[#111827] mb-8 leading-tight">
-                      {questions[currentIndex].text}
-                    </h2>
-
-                    {questions[currentIndex].code && (
-                      <div className="bg-gray-900 rounded-xl p-6 mb-8 overflow-x-auto">
-                        <pre className="text-blue-400 font-mono text-sm leading-relaxed">
-                          <code>{questions[currentIndex].code}</code>
-                        </pre>
-                      </div>
-                    )}
-
-                    <div className="grid gap-3">
-                      {(!questions[currentIndex].options || questions[currentIndex].options.length === 0) ? (
-                        <div className="space-y-4">
-                          <textarea
-                            placeholder="Type your technical response, architectural sketch, or solution logic here..."
-                            className="w-full h-48 bg-gray-50 border border-gray-100 rounded-2xl p-6 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 font-mono text-sm leading-relaxed"
-                            onChange={(e) => (window as any).currentUserResponse = e.target.value}
-                          />
-                          <div className="flex justify-between items-center gap-4">
-                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Supports Markdown & Logic Schemas</p>
-                            <button
-                              onClick={() => handleNext(true)}
-                              className="px-8 py-4 bg-[#7C3AED] text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg hover:shadow-[#7C3AED]/30 transition-all"
-                            >
-                              Submit Intelligence
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        questions[currentIndex].options?.map((option, i) => (
-                          <button
-                            key={i}
-                            onClick={() => handleNext(i === Number(questions[currentIndex].correctAnswer))}
-                            className="w-full p-5 text-left border border-gray-100 rounded-2xl hover:border-[#7C3AED] hover:bg-[#F5F3FF] transition-all group flex items-center justify-between"
-                          >
-                            <span className="font-bold text-gray-700 group-hover:text-[#7C3AED] text-sm">{option}</span>
-                            <span className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-[#7C3AED] group-hover:text-white transition-all">{String.fromCharCode(65 + i)}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center px-4">
-                    <button
-                      onClick={() => setUsedHint(true)}
-                      disabled={usedHint}
-                      className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2 hover:text-[#7C3AED] transition-colors disabled:opacity-30"
-                    >
-                      <Zap className="w-3 h-3" /> Get Clinical Hint (-10% Score)
-                    </button>
-                    {usedHint && <p className="text-[10px] font-bold text-[#723AED] italic">{questions[currentIndex].hint || "Focus on the execution flow."}</p>}
+              <div className="bg-white rounded-[3rem] p-12 border border-gray-100 shadow-2xl relative">
+                <div className="flex justify-between items-center mb-12">
+                  <span className="bg-gray-900 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest">Question {currentIndex + 1} / {questions.length}</span>
+                  <div className={`flex items-center gap-2 font-mono font-bold text-sm ${timer < 10 ? 'text-red-500 animate-pulse' : 'text-[#7C3AED]'}`}>
+                    <Timer className="w-4 h-4" /> {timer}s
                   </div>
                 </div>
 
-                {/* Sidebar Info */}
-                <div className="space-y-6">
-                  <div className="bg-[#111827] text-white rounded-[2.5rem] p-8 shadow-xl">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#7C3AED] mb-6">Live Response Mesh</h3>
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-center text-sm font-bold">
-                        <span className="text-gray-400 uppercase text-[9px]">Difficulty</span>
-                        <span className="uppercase text-[#7C3AED]">{questions[currentIndex].difficulty}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm font-bold">
-                        <span className="text-gray-400 uppercase text-[9px]">System Impact</span>
-                        <span>High Risk</span>
-                      </div>
-                      <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-[#7C3AED]"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(currentIndex + 1) * 20}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                <div className="space-y-8">
+                  <h3 className="text-3xl font-bold text-gray-900 leading-tight">{questions[currentIndex].text}</h3>
 
-                  <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6">Interview Simulation</h4>
-                    <p className="text-[11px] text-gray-500 font-medium leading-relaxed italic border-l-2 border-[#7C3AED] pl-4">
-                      "{selectedCompany?.name} typically looks for candidates who can explain the trade-offs of their decisions under pressure."
-                    </p>
+                  {questions[currentIndex].code && (
+                    <div className="bg-[#111827] rounded-3xl p-8 font-mono text-sm text-blue-400 overflow-x-auto shadow-inner">
+                      <pre><code>{questions[currentIndex].code}</code></pre>
+                    </div>
+                  )}
+
+                  <div className="grid gap-4">
+                    {questions[currentIndex].options?.map((opt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleNext(i === questions[currentIndex].correctAnswer)}
+                        className="w-full text-left p-6 rounded-2xl border-2 border-transparent bg-gray-50 hover:bg-white hover:border-[#7C3AED] hover:shadow-xl transition-all group flex items-center justify-between"
+                      >
+                        <span className="font-bold text-gray-700 group-hover:text-[#7C3AED]">{opt}</span>
+                        <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED]">{String.fromCharCode(65 + i)}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 4: ANALYSIS LOADING */}
+          {/* ANALYSIS STATE */}
           {step === 'analysis' && (
-            <motion.div
-              key="analysis"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-center"
-            >
-              <div className="w-20 h-20 border-4 border-[#7C3AED] border-t-transparent rounded-full animate-spin mx-auto mb-8"></div>
-              <h2 className="text-2xl font-black uppercase tracking-widest text-[#111827]">Synthesizing <span className="text-[#7C3AED]">Intelligence...</span></h2>
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.4em] mt-4 text-center">Crunching clinical data nodes</p>
+            <motion.div key="analysis" className="text-center py-40">
+              <div className="w-20 h-20 border-4 border-[#7C3AED] border-t-transparent rounded-full animate-spin mx-auto mb-10" />
+              <h2 className="text-3xl font-black uppercase tracking-widest text-gray-900">Synthesizing Protocol...</h2>
             </motion.div>
           )}
 
-          {/* STEP 5: RESULTS & INSIGHTS */}
-          {step === 'results' && finalAnalysis && (
+          {/* STEP 4: RESULTS */}
+          {step === 'results' && results && (
             <motion.div
               key="results"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              className="space-y-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-7xl mx-auto space-y-12"
             >
-              <div className="flex flex-col lg:flex-row gap-12 items-center">
+              <div className="flex flex-col lg:flex-row gap-12 items-end">
                 <div className="flex-grow">
-                  <div className="inline-flex items-center gap-2 bg-green-50 text-green-600 px-4 py-2 rounded-full mb-6">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Audit Terminal Finalized</span>
+                  <div className="flex items-center gap-2 text-green-500 mb-6">
+                    <ShieldCheck className="w-5 h-5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Verified Clinical Verdict</span>
                   </div>
-                  <h1 className="text-6xl font-black text-[#111827] uppercase tracking-tighter italic leading-none mb-4">
-                    Clinical <br /><span className="text-[#7C3AED]">Verdict.</span>
+                  <h1 className="text-6xl sm:text-8xl font-black text-gray-900 leading-[0.8] tracking-tighter uppercase italic">
+                    Logic <br /> <span className="text-[#7C3AED]">Certified.</span>
                   </h1>
                 </div>
 
-                <div className="flex gap-8">
-                  <RadialProgress value={finalAnalysis.roleReadiness} label="Role Ready" />
-                  <RadialProgress value={finalAnalysis.companyMatch} label={`${selectedCompany.name} Fit`} />
+                <div className="grid grid-cols-2 gap-8 w-full lg:w-auto">
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Proficiency</p>
+                    <p className="text-6xl font-black text-gray-900">{results.overall}%</p>
+                  </div>
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Alignment</p>
+                    <p className="text-6xl font-black text-[#7C3AED]">{results.alignment}%</p>
+                  </div>
                 </div>
               </div>
 
               <div className="grid lg:grid-cols-3 gap-8">
-                {/* Performance Bento */}
-                <div className="lg:col-span-2 grid sm:grid-cols-2 gap-6">
-
-                  <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Logic Strengths</h3>
-                    <div className="space-y-3">
-                      {finalAnalysis.strengths.map((s: string, i: number) => (
-                        <div key={i} className="flex items-center gap-3 bg-green-50 text-green-700 p-4 rounded-2xl font-bold text-sm">
-                          <Trophy className="w-4 h-4" /> {s}
-                        </div>
+                <div className="lg:col-span-2 bg-white rounded-[3rem] p-12 border border-gray-100 shadow-sm space-y-10">
+                  <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.5em] mb-4">Authority Heatmap</h4>
+                  <div className="grid sm:grid-cols-2 gap-12">
+                    <div className="space-y-6">
+                      {results.heatmap.map((h: any, i: number) => (
+                        <HeatmapItem key={i} {...h} />
                       ))}
                     </div>
-                  </div>
-
-                  <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Critical Gaps</h3>
-                    <div className="space-y-3">
-                      {finalAnalysis.weaknesses.map((w: string, i: number) => (
-                        <div key={i} className="flex items-center gap-3 bg-red-50 text-red-600 p-4 rounded-2xl font-bold text-sm">
-                          <AlertCircle className="w-4 h-4" /> {w}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="sm:col-span-2 bg-[#111827] text-white rounded-[2.5rem] p-10 flex flex-col sm:flex-row items-center justify-between gap-8">
-                    <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#7C3AED] mb-4">AI FEEDBACK PROTOCOL</h4>
-                      <p className="text-lg font-medium leading-relaxed max-w-xl text-gray-300">
-                        "Your execution on <span className="text-white font-bold">{finalAnalysis.strengths[0]}</span> exceeds the {selectedCompany.name} benchmark. However, you struggled with <span className="text-[#7C3AED] font-bold">pressure-based scenarios</span>. We suggest focusing on clinical decomposition during time-boxed design trials."
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="block text-5xl font-black text-white tracking-tighter">{finalAnalysis.avgSpeed}s</span>
-                      <span className="text-[9px] font-black text-[#7C3AED] uppercase tracking-widest">Avg Pulse Speed</span>
+                    <div className="bg-gray-50 rounded-[2.5rem] p-8 space-y-6">
+                      <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Strengths</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {results.strengths.map((s: string) => (
+                          <span key={s} className="px-4 py-2 bg-green-50 text-green-600 border border-green-100 rounded-xl text-[10px] font-black uppercase tracking-widest">{s}</span>
+                        ))}
+                      </div>
+                      <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pt-4">Improvements</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {results.weaknesses.map((w: string) => (
+                          <span key={w} className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-[10px] font-black uppercase tracking-widest">{w}</span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Recommendations */}
-                <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-xl">
-                  <h3 className="text-[10px] font-black text-[#111827] uppercase tracking-[0.3em] mb-10 border-b border-gray-100 pb-4">Next Action Protocol</h3>
-                  <div className="space-y-6">
-                    {finalAnalysis.recommendations.map((rec: any, i: number) => (
-                      <div key={i} className="group cursor-pointer">
-                        <span className="text-[8px] font-black text-[#7C3AED] uppercase tracking-widest block mb-1">{rec.type}</span>
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-sm group-hover:text-[#7C3AED] transition-colors">{rec.title}</h4>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="space-y-6">
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    className="bg-[#111827] text-white rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden group border border-white/5"
+                  >
+                    <div className="relative z-10">
+                      <Award className="w-10 h-10 text-yellow-400 mb-6" />
+                      <h4 className="text-xl font-black uppercase tracking-tighter mb-4">Unlock Proof Badge</h4>
+                      <p className="text-white/60 text-xs font-medium mb-8">Verified evidence of your logic scores to display on LinkedIn.</p>
+                      <button className="w-full py-4 bg-white text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest group-hover:bg-[#7C3AED] group-hover:text-white transition-all">Claim Authority</button>
+                    </div>
+                  </motion.div>
 
                   <button
                     onClick={() => setStep('config')}
-                    className="w-full mt-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-lg hover:scale-105 transition-all"
+                    className="w-full flex items-center justify-center gap-2 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-900 transition-all pt-4"
                   >
-                    Repeat Audit
+                    <RefreshCw className="w-4 h-4" /> Retake Audit
                   </button>
                 </div>
               </div>
@@ -859,6 +697,7 @@ const Assessment: React.FC = () => {
 
         </AnimatePresence>
       </div>
+      <div className="fixed inset-0 bg-grid-black/[0.02] pointer-events-none -z-10" />
     </div>
   );
 };

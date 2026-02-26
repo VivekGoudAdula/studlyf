@@ -74,13 +74,13 @@ const DashboardHome: React.FC = () => {
       title: 'Hero Tracks',
       desc: 'Role-focused engineering specialization for elite readiness.',
       icon: Zap,
-      to: '/learn/courses',
+      to: '/learn/courses-overview',
     },
     {
       title: 'Skill Assessment',
       desc: 'Identify your strengths with clinical scoring maps.',
       icon: Target,
-      to: '/learn/assessment',
+      to: '/learn/assessment-intro',
     },
     {
       title: 'Proof of Skill',
@@ -624,7 +624,7 @@ const DashboardHome: React.FC = () => {
                 In Startup&apos;s
               </h2>
               <Link
-                to="/dashboard"
+                to="/jobs/get-hired"
                 className="inline-block bg-[#1D74F2] text-white px-12 py-5 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-[#1D74F2]/90 hover:scale-105 transition-all"
               >
                 Get Started
