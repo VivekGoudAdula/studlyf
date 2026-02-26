@@ -31,7 +31,7 @@ const Signup: React.FC = () => {
             await updateProfile(userCredential.user, {
                 displayName: name
             });
-            navigate('/dashboard/learner');
+            navigate('/goal-selector');
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
         } finally {
@@ -43,7 +43,7 @@ const Signup: React.FC = () => {
         const provider = type === 'google' ? googleProvider : githubProvider;
         try {
             await signInWithPopup(auth, provider);
-            navigate('/dashboard/learner');
+            navigate('/goal-selector');
         } catch (err: any) {
             setError(err.message || `${type} sign-in failed`);
         }
