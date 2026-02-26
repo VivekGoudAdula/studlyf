@@ -46,23 +46,6 @@ import Testimonials from './components/Testimonials';
 import Impact from './components/Impact';
 import Achievements from './components/Achievements';
 
-// Admin Pages
-import AdminOverview from './pages/admin/AdminOverview';
-import StudentManagement from './pages/admin/StudentManagement';
-import CourseManagement from './pages/admin/CourseManagement';
-import AssessmentManagement from './pages/admin/AssessmentManagement';
-import HiringPipeline from './pages/admin/HiringPipeline';
-import AnalyticsPage from './pages/admin/Analytics';
-import AuditLogs from './pages/admin/AuditLogs';
-import AdminSettings from './pages/admin/Settings';
-import ContentManagement from './pages/admin/ContentManagement';
-import MentorManagement from './pages/admin/MentorManagement';
-import MockInterviewManagement from './pages/admin/MockInterviewManagement';
-import CompanyManagement from './pages/admin/CompanyManagement';
-import PaymentManagement from './pages/admin/PaymentManagement';
-import ResumeManagement from './pages/admin/ResumeManagement';
-import AdminRoute from './AdminRoute';
-
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -74,8 +57,7 @@ const ScrollToTop = () => {
 const App: React.FC = () => {
   const { pathname } = useLocation();
   const isLoginPage = pathname === '/login' || pathname === '/signup';
-  const isAdmin = pathname.startsWith('/admin');
-  const isDashboard = pathname.startsWith('/dashboard') || isAdmin;
+  const isDashboard = pathname.startsWith('/dashboard');
   const isPlayer = pathname.startsWith('/learn/course-player');
   const isCheckout = pathname === '/learn/checkout';
   const isHome = pathname === '/';
@@ -84,7 +66,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard ? 'bg-transparent' : 'bg-white'}`}>
-      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding && !isAdmin) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding) && <Navigation />}
       <main className="flex-grow">
         <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
           <Routes>
@@ -122,27 +104,11 @@ const App: React.FC = () => {
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
-            {/* Admin System */}
-            <Route path="/admin/dashboard" element={<AdminRoute><AdminOverview /></AdminRoute>} />
-            <Route path="/admin/students" element={<AdminRoute><StudentManagement /></AdminRoute>} />
-            <Route path="/admin/courses" element={<AdminRoute><CourseManagement /></AdminRoute>} />
-            <Route path="/admin/assessments" element={<AdminRoute><AssessmentManagement /></AdminRoute>} />
-            <Route path="/admin/hiring-pipeline" element={<AdminRoute><HiringPipeline /></AdminRoute>} />
-            <Route path="/admin/analytics" element={<AdminRoute><AnalyticsPage /></AdminRoute>} />
-            <Route path="/admin/audit-logs" element={<AdminRoute><AuditLogs /></AdminRoute>} />
-            <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
-            <Route path="/admin/content" element={<AdminRoute><ContentManagement /></AdminRoute>} />
-            <Route path="/admin/mentors" element={<AdminRoute><MentorManagement /></AdminRoute>} />
-            <Route path="/admin/mock-interviews" element={<AdminRoute><MockInterviewManagement /></AdminRoute>} />
-            <Route path="/admin/companies" element={<AdminRoute><CompanyManagement /></AdminRoute>} />
-            <Route path="/admin/payments" element={<AdminRoute><PaymentManagement /></AdminRoute>} />
-            <Route path="/admin/resumes" element={<AdminRoute><ResumeManagement /></AdminRoute>} />
-
           </Routes>
 
         </Suspense>
       </main>
-      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding && !isAdmin) && (
+      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding) && (
         <>
           <Impact />
           <Testimonials />
