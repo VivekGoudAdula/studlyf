@@ -1,13 +1,13 @@
 // Studlyf Engineering Protocol - Core Routing Engine
 import React, { Suspense, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
+
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
-import { AuthProvider } from './AuthContext';
+import { AuthProvider, useAuth } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
 import { HeroUIProvider } from "@heroui/react";
-
 
 // Pages
 import Home from './pages/Home';
@@ -54,6 +54,17 @@ import Testimonials from './components/Testimonials';
 import Impact from './components/Impact';
 import Achievements from './components/Achievements';
 
+// Admin Pages
+import AdminLayout from './pages/admin/layout/AdminLayout';
+import AdminDashboardOverview from './pages/admin/dashboard/Overview';
+import AdminStudentManagement from './pages/admin/students/StudentManagement';
+import AdminCourseManagement from './pages/admin/courses/CourseManagement';
+import AdminAssessmentManagement from './pages/admin/assessments/AssessmentManagement';
+import AdminHiringPipeline from './pages/admin/hiring/HiringPipeline';
+import AdminAnalytics from './pages/admin/analytics/Analytics';
+import AdminMockInterviews from './pages/admin/interviews/MockInterviews';
+import AdminProtectedRoute from './AdminProtectedRoute';
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -64,21 +75,42 @@ const ScrollToTop = () => {
 
 const App: React.FC = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
   const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboard = pathname.startsWith('/dashboard');
+  const isAdmin = pathname.startsWith('/admin');
   const isPlayer = pathname.startsWith('/learn/course-player');
   const isCheckout = pathname === '/learn/checkout';
   const isHome = pathname === '/';
   const isFeaturePreview = pathname.startsWith('/feature-preview');
   const isOnboarding = pathname === '/learn/career-onboarding';
 
+  // Admin Redirect Logic
+  useEffect(() => {
+    if (!loading && user?.email?.toLowerCase() === 'admin@studlyf.com') {
+      if (!pathname.startsWith('/admin')) {
+        navigate('/admin', { replace: true });
+      }
+    }
+  }, [user, pathname, loading, navigate]);
+
   return (
-    <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard ? 'bg-transparent' : 'bg-white'}`}>
-      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding) && <Navigation />}
+    <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
+      
+      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding && !isAdmin) && <Navigation />}
+      
       <main className="flex-grow">
-        <Suspense fallback={<div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Synchronizing Protocol...</div>}>
+        <Suspense fallback={
+          <div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">
+            Synchronizing Protocol...
+          </div>
+        }>
           <Routes>
+
             <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
+
             <Route path="/learn/courses-overview" element={<ProtectedRoute><CoursesOverview /></ProtectedRoute>} />
             <Route path="/learn/track/:trackId" element={<ProtectedRoute><TrackDetail /></ProtectedRoute>} />
             <Route path="/learn/enroll/:trackId" element={<ProtectedRoute><EnrollmentFlow /></ProtectedRoute>} />
@@ -106,9 +138,7 @@ const App: React.FC = () => {
             <Route path="/jobs/matches" element={<ProtectedRoute><GetHiredDashboard /></ProtectedRoute>} />
             <Route path="/goal-selector" element={<ProtectedRoute><GoalSelector /></ProtectedRoute>} />
 
-            {/* Legacy Redirects */}
             <Route path="/employers/get-hired" element={<Navigate to="/jobs/get-hired" replace />} />
-
             <Route path="/employers/hire" element={<Hire />} />
 
             <Route path="/about" element={<About />} />
@@ -117,18 +147,35 @@ const App: React.FC = () => {
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
-            {/* Dashboards */}
             <Route path="/dashboard" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
-          </Routes>
+            {/* Admin */}
+            <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboardOverview />} />
+              <Route path="students" element={<AdminStudentManagement />} />
+              <Route path="courses" element={<AdminCourseManagement />} />
+              <Route path="assessments" element={<AdminAssessmentManagement />} />
+              <Route path="mock-interviews" element={<AdminMockInterviews />} />
+              <Route path="hiring" element={<AdminHiringPipeline />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="mentors" element={<div className="p-8"><h1>Mentor Management Coming Soon</h1></div>} />
+              <Route path="companies" element={<div className="p-8"><h1>Company Management Coming Soon</h1></div>} />
+              <Route path="payments" element={<div className="p-8"><h1>Payment Management Coming Soon</h1></div>} />
+              <Route path="content" element={<div className="p-8"><h1>CMS Management Coming Soon</h1></div>} />
+              <Route path="settings" element={<div className="p-8"><h1>System Settings Coming Soon</h1></div>} />
+              <Route path="audit-logs" element={<div className="p-8"><h1>Audit Logs Coming Soon</h1></div>} />
+            </Route>
 
+          </Routes>
         </Suspense>
       </main>
-      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding) && (
+
+      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding && !isAdmin) && (
         <>
           <Impact />
           <Testimonials />
@@ -140,9 +187,6 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-
-
 
 const AppWrapper = () => (
   <HeroUIProvider>
