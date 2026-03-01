@@ -9,14 +9,6 @@ const GoalSelector: React.FC = () => {
 
     const goals = [
         {
-            id: 'job',
-            title: 'Get a High-Stakes Job',
-            desc: 'Direct access to Tier-1 engineering roles via the Studlyf protocol.',
-            icon: <Briefcase className="w-6 h-6" />,
-            color: 'bg-blue-500',
-            path: '/jobs/get-hired'
-        },
-        {
             id: 'skills',
             title: 'Improve Core Skills',
             desc: 'Clinical mastery of software engineering and systems design.',

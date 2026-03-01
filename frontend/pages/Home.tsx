@@ -1,8 +1,6 @@
 
 import React from 'react';
-import LandingNavbar from '../components/LandingNavbar';
 import LandingHero from '../components/LandingHero';
-import PurpleNavbar from '../components/PurpleNavbar';
 import WhatIsStudlyf from '../components/WhatIsStudlyf';
 import VoicesThatInspire from '../components/VoicesThatInspire';
 import OldVsNewSection from '../components/OldVsNewSection';
@@ -18,10 +16,8 @@ const Home: React.FC = () => {
   return (
     <div className="bg-white min-h-screen">
       {/* First Fold */}
-      <div className="h-screen flex flex-col relative overflow-hidden">
-        <LandingNavbar />
+      <div className="h-screen flex flex-col relative overflow-hidden pt-20">
         <LandingHero />
-        <PurpleNavbar />
       </div>
 
       {/* Scrollable content starts here */}

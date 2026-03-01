@@ -49,7 +49,7 @@ const CircularProgress = ({ value, size = 180, strokeWidth = 12, color = "#7C3AE
 const LearnerDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'profile' | 'knowledge' | 'leaderboard' | 'matches'>('profile');
+  const [activeView, setActiveView] = useState<'profile' | 'knowledge' | 'leaderboard'>('profile');
   const [activeTab, setActiveTab] = useState<'overall' | 'dev' | 'ai'>('overall');
   const [githubData, setGithubData] = useState<any>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -113,7 +113,6 @@ const LearnerDashboard: React.FC = () => {
     { id: 'profile', label: 'My Profile', icon: '👤' },
     { id: 'knowledge', label: 'Tech Stack', icon: '🕸️' },
     { id: 'leaderboard', label: 'Rankings', icon: '🏆' },
-    { id: 'matches', label: 'Opportunities', icon: '💼' },
   ];
 
   const renderView = () => {
@@ -199,39 +198,6 @@ const LearnerDashboard: React.FC = () => {
             </div>
           </div>
         );
-      case 'matches':
-        return (
-          <div className="space-y-8">
-            <h2 className="text-4xl font-black uppercase tracking-tighter text-[#111827]">Job Matches</h2>
-            <div className="grid gap-6">
-              {[
-                { company: "Nirvaha", role: "Junior Architect", match: "89%", pay: "$85k - $110k", tags: ["React", "Node.js"] },
-                { company: "DataFlow", role: "Systems Engineer", match: "72%", pay: "$90k - $125k", tags: ["Python", "AWS"] },
-                { company: "TechCorp", role: "Frontend Dev", match: "65%", pay: "$75k - $95k", tags: ["Vue", "CSS"] }
-              ].map((job, i) => (
-                <div key={i} className="bg-white border border-gray-100 rounded-3xl p-8 flex flex-col sm:flex-row items-center justify-between shadow-sm hover:border-[#7C3AED]/30 hover:shadow-lg hover:shadow-[#7C3AED]/5 transition-all group">
-                  <div className="mb-4 sm:mb-0 text-center sm:text-left">
-                    <span className="text-[9px] font-black text-[#7C3AED] uppercase tracking-[0.3em] mb-2 block">{job.company}</span>
-                    <h3 className="text-xl font-bold uppercase tracking-tight mb-2 group-hover:text-[#7C3AED] transition-colors">{job.role}</h3>
-                    <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
-                      <span className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded-md">{job.pay}</span>
-                      {job.tags.map(t => <span key={t} className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border border-gray-100 px-2 py-1 rounded-md">{t}</span>)}
-                    </div>
-                  </div>
-                  <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-3">
-                    <div>
-                      <span className="block text-3xl font-black tracking-tighter text-[#111827]">{job.match}</span>
-                      <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Match Strength</span>
-                    </div>
-                    <button className="bg-[#111827] text-white px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#7C3AED] transition-colors shadow-lg">
-                      Apply Now
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
       case 'profile':
       default:
         return (
@@ -284,15 +250,6 @@ const LearnerDashboard: React.FC = () => {
                 </div>
 
                 <div className="w-full lg:w-80 space-y-4">
-                  <div className="bg-gray-50 border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex items-center justify-between">
-                    <div>
-                      <p className="text-[9px] sm:text-[10px] font-bold text-[#111827] uppercase tracking-widest">Open to Work</p>
-                      <p className="text-[7px] sm:text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">Matched with partners</p>
-                    </div>
-                    <div className="w-10 h-5 sm:w-12 sm:h-6 bg-[#7C3AED] rounded-full relative p-1 cursor-pointer">
-                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full absolute right-1 shadow-md" />
-                    </div>
-                  </div>
                   <button className="w-full py-4 sm:py-5 bg-[#FFFFFF] border border-gray-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] hover:border-[#7C3AED]/30 transition-all flex items-center justify-center gap-3 shadow-sm">
                     Skill Resume
                   </button>

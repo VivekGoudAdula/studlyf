@@ -75,34 +75,6 @@ const featuresData: Record<string, {
         benefits: ['Full-stack projects', 'System design', 'Code reviews', 'Deployment guides'],
         color: '#e11d48'
     },
-    'jobs-matches': {
-        title: 'Curated Job Matches',
-        description: 'Stop searching and start matching. Our AI algorithm finds jobs that perfectly fit your skill profile and career goals.',
-        icon: '🎯',
-        benefits: ['AI-powered matching', 'Salary insights', 'Direct applications', 'Company culture fit'],
-        color: '#f59e0b'
-    },
-    'jobs-leaderboard': {
-        title: 'Global Leaderboard',
-        description: 'Compete with learners worldwide and showcase your skills. Top performers get exclusive access to premium job opportunities.',
-        icon: '🏆',
-        benefits: ['Global ranking', 'Skill badges', 'Recruiter visibility', 'Monthly rewards'],
-        color: '#ef4444'
-    },
-    'jobs-get-hired': {
-        title: 'Get Hired',
-        description: 'Connect directly with top companies looking for talent like you. Fast-track your application process.',
-        icon: '🤝',
-        benefits: ['Direct referrals', 'Priority matching', 'Salary negotiation', 'Interview coaching'],
-        color: '#10b981'
-    },
-    'jobs-hire': {
-        title: 'Hire Talent',
-        description: 'Access a pool of pre-vetted, high-quality candidates. Filter by skills, experience, and assessment scores.',
-        icon: '🔍',
-        benefits: ['Vetted candidates', 'Skill verification', 'Fast hiring', 'Quality guarantee'],
-        color: '#6366f1'
-    }
 };
 
 const FeaturePreview: React.FC = () => {
