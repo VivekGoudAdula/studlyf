@@ -1,199 +1,206 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import Lottie from 'lottie-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, useInView, useAnimation, useSpring, useTransform } from 'framer-motion';
 
-interface ImpactCardProps {
-    title: string;
-    stat: string;
-    illustration?: string;
-    lottiePath?: string;
-    className?: string;
-    gradient: string;
-    isLarge?: boolean;
-}
+const StatCard = ({ number, suffix, label, delay }: { number: number, suffix: string, label: string, delay: number }) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-const ImpactCard = ({ title, stat, illustration, lottiePath, className = "", gradient, isLarge = false }: ImpactCardProps) => {
-    const [animationData, setAnimationData] = useState<any>(null);
+    // Animation for counting up
+    const springValue = useSpring(0, {
+        stiffness: 40,
+        damping: 20,
+        restDelta: 0.001
+    });
+
+    const displayValue = useTransform(springValue, (latest) => Math.floor(latest).toLocaleString());
 
     useEffect(() => {
-        if (lottiePath) {
-            fetch(lottiePath)
-                .then(res => res.json())
-                .then(data => setAnimationData(data))
-                .catch(err => console.error("Error loading Lottie animation:", err));
+        if (isInView) {
+            springValue.set(number);
         }
-    }, [lottiePath]);
+    }, [isInView, number, springValue]);
 
     return (
         <motion.div
+            ref={ref}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            whileHover={{ y: -5 }}
-            className={`relative rounded-[2.5rem] overflow-hidden group p-8 md:p-10 flex ${isLarge ? 'flex-col' : 'flex-col md:flex-row'} justify-between transition-all duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/5 ${className}`}
+            transition={{ duration: 0.6, delay }}
+            whileHover={{ y: -8, scale: 1.02 }}
+            className="relative group p-8 rounded-[2rem] bg-[#0F172A] border border-white/5 overflow-hidden shadow-2xl transition-all duration-300"
         >
-            {/* Background Gradient & Glow - Always Dark */}
-            <div className={`absolute inset-0 opacity-100 bg-gradient-to-br ${gradient}`} />
-            <div className="absolute inset-0 bg-[#0B0B0F]/40 backdrop-blur-[2px]" />
+            {/* Hover Glow Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#6C3BFF]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            {/* Premium Animated Border - Rotating light */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent,transparent,rgba(124,58,237,0.3),transparent,transparent)] animate-[spin_4s_linear_infinite]" />
-            </div>
-
-            {/* Subtle Noise Texture */}
+            {/* Background Grain */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-            {/* Animated Glow Particles (Subtle) */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {[...Array(3)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute w-1 h-1 bg-white/30 rounded-full blur-[1px]"
-                        animate={{
-                            y: [0, -150],
-                            x: [0, Math.random() * 60 - 30],
-                            opacity: [0, 0.4, 0],
-                        }}
-                        transition={{
-                            duration: 4 + Math.random() * 3,
-                            repeat: Infinity,
-                            delay: Math.random() * 5,
-                        }}
-                        style={{
-                            left: `${20 + Math.random() * 60}%`,
-                            bottom: "-5%",
-                        }}
-                    />
-                ))}
-            </div>
+            <div className="relative z-10">
+                <div className="flex items-baseline space-x-1 mb-2">
+                    <motion.h3 className="text-5xl md:text-6xl font-bold text-white tracking-tighter">
+                        {displayValue}
+                    </motion.h3>
+                    <span className="text-4xl md:text-5xl font-bold text-[#6C3BFF]">{suffix}</span>
+                </div>
 
-            {/* Content Area */}
-            <div className={`relative z-10 flex flex-col ${isLarge ? 'mb-8 items-center text-center pt-16 md:pt-20' : 'md:w-1/2 md:pr-4 justify-center mb-6 md:mb-0'}`}>
-                <motion.div>
-                    <h3 className="text-white font-poppins font-bold text-4xl md:text-5xl lg:text-6xl tracking-tighter leading-none mb-3 drop-shadow-2xl">
-                        {stat}
-                    </h3>
-                    <p className="text-indigo-300 font-poppins font-semibold text-xs md:text-sm uppercase tracking-[0.2em] leading-relaxed">
-                        {title}
-                    </p>
-                </motion.div>
-            </div>
+                <p className="text-white/60 text-xs md:text-sm font-bold uppercase tracking-[0.25em] mb-4">
+                    {label}
+                </p>
 
-            {/* Illustration Area */}
-            <div className={`relative z-10 flex items-center justify-center ${isLarge ? 'mt-auto h-[280px] md:h-[350px]' : 'md:w-1/2 h-[180px] md:h-full'}`}>
+                {/* Animated Gradient Underline */}
                 <motion.div
-                    animate={{
-                        y: [-8, 8],
-                        rotate: [-0.5, 0.5],
-                    }}
-                    transition={{
-                        duration: 5,
-                        repeat: Infinity,
-                        repeatType: "mirror",
-                        ease: "easeInOut",
-                    }}
-                    className="w-full h-full flex items-center justify-center relative"
-                >
-                    {/* Shadow under image */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-4 bg-black/40 blur-2xl rounded-full" />
-
-                    {animationData ? (
-                        <Lottie
-                            animationData={animationData}
-                            loop={true}
-                            className={`w-full h-full object-contain ${isLarge ? 'max-w-[100%]' : 'max-w-[100%]'}`}
-                        />
-                    ) : illustration ? (
-                        <img
-                            src={illustration}
-                            alt={title}
-                            className={`object-contain max-h-full transition-all duration-700 group-hover:scale-105 group-hover:drop-shadow-[0_20px_30px_rgba(99,102,241,0.4)] ${isLarge ? 'w-[90%]' : 'w-[85%]'}`}
-                        />
-                    ) : null}
-                </motion.div>
-
-                {/* Specific Card Glow */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    initial={{ width: 0 }}
+                    whileInView={{ width: '100%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: delay + 0.3 }}
+                    className="h-[4px] bg-gradient-to-r from-[#6C3BFF] to-transparent rounded-full"
+                />
             </div>
 
-            {/* Border Inner Shine */}
-            <div className="absolute inset-0 border border-white/10 rounded-[2.5rem] pointer-events-none group-hover:border-white/30 transition-colors duration-500" />
+            {/* Subtle Inner Border Shine */}
+            <div className="absolute inset-0 border border-white/10 rounded-[2rem] pointer-events-none group-hover:border-[#6C3BFF]/40 transition-colors duration-300" />
         </motion.div>
     );
 };
 
-const Impact: React.FC = () => {
+const Impact = () => {
+    const images = [
+        { src: '/images/impact/students_coding.png', alt: 'Students Coding', size: 'h-64 md:h-80', delay: 0 },
+        { src: '/images/impact/hackathon.png', alt: 'Hackathon', size: 'h-48 md:h-60', delay: 0.1 },
+        { src: '/images/impact/certification.png', alt: 'Certifications', size: 'h-56 md:h-72', delay: 0.2 },
+        { src: '/images/impact/mentorship.png', alt: 'Mentorship', size: 'h-64 md:h-80', delay: 0.3 },
+        { src: '/images/impact/online_sessions.png', alt: 'Online Sessions', size: 'h-48 md:h-60', delay: 0.4 },
+    ];
+
+    const stats = [
+        { number: 25000, suffix: '+', label: 'Engineers Verified', delay: 0.1 },
+        { number: 7500, suffix: '+', label: 'Tracks Completed', delay: 0.2 },
+        { number: 15, suffix: '+', label: 'Colleges Partnered', delay: 0.3 },
+        { number: 80, suffix: '%', label: 'Hiring Success Rate', delay: 0.4 },
+        { number: 10, suffix: '+', label: 'Startup Hiring Partners', delay: 0.5 },
+    ];
+
     return (
-        <section className="w-full bg-white pt-0 pb-24 px-4 md:px-8 lg:px-12 overflow-hidden relative" id="impact">
-            {/* Background Radial Glows - Premium Softness */}
-            <div className="absolute top-[5%] left-[-5%] w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[180px] pointer-events-none" />
-            <div className="absolute bottom-[5%] right-[-5%] w-[900px] h-[900px] bg-blue-50/50 rounded-full blur-[200px] pointer-events-none" />
+        <section className="w-full bg-white py-24 px-6 md:px-12 lg:px-24 overflow-hidden relative" id="impact">
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#6C3BFF]/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-50/50 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
 
-            <div className="max-w-7xl mx-auto">
-                {/* Heading */}
-                <div className="text-center mb-20 relative px-4">
-                    <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="text-4xl md:text-5xl lg:text-7xl font-bold font-poppins text-[#0F172A] leading-[1.1] tracking-tight"
-                    >
-                        Our Impact is Our{' '}
-                        <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700">
-                            Best Testimony
-                            <motion.div
-                                initial={{ width: 0 }}
-                                whileInView={{ width: '100%' }}
-                                transition={{ delay: 0.5, duration: 0.8 }}
-                                className="absolute bottom-2 left-0 h-3 bg-indigo-600/5 -z-10"
-                            />
-                        </span>
-                    </motion.h2>
-                </div>
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
 
-                {/* Grid Layout - Inspired by Bento Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[48rem]">
-                    {/* LEFT LARGE CARD (Vertical) */}
-                    <div className="lg:col-span-6 h-full">
-                        <ImpactCard
-                            stat="25,000+"
-                            title="Engineers Verified & Enrolled"
-                            lottiePath="/animations/students.json"
-                            gradient="from-[#0D0D1A] via-[#121225] to-[#1A1A35]"
-                            isLarge={true}
-                            className="h-full"
-                        />
-                    </div>
-
-                    {/* RIGHT COLUMN (Stacked Horizontal Cards) */}
-                    <div className="lg:col-span-6 flex flex-col gap-8">
-                        {/* RIGHT TOP CARD (Horizontal) */}
-                        <div className="flex-1">
-                            <ImpactCard
-                                stat="7,500+"
-                                title="Specialized Tracks Completed"
-                                lottiePath="/animations/tracks.json"
-                                gradient="from-[#11112B] via-[#1A1A3A] to-[#252552]"
-                                className="h-full"
-                            />
+                {/* LEFT SIDE: Media Grid */}
+                <div className="order-1 lg:order-1 relative group-grid">
+                    <div className="grid grid-cols-2 gap-4 md:gap-6">
+                        {/* Column 1 */}
+                        <div className="space-y-4 md:space-y-6 flex flex-col justify-center">
+                            {images.filter((_, i) => i % 2 === 0).map((img, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{
+                                        duration: 0.8,
+                                        delay: img.delay,
+                                        y: {
+                                            duration: 6,
+                                            repeat: Infinity,
+                                            ease: "easeInOut"
+                                        }
+                                    }}
+                                    animate={{
+                                        y: i % 2 === 0 ? [0, -10, 0] : [0, 10, 0]
+                                    }}
+                                    className={`relative rounded-3xl overflow-hidden group shadow-xl ${img.size}`}
+                                >
+                                    <motion.img
+                                        src={img.src}
+                                        alt={img.alt}
+                                        loading="lazy"
+                                        whileHover={{ scale: 1.03 }}
+                                        className="w-full h-full object-cover transition-transform duration-700"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                </motion.div>
+                            ))}
                         </div>
 
-                        {/* RIGHT BOTTOM CARD (Horizontal) */}
-                        <div className="flex-1">
-                            <ImpactCard
-                                stat="10,000+"
-                                title="Placements & Internships"
-                                lottiePath="/animations/placements.json"
-                                gradient="from-[#0A0A1F] via-[#0F0F2D] to-[#1E1E3F]"
-                                className="h-full"
-                            />
+                        {/* Column 2 */}
+                        <div className="space-y-4 md:space-y-6 pt-12">
+                            {images.filter((_, i) => i % 2 !== 0).map((img, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{
+                                        duration: 0.8,
+                                        delay: img.delay,
+                                        y: {
+                                            duration: 5,
+                                            repeat: Infinity,
+                                            ease: "easeInOut"
+                                        }
+                                    }}
+                                    animate={{
+                                        y: i % 2 === 0 ? [0, 10, 0] : [0, -10, 0]
+                                    }}
+                                    className={`relative rounded-3xl overflow-hidden group shadow-xl ${img.size}`}
+                                >
+                                    <motion.img
+                                        src={img.src}
+                                        alt={img.alt}
+                                        loading="lazy"
+                                        whileHover={{ scale: 1.03 }}
+                                        className="w-full h-full object-cover transition-transform duration-700"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                </motion.div>
+                            ))}
                         </div>
                     </div>
+                    {/* Soft Blur Gradient Overlay for Depth */}
+                    <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/50 to-transparent pointer-events-none z-10" />
                 </div>
+
+                {/* RIGHT SIDE: Impact Content */}
+                <div className="order-2 lg:order-2 space-y-12">
+                    <div className="space-y-6">
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="text-4xl md:text-5xl lg:text-7xl font-black text-[#0F172A] leading-[1.1] tracking-tight"
+                        >
+                            Our <span className="text-[#6C3BFF]">Impact</span>
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="text-lg text-slate-500 max-w-lg"
+                        >
+                            Creating a global ecosystem where engineering skills meet real-world opportunities.
+                        </motion.p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                        {stats.map((stat, i) => (
+                            <div key={i} className={i === 0 ? "sm:col-span-2" : ""}>
+                                <StatCard {...stat} />
+                            </div>
+                        ))}
+                    </div>
+
+
+                </div>
+
             </div>
         </section>
     );
 };
 
 export default Impact;
+

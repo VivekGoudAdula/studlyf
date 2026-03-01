@@ -13,10 +13,15 @@ interface BentoCardProps {
     children?: React.ReactNode;
     className?: string;
     to?: string;
+    onClick?: () => void;
 }
 
-const BentoCard = ({ title, desc, children, className = "", to = "#" }: BentoCardProps) => (
-    <Link to={to} className={`bg-white/80 backdrop-blur-sm rounded-[1.5rem] p-5 relative overflow-hidden group border border-transparent hover:border-[#7C3AED]/20 hover:shadow-xl transition-all block w-full text-left ${className}`}>
+const BentoCard = ({ title, desc, children, className = "", to = "#", onClick }: BentoCardProps) => (
+    <Link
+        to={to}
+        onClick={onClick}
+        className={`bg-white/80 backdrop-blur-sm rounded-[1.5rem] p-5 relative overflow-hidden group border border-transparent hover:border-[#7C3AED]/20 hover:shadow-xl transition-all block w-full text-left ${className}`}
+    >
         <div className="relative z-10">
             <h3 className="text-base font-bold text-[#111827] mb-1.5 tracking-tight group-hover:text-[#7C3AED] transition-colors">{title}</h3>
             <p className="text-[11px] text-[#6B7280] leading-relaxed max-w-[180px] mb-3">{desc}</p>
@@ -25,26 +30,23 @@ const BentoCard = ({ title, desc, children, className = "", to = "#" }: BentoCar
     </Link>
 );
 
-const LearnDropdown = () => (
+const LearnDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-w-[300px] md:min-w-[600px]">
-        <BentoCard to="/feature-preview/learn-courses" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[160px] md:min-h-[180px]">
-            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/2 h-full object-cover grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt="Courses" />
+        <BentoCard onClick={onItemClick} to="/feature-preview/learn-courses" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[160px] md:min-h-[180px]">
+            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/2 h-full object-cover opacity-100 transition-all duration-700" alt="Courses" />
         </BentoCard>
-        <BentoCard to="/feature-preview/learn-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="md:col-span-2 h-[88px]">
-            <img src="https://images.unsplash.com/photo-1454165833762-02193567a5d7?auto=format&fit=crop&q=80&w=400" className="absolute -bottom-2 -right-2 w-16 h-16 rounded-full object-cover opacity-20 group-hover:opacity-100 transition-all" alt="Corporate" />
+        <BentoCard onClick={onItemClick} to="/feature-preview/learn-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="md:col-span-2 h-[88px]">
+            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-100 transition-all" alt="Corporate" />
         </BentoCard>
-        <BentoCard to="/feature-preview/learn-blog" title="Blog" desc="Technical insights on system ownership." className="md:col-span-2 h-[88px]">
-            <div className="absolute bottom-3 right-4 flex gap-1.5 opacity-20 group-hover:opacity-100 transition-opacity">
-                <div className="w-8 h-[1px] bg-[#7C3AED]"></div>
-                <div className="w-5 h-[1px] bg-[#7C3AED]"></div>
-            </div>
+        <BentoCard onClick={onItemClick} to="/feature-preview/learn-blog" title="Blog" desc="Technical insights on system ownership." className="md:col-span-2 h-[88px]">
+            <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-100 transition-all" alt="Blog" />
         </BentoCard>
     </div>
 );
 
-const JobPrepDropdown = () => (
+const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-w-[300px] md:min-w-[600px]">
-        <BentoCard to="/feature-preview/prep-portfolio" title="Build Portfolio" desc="Showcase evidence." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[180px] bg-[#F8FAFC]">
+        <BentoCard onClick={onItemClick} to="/feature-preview/prep-portfolio" title="Build Portfolio" desc="Showcase evidence." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[180px] bg-[#F8FAFC]">
             <div className="mt-1 bg-[#0F172A] rounded-lg p-3 shadow-xl border border-white/10 group-hover:scale-[1.02] transition-transform h-full">
                 <div className="flex items-center gap-1 mb-1.5">
                     <div className="w-1 h-1 rounded-full bg-red-400"></div>
@@ -54,7 +56,7 @@ const JobPrepDropdown = () => (
                 <div className="space-y-1.5"><div className="h-2 w-2/3 bg-white/10 rounded"></div><div className="h-8 w-full bg-gradient-to-tr from-[#7C3AED]/30 to-transparent rounded border border-white/5"></div></div>
             </div>
         </BentoCard>
-        <BentoCard to="/feature-preview/prep-resume" title="Resume Builder" desc="Create instant resumes." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[180px] bg-[#F8FAFC]">
+        <BentoCard onClick={onItemClick} to="/feature-preview/prep-resume" title="Resume Builder" desc="Create instant resumes." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[180px] bg-[#F8FAFC]">
             <div className="mt-2 mx-auto w-3/4 h-full bg-white border border-gray-200 rounded-t-lg shadow-sm group-hover:shadow-md transition-all group-hover:scale-[1.02] group-hover:-translate-y-1 relative overflow-hidden p-2">
                 <div className="flex gap-2 mb-2">
                     <div className="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></div>
@@ -85,31 +87,14 @@ const JobPrepDropdown = () => (
                 </div>
             </div>
         </BentoCard>
-        <BentoCard to="/feature-preview/prep-assessment" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-2 h-[88px]">
-            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/4 h-full object-cover opacity-10 group-hover:opacity-60 transition-all" alt="Assessment" />
+        <BentoCard onClick={onItemClick} to="/feature-preview/prep-assessment" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-2 h-[88px]">
+            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/4 h-full object-cover opacity-80 group-hover:opacity-100 transition-all" alt="Assessment" />
         </BentoCard>
-        <BentoCard to="/feature-preview/prep-mock" title="Mock tests & interviews" desc="Practice clinical logic defense." className="h-[88px]">
-            <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=200" className="absolute bottom-0 right-0 w-1/2 h-1/2 object-cover rounded-tl-xl opacity-30 group-hover:opacity-100 transition-all" alt="Mock" />
-        </BentoCard>
-        <BentoCard to="/feature-preview/prep-projects" title="Build projects" desc="Deconstruct tech giant systems." className="h-[88px]">
-            <div className="flex gap-1.5 mt-0.5 opacity-40 group-hover:opacity-100 transition-all">
-                <div className="h-6 w-6 bg-white rounded flex items-center justify-center p-0.5 border border-gray-100"><img src="https://www.vectorlogo.zone/logos/swiggy/swiggy-icon.svg" className="h-3" alt="Swiggy" /></div>
-                <div className="h-6 w-6 bg-black rounded flex items-center justify-center p-0.5"><img src="https://www.vectorlogo.zone/logos/uber/uber-icon.svg" className="h-3 invert" alt="Uber" /></div>
-            </div>
-        </BentoCard>
+        <BentoCard onClick={onItemClick} to="/feature-preview/prep-mock" title="Mock tests & interviews" desc="Practice clinical logic defense." className="h-[88px]" />
+        <BentoCard onClick={onItemClick} to="/feature-preview/prep-projects" title="Build projects" desc="Deconstruct tech giant systems." className="h-[88px]" />
     </div>
 );
 
-const JobsDropdown = () => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-w-[300px] md:min-w-[600px]">
-        <BentoCard to="/feature-preview/jobs-get-hired" title="Get Hired" desc="Connect with partners looking for verified talent." className="md:col-span-2 h-[120px]">
-            <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/3 h-full object-cover grayscale opacity-20 group-hover:opacity-100 transition-all" alt="Get Hired" />
-        </BentoCard>
-        <BentoCard to="/feature-preview/jobs-hire" title="Hire Talent" desc="Access verified engineering professionals." className="md:col-span-2 h-[120px]">
-            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/3 h-full object-cover grayscale opacity-20 group-hover:opacity-100 transition-all" alt="Hire" />
-        </BentoCard>
-    </div>
-);
 
 const PurpleNavbar: React.FC = () => {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -118,15 +103,11 @@ const PurpleNavbar: React.FC = () => {
     const navItems = [
         {
             label: 'LEARN',
-            component: <LearnDropdown />
+            component: <LearnDropdown onItemClick={() => setActiveDropdown(null)} />
         },
         {
             label: 'JOB PREP',
-            component: <JobPrepDropdown />
-        },
-        {
-            label: 'JOBS',
-            component: <JobsDropdown />
+            component: <JobPrepDropdown onItemClick={() => setActiveDropdown(null)} />
         },
     ];
 

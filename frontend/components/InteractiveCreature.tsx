@@ -6,13 +6,34 @@ interface InteractiveCreatureProps {
     targetButtonText?: string;
     className?: string;
     isCursor?: boolean;
+    variant?: 'purple' | 'indigo' | 'emerald' | 'amber';
 }
 
 const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
     targetButtonText = 'Try now',
     className = "",
-    isCursor = false
+    isCursor = false,
+    variant = 'purple'
 }) => {
+    const variants = {
+        purple: {
+            body: "bg-[radial-gradient(circle_at_30%_30%,_#C4B5FD_0%,_#7C3AED_60%,_#5B21B6_100%)] shadow-purple-500/40",
+            arm: "bg-[#7C3AED]"
+        },
+        indigo: {
+            body: "bg-[radial-gradient(circle_at_30%_30%,_#818CF8_0%,_#4F46E5_60%,_#3730A3_100%)] shadow-indigo-500/40",
+            arm: "bg-[#4F46E5]"
+        },
+        emerald: {
+            body: "bg-[radial-gradient(circle_at_30%_30%,_#6EE7B7_0%,_#10B981_60%,_#047857_100%)] shadow-emerald-500/40",
+            arm: "bg-[#10B981]"
+        },
+        amber: {
+            body: "bg-[radial-gradient(circle_at_30%_30%,_#FCD34D_0%,_#F59E0B_60%,_#B45309_100%)] shadow-amber-500/40",
+            arm: "bg-[#F59E0B]"
+        }
+    };
+
     const [isNearButton, setIsNearButton] = useState(false);
     const [isActive, setIsActive] = useState(false);
     const [isBlinking, setIsBlinking] = useState(false);
@@ -144,8 +165,8 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     rotate: { repeat: isNearButton ? Infinity : 0, duration: 2, ease: "easeInOut" }
                 }}
             >
-                {/* Main Body - Premium Purple 3D Look */}
-                <div className="w-24 h-24 bg-[radial-gradient(circle_at_30%_30%,_#C4B5FD_0%,_#7C3AED_60%,_#5B21B6_100%)] rounded-full shadow-2xl shadow-purple-500/40 relative border-[3px] border-white/90">
+                {/* Main Body - 3D Look */}
+                <div className={`w-24 h-24 rounded-full shadow-2xl relative border-[3px] border-white/90 transition-all duration-300 ${variants[variant].body}`}>
 
                     {/* Eyes Container */}
                     <div className="absolute top-8 left-1/2 -translate-x-1/2 flex gap-3">
@@ -186,10 +207,10 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
 
                     {/* Arms - Fixed */}
                     <div
-                        className="absolute -left-2 top-10 w-5 h-10 bg-[#7C3AED] rounded-full border-2 border-white/80 origin-top-right shadow-lg -rotate-[15deg]"
+                        className={`absolute -left-2 top-10 w-5 h-10 rounded-full border-2 border-white/80 origin-top-right shadow-lg -rotate-[15deg] transition-colors duration-300 ${variants[variant].arm}`}
                     />
                     <div
-                        className="absolute -right-2 top-10 w-5 h-10 bg-[#7C3AED] rounded-full border-2 border-white/80 origin-top-left shadow-lg rotate-[15deg]"
+                        className={`absolute -right-2 top-10 w-5 h-10 rounded-full border-2 border-white/80 origin-top-left shadow-lg rotate-[15deg] transition-colors duration-300 ${variants[variant].arm}`}
                     />
                 </div>
             </motion.div>

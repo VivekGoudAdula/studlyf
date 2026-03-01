@@ -22,14 +22,9 @@ import Projects from './pages/Projects';
 import MockInterview from './pages/MockInterview';
 import GroupDiscussion from './pages/GroupDiscussion';
 import PlayLearnEarn from './pages/PlayLearnEarn';
-import GetHiredLanding from './pages/GetHiredLanding';
-import GetHiredFlow from './pages/GetHiredFlow';
-import GetHiredDashboard from './pages/GetHiredDashboard';
 import GoalSelector from './pages/GoalSelector';
-import Hire from './pages/Hire';
 import About from './pages/About';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import UnifiedAuth from './pages/UnifiedAuth';
 import LearnerDashboard from './pages/LearnerDashboard';
 import PartnerDashboard from './pages/PartnerDashboard';
 import DashboardHome from './pages/DashboardHome';
@@ -38,7 +33,6 @@ import CompanyModules from './pages/CompanyModules';
 import ResumeBuilder from './pages/ResumeBuilder';
 import CoursePlayer from './pages/CoursePlayer';
 import Cart from './pages/Cart';
-import JobDetail from './pages/JobDetail';
 import Checkout from './pages/Checkout';
 import MyCourses from './pages/MyCourses';
 import FeaturePreview from './pages/FeaturePreview';
@@ -60,7 +54,6 @@ import AdminDashboardOverview from './pages/admin/dashboard/Overview';
 import AdminStudentManagement from './pages/admin/students/StudentManagement';
 import AdminCourseManagement from './pages/admin/courses/CourseManagement';
 import AdminAssessmentManagement from './pages/admin/assessments/AssessmentManagement';
-import AdminHiringPipeline from './pages/admin/hiring/HiringPipeline';
 import AdminAnalytics from './pages/admin/analytics/Analytics';
 import AdminMockInterviews from './pages/admin/interviews/MockInterviews';
 import AdminProtectedRoute from './AdminProtectedRoute';
@@ -98,9 +91,9 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
-      
-      {(!isLoginPage && !isPlayer && !isCheckout && !isHome && !isFeaturePreview && !isOnboarding && !isAdmin) && <Navigation />}
-      
+
+      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin) && <Navigation />}
+
       <main className="flex-grow">
         <Suspense fallback={
           <div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">
@@ -132,20 +125,14 @@ const App: React.FC = () => {
             <Route path="/job-prep/play-learn-earn" element={<ProtectedRoute><PlayLearnEarn /></ProtectedRoute>} />
             <Route path="/job-prep/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
 
-            <Route path="/jobs/get-hired" element={<ProtectedRoute><GetHiredLanding /></ProtectedRoute>} />
-            <Route path="/jobs/profile" element={<ProtectedRoute><GetHiredFlow /></ProtectedRoute>} />
-            <Route path="/jobs/detail" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
-            <Route path="/jobs/matches" element={<ProtectedRoute><GetHiredDashboard /></ProtectedRoute>} />
             <Route path="/goal-selector" element={<ProtectedRoute><GoalSelector /></ProtectedRoute>} />
 
-            <Route path="/employers/get-hired" element={<Navigate to="/jobs/get-hired" replace />} />
-            <Route path="/employers/hire" element={<Hire />} />
 
             <Route path="/about" element={<About />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/feature-preview/:id" element={<PublicRoute><FeaturePreview /></PublicRoute>} />
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+            <Route path="/login" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
+            <Route path="/signup" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
 
             <Route path="/dashboard" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
@@ -161,7 +148,6 @@ const App: React.FC = () => {
               <Route path="courses" element={<AdminCourseManagement />} />
               <Route path="assessments" element={<AdminAssessmentManagement />} />
               <Route path="mock-interviews" element={<AdminMockInterviews />} />
-              <Route path="hiring" element={<AdminHiringPipeline />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="mentors" element={<div className="p-8"><h1>Mentor Management Coming Soon</h1></div>} />
               <Route path="companies" element={<div className="p-8"><h1>Company Management Coming Soon</h1></div>} />
@@ -175,7 +161,7 @@ const App: React.FC = () => {
         </Suspense>
       </main>
 
-      {(!isLoginPage && !isDashboard && !isCheckout && !isOnboarding && !isAdmin) && (
+      {isHome && (
         <>
           <Impact />
           <Testimonials />
