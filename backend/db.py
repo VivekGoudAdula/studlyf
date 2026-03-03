@@ -1,10 +1,15 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import certifi
+from dotenv import load_dotenv
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/")
+# Load explicitly from the parent directory .env
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+
+MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://saieshwarerelli10:Nirvaha%25studly@nirvaha-studlfy.s1l8mvx.mongodb.net/?appName=Nirvaha-studlfy")
 DB_NAME = os.getenv("DB_NAME", "studlyf_db")
 
-client = AsyncIOMotorClient(MONGO_URL)
+client = AsyncIOMotorClient(MONGO_URL, tlsCAFile=certifi.where())
 db = client[DB_NAME]
 
 # Collections
@@ -23,3 +28,10 @@ enrollments_col = db["enrollments"]
 
 # Interview Collections
 interviews_col = db["interviews"]
+
+# System Deconstruction Lab Collections
+sdl_projects_col = db["sdl_projects"]
+sdl_members_col = db["sdl_project_members"]
+sdl_tasks_col = db["sdl_tasks"]
+sdl_comments_col = db["sdl_comments"]
+sdl_join_requests_col = db["sdl_join_requests"]

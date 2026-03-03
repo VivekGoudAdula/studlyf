@@ -1,13 +1,7 @@
 import os
 import subprocess
 from dotenv import load_dotenv
-
-# Load from root .env specifically
-root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
-print(f"Loading .env from: {root_env}")
-load_dotenv(root_env, override=True) # Use override=True to ensure it takes precedence over existing env vars
-
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from pydantic import BaseModel
@@ -18,6 +12,7 @@ import os
 import json
 import re
 import uuid
+import traceback
 from groq import Groq
 import requests
 from jinja2 import Environment, FileSystemLoader, Template
@@ -25,6 +20,11 @@ from datetime import datetime, timezone
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 import json
+
+# Load from root .env specifically
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+print(f"Loading .env from: {root_env}")
+load_dotenv(root_env, override=True) # Use override=True to ensure it takes precedence over existing env vars
 
 # Initialize Firebase Admin
 try:
@@ -57,7 +57,7 @@ except Exception as e:
     print(f"Firebase Admin Init Warning: {e}. Firestore features may be limited.")
     firestore_db = None
 
-from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col, interviews_col
+from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col, interviews_col, certificates_col, sdl_projects_col, sdl_members_col, sdl_tasks_col, sdl_comments_col, sdl_join_requests_col
 class AddToCartRequest(BaseModel):
     course_id: str
 
@@ -122,12 +122,15 @@ origins = [
     FRONTEND_URL,
     "https://studlyff.vercel.app",
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://localhost:3000",
-    "http://localhost:8000"
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
 ]
 
 # Clean up and ensure uniqueness
-origins = [o.rstrip('/') for o in origins if o and o != "*"]
+origins = [o.rstrip('/') for o in origins if o]
 origins = list(set(origins))
 
 app.add_middleware(
@@ -135,8 +138,20 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "X-Admin-Email", "Authorization", "Accept"],
 )
+
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"GLOBAL ERROR: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc()},
+    )
 
 @app.post("/api/assessment/generate")
 async def generate_assessment(req: AssessmentRequest):
@@ -203,9 +218,16 @@ async def health_check():
         "allowed_origins": origins
     }
 
+@app.on_event("startup")
+async def startup_event():
+    try:
+        if await db.command("ping"):
+            print("backend connected successfully")
+    except Exception as e:
+        print(f"Database connection failed on startup: {e}")
+
 # Get Groq API key from environment
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "YOUR-GROQ-API-KEY")
-print(f"Using API Key: {GROQ_API_KEY[:5]}...{GROQ_API_KEY[-4:]}")
 # Configure the Client for Groq
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -501,8 +523,7 @@ async def update_progress(data: dict):
     prog = await progress_col.find_one({"user_id": user_id, "module_id": module_id})
     if (prog.get("theory_completed") and 
         prog.get("video_completed") and 
-        prog.get("quiz_score", 0) >= 70 and 
-        prog.get("project_status") == "submitted"):
+        prog.get("quiz_score", 0) >= 70):
         
         await progress_col.update_one(
             {"user_id": user_id, "module_id": module_id},
@@ -559,12 +580,13 @@ async def submit_quiz(data: dict):
     return {"score": score, "passed": score >= quiz.get("pass_mark", 70)}
 
 @app.post("/api/project/submit")
-async def submit_project(data: dict):
-    user_id = data.get("user_id")
-    module_id = data.get("module_id")
-    deployed_link = data.get("deployed_link")
-    github_link = data.get("github_link")
-
+async def submit_project(
+    user_id: str = Form(...),
+    module_id: str = Form(...),
+    deployed_link: str = Form(...),
+    github_link: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None)
+):
     if not deployed_link:
         raise HTTPException(status_code=400, detail="Missing deployed link")
 
@@ -574,18 +596,41 @@ async def submit_project(data: dict):
 
     update_fields = {
         "project_status": "submitted",
-        "deployed_link": deployed_link
+        "deployed_link": deployed_link,
+        "review_status": "pending_review"
     }
     if github_link:
         update_fields["github_link"] = github_link
+
+    if file:
+        os.makedirs("uploads", exist_ok=True)
+        import uuid
+        file_name = f"{uuid.uuid4()}_{file.filename}"
+        file_path = f"uploads/{file_name}"
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+        update_fields["file_url"] = f"/{file_path}"
 
     await progress_col.update_one(
         {"user_id": user_id, "module_id": module_id},
         {"$set": update_fields},
         upsert=True
     )
+    return {"status": "submitted", "review": "pending_review"}
 
-    return {"status": "submitted"}
+# (Moved to Admin Section)
+
+# (Moved to Admin Section)
+
+@app.get("/api/certificates/{user_id}")
+async def get_user_certificates(user_id: str):
+    certs = []
+    async for cert in certificates_col.find({"user_id": user_id}):
+        course = await courses_col.find_one({"_id": cert["course_id"]})
+        cert_data = fix_id(cert)
+        cert_data["course_title"] = course["title"] if course else "Unknown Course"
+        certs.append(cert_data)
+    return certs
 
 def extract_text_from_pdf(file_path):
     text = ""
@@ -1272,13 +1317,7 @@ async def download_resume(filename: str):
 
 # ========== MARKETPLACE API ENDPOINTS ==========
 
-@app.get("/api/courses")
-async def get_all_courses_marketplace():
-    """Get all courses with marketplace data (price, rating, etc)"""
-    courses = []
-    async for course in courses_col.find():
-        courses.append(fix_id(course))
-    return courses
+# NOTE: /api/courses is already defined above in COURSE SYSTEM ENDPOINTS
 
 @app.get("/api/cart/{user_id}")
 async def get_user_cart(user_id: str):
@@ -1995,13 +2034,104 @@ async def get_admin_courses():
         courses.append(fix_id(course))
     return courses
 
+
+
 @app.post("/api/admin/courses", dependencies=[Depends(admin_required)])
-async def create_admin_course(course: dict):
-    """Create a new course in MongoDB"""
-    if "_id" not in course:
-        course["_id"] = str(uuid.uuid4())
-    result = await courses_col.insert_one(course)
-    return {"status": "success", "id": str(result.inserted_id)}
+async def create_admin_course(data: dict):
+    """Create or Update a course in MongoDB"""
+    try:
+        course_id = data.get("_id") or data.get("id")
+        is_update = False
+        
+        if course_id:
+            existing = await courses_col.find_one({"_id": course_id})
+            if existing:
+                is_update = True
+                print(f"DEBUG: Performing UPDATE via POST for {course_id}")
+            else:
+                print(f"DEBUG: ID provided but not found, performing CREATE for {course_id}")
+        else:
+            course_id = str(uuid.uuid4())
+            print(f"DEBUG: No ID provided, performing CREATE")
+
+        # Build course document
+        course_doc = dict(data)
+        course_doc["_id"] = course_id
+        course_doc.setdefault("title", "Draft Course")
+        course_doc.setdefault("description", "")
+        course_doc.setdefault("price", 0)
+        course_doc.setdefault("difficulty", "Beginner")
+        course_doc.setdefault("image", "")
+        course_doc["modules_count"] = len(course_doc.get("modules", [])) if isinstance(course_doc.get("modules"), list) else 0
+        course_doc.setdefault("lessons", [])
+        course_doc.setdefault("status", data.get("status", "published"))
+
+        if is_update:
+            await courses_col.replace_one({"_id": course_id}, course_doc)
+        else:
+            await courses_col.insert_one(course_doc)
+
+        # Optional final assessment quiz
+        questions = course_doc.get("questions", [])
+        if questions:
+            quiz_doc = {
+                "course_id": course_id,
+                "module_id": "FINAL_ASSESSMENT",
+                "title": f"Final Assessment: {course_doc['title']}",
+                "difficulty": course_doc["difficulty"],
+                "pass_mark": 70,
+                "questions": questions
+            }
+            await quizzes_col.update_one(
+                {"course_id": course_id, "module_id": "FINAL_ASSESSMENT"},
+                {"$set": quiz_doc},
+                upsert=True
+            )
+
+        return {"status": "success", "id": course_id, "mode": "update" if is_update else "create"}
+    except Exception as e:
+        print(f"CRITICAL ERROR in create_admin_course: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/admin/courses/{course_id}", dependencies=[Depends(admin_required)])
+async def update_admin_course(course_id: str, data: dict):
+    """Update an existing course in MongoDB"""
+    print(f"DEBUG: Updating course {course_id}")
+    # Check if course exists
+    existing = await courses_col.find_one({"_id": course_id})
+    if not existing:
+        print(f"DEBUG: Course {course_id} NOT FOUND")
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Build update document - MERGE with existing to preserve other fields
+    update_doc = {**existing, **data}
+    update_doc["_id"] = course_id # Ensure ID stays the same
+    update_doc["modules_count"] = len(update_doc.get("modules", [])) if isinstance(update_doc.get("modules"), list) else 0
+    
+    # Update the course
+    result = await courses_col.replace_one({"_id": course_id}, update_doc)
+    print(f"DEBUG: Course update result: {result.modified_count} modified")
+
+    # Update or create final assessment quiz
+    questions = update_doc.get("questions", [])
+    if questions:
+        quiz_doc = {
+            "course_id": course_id,
+            "module_id": "FINAL_ASSESSMENT",
+            "title": f"Final Assessment: {update_doc.get('title', 'Course Assessment')}",
+            "difficulty": update_doc.get("difficulty", "Intermediate"),
+            "pass_mark": 70,
+            "questions": questions
+        }
+        await quizzes_col.update_one(
+            {"course_id": course_id, "module_id": "FINAL_ASSESSMENT"},
+            {"$set": quiz_doc},
+            upsert=True
+        )
+        print(f"DEBUG: Updated final assessment for {course_id}")
+
+    return {"status": "success", "id": course_id}
 
 @app.delete("/api/admin/courses/{course_id}", dependencies=[Depends(admin_required)])
 async def delete_admin_course(course_id: str):
@@ -2097,8 +2227,64 @@ async def get_admin_quizzes():
         print(f"Quizzes Error: {e}")
         return []
 
+@app.get("/api/admin/submissions", dependencies=[Depends(admin_required)])
+async def get_project_submissions():
+    """Fetch all pending project submissions"""
+    submissions = []
+    async for prog in progress_col.find({"project_status": "submitted", "review_status": {"$nin": ["approved", "rejected"]}}).sort("_id", -1):
+        submissions.append(fix_id(prog))
+    return submissions
+
+@app.get("/api/admin/evaluations-history", dependencies=[Depends(admin_required)])
+async def get_evaluations_history():
+    """Fetch history of project evaluations"""
+    history = []
+    async for prog in progress_col.find({"review_status": {"$in": ["approved", "rejected"]}}).sort("review_date", -1):
+        history.append(fix_id(prog))
+    return history
+
+@app.post("/api/admin/submissions/review", dependencies=[Depends(admin_required)])
+async def review_submission(data: dict):
+    """Approve or reject a student project submission and issue certificate if approved"""
+    user_id = data.get("user_id")
+    module_id = data.get("module_id")
+    status = data.get("status") # "approved" or "rejected"
+    template_id = data.get("template_id", "standard")
+    admin_comment = data.get("comment", "")
+    
+    await progress_col.update_one(
+        {"user_id": user_id, "module_id": module_id},
+        {"$set": {
+            "review_status": status, 
+            "admin_comment": admin_comment,
+            "review_date": datetime.utcnow().isoformat()
+        }}
+    )
+    
+    if status == "approved":
+        prog = await progress_col.find_one({"user_id": user_id, "module_id": module_id})
+        course_id = prog.get("course_id")
+        
+        cert_id = f"CERT-{str(uuid.uuid4())[:12].upper()}"
+        student_name = user_id.split('@')[0].replace('.', ' ').title() if '@' in user_id else user_id
+        
+        cert = {
+            "user_id": user_id,
+            "student_name": student_name,
+            "course_id": course_id,
+            "certificate_id": cert_id,
+            "template_id": template_id,
+            "issue_date": datetime.utcnow().isoformat()
+        }
+        await certificates_col.insert_one(cert)
+        return {"status": "approved", "certificate": fix_id(cert)}
+    
+    return {"status": "rejected"}
+
 @app.get("/api/admin/insights", dependencies=[Depends(admin_required)])
 async def get_admin_insights():
+    # Existing insights code...
+
     """Generate dynamic AI insights based on system state"""
     try:
         insights = []
@@ -2186,8 +2372,826 @@ async def get_admin_resumes():
         {"id": "RES_03", "name": "John Doe", "status": "Rejected", "score": 45}
     ]
 
+# ======================== System Deconstruction Lab API ========================
+
+class SDLProjectCreate(BaseModel):
+    owner_id: str
+    owner_name: str
+    owner_avatar: Optional[str] = None
+    title: str
+    project_type: str
+    problem_statement: str
+    architecture_focus: str
+    skills_required: list = []
+    team_size: int = 1
+    timeline: str = "4 weeks"
+    roles_needed: list = []
+    tags: list = []
+    github_link: Optional[str] = None
+    overview: Optional[str] = None
+    architecture_breakdown: Optional[str] = None
+    feature_checklist: list = []
+
+class SDLTaskCreate(BaseModel):
+    project_id: str
+    title: str
+    description: Optional[str] = None
+    assigned_to: Optional[str] = None
+    assigned_name: Optional[str] = None
+    priority: str = "medium"
+    created_by: str
+
+class SDLCommentCreate(BaseModel):
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    content: str
+
+class SDLJoinRequestCreate(BaseModel):
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    role_requested: str
+    message: Optional[str] = None
+
+
+@app.get("/api/sdl/projects")
+async def get_sdl_projects(
+    status: Optional[str] = None,
+    tag: Optional[str] = None,
+    project_type: Optional[str] = None,
+    featured: Optional[bool] = None,
+    search: Optional[str] = None,
+    limit: int = 50
+):
+    """Fetch SDL projects with optional filters"""
+    query = {}
+    if status:
+        query["status"] = status
+    if tag:
+        query["tags"] = {"$in": [tag]}
+    if project_type:
+        query["project_type"] = project_type
+    if featured:
+        query["featured"] = True
+    if search:
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"problem_statement": {"$regex": search, "$options": "i"}}
+        ]
+    
+    cursor = sdl_projects_col.find(query).sort("created_at", -1).limit(limit)
+    projects = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        projects.append(doc)
+    return projects
+
+
+@app.get("/api/sdl/projects/{project_id}")
+async def get_sdl_project(project_id: str):
+    """Get single SDL project with full details"""
+    from bson import ObjectId
+    try:
+        doc = await sdl_projects_col.find_one({"_id": ObjectId(project_id)})
+    except:
+        doc = await sdl_projects_col.find_one({"_id": project_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Project not found")
+    doc["_id"] = str(doc["_id"])
+    
+    # Increment views
+    try:
+        await sdl_projects_col.update_one({"_id": ObjectId(project_id)}, {"$inc": {"views": 1}})
+    except:
+        pass
+    
+    # Fetch members
+    members = []
+    async for m in sdl_members_col.find({"project_id": project_id, "status": "active"}):
+        m["_id"] = str(m["_id"])
+        members.append(m)
+    doc["members"] = members
+    
+    # Fetch tasks
+    tasks = []
+    async for t in sdl_tasks_col.find({"project_id": project_id}).sort("created_at", -1):
+        t["_id"] = str(t["_id"])
+        tasks.append(t)
+    doc["tasks"] = tasks
+    
+    # Fetch comments
+    comments = []
+    async for c in sdl_comments_col.find({"project_id": project_id}).sort("created_at", -1):
+        c["_id"] = str(c["_id"])
+        comments.append(c)
+    doc["comments"] = comments
+    
+    # Fetch join requests
+    join_requests = []
+    async for jr in sdl_join_requests_col.find({"project_id": project_id}).sort("created_at", -1):
+        jr["_id"] = str(jr["_id"])
+        join_requests.append(jr)
+    doc["join_requests"] = join_requests
+    
+    return doc
+
+
+@app.post("/api/sdl/projects")
+async def create_sdl_project(req: SDLProjectCreate):
+    """Create a new SDL project"""
+    project_data = req.dict()
+    project_data["status"] = "open"
+    project_data["progress"] = 0.0
+    project_data["featured"] = False
+    project_data["trending"] = False
+    project_data["views"] = 0
+    project_data["created_at"] = datetime.utcnow()
+    project_data["updated_at"] = datetime.utcnow()
+    
+    result = await sdl_projects_col.insert_one(project_data)
+    project_id = str(result.inserted_id)
+    
+    # Auto-add owner as lead member
+    member_data = {
+        "project_id": project_id,
+        "user_id": req.owner_id,
+        "user_name": req.owner_name,
+        "user_avatar": req.owner_avatar,
+        "role": "lead",
+        "status": "active",
+        "joined_at": datetime.utcnow()
+    }
+    await sdl_members_col.insert_one(member_data)
+    
+    return {"id": project_id, "message": "Project created successfully"}
+
+
+@app.put("/api/sdl/projects/{project_id}")
+async def update_sdl_project(project_id: str, updates: dict):
+    """Update an SDL project"""
+    from bson import ObjectId
+    updates["updated_at"] = datetime.utcnow()
+    try:
+        await sdl_projects_col.update_one({"_id": ObjectId(project_id)}, {"$set": updates})
+    except:
+        await sdl_projects_col.update_one({"_id": project_id}, {"$set": updates})
+    return {"message": "Project updated"}
+
+
+@app.post("/api/sdl/tasks")
+async def create_sdl_task(req: SDLTaskCreate):
+    """Create a task for an SDL project"""
+    task_data = req.dict()
+    task_data["status"] = "todo"
+    task_data["created_at"] = datetime.utcnow()
+    task_data["updated_at"] = datetime.utcnow()
+    result = await sdl_tasks_col.insert_one(task_data)
+    return {"id": str(result.inserted_id), "message": "Task created"}
+
+
+@app.put("/api/sdl/tasks/{task_id}")
+async def update_sdl_task(task_id: str, updates: dict):
+    """Update an SDL task (status, assignment, etc.)"""
+    from bson import ObjectId
+    updates["updated_at"] = datetime.utcnow()
+    try:
+        await sdl_tasks_col.update_one({"_id": ObjectId(task_id)}, {"$set": updates})
+    except:
+        await sdl_tasks_col.update_one({"_id": task_id}, {"$set": updates})
+    return {"message": "Task updated"}
+
+
+@app.post("/api/sdl/comments")
+async def create_sdl_comment(req: SDLCommentCreate):
+    """Post a comment on an SDL project"""
+    comment_data = req.dict()
+    comment_data["created_at"] = datetime.utcnow()
+    result = await sdl_comments_col.insert_one(comment_data)
+    return {"id": str(result.inserted_id), "message": "Comment posted"}
+
+
+@app.post("/api/sdl/join-requests")
+async def create_sdl_join_request(req: SDLJoinRequestCreate):
+    """Request to join an SDL project"""
+    # Check if already requested
+    existing = await sdl_join_requests_col.find_one({
+        "project_id": req.project_id,
+        "user_id": req.user_id,
+        "status": "pending"
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Join request already pending")
+    
+    jr_data = req.dict()
+    jr_data["status"] = "pending"
+    jr_data["created_at"] = datetime.utcnow()
+    result = await sdl_join_requests_col.insert_one(jr_data)
+    return {"id": str(result.inserted_id), "message": "Join request submitted"}
+
+
+@app.put("/api/sdl/join-requests/{request_id}")
+async def handle_sdl_join_request(request_id: str, action: dict):
+    """Accept or reject a join request"""
+    from bson import ObjectId
+    status = action.get("status", "rejected")
+    
+    try:
+        jr = await sdl_join_requests_col.find_one({"_id": ObjectId(request_id)})
+    except:
+        jr = await sdl_join_requests_col.find_one({"_id": request_id})
+    
+    if not jr:
+        raise HTTPException(status_code=404, detail="Join request not found")
+    
+    try:
+        await sdl_join_requests_col.update_one({"_id": ObjectId(request_id)}, {"$set": {"status": status}})
+    except:
+        await sdl_join_requests_col.update_one({"_id": request_id}, {"$set": {"status": status}})
+    
+    if status == "accepted":
+        member_data = {
+            "project_id": jr["project_id"],
+            "user_id": jr["user_id"],
+            "user_name": jr["user_name"],
+            "user_avatar": jr.get("user_avatar"),
+            "role": jr["role_requested"],
+            "status": "active",
+            "joined_at": datetime.utcnow()
+        }
+        await sdl_members_col.insert_one(member_data)
+    
+    return {"message": f"Join request {status}"}
+
+
+@app.get("/api/sdl/user/{user_id}/projects")
+async def get_user_sdl_projects(user_id: str):
+    """Get all SDL projects a user owns or is a member of"""
+    # Projects owned
+    owned = []
+    async for doc in sdl_projects_col.find({"owner_id": user_id}).sort("created_at", -1):
+        doc["_id"] = str(doc["_id"])
+        owned.append(doc)
+    
+    # Projects joined
+    member_entries = []
+    async for m in sdl_members_col.find({"user_id": user_id, "status": "active"}):
+        member_entries.append(m["project_id"])
+    
+    joined = []
+    for pid in member_entries:
+        from bson import ObjectId
+        try:
+            doc = await sdl_projects_col.find_one({"_id": ObjectId(pid)})
+        except:
+            doc = await sdl_projects_col.find_one({"_id": pid})
+        if doc and doc.get("owner_id") != user_id:
+            doc["_id"] = str(doc["_id"])
+            joined.append(doc)
+    
+    return {"owned": owned, "joined": joined}
+
+
+@app.get("/api/sdl/stats")
+async def get_sdl_stats():
+    """Get SDL platform stats"""
+    total_projects = await sdl_projects_col.count_documents({})
+    open_projects = await sdl_projects_col.count_documents({"status": "open"})
+    completed_projects = await sdl_projects_col.count_documents({"status": "completed"})
+    total_members = await sdl_members_col.count_documents({"status": "active"})
+    return {
+        "total_projects": total_projects,
+        "open_projects": open_projects,
+        "completed_projects": completed_projects,
+        "active_collaborators": total_members
+    }
+
+
+# ======================== Admin SDL Endpoints ========================
+
+@app.get("/api/admin/sdl/stats", dependencies=[Depends(admin_required)])
+async def admin_sdl_stats():
+    """Admin: comprehensive SDL stats"""
+    total = await sdl_projects_col.count_documents({})
+    open_count = await sdl_projects_col.count_documents({"status": "open"})
+    in_progress = await sdl_projects_col.count_documents({"status": "in_progress"})
+    completed = await sdl_projects_col.count_documents({"status": "completed"})
+    archived = await sdl_projects_col.count_documents({"status": "archived"})
+    total_members = await sdl_members_col.count_documents({"status": "active"})
+    total_tasks = await sdl_tasks_col.count_documents({})
+    done_tasks = await sdl_tasks_col.count_documents({"status": "done"})
+    total_comments = await sdl_comments_col.count_documents({})
+    pending_joins = await sdl_join_requests_col.count_documents({"status": "pending"})
+    return {
+        "total_projects": total,
+        "open_projects": open_count,
+        "in_progress_projects": in_progress,
+        "completed_projects": completed,
+        "archived_projects": archived,
+        "active_collaborators": total_members,
+        "total_tasks": total_tasks,
+        "completed_tasks": done_tasks,
+        "total_comments": total_comments,
+        "pending_join_requests": pending_joins,
+    }
+
+
+@app.get("/api/admin/sdl/projects", dependencies=[Depends(admin_required)])
+async def admin_list_sdl_projects(status: Optional[str] = None, limit: int = 100):
+    """Admin: list all SDL projects"""
+    query = {}
+    if status:
+        query["status"] = status
+    projects = []
+    async for doc in sdl_projects_col.find(query).sort("created_at", -1).limit(limit):
+        doc["_id"] = str(doc["_id"])
+        # Count members & tasks inline
+        doc["member_count"] = await sdl_members_col.count_documents({"project_id": doc["_id"], "status": "active"})
+        doc["task_count"] = await sdl_tasks_col.count_documents({"project_id": doc["_id"]})
+        doc["done_task_count"] = await sdl_tasks_col.count_documents({"project_id": doc["_id"], "status": "done"})
+        projects.append(doc)
+    return projects
+
+
+@app.put("/api/admin/sdl/projects/{project_id}", dependencies=[Depends(admin_required)])
+async def admin_update_sdl_project(project_id: str, updates: dict):
+    """Admin: update any SDL project (feature, status, etc.)"""
+    from bson import ObjectId
+    updates["updated_at"] = datetime.utcnow()
+    try:
+        await sdl_projects_col.update_one({"_id": ObjectId(project_id)}, {"$set": updates})
+    except:
+        await sdl_projects_col.update_one({"_id": project_id}, {"$set": updates})
+    return {"message": "Project updated by admin"}
+
+
+@app.delete("/api/admin/sdl/projects/{project_id}", dependencies=[Depends(admin_required)])
+async def admin_delete_sdl_project(project_id: str):
+    """Admin: delete an SDL project and related data"""
+    from bson import ObjectId
+    try:
+        pid = ObjectId(project_id)
+    except:
+        pid = project_id
+    await sdl_projects_col.delete_one({"_id": pid})
+    await sdl_members_col.delete_many({"project_id": project_id})
+    await sdl_tasks_col.delete_many({"project_id": project_id})
+    await sdl_comments_col.delete_many({"project_id": project_id})
+    await sdl_join_requests_col.delete_many({"project_id": project_id})
+    return {"message": "Project and all related data deleted"}
+
+
+@app.post("/api/admin/sdl/seed", dependencies=[Depends(admin_required)])
+async def admin_seed_sdl():
+    """Admin: seed the SDL database with starter projects"""
+    seed_projects = [
+        {
+            "owner_id": "system",
+            "owner_name": "Studlyf Lab",
+            "title": "Netflix Streaming Engine",
+            "project_type": "system_replica",
+            "problem_statement": "Deconstruct and rebuild the core video streaming pipeline — adaptive bitrate, CDN routing, and real-time recommendations.",
+            "architecture_focus": "Microservices + Event-Driven",
+            "skills_required": ["Node.js", "Kafka", "Redis", "React", "FFmpeg"],
+            "team_size": 4,
+            "timeline": "6 weeks",
+            "roles_needed": ["backend", "frontend", "devops"],
+            "tags": ["System Design", "Full Stack", "Backend"],
+            "github_link": "https://github.com/studlyf-lab/netflix-replica",
+            "overview": "This project aims to deconstruct the Netflix streaming pipeline, focusing on adaptive bitrate streaming, content delivery optimization, and the recommendation engine.",
+            "architecture_breakdown": "Services:\n- Video Ingestion Service (FFmpeg + S3)\n- Transcoding Pipeline (multi-bitrate HLS)\n- CDN Router (edge caching logic)\n- Recommendation Engine (collaborative filtering)\n- API Gateway (rate limiting, auth)\n- User Service (profiles, preferences)\n\nData Flow:\nUpload → Ingest → Transcode → CDN → Client\nUser interactions → Event Bus (Kafka) → Recommendation Engine → Personalized Feed",
+            "feature_checklist": [
+                {"name": "User authentication & profiles", "completed": False},
+                {"name": "Video upload & ingestion", "completed": False},
+                {"name": "Multi-bitrate transcoding", "completed": False},
+                {"name": "Adaptive bitrate player", "completed": False},
+                {"name": "CDN routing logic", "completed": False},
+                {"name": "Recommendation engine", "completed": False},
+                {"name": "Admin dashboard", "completed": False},
+            ],
+            "progress": 0,
+            "status": "open",
+            "featured": True,
+            "trending": True,
+            "views": 342,
+        },
+        {
+            "owner_id": "system",
+            "owner_name": "Studlyf Lab",
+            "title": "Uber Ride Matching System",
+            "project_type": "system_replica",
+            "problem_statement": "Build a geo-distributed ride matching engine with sub-100ms p99 latency using spatial indexing and real-time location tracking.",
+            "architecture_focus": "Geo-Distributed + Real-Time",
+            "skills_required": ["Go", "PostGIS", "WebSockets", "React Native"],
+            "team_size": 3,
+            "timeline": "5 weeks",
+            "roles_needed": ["backend", "frontend", "devops"],
+            "tags": ["System Design", "Backend", "DevOps"],
+            "overview": "Deconstruct Uber's core ride matching and dispatch system with real-time geospatial processing.",
+            "architecture_breakdown": "Services:\n- Location Tracker (WebSocket ingest)\n- Spatial Index (PostGIS H3 grid)\n- Matching Engine (proximity + ETA)\n- Dispatch Service (driver assignment)\n- Pricing Service (surge calc)\n\nPattern: CQRS with event sourcing for ride state machine.",
+            "feature_checklist": [
+                {"name": "Real-time location tracking", "completed": False},
+                {"name": "Spatial indexing with H3", "completed": False},
+                {"name": "Ride matching algorithm", "completed": False},
+                {"name": "Surge pricing engine", "completed": False},
+                {"name": "Driver dispatch system", "completed": False},
+            ],
+            "progress": 0,
+            "status": "open",
+            "featured": True,
+            "trending": False,
+            "views": 218,
+        },
+        {
+            "owner_id": "system",
+            "owner_name": "Studlyf Lab",
+            "title": "AI Resume Screener",
+            "project_type": "original_build",
+            "problem_statement": "Create an AI-powered resume screening system that scores candidates against job descriptions using NLP and semantic matching.",
+            "architecture_focus": "ML Pipeline + API Gateway",
+            "skills_required": ["Python", "FastAPI", "Transformers", "React", "PostgreSQL"],
+            "team_size": 3,
+            "timeline": "4 weeks",
+            "roles_needed": ["ai", "backend", "frontend"],
+            "tags": ["AI", "Full Stack", "Beginner Friendly"],
+            "overview": "Build an end-to-end AI resume screening pipeline from PDF parsing to semantic matching.",
+            "architecture_breakdown": "Pipeline:\n1. PDF/DOCX Parser → structured JSON\n2. NLP Embeddings (sentence-transformers)\n3. Similarity Scoring against JD\n4. Ranking + Bias Detection\n5. REST API + Dashboard",
+            "feature_checklist": [
+                {"name": "Resume parser (PDF/DOCX)", "completed": False},
+                {"name": "NLP embedding pipeline", "completed": False},
+                {"name": "Semantic matching scorer", "completed": False},
+                {"name": "REST API endpoints", "completed": False},
+                {"name": "React dashboard", "completed": False},
+                {"name": "Bias detection module", "completed": False},
+            ],
+            "progress": 0,
+            "status": "open",
+            "featured": True,
+            "trending": True,
+            "views": 456,
+        },
+        {
+            "owner_id": "system",
+            "owner_name": "Studlyf Lab",
+            "title": "Slack Real-Time Messenger",
+            "project_type": "system_replica",
+            "problem_statement": "Architect a real-time messaging platform with channels, threads, presence indicators, and file sharing at scale.",
+            "architecture_focus": "WebSocket + CQRS",
+            "skills_required": ["TypeScript", "Socket.io", "MongoDB", "React", "Docker"],
+            "team_size": 4,
+            "timeline": "6 weeks",
+            "roles_needed": ["backend", "frontend", "devops", "ui_ux"],
+            "tags": ["Full Stack", "System Design"],
+            "overview": "Rebuild Slack's core messaging infrastructure with real-time presence and threading.",
+            "architecture_breakdown": "Services:\n- WebSocket Gateway (Socket.io cluster)\n- Message Service (MongoDB + Change Streams)\n- Presence Service (Redis pub/sub)\n- File Service (S3 + CDN)\n- Search Service (Elasticsearch)\n\nPattern: CQRS — writes via command bus, reads via materialized views.",
+            "feature_checklist": [
+                {"name": "WebSocket real-time messaging", "completed": False},
+                {"name": "Channel & thread system", "completed": False},
+                {"name": "Online presence tracking", "completed": False},
+                {"name": "File upload & sharing", "completed": False},
+                {"name": "Message search", "completed": False},
+                {"name": "Notifications system", "completed": False},
+            ],
+            "progress": 0,
+            "status": "open",
+            "featured": False,
+            "trending": True,
+            "views": 189,
+        },
+        {
+            "owner_id": "system",
+            "owner_name": "Studlyf Lab",
+            "title": "GitHub CI/CD Pipeline Builder",
+            "project_type": "original_build",
+            "problem_statement": "Build a visual CI/CD pipeline designer with YAML generation, container orchestration, and deployment automation.",
+            "architecture_focus": "Container Orchestration + DAG",
+            "skills_required": ["Go", "Docker", "Kubernetes", "React", "YAML"],
+            "team_size": 2,
+            "timeline": "4 weeks",
+            "roles_needed": ["devops", "frontend"],
+            "tags": ["DevOps", "Full Stack"],
+            "overview": "Design and build a visual drag-n-drop CI/CD pipeline builder that generates valid YAML configs.",
+            "architecture_breakdown": "Components:\n- DAG Visual Editor (React Flow)\n- YAML Generator (template engine)\n- Container Runner (Docker API)\n- Pipeline Executor (step-by-step DAG)\n- Log Streamer (SSE real-time)",
+            "feature_checklist": [
+                {"name": "Visual pipeline editor", "completed": False},
+                {"name": "YAML config generation", "completed": False},
+                {"name": "Docker container runner", "completed": False},
+                {"name": "Pipeline execution engine", "completed": False},
+                {"name": "Real-time log streaming", "completed": False},
+            ],
+            "progress": 0,
+            "status": "open",
+            "featured": False,
+            "trending": False,
+            "views": 134,
+        },
+        {
+            "owner_id": "system",
+            "owner_name": "Studlyf Lab",
+            "title": "E-Commerce Recommendation Engine",
+            "project_type": "collaboration_request",
+            "problem_statement": "Looking for collaborators to build a collaborative filtering + content-based recommendation engine for an e-commerce platform.",
+            "architecture_focus": "ML + Streaming Pipeline",
+            "skills_required": ["Python", "Spark", "Redis", "FastAPI"],
+            "team_size": 3,
+            "timeline": "5 weeks",
+            "roles_needed": ["ai", "backend"],
+            "tags": ["AI", "Backend", "Beginner Friendly"],
+            "overview": "Hybrid recommendation engine combining collaborative filtering with content-based approaches.",
+            "architecture_breakdown": "Pipeline:\n1. Event Collector (user clicks, views, purchases)\n2. Batch Processing (Spark collaborative filtering)\n3. Real-time Layer (Redis feature store)\n4. Serving API (FastAPI + caching)\n5. A/B Testing Framework",
+            "feature_checklist": [
+                {"name": "Event collection pipeline", "completed": False},
+                {"name": "Collaborative filtering model", "completed": False},
+                {"name": "Content-based model", "completed": False},
+                {"name": "Hybrid recommendation API", "completed": False},
+                {"name": "A/B testing framework", "completed": False},
+            ],
+            "progress": 0,
+            "status": "open",
+            "featured": False,
+            "trending": False,
+            "views": 132,
+        },
+    ]
+
+
+    # Insert with timestamps and related data
+    inserted_ids = []
+    from datetime import timedelta
+    import random
+    
+    # Pre-defined tasks and comments pool (randomized slightly)
+    common_tasks = [
+        {"title": "Initial repository setup", "status": "done", "priority": "high", "assigned_name": "Studlyf Lab"},
+        {"title": "Design system architecture diagram", "status": "done", "priority": "high", "assigned_name": "Studlyf Lab"},
+        {"title": "Set up CI/CD pipeline", "status": "in_progress", "priority": "critical"},
+        {"title": "Create database schema", "status": "todo", "priority": "high"},
+        {"title": "Implement core API endpoints", "status": "todo", "priority": "critical"},
+        {"title": "Build frontend dashboard layout", "status": "todo", "priority": "medium"},
+        {"title": "Write unit tests for auth module", "status": "review", "priority": "medium"},
+    ]
+
+    common_comments = [
+        {"user_name": "Studlyf Lab", "content": "Welcome to the project! Let's start by reviewing the architecture breakdown."},
+        {"user_name": "John Dev", "content": "I can pick up the CI/CD pipeline task. Has anyone set up the repo secrets yet?"},
+        {"user_name": "Sarah AI", "content": "The data schema looks good, but we might need sharding for the user table later."},
+    ]
+
+    for proj in seed_projects:
+        proj["created_at"] = datetime.utcnow()
+        proj["updated_at"] = datetime.utcnow()
+        
+        # Insert Project
+        result = await sdl_projects_col.insert_one(proj)
+        pid = str(result.inserted_id)
+        inserted_ids.append(pid)
+        
+        # Add system user as lead member
+        await sdl_members_col.insert_one({
+            "project_id": pid,
+            "user_id": "system",
+            "user_name": "Studlyf Lab",
+            "user_avatar": None,
+            "role": "lead",
+            "status": "active",
+            "joined_at": datetime.utcnow(),
+        })
+
+        # Add 1 random "active" member for variety
+        await sdl_members_col.insert_one({
+            "project_id": pid,
+            "user_id": "u_demo_1",
+            "user_name": "Alex Coder",
+            "user_avatar": None,
+            "role": proj["roles_needed"][0] if proj["roles_needed"] else "backend",
+            "status": "active",
+            "joined_at": datetime.utcnow(),
+        })
+
+        # Add Tasks
+        import random
+        project_tasks = random.sample(common_tasks, k=min(len(common_tasks), 5))
+        for t in project_tasks:
+            await sdl_tasks_col.insert_one({
+                "project_id": pid,
+                "title": t["title"],
+                "description": f"Implementation details for {t['title'].lower()}",
+                "assigned_to": "system" if t.get("assigned_name") else None,
+                "assigned_name": t.get("assigned_name"),
+                "status": t["status"],
+                "priority": t["priority"],
+                "created_by": "system",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            })
+
+        # Add Comments
+        for c in common_comments:
+            await sdl_comments_col.insert_one({
+                "project_id": pid,
+                "user_id": "system" if c["user_name"] == "Studlyf Lab" else "u_dummy",
+                "user_name": c["user_name"],
+                "user_avatar": None,
+                "content": c["content"],
+                "created_at": datetime.utcnow() - timedelta(days=random.randint(0, 5)),
+            })
+
+        # Add 1 Pending Join Request
+        await sdl_join_requests_col.insert_one({
+            "project_id": pid,
+            "user_id": "u_newbe_1",
+            "user_name": "Junior Dev",
+            "user_avatar": None,
+            "role_requested": proj["roles_needed"][-1] if proj["roles_needed"] else "frontend",
+            "message": "I'd love to help with the frontend components!",
+            "status": "pending",
+            "created_at": datetime.utcnow(),
+        })
+
+    return {"message": f"Seeded {len(inserted_ids)} SDL projects with rich data", "ids": inserted_ids}
+
+
+@app.get("/api/admin/sdl/join-requests", dependencies=[Depends(admin_required)])
+async def admin_list_join_requests(status: Optional[str] = "pending"):
+    """Admin: list all join requests"""
+    query = {}
+    if status:
+        query["status"] = status
+    results = []
+    async for doc in sdl_join_requests_col.find(query).sort("created_at", -1):
+        doc["_id"] = str(doc["_id"])
+        results.append(doc)
+    return results
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CERTIFICATE SYSTEM ENDPOINTS
+# ──────────────────────────────────────────────────────────────────────────
+
+from motor.motor_asyncio import AsyncIOMotorCollection
+from db import db
+
+cert_templates_col: AsyncIOMotorCollection = db["cert_templates"]
+
+DUMMY_CERTIFICATE_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap');
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+  body {{ width:1040px; height:720px; display:flex; align-items:center; justify-content:center;
+          font-family:'Inter',sans-serif; background:#fff; }}
+  .cert {{ width:1000px; height:680px; border:6px solid #7C3AED; border-radius:24px;
+           padding:56px 72px; display:flex; flex-direction:column; justify-content:space-between;
+           position:relative; overflow:hidden; }}
+  .cert::before {{ content:''; position:absolute; top:0; left:0; right:0; height:8px;
+                   background:linear-gradient(90deg,#7C3AED,#A78BFA); }}
+  .logo {{ font-size:12px; font-weight:700; letter-spacing:.4em; text-transform:uppercase; color:#7C3AED; }}
+  .center {{ text-align:center; }}
+  .awarded {{ font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:#9CA3AF; margin-bottom:20px; }}
+  .name {{ font-family:'Playfair Display', serif; font-size:52px; color:#111827; line-height:1; }}
+  .desc {{ font-size:14px; color:#6B7280; margin-top:18px; max-width:600px; margin-inline:auto; line-height:1.7; }}
+  .course {{ font-size:22px; font-weight:700; color:#7C3AED; margin-top:12px; }}
+  .footer {{ display:flex; justify-content:space-between; align-items:flex-end; }}
+  .line {{ width:200px; border-top:2px solid #E5E7EB; padding-top:10px;
+           font-size:11px; color:#9CA3AF; letter-spacing:.15em; text-transform:uppercase; }}
+  .seal {{ width:72px; height:72px; border-radius:50%; background:#7C3AED;
+           display:flex; align-items:center; justify-content:center; color:#fff;
+           font-size:26px; font-weight:900; }}
+</style>
+</head>
+<body>
+<div class="cert">
+  <div class="logo">STUDLYF · PROTOCOL</div>
+  <div class="center">
+    <div class="awarded">This certifies that</div>
+    <div class="name">{student_name}</div>
+    <div class="desc">has successfully completed the course and demonstrated proficiency in</div>
+    <div class="course">{course_title}</div>
+  </div>
+  <div class="footer">
+    <div class="line">{issue_date}<br/>Date Issued</div>
+    <div class="seal">S</div>
+    <div class="line">{certificate_id}<br/>Certificate ID</div>
+  </div>
+</div>
+</body>
+</html>
+"""
+
+
+@app.get("/api/certificates/{user_id}")
+async def get_user_certificates(user_id: str):
+    """Get all certificates for a user. Falls back to a dummy if none exist."""
+    results = []
+    async for doc in certificates_col.find({"user_id": user_id}):
+        doc["_id"] = str(doc["_id"])
+        results.append(doc)
+
+    if not results:
+        # Return a single dummy certificate so the UI always has something to show
+        results = [{
+            "certificate_id": f"DUMMY-{user_id[:8].upper()}",
+            "user_id": user_id,
+            "course_title": "Studlyf Starter Certificate",
+            "issue_date": datetime.utcnow().isoformat(),
+            "template_id": "standard",
+            "is_dummy": True
+        }]
+    return results
+
+
+@app.get("/api/certificates/{user_id}/{cert_id}/html")
+async def get_certificate_html(user_id: str, cert_id: str):
+    """Generate certificate HTML for preview / PDF download."""
+    cert = await certificates_col.find_one({"user_id": user_id, "certificate_id": cert_id})
+
+    student_name = "Studlyf Learner"
+    course_title = "Studlyf Starter Certificate"
+    issue_date = datetime.utcnow().strftime("%d %B %Y")
+
+    if cert:
+        student_name = cert.get("student_name", student_name)
+        course_title = cert.get("course_title", course_title)
+        issue_date = cert.get("issue_date", issue_date)
+        template_id = cert.get("template_id", "standard")
+        # Check if admin uploaded a custom template
+        tmpl_doc = await cert_templates_col.find_one({"template_id": template_id})
+        if tmpl_doc and tmpl_doc.get("html_content"):
+            html = tmpl_doc["html_content"].format(
+                student_name=student_name,
+                course_title=course_title,
+                issue_date=issue_date,
+                certificate_id=cert_id
+            )
+            from fastapi.responses import HTMLResponse
+            return HTMLResponse(content=html)
+
+    # Default dummy template
+    html = DUMMY_CERTIFICATE_HTML.format(
+        student_name=student_name,
+        course_title=course_title,
+        issue_date=issue_date,
+        certificate_id=cert_id
+    )
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
+
+# ─── Admin: Certificate Template Management ───────────────────────────────
+
+class CertTemplatePayload(BaseModel):
+    name: str
+    html_content: str          # The full HTML template string (with {student_name} etc placeholders)
+    description: Optional[str] = ""
+    preview_thumbnail: Optional[str] = ""  # base64 or URL
+
+
+@app.get("/api/admin/cert-templates", dependencies=[Depends(admin_required)])
+async def list_cert_templates():
+    results = []
+    async for doc in cert_templates_col.find({}):
+        doc["_id"] = str(doc["_id"])
+        results.append(doc)
+    # Always include the built-in Standard template
+    builtins = [
+        {"template_id": "standard", "name": "Standard (Default)", "description": "Studlyf default certificate", "is_builtin": True},
+        {"template_id": "honors",   "name": "Elite Honors",        "description": "Purple honours certificate",  "is_builtin": True},
+    ]
+    return builtins + results
+
+
+@app.post("/api/admin/cert-templates", dependencies=[Depends(admin_required)])
+async def create_cert_template(payload: CertTemplatePayload):
+    template_id = str(uuid.uuid4())[:8]
+    doc = {
+        "template_id": template_id,
+        "name": payload.name,
+        "html_content": payload.html_content,
+        "description": payload.description,
+        "preview_thumbnail": payload.preview_thumbnail,
+        "created_at": datetime.utcnow().isoformat(),
+        "is_builtin": False
+    }
+    await cert_templates_col.insert_one(doc)
+    doc["_id"] = str(doc.get("_id", ""))
+    return doc
+
+
+@app.delete("/api/admin/cert-templates/{template_id}", dependencies=[Depends(admin_required)])
+async def delete_cert_template(template_id: str):
+    result = await cert_templates_col.delete_one({"template_id": template_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"message": "Template deleted"}
+
+
 if __name__ == "__main__":
     import uvicorn
     import os
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

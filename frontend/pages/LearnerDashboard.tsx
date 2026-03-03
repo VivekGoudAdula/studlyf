@@ -7,6 +7,7 @@ import { useAuth } from '../AuthContext';
 import { auth, githubProvider } from '../firebase';
 import { signOut, signInWithPopup, GithubAuthProvider, linkWithPopup } from 'firebase/auth';
 import DashboardFooter from '../components/DashboardFooter';
+import { downloadCertPDF } from '../utils/downloadCertPDF';
 
 const CircularProgress = ({ value, size = 180, strokeWidth = 12, color = "#7C3AED", label = "Score" }: { value: number, size?: number, strokeWidth?: number, color?: string, label: string }) => {
   const radius = (size - strokeWidth) / 2;
@@ -49,14 +50,22 @@ const CircularProgress = ({ value, size = 180, strokeWidth = 12, color = "#7C3AE
 const LearnerDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'profile' | 'knowledge' | 'leaderboard'>('profile');
+  const [activeView, setActiveView] = useState<'profile' | 'knowledge' | 'leaderboard' | 'certificates'>('profile');
   const [activeTab, setActiveTab] = useState<'overall' | 'dev' | 'ai'>('overall');
   const [githubData, setGithubData] = useState<any>(null);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (user?.uid) {
+      fetch(`${API_BASE_URL}/api/certificates/${user.uid}`)
+        .then(res => res.json())
+        .then(data => setCertificates(data))
+        .catch(console.error);
+    }
     const savedData = localStorage.getItem(`github_data_${user?.uid}`);
     if (savedData) {
       setGithubData(JSON.parse(savedData));
@@ -113,6 +122,7 @@ const LearnerDashboard: React.FC = () => {
     { id: 'profile', label: 'My Profile', icon: '👤' },
     { id: 'knowledge', label: 'Tech Stack', icon: '🕸️' },
     { id: 'leaderboard', label: 'Rankings', icon: '🏆' },
+    { id: 'certificates', label: 'Certificates', icon: '📜' }
   ];
 
   const renderView = () => {
@@ -194,6 +204,109 @@ const LearnerDashboard: React.FC = () => {
               ))}
               <div className="p-4 bg-gray-50 text-center">
                 <button className="text-[10px] font-black uppercase tracking-widest text-[#7C3AED] hover:underline">View Top 100</button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'certificates':
+        return (
+          <div className="space-y-8">
+            <h2 className="text-4xl font-black uppercase tracking-tighter text-[#111827]">Certifications</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {certificates.map((cert) => (
+                <div key={cert.certificate_id} className="bg-white border border-gray-100 rounded-[2rem] p-8 flex flex-col justify-between group hover:border-[#7C3AED]/30 transition-all shadow-sm">
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-[10px] font-black tracking-[0.2em] text-[#7C3AED] uppercase">Official Credential</span>
+                      {cert.is_dummy && (
+                        <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Starter</span>
+                      )}
+                    </div>
+                    <h3 className="text-2xl font-black text-[#111827] uppercase tracking-tighter mb-4">{cert.course_title}</h3>
+                    <div className="space-y-2 mb-8">
+                      <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">ID: <span className="text-[#111827] font-mono">{cert.certificate_id}</span></p>
+                      <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Issued: <span className="text-[#111827]">{new Date(cert.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span></p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        const uid = user?.uid || 'guest';
+                        const url = `${API_BASE_URL}/api/certificates/${uid}/${cert.certificate_id}/html`;
+                        (window as any).__certPreviewUrl = url;
+                        (window as any).__certPreviewOpen = true;
+                        const el = document.getElementById('cert-preview-modal');
+                        const iframe = document.getElementById('cert-iframe') as HTMLIFrameElement;
+                        if (el && iframe) { iframe.src = url; el.style.display = 'flex'; }
+                      }}
+                      className="flex-1 py-4 bg-[#F5F3FF] text-[#7C3AED] rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#7C3AED] hover:text-white transition-all flex justify-center items-center gap-2"
+                    >
+                      👁 Preview
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setDownloadingCertId(cert.certificate_id);
+                        await downloadCertPDF(user?.uid || 'guest', cert.certificate_id, cert.course_title);
+                        setDownloadingCertId(null);
+                      }}
+                      disabled={downloadingCertId === cert.certificate_id}
+                      className="flex-1 py-4 bg-[#111827] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#7C3AED] transition-all flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {downloadingCertId === cert.certificate_id ? (
+                        <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full"></span> Generating...</>
+                      ) : '⬇ Download PDF'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Certificate Preview Modal */}
+            <div
+              id="cert-preview-modal"
+              style={{ display: 'none' }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-6"
+              onClick={(e) => { if ((e.target as HTMLElement).id === 'cert-preview-modal') { (document.getElementById('cert-preview-modal') as HTMLElement).style.display = 'none'; } }}
+            >
+              <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-5xl flex flex-col">
+                <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100">
+                  <span className="text-sm font-black text-[#111827] uppercase tracking-widest">Certificate Preview</span>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={async () => {
+                        const iframe = document.getElementById('cert-iframe') as HTMLIFrameElement;
+                        const certSrc = iframe?.src || '';
+                        // Extract cert id from URL: .../{userId}/{certId}/html
+                        const parts = certSrc.split('/');
+                        const htmlIdx = parts.indexOf('html');
+                        const certId = htmlIdx > 0 ? parts[htmlIdx - 1] : '';
+                        const userId = htmlIdx > 1 ? parts[htmlIdx - 2] : user?.uid || 'guest';
+                        setDownloadingCertId('modal');
+                        await downloadCertPDF(userId, certId, 'Certificate');
+                        setDownloadingCertId(null);
+                      }}
+                      disabled={downloadingCertId === 'modal'}
+                      className="px-5 py-2.5 bg-[#7C3AED] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-[#6D28D9] transition-all disabled:opacity-60"
+                    >
+                      {downloadingCertId === 'modal' ? 'Generating...' : '⬇ Download PDF'}
+                    </button>
+                    <button
+                      onClick={() => { (document.getElementById('cert-preview-modal') as HTMLElement).style.display = 'none'; }}
+                      className="px-5 py-2.5 bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-gray-200 transition-all"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+                </div>
+                <div className="w-full bg-gray-50 flex items-center justify-center p-6" style={{ height: 520 }}>
+                  <iframe
+                    id="cert-iframe"
+                    src=""
+                    className="w-full h-full rounded-xl border border-gray-200 shadow-inner"
+                    title="Certificate Preview"
+                    style={{ minHeight: 460, transform: 'scale(0.88)', transformOrigin: 'center center' }}
+                  />
+                </div>
               </div>
             </div>
           </div>

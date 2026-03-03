@@ -17,6 +17,7 @@ interface Module {
         quiz_score: number;
         quiz_answers: number[][];
         project_status: string;
+        review_status?: string;
     };
 }
 
@@ -59,7 +60,8 @@ const CoursePlayer: React.FC = () => {
     const [activeModuleIndex, setActiveModuleIndex] = useState(0);
     const [moduleDetails, setModuleDetails] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeStage, setActiveStage] = useState<'theory' | 'video' | 'quiz' | 'project'>('theory');
+    const [activeStage, setActiveStage] = useState<'theory' | 'video' | 'quiz'>('theory');
+    const [coursePhase, setCoursePhase] = useState<'modules' | 'project' | 'certificate'>('modules');
     const [initialLoad, setInitialLoad] = useState(true);
     const [lastLoadedModuleId, setLastLoadedModuleId] = useState<string | null>(null);
 
@@ -70,6 +72,7 @@ const CoursePlayer: React.FC = () => {
     // Project state
     const [deployedLink, setDeployedLink] = useState('');
     const [githubLink, setGithubLink] = useState('');
+    const [projectFile, setProjectFile] = useState<File | null>(null);
 
     const [completionPrompt, setCompletionPrompt] = useState<{ open: boolean; nextIndex: number | null; moduleName: string }>(
         { open: false, nextIndex: null, moduleName: '' }
@@ -92,21 +95,46 @@ const CoursePlayer: React.FC = () => {
 
     const fetchModules = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid}`);
+            const res = await fetch(`${API_BASE_URL}/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid || ''}`);
             const data = await res.json();
-            setModules(data);
 
-            if (data.length > 0 && initialLoad) {
-                const activeIndex = data.findIndex((m: any) => m.progress?.status !== 'locked');
-                setActiveModuleIndex(activeIndex !== -1 ? activeIndex : 0);
-                setInitialLoad(false);
-                setLoading(false);
-            } else if (data.length > 0) {
-                setLoading(false);
+            let fetchedModules = Array.isArray(data) ? data : [];
+
+            if (fetchedModules.length === 0) {
+                // Fallback to dummy modules for newly created empty courses
+                fetchedModules = [
+                    {
+                        _id: 'dummy-mod-1',
+                        title: 'Foundations & Architectures',
+                        order_index: 1,
+                        estimated_time: '2h 30m',
+                        progress: { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' }
+                    },
+                    {
+                        _id: 'dummy-mod-2',
+                        title: 'Advanced Implementations',
+                        order_index: 2,
+                        estimated_time: '3h 15m',
+                        progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' }
+                    }
+                ];
             }
-            return data;
+
+            setModules(fetchedModules);
+
+            if (fetchedModules.length > 0) {
+                if (initialLoad) {
+                    const activeIndex = fetchedModules.findIndex((m: any) => m.progress?.status !== 'locked');
+                    setActiveModuleIndex(activeIndex !== -1 ? activeIndex : 0);
+                    setInitialLoad(false);
+                }
+            }
+            setLoading(false);
+            return fetchedModules;
         } catch (err) {
             console.error(err);
+            setModules([]);
+            setLoading(false);
             return [];
         }
     };
@@ -118,19 +146,42 @@ const CoursePlayer: React.FC = () => {
     }, [activeModuleIndex, modules]);
 
     const fetchModuleDetails = async (moduleId: string) => {
-        const res = await fetch(`${API_BASE_URL}/api/modules/${moduleId}`);
-        const data = await res.json();
+        let data: any = {};
+        if (moduleId.startsWith('dummy-mod')) {
+            data = {
+                theory: {
+                    markdown_content: "# System Architectures & Frameworks\n\nWelcome to the simulated track. \n\n## Subsystem Overview\n\n1. Component isolation\n2. Fault tolerance parameters\n3. Scalability vectors\n\nUnderstand the metrics and variables for successful initialization.",
+                    key_takeaways: ["Understand boundaries", "Deploy fault-tolerant systems", "End-to-end telemetry mapping"]
+                },
+                video: {
+                    video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+                },
+                quiz: {
+                    questions: [
+                        { question: "What primarily drives system latency here?", options: ["Bandwidth", "Distance", "Processing Overhead", "All of the above"], correct_answers: [3], explanation: "All elements heavily impact latency." },
+                        { question: "Which protocol is connection-oriented?", options: ["UDP", "TCP", "ICMP", "IP"], correct_answers: [1], explanation: "TCP guarantees reliable delivery." }
+                    ]
+                },
+                project: {
+                    problem_statement: "Deploy a foundational analytics service proxy.",
+                    requirements: ["Implement basic rate limiting", "Route dynamic health-checks", "Ensure secure CORS headers"]
+                }
+            };
+        } else {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/modules/${moduleId}`);
+                if (res.ok) data = await res.json();
+            } catch (err) { console.error(err); }
+        }
+
         setModuleDetails(data);
 
         const prog = modules[activeModuleIndex].progress;
 
-        if (moduleId !== lastLoadedModuleId) {
-            if (!prog?.theory_completed) setActiveStage('theory');
-            else if (!prog?.video_completed) setActiveStage('video');
-            else if (prog?.quiz_score === undefined || prog?.quiz_score === null || prog?.quiz_score === 0) setActiveStage('quiz');
-            else setActiveStage('project');
-            setLastLoadedModuleId(moduleId);
-        }
+        if (!prog?.video_completed) setActiveStage('video');
+        else if (!prog?.theory_completed) setActiveStage('theory');
+        else setActiveStage('quiz');
+        setLastLoadedModuleId(moduleId);
 
         // Restore answers if they exist
         if (prog?.quiz_answers && prog.quiz_answers.length > 0) {
@@ -147,6 +198,26 @@ const CoursePlayer: React.FC = () => {
     };
 
     const updateProgress = async (updates: any) => {
+        if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
+            const updatedModules = [...modules];
+            const currentMod = updatedModules[activeModuleIndex];
+            if (!currentMod.progress) {
+                currentMod.progress = { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' };
+            }
+            Object.assign(currentMod.progress, updates);
+
+            if (updates.status === 'completed' || updates.project_status === 'submitted' || updates.quiz_score >= 70) {
+                currentMod.progress.status = 'completed';
+                if (updates.project_status === 'submitted') currentMod.progress.project_status = 'submitted';
+                if (activeModuleIndex + 1 < updatedModules.length) {
+                    if (!updatedModules[activeModuleIndex + 1].progress) updatedModules[activeModuleIndex + 1].progress = {} as any;
+                    updatedModules[activeModuleIndex + 1].progress!.status = 'unlocked';
+                }
+            }
+            setModules(updatedModules);
+            return;
+        }
+
         await fetch(`${API_BASE_URL}/api/progress/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -169,22 +240,50 @@ const CoursePlayer: React.FC = () => {
     };
 
     const handleQuizSubmit = async () => {
-        const res = await fetch(`${API_BASE_URL}/api/quiz/submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: user?.uid,
-                module_id: modules[activeModuleIndex]._id,
-                answers: quizAnswers
-            })
-        });
-        const data = await res.json();
-        setQuizResult(data);
-        // Always update progress to lock the attempt
-        setTimeout(() => updateProgress({ quiz_score: data.score }), 1500);
-        if (data.score >= 70) {
-            setActiveStage('project');
+        let score = 0;
+        let data: any = {};
+
+        if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
+            let correctCount = 0;
+            const qs = moduleDetails?.quiz?.questions || [];
+            qs.forEach((q: any, i: number) => {
+                const selected = quizAnswers[i] || [];
+                const correct = q.correct_answers || [];
+                if (selected.length === correct.length && selected.every(v => correct.includes(v))) {
+                    correctCount++;
+                }
+            });
+            score = Math.round((correctCount / Math.max(qs.length, 1)) * 100);
+            data = { score, passed: score >= 70 };
+        } else {
+            const res = await fetch(`${API_BASE_URL}/api/quiz/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user?.uid,
+                    module_id: modules[activeModuleIndex]._id,
+                    answers: quizAnswers
+                })
+            });
+            data = await res.json();
+            score = data.score;
         }
+
+        setQuizResult(data);
+        setTimeout(() => updateProgress({ quiz_score: score, quiz_answers: quizAnswers }), 1500);
+    };
+
+    const handleRestartModule = async () => {
+        setQuizResult(null);
+        setQuizAnswers(moduleDetails?.quiz?.questions.map(() => []) || []);
+        setActiveStage('theory');
+        // Reset backend progress to ensure they genuinely restart
+        await updateProgress({
+            theory_completed: false,
+            video_completed: false,
+            quiz_score: 0,
+            quiz_answers: []
+        });
     };
 
     const handleProjectSubmit = async () => {
@@ -197,16 +296,32 @@ const CoursePlayer: React.FC = () => {
             return;
         }
 
+        if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
+            await updateProgress({ project_status: 'submitted', status: 'completed' });
+            setTimeout(() => {
+                const nextModIdx = activeModuleIndex + 1;
+                const hasNext = nextModIdx < modules.length;
+                setCompletionPrompt({
+                    open: true,
+                    nextIndex: hasNext ? nextModIdx : null,
+                    moduleName: modules[activeModuleIndex].title || 'Current Module'
+                });
+            }, 300);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('user_id', user?.uid || '');
+        formData.append('module_id', modules[activeModuleIndex]._id);
+        formData.append('deployed_link', deployedLink);
+        if (githubLink) formData.append('github_link', githubLink);
+        if (projectFile) formData.append('file', projectFile);
+
         const res = await fetch(`${API_BASE_URL}/api/project/submit`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: user?.uid,
-                module_id: modules[activeModuleIndex]._id,
-                deployed_link: deployedLink,
-                github_link: githubLink || null
-            })
+            body: formData
         });
+
         if (res.ok) {
             await updateProgress({ project_status: 'submitted', status: 'completed' });
             const updatedModules = await fetchModules();
@@ -229,12 +344,23 @@ const CoursePlayer: React.FC = () => {
                 transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                 className="w-12 h-12 border-4 border-[#7C3AED]/10 border-t-[#7C3AED] rounded-full"
             />
-            <span className="mt-8 text-[11px] text-gray-400 uppercase tracking-[0.5em] font-black animate-pulse">Initializing Protocol</span>
+            <span className="mt-8 text-[11px] text-gray-400 uppercase tracking-[0.5em] font-black animate-pulse">Initializing Protocol...</span>
+        </div>
+    );
+
+    if (!modules || modules.length === 0) return (
+        <div className="h-screen bg-[#F9FAFB] flex flex-col items-center justify-center font-sans overflow-hidden relative p-6">
+            <div className="max-w-md text-center bg-white border border-gray-100 p-12 rounded-[3.5rem] shadow-xl">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Content Protocol Offline</span>
+                <h2 className="text-3xl font-black text-gray-900 mb-6 uppercase tracking-tighter leading-tight">No Modules <br /> <span className="text-[#7C3AED]">Found.</span></h2>
+                <p className="text-gray-500 mb-8 font-medium leading-relaxed">This course does not have any modules configured yet or it doesn't exist. Check back later.</p>
+                <button onClick={() => navigate('/dashboard')} className="px-10 py-5 bg-[#111827] hover:scale-105 transition-all text-white font-black text-[10px] uppercase tracking-widest rounded-3xl shadow-2xl">Return to Dashboard</button>
+            </div>
         </div>
     );
 
     const currentModule = modules[activeModuleIndex];
-    const progress = currentModule.progress;
+    const progress = currentModule?.progress;
     const overallProgress = Math.round(((modules.filter(m => m.progress?.status === 'completed').length) / modules.length) * 100);
 
     return (
@@ -272,8 +398,13 @@ const CoursePlayer: React.FC = () => {
                     {modules.map((m, i) => (
                         <button
                             key={m._id}
-                            onClick={() => m.progress?.status !== 'locked' && setActiveModuleIndex(i)}
-                            className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${activeModuleIndex === i
+                            onClick={() => {
+                                if (m.progress?.status !== 'locked') {
+                                    setActiveModuleIndex(i);
+                                    setCoursePhase('modules');
+                                }
+                            }}
+                            className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${activeModuleIndex === i && coursePhase === 'modules'
                                 ? 'bg-[#7C3AED] border-[#7C3AED] shadow-2xl shadow-[#7C3AED]/30'
                                 : m.progress?.status === 'locked'
                                     ? 'opacity-40 grayscale pointer-events-none border-transparent'
@@ -282,74 +413,114 @@ const CoursePlayer: React.FC = () => {
                         >
                             <div className="relative z-10">
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className={`text-[8px] font-black tracking-[0.3em] ${activeModuleIndex === i ? 'text-white/60' : 'text-gray-400'}`}>PHASE {m.order_index < 10 ? `0${m.order_index}` : m.order_index}</span>
+                                    <span className={`text-[8px] font-black tracking-[0.3em] ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/60' : 'text-gray-400'}`}>PHASE {m.order_index < 10 ? `0${m.order_index}` : m.order_index}</span>
                                     {m.progress?.status === 'completed' && (
-                                        <div className={`w-1.5 h-1.5 rounded-full ${activeModuleIndex === i ? 'bg-white' : 'bg-green-500'} shadow-lg`} />
+                                        <div className={`w-1.5 h-1.5 rounded-full ${activeModuleIndex === i && coursePhase === 'modules' ? 'bg-white' : 'bg-green-500'} shadow-lg`} />
                                     )}
                                 </div>
-                                <p className={`text-sm font-black uppercase tracking-tighter leading-tight mb-2 ${activeModuleIndex === i ? 'text-white' : 'text-gray-900'}`}>
+                                <p className={`text-sm font-black uppercase tracking-tighter leading-tight mb-2 ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white' : 'text-gray-900'}`}>
                                     {m.title}
                                 </p>
-                                <span className={`text-[7px] font-bold uppercase tracking-widest ${activeModuleIndex === i ? 'text-white/50' : 'text-gray-400'}`}>{m.estimated_time} EST</span>
+                                <span className={`text-[7px] font-bold uppercase tracking-widest ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/50' : 'text-gray-400'}`}>{m.estimated_time} EST</span>
                             </div>
                         </button>
                     ))}
+
+                    <div className="pt-4 mt-4 border-t border-gray-100 space-y-3">
+                        <button
+                            onClick={() => {
+                                if (modules[modules.length - 1]?.progress?.quiz_score >= 70) {
+                                    setCoursePhase('project');
+                                    setActiveModuleIndex(modules.length - 1);
+                                }
+                            }}
+                            className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${coursePhase === 'project'
+                                ? 'bg-[#111827] border-[#111827] shadow-xl shadow-[#111827]/20 flex-shrink-0'
+                                : !(modules[modules.length - 1]?.progress?.quiz_score >= 70)
+                                    ? 'opacity-40 grayscale pointer-events-none border-transparent'
+                                    : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                        >
+                            <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`text-[8px] font-black tracking-[0.3em] ${coursePhase === 'project' ? 'text-white/50' : 'text-gray-400'}`}>CAPSTONE</span>
+                                </div>
+                                <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${coursePhase === 'project' ? 'text-white' : 'text-gray-900'}`}>
+                                    Final Project
+                                </p>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${!(modules[modules.length - 1]?.progress?.review_status === 'approved')
+                                ? 'opacity-40 grayscale pointer-events-none border-transparent'
+                                : 'bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] border-transparent shadow-xl shadow-[#7C3AED]/20'
+                                }`}
+                        >
+                            <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`text-[8px] font-black tracking-[0.3em] ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-400' : 'text-white/80'}`}>CREDENTIAL</span>
+                                </div>
+                                <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-900' : 'text-white'}`}>
+                                    Certificate
+                                </p>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </aside>
 
             <main className="flex-grow ml-72 p-8 lg:p-12 flex flex-col items-center overflow-x-hidden">
                 <div className="w-full max-w-5xl">
-                    <div className="sticky top-4 z-50 w-full flex justify-center mb-12">
-                        <div className="bg-white/95 backdrop-blur-2xl border border-gray-100 rounded-[2.5rem] p-4 px-8 shadow-2xl shadow-gray-200/50 flex items-center justify-center">
-                            <div className="flex items-center gap-6 lg:gap-10">
-                                <SectionIndicator
-                                    label="Theory"
-                                    active={activeStage === 'theory'}
-                                    completed={!!progress?.theory_completed}
-                                    locked={false}
-                                    onClick={() => setActiveStage('theory')}
-                                />
-                                <div className="w-8 lg:w-12 h-px bg-gray-100" />
-                                <SectionIndicator
-                                    label="Video"
-                                    active={activeStage === 'video'}
-                                    completed={!!progress?.video_completed}
-                                    locked={!progress?.theory_completed}
-                                    onClick={() => setActiveStage('video')}
-                                />
-                                <div className="w-8 lg:w-12 h-px bg-gray-100" />
-                                <SectionIndicator
-                                    label="Quiz"
-                                    active={activeStage === 'quiz'}
-                                    completed={progress?.quiz_score !== undefined && progress?.quiz_score !== null && progress.quiz_score > 0}
-                                    locked={!progress?.video_completed}
-                                    onClick={() => setActiveStage('quiz')}
-                                />
-                                <div className="w-8 lg:w-12 h-px bg-gray-100" />
-                                <SectionIndicator
-                                    label="Project"
-                                    active={activeStage === 'project'}
-                                    completed={progress?.project_status === 'submitted'}
-                                    locked={progress?.quiz_score === undefined || progress?.quiz_score === null || progress.quiz_score === 0}
-                                    onClick={() => setActiveStage('project')}
-                                />
+
+                    {coursePhase === 'modules' && (
+                        <div className="sticky top-4 z-50 w-full flex justify-center mb-12">
+                            <div className="bg-white/95 backdrop-blur-2xl border border-gray-100 rounded-[2.5rem] p-4 px-8 shadow-2xl shadow-gray-200/50 flex items-center justify-center">
+                                <div className="flex items-center gap-6 lg:gap-10">
+                                    <SectionIndicator
+                                        label="Video"
+                                        active={activeStage === 'video'}
+                                        completed={!!progress?.video_completed}
+                                        locked={false}
+                                        onClick={() => setActiveStage('video')}
+                                    />
+                                    <div className="w-8 lg:w-12 h-px bg-gray-100" />
+                                    <SectionIndicator
+                                        label="Theory"
+                                        active={activeStage === 'theory'}
+                                        completed={!!progress?.theory_completed}
+                                        locked={!progress?.video_completed}
+                                        onClick={() => setActiveStage('theory')}
+                                    />
+                                    <div className="w-8 lg:w-12 h-px bg-gray-100" />
+                                    <SectionIndicator
+                                        label="Quiz"
+                                        active={activeStage === 'quiz'}
+                                        completed={progress?.quiz_score !== undefined && progress?.quiz_score !== null && progress.quiz_score > 0}
+                                        locked={!progress?.theory_completed}
+                                        onClick={() => setActiveStage('quiz')}
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
-                    <header className="mb-16 text-center">
-                        <div className="flex items-center justify-center gap-3 mb-6">
-                            <div className="w-8 h-px bg-[#7C3AED]" />
-                            <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em]">Current Phase</span>
-                            <div className="w-8 h-px bg-[#7C3AED]" />
-                        </div>
-                        <h1 className="text-3xl lg:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-tight max-w-4xl mx-auto">
-                            {currentModule.title.split(' ').slice(0, -1).join(' ')} <span className="text-[#7C3AED]">{currentModule.title.split(' ').slice(-1)}</span>
-                        </h1>
-                    </header>
+                    {coursePhase === 'modules' && (
+                        <header className="mb-16 text-center">
+                            <div className="flex items-center justify-center gap-3 mb-6">
+                                <div className="w-8 h-px bg-[#7C3AED]" />
+                                <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em]">Current Phase</span>
+                                <div className="w-8 h-px bg-[#7C3AED]" />
+                            </div>
+                            <h1 className="text-3xl lg:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-tight max-w-4xl mx-auto">
+                                {currentModule.title.split(' ').slice(0, -1).join(' ')} <span className="text-[#7C3AED]">{currentModule.title.split(' ').slice(-1)}</span>
+                            </h1>
+                        </header>
+                    )}
 
                     <AnimatePresence mode="wait">
-                        {activeStage === 'theory' && (
+                        {coursePhase === 'modules' && activeStage === 'theory' && (
                             <motion.div
                                 key="theory"
                                 initial={{ opacity: 0, scale: 0.98, y: 30 }}
@@ -409,7 +580,7 @@ const CoursePlayer: React.FC = () => {
                             </motion.div>
                         )}
 
-                        {activeStage === 'video' && (
+                        {coursePhase === 'modules' && activeStage === 'video' && (
                             <motion.div
                                 key="video"
                                 initial={{ opacity: 0, scale: 0.95 }}
@@ -440,7 +611,7 @@ const CoursePlayer: React.FC = () => {
                             </motion.div>
                         )}
 
-                        {activeStage === 'quiz' && (
+                        {coursePhase === 'modules' && activeStage === 'quiz' && (
                             <motion.div
                                 key="quiz"
                                 initial={{ opacity: 0 }}
@@ -537,12 +708,31 @@ const CoursePlayer: React.FC = () => {
                                         <p className={`text-xl font-bold uppercase tracking-widest ${quizResult.passed ? 'text-green-600' : 'text-red-600'}`}>
                                             {quizResult.passed ? 'Phase Certification: Success' : 'Phase Certification: Insufficient Data'}
                                         </p>
-                                        {quizResult.passed && (
+                                        {quizResult.passed ? (
                                             <button
-                                                onClick={() => setActiveStage('project')}
+                                                onClick={() => {
+                                                    const nextModIdx = activeModuleIndex + 1;
+                                                    const hasNext = nextModIdx < modules.length;
+                                                    if (hasNext) {
+                                                        setCompletionPrompt({
+                                                            open: true,
+                                                            nextIndex: nextModIdx,
+                                                            moduleName: modules[activeModuleIndex].title || 'Current Module'
+                                                        });
+                                                    } else {
+                                                        setCoursePhase('project');
+                                                    }
+                                                }}
                                                 className="mt-12 px-12 py-6 bg-[#111827] text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#7C3AED] transition-all"
                                             >
-                                                Continue to Project Objective
+                                                {activeModuleIndex + 1 < modules.length ? 'Unlock Next Phase' : 'Initiate Final Capstone'}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleRestartModule}
+                                                className="mt-12 px-12 py-6 bg-[#111827] text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-600 transition-all"
+                                            >
+                                                Restart Protocol From Beginning
                                             </button>
                                         )}
                                     </motion.div>
@@ -550,7 +740,7 @@ const CoursePlayer: React.FC = () => {
                             </motion.div>
                         )}
 
-                        {activeStage === 'project' && (
+                        {coursePhase === 'project' && (
                             <motion.div
                                 key="project"
                                 initial={{ opacity: 0, scale: 0.98 }}
@@ -560,10 +750,10 @@ const CoursePlayer: React.FC = () => {
                             >
                                 <div className="bg-white border border-gray-100 rounded-[5rem] p-24 relative overflow-hidden shadow-2xl shadow-gray-200/50">
                                     <div className="relative z-10 flex flex-col items-center">
-                                        <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.8em] mb-12">Submission Phase</span>
+                                        <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.8em] mb-12">Final Capstone Phase</span>
 
                                         <h5 className="text-3xl sm:text-4xl font-black text-center text-gray-900 mb-12 uppercase tracking-tighter leading-none max-w-4xl">
-                                            {moduleDetails?.project?.problem_statement}
+                                            {moduleDetails?.project?.problem_statement || "Build an AI Resume Analyzer"}
                                         </h5>
 
                                         <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl mb-24">
@@ -606,6 +796,21 @@ const CoursePlayer: React.FC = () => {
                                                     value={githubLink}
                                                     onChange={(e) => setGithubLink(e.target.value)}
                                                     className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2.5rem] px-8 py-6 text-gray-900 font-bold text-center focus:outline-none focus:border-gray-300 focus:bg-white transition-all shadow-inner placeholder:text-gray-300 placeholder:text-sm"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-center gap-3">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
+                                                        Upload Archive / PDF
+                                                    </label>
+                                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">Optional</span>
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    accept=".zip,.rar,.pdf"
+                                                    onChange={(e) => setProjectFile(e.target.files?.[0] || null)}
+                                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2.5rem] px-8 py-6 text-gray-900 font-bold text-center focus:outline-none focus:border-gray-300 focus:bg-white transition-all shadow-inner file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#7C3AED]/10 file:text-[#7C3AED] hover:file:bg-[#7C3AED]/20"
                                                 />
                                             </div>
 

@@ -289,7 +289,16 @@ const Courses: React.FC = () => {
     fetchData();
   }, [userId]);
 
-  const categories = ['All', 'Backend', 'Frontend', 'Software Engineering', 'Data', 'AI', 'Cyber'];
+  const dynamicCategories = useMemo(() => {
+    const predefined = ['All', 'Backend', 'Frontend', 'Software Engineering', 'Data', 'AI', 'Cyber'];
+    const cats = new Set(predefined);
+    if (courses && courses.length > 0) {
+      courses.forEach(c => {
+        if (c.role_tag) cats.add(c.role_tag);
+      });
+    }
+    return Array.from(cats);
+  }, [courses]);
 
   const filteredCourses = useMemo(() => {
     if (activeCategory === 'All') return courses;
@@ -332,7 +341,7 @@ const Courses: React.FC = () => {
         </header>
 
         <div className="flex flex-wrap justify-center gap-2 mb-20 border-b border-gray-100 pb-12">
-          {categories.map((cat) => (
+          {dynamicCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}

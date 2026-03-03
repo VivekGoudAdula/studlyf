@@ -2,8 +2,13 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import uuid
 
-MONGO_URL = "mongodb://localhost:27017/"
-DB_NAME = "studlyf_db"
+import os
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+
+MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/")
+DB_NAME = os.getenv("DB_NAME", "studlyf_db")
 
 async def seed():
     client = AsyncIOMotorClient(MONGO_URL)
@@ -268,12 +273,94 @@ Split data across multiple servers when one isn't enough.
         "rubric": {"schema_design": 40, "indexing_logic": 40, "query_efficiency": 20}
     })
 
-    print("✅ Seed complete! Database updated with:")
+    # DUMMY QUIZZES
+    await db.quizzes.insert_many([
+        {
+            "_id": str(uuid.uuid4()),
+            "module_id": m1_id,
+            "title": "Architectural Protocols Assessment",
+            "difficulty": "Medium",
+            "pass_mark": 70,
+            "questions": [
+                {
+                    "question": "What is the primary advantage of gRPC over REST?",
+                    "options": ["Readability", "Performance", "Statelessness", "Caching"],
+                    "correct_answers": [1],
+                    "explanation": "gRPC uses binary serialization for extreme performance."
+                }
+            ]
+        },
+        {
+            "_id": str(uuid.uuid4()),
+            "module_id": m2_id,
+            "title": "High-Performance Databases Mastery",
+            "difficulty": "Advanced",
+            "pass_mark": 80,
+            "questions": [
+                {
+                    "question": "Which of the following describes the CAP theorem?",
+                    "options": ["Consistency, Availability, Partition Tolerance", "Capacity, Availability, Performance", "Consistency, Accuracy, Partition Tolerance", "Compute, Availability, Partition Tolerance"],
+                    "correct_answers": [0],
+                    "explanation": "CAP stands for Consistency, Availability, Partition Tolerance."
+                }
+            ]
+        }
+    ])
+
+    # DUMMY PROGRESS / SUBMISSIONS FOR ADMIN REVIEW
+    await db.progress.insert_many([
+        {
+            "user_id": "saieshwarerelli10@gmail.com",
+            "module_id": m1_id,
+            "course_id": course_id,
+            "status": "completed",
+            "project_status": "submitted",
+            "deployed_link": "https://api-architect-demo.vercel.app",
+            "github_link": "https://github.com/saieshwar/api-architect",
+            "review_status": "pending_review",
+            "quiz_score": 90
+        },
+        {
+            "user_id": "michael.jordan@tech-varsity.io",
+            "module_id": "FINAL_ASSESSMENT",
+            "course_id": course_id,
+            "status": "completed",
+            "project_status": "submitted",
+            "deployed_link": "https://distributed-ledger-demo.netlify.app",
+            "github_link": "https://github.com/mjordan/scalable-db-arch",
+            "review_status": "pending_review",
+            "quiz_score": 94
+        },
+        {
+            "user_id": "alex.student@gmail.com",
+            "module_id": m2_id,
+            "course_id": course_id,
+            "status": "completed",
+            "project_status": "submitted",
+            "deployed_link": "https://ecommerce-schema.netlify.app",
+            "review_status": "pending_review",
+            "quiz_score": 100
+        },
+        {
+            "user_id": "sarah.connor@cyberdyne.sys",
+            "module_id": "FINAL_ASSESSMENT",
+            "course_id": course_id,
+            "status": "completed",
+            "project_status": "submitted",
+            "deployed_link": "https://ai-security-model.render.com",
+            "github_link": "https://github.com/sconnor/resist-net",
+            "review_status": "pending_review",
+            "quiz_score": 88
+        }
+    ])
+
+    print("✅ Seed complete! Remote Database updated with:")
     print("  - 1 Course (Backend Engineering Elite)")
     print("  - 2 Modules with full theory content")
     print("  - 2 YouTube video links")
     print("  - 2 Projects (link submission required)")
-    print("  - Quizzes will be AI-generated on demand")
+    print("  - 2 Admin Quizzes Generated")
+    print("  - 4 Pending User Submissions for Admin Eval")
 
 if __name__ == "__main__":
     asyncio.run(seed())

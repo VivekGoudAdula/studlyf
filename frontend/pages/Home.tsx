@@ -2,6 +2,7 @@
 import React from 'react';
 import LandingHero from '../components/LandingHero';
 import WhatIsStudlyf from '../components/WhatIsStudlyf';
+import CoursesForEveryAmbition from '../components/CoursesForEveryAmbition';
 import VoicesThatInspire from '../components/VoicesThatInspire';
 import OldVsNewSection from '../components/OldVsNewSection';
 import MentorCredibility from '../components/MentorCredibility';
@@ -22,6 +23,7 @@ const Home: React.FC = () => {
 
       {/* Scrollable content starts here */}
       <WhatIsStudlyf />
+      <CoursesForEveryAmbition />
       <VoicesThatInspire />
       <OldVsNewSection />
       <MentorCredibility />
