@@ -61,6 +61,7 @@ import AdminAnalytics from './pages/admin/analytics/Analytics';
 import AdminMockInterviews from './pages/admin/interviews/MockInterviews';
 import AdminSDLManagement from './pages/admin/sdl/SDLManagement';
 import AdminProtectedRoute from './AdminProtectedRoute';
+import AdsManagement from './pages/admin/ads/AdsManagement';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -159,7 +160,8 @@ const App: React.FC = () => {
               <Route path="mentors" element={<div className="p-8"><h1>Mentor Management Coming Soon</h1></div>} />
               <Route path="companies" element={<div className="p-8"><h1>Company Management Coming Soon</h1></div>} />
               <Route path="payments" element={<div className="p-8"><h1>Payment Management Coming Soon</h1></div>} />
-              <Route path="content" element={<div className="p-8"><h1>CMS Management Coming Soon</h1></div>} />
+              <Route path="content" element={<AdsManagement />} />
+              <Route path="ads" element={<AdsManagement />} />
               <Route path="settings" element={<div className="p-8"><h1>System Settings Coming Soon</h1></div>} />
               <Route path="audit-logs" element={<div className="p-8"><h1>Audit Logs Coming Soon</h1></div>} />
             </Route>
