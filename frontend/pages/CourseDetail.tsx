@@ -214,8 +214,9 @@ const CourseDetail: React.FC = () => {
       'Backend': 'swe'
     };
 
-    const trackSlug = roleMap[course.role_tag] || 'swe';
-    navigate(`/learn/enroll/${trackSlug}`);
+    const rawTag = course.role_tag || 'custom';
+    const trackSlug = roleMap[rawTag] || encodeURIComponent(rawTag);
+    navigate(`/learn/enroll/${trackSlug}?courseId=${course._id}`);
   };
 
   const handleGoToCart = () => {
@@ -250,9 +251,9 @@ const CourseDetail: React.FC = () => {
     );
   }
 
-  const rating = course.rating || 4.5;
-  const reviews = course.total_reviews || 1250;
-  const price = course.price || 49.99;
+  const rating = Number(course.rating) || 4.5;
+  const reviews = Number(course.total_reviews) || 1250;
+  const price = Number(course.price) || 49.99;
   const totalHours = course.total_hours || course.duration || '12 weeks';
   const level = course.level || course.difficulty || 'Intermediate';
   const topics = course.key_topics || course.skills || ['System Design', 'Architecture', 'Performance'];
@@ -386,25 +387,44 @@ const CourseDetail: React.FC = () => {
             >
               <h2 className="text-3xl font-black text-[#111827] mb-6 uppercase tracking-tight">Course Content</h2>
               <div className="space-y-4">
-                {[
-                  { title: 'Introduction & Setup', lessons: 5, duration: '45 min' },
-                  { title: 'Core Concepts', lessons: 12, duration: '2.5 hours' },
-                  { title: 'Advanced Techniques', lessons: 8, duration: '1.8 hours' },
-                  { title: 'Real-world Projects', lessons: 6, duration: '3 hours' },
-                  { title: 'Best Practices & Optimization', lessons: 7, duration: '1.5 hours' },
-                ].map((section, idx) => (
-                  <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#7C3AED]/30 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <PlayCircle className="w-5 h-5 text-[#7C3AED]" />
-                        <div>
-                          <h3 className="font-bold text-gray-900">{section.title}</h3>
-                          <p className="text-sm text-gray-600">{section.lessons} lessons • {section.duration}</p>
+                {(course as any).modules && (course as any).modules.length > 0 ? (
+                  (course as any).modules.map((module: any, idx: number) => (
+                    <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#7C3AED]/30 transition-all">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <PlayCircle className="w-5 h-5 text-[#7C3AED]" />
+                          <div>
+                            <h3 className="font-bold text-gray-900">{module.title || `Module ${idx + 1}`}</h3>
+                            <p className="text-sm text-gray-600">
+                              {module.lessons?.length || 0} lesson{(module.lessons?.length || 0) !== 1 ? 's' : ''} • {module.duration || '45 min'}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  [
+                    { title: 'Introduction & Setup', lessons: 5, duration: '45 min' },
+                    { title: 'Core Concepts', lessons: 12, duration: '2.5 hours' },
+                    { title: 'Advanced Techniques', lessons: 8, duration: '1.8 hours' },
+                    { title: 'Real-world Projects', lessons: 6, duration: '3 hours' },
+                    { title: 'Best Practices & Optimization', lessons: 7, duration: '1.5 hours' },
+                    { title: 'Final Capstone Project', lessons: 1, duration: 'Self-paced', isProject: true },
+                  ].map((section, idx) => (
+                    <div key={idx} className={`bg-white border rounded-xl p-6 transition-all ${section.isProject ? 'border-[#7C3AED] shadow-md shadow-[#7C3AED]/10' : 'border-gray-200 hover:border-[#7C3AED]/30'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          {section.isProject ? <div className="w-5 h-5 rounded-full bg-[#7C3AED] flex-shrink-0" /> : <PlayCircle className="w-5 h-5 text-[#7C3AED]" />}
+                          <div>
+                            <h3 className={`font-bold ${section.isProject ? 'text-[#7C3AED]' : 'text-gray-900'}`}>{section.title}</h3>
+                            <p className="text-sm text-gray-600">{section.lessons} lesson{section.lessons > 1 ? 's' : ''} • {section.duration}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
 

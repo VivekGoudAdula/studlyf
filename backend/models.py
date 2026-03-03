@@ -124,3 +124,75 @@ class InterviewSession(BaseModel):
     current_round_index: int = 0
     status: str = "setup" # setup, in_progress, completed
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ========== System Deconstruction Lab Models ==========
+
+class SDLProject(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    owner_id: str
+    owner_name: str
+    owner_avatar: Optional[str] = None
+    title: str
+    project_type: str  # system_replica, original_build, collaboration_request
+    problem_statement: str
+    architecture_focus: str
+    skills_required: List[str] = []
+    team_size: int = 1
+    timeline: str  # e.g., "4 weeks"
+    roles_needed: List[str] = []  # frontend, backend, devops, ai, ui_ux
+    tags: List[str] = []  # AI, Backend, System Design, Full Stack, DevOps, Beginner Friendly
+    github_link: Optional[str] = None
+    overview: Optional[str] = None
+    architecture_breakdown: Optional[str] = None
+    feature_checklist: List[dict] = []  # [{name, completed}]
+    progress: float = 0.0  # 0-100
+    status: str = "open"  # open, in_progress, completed, archived
+    featured: bool = False
+    trending: bool = False
+    views: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLProjectMember(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    role: str  # frontend, backend, devops, ai, ui_ux, lead
+    status: str = "active"  # active, removed
+    joined_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLTask(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    title: str
+    description: Optional[str] = None
+    assigned_to: Optional[str] = None  # user_id
+    assigned_name: Optional[str] = None
+    status: str = "todo"  # todo, in_progress, review, done
+    priority: str = "medium"  # low, medium, high, critical
+    created_by: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLComment(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLJoinRequest(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    role_requested: str
+    message: Optional[str] = None
+    status: str = "pending"  # pending, accepted, rejected
+    created_at: datetime = Field(default_factory=datetime.utcnow)

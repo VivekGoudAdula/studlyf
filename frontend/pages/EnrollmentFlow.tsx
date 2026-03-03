@@ -16,6 +16,7 @@ import {
     Sparkles,
     ArrowLeft
 } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 
 /* ─────────────────────────── mock data ─────────────────────────── */
 const tracks = {
@@ -36,11 +37,31 @@ const EnrollmentFlow: React.FC = () => {
     const [selectedPlan, setSelectedPlan] = useState(initialPlan);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [courses, setCourses] = useState<any[]>([]);
+    const courseIdParam = searchParams.get('courseId');
 
-    const track = tracks[trackId as keyof typeof tracks] || tracks.ai;
+    const decodedTrackId = decodeURIComponent(trackId || 'ai');
+    let track = tracks[trackId as keyof typeof tracks];
+    if (!track) {
+        track = {
+            title: decodedTrackId === 'custom' ? 'Specialized' : decodedTrackId,
+            accent: '#111827',
+            icon: '🎓'
+        };
+    }
 
     useEffect(() => {
         window.scrollTo(0, 0);
+        const fetchCourses = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/courses`);
+                const data = await res.json();
+                setCourses(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Failed to fetch courses:', error);
+            }
+        };
+        if (courses.length === 0) fetchCourses();
     }, [step]);
 
     const handleNext = () => {
@@ -373,15 +394,34 @@ const EnrollmentFlow: React.FC = () => {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => {
-                                        const trackToCourse: Record<string, string> = {
-                                            ai: 'm1',
-                                            swe: 'm2',
-                                            data: 'm3',
-                                            pm: 'm4',
-                                            cyber: 'm5'
-                                        };
-                                        const courseId = trackToCourse[trackId || 'ai'] || 'm1';
-                                        navigate(`/learn/course-player/${courseId}`);
+                                        let targetId = courseIdParam || 'm1';
+
+                                        if (courseIdParam && courses && courses.length > 0) {
+                                            const match = courses.find((c: any) => c._id === courseIdParam);
+                                            if (match) {
+                                                const slug = match.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                                                targetId = `${slug}--${match._id}`;
+                                            }
+                                        } else if (!courseIdParam) {
+                                            const trackToCourse: Record<string, string> = {
+                                                ai: 'm1',
+                                                swe: 'm2',
+                                                data: 'm3',
+                                                pm: 'm4',
+                                                cyber: 'm5'
+                                            };
+                                            targetId = trackToCourse[trackId || 'ai'] || 'm1';
+
+                                            if (courses && courses.length > 0) {
+                                                const match = courses.find((c: any) => c.role_tag === track.title || c.title.toLowerCase().includes(track.title.split(' ')[0].toLowerCase()));
+                                                if (match && match._id) {
+                                                    const slug = match.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                                                    targetId = `${slug}--${match._id}`;
+                                                }
+                                            }
+                                        }
+
+                                        navigate(`/learn/course-player/${targetId}`);
                                     }}
                                     className="px-12 py-6 bg-[#111827] text-white font-black text-xs uppercase tracking-[0.3em] rounded-2xl shadow-2xl flex items-center gap-3"
                                 >

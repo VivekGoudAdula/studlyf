@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
+import { API_BASE_URL } from '../apiConfig';
 import {
-  Target,
   Zap,
-  Shield,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   Volume2,
@@ -21,12 +19,87 @@ import { Button } from "@heroui/react";
 import DashboardFooter from '../components/DashboardFooter';
 import FAQCarousel from '../components/FAQCarousel';
 import WhyUsSection from '../components/WhyUsSection';
+import { DevHeroSection } from '../components/DevHeroSection';
 import { NeonBackground } from '../components/NeonBackground';
+
+const DUMMY_COURSES = [
+  {
+    _id: 'se-01',
+    title: 'Fullstack Systems Architect',
+    role_tag: 'Engineering',
+    school: 'Software Systems',
+    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop',
+  },
+  {
+    _id: 'ai-01',
+    title: 'Generative AI Specialist',
+    role_tag: 'Intelligence',
+    school: 'AI & Data',
+    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
+  },
+  {
+    _id: 'pm-01',
+    title: 'Product Strategy Elite',
+    role_tag: 'Management',
+    school: 'Business & Design',
+    image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
+  },
+  {
+    _id: 'ds-01',
+    title: 'Data Science & MLOps',
+    role_tag: 'Data Science',
+    school: 'Data Engineering',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
+  },
+  {
+    _id: 'cs-01',
+    title: 'Cyber Security Operations',
+    role_tag: 'Security',
+    school: 'Cyber Defense',
+    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
+  },
+  {
+    _id: 'cloud-01',
+    title: 'Cloud Native Developer',
+    role_tag: 'DevOps',
+    school: 'Infrastructure',
+    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop',
+  }
+];
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeBrief, setActiveBrief] = useState<string>('Cognition');
   const [isMuted, setIsMuted] = useState(true);
+
+  const [courses, setCourses] = useState<any[]>(DUMMY_COURSES);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/courses`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setCourses(data);
+        } else {
+          setCourses(DUMMY_COURSES);
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        setCourses(DUMMY_COURSES);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  const createSlug = (title: string, id: string) => {
+    if (!title || !id) return '';
+    const slug = title.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return `${slug}--${id}`;
+  };
 
   const briefDetails: Record<string, { title: string; desc: React.ReactNode; image: string; video?: string; images?: string[] }> = {
     'Cognition': {
@@ -69,65 +142,9 @@ const DashboardHome: React.FC = () => {
     { text: 'HERE', className: 'text-[#7C3AED]' },
   ];
 
-  const features = [
-    {
-      title: 'Hero Tracks',
-      desc: 'Role-focused engineering specialization for elite readiness.',
-      icon: Zap,
-      to: '/learn/courses-overview',
-    },
-    {
-      title: 'Skill Assessment',
-      desc: 'Identify your strengths with clinical scoring maps.',
-      icon: Target,
-      to: '/learn/assessment-intro',
-    },
-    {
-      title: 'Proof of Skill',
-      desc: 'Build evidence-based developer portfolios.',
-      icon: Shield,
-      to: '/job-prep/portfolio',
-    },
-    {
-      title: 'Clinical Resumes',
-      desc: 'Instant verification-ready resumes for partners.',
-      icon: BookOpen,
-      to: '/job-prep/resume-builder',
-    },
-  ];
 
-  const courses = [
-    {
-      title: 'Software Engineering',
-      school: 'Engineering',
-      image:
-        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
-    },
-    {
-      title: 'Artificial Intelligence',
-      school: 'Intelligence',
-      image:
-        'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
-    },
-    {
-      title: 'Product Management',
-      school: 'Management',
-      image:
-        'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
-    },
-    {
-      title: 'Data & Analytics',
-      school: 'Data Science',
-      image:
-        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
-    },
-    {
-      title: 'Cyber Security',
-      school: 'Security',
-      image:
-        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
-    },
-  ];
+
+
 
   const scrollCarousel = (id: string, direction: 'left' | 'right') => {
     const container = document.getElementById(id);
@@ -293,93 +310,106 @@ const DashboardHome: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* SECOND SECTION: COURSES CAROUSEL */}
-          <section className="mb-24 relative z-10 w-full overflow-hidden">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-start gap-16">
-              <div className="lg:w-1/4 pt-24 lg:pl-8">
-                <h2 className="text-4xl sm:text-5xl font-black text-[#111827] leading-[0.85] mb-8 tracking-tighter uppercase">
-                  Courses <br /> For Every <br />
-                  <span className="text-gray-400 italic font-medium lowercase">Ambition</span>
-                </h2>
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.25em] leading-relaxed">
-                  Global training for <br /> role-ready excellence.
+          {/* SECOND SECTION: COURSES FOR EVERY ambition */}
+          <section className="px-16 py-20 bg-white relative z-10 w-full overflow-hidden">
+            <div className="max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-16 items-center">
+              {/* LEFT SIDE TYPOGRAPHY */}
+              <div className="flex flex-col">
+                <h1 className="text-6xl font-extrabold leading-[0.9] mb-12 text-black uppercase tracking-tighter">
+                  COURSES <br />
+                  FOR <br />
+                  EVERY <br />
+                  <span className="italic font-light text-blue-900 lowercase leading-tight block mt-2">ambition</span>
+                </h1>
+                <p className="text-xs tracking-[0.3em] uppercase text-blue-900 mb-6 font-bold max-w-[200px] leading-loose">
+                  GLOBAL TRAINING FOR <br /> ROLE-READY EXCELLENCE.
                 </p>
               </div>
 
-              <div className="lg:w-3/4 w-full relative group">
-                <div
-                  id="course-carousel"
-                  className="flex gap-6 overflow-x-auto pb-8 pt-4 no-scrollbar scroll-smooth snap-x"
-                >
-                  {[...courses, ...courses, ...courses, ...courses, ...courses].map((course, idx) => (
-                    <div
-                      key={idx}
-                      className="w-full sm:w-[calc(50%-12px)] lg:w-[calc((100%-48px)/3)] h-[350px] flex-shrink-0 snap-start rounded-[2.2rem] overflow-hidden relative group/card shadow-lg cursor-pointer"
-                    >
-                      <div className="absolute inset-0">
-                        <img src={course.image} alt={course.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover/card:scale-110" />
-                        <div className="absolute inset-0 bg-black/5 group-hover/card:bg-black/20 transition-colors" />
-                      </div>
+              {/* RIGHT SIDE COURSE CARDS */}
+              <div className="flex flex-col items-center">
+                <div className="relative group w-full">
+                  <div
+                    id="course-carousel"
+                    className="flex gap-8 overflow-x-auto pb-8 pt-4 no-scrollbar scroll-smooth snap-x"
+                  >
+                    {courses.map((course, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => navigate(`/learn/courses/${createSlug(course.title, course._id)}`)}
+                        className="min-w-[280px] sm:min-w-[300px] lg:min-w-[320px] h-[400px] lg:h-[450px] relative rounded-[2.5rem] overflow-hidden shadow-2xl group hover:scale-[1.03] transition-all duration-700 snap-start cursor-pointer border border-black/5"
+                      >
+                        {/* Background Image */}
+                        <img
+                          src={course.image || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop'}
+                          alt={course.title}
+                          className="h-[420px] w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
 
-                      <div className="absolute inset-x-5 bottom-5">
-                        <div className="bg-white rounded-[1.5rem] p-4 shadow-xl transform translate-y-2 group-hover/card:translate-y-0 transition-transform">
-                          <div className="flex flex-col gap-0.5 mb-3">
-                            <span className="text-[8px] font-black text-[#7C3AED] uppercase tracking-[0.2em] block">
-                              School of {course.school}
-                            </span>
-                            <h3 className="text-base font-black text-[#111827] tracking-tighter leading-tight">
+                        {/* Dark overlay for better text contrast if needed */}
+                        <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors" />
+
+                        {/* Bottom Floating Content */}
+                        <div className="absolute bottom-5 left-4 right-4 bg-white rounded-3xl p-5 shadow-2xl flex justify-between items-center transform translate-y-2 group-hover:translate-y-0 transition-all duration-500">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-blue-600 font-black mb-1">
+                              SCHOOL OF {course.school || course.role_tag || 'ENGINEERING'}
+                            </p>
+                            <h3 className="text-base lg:text-lg font-black text-gray-900 leading-tight">
                               {course.title}
                             </h3>
-                          </div>
-                          <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-                            <div className="flex flex-col">
-                              <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Elite Track</span>
-                              <span className="text-[7px] font-medium text-gray-300">Verified Skills</span>
-                            </div>
-                            <div className="w-9 h-9 rounded-lg bg-[#111827] text-white flex items-center justify-center group-hover/card:bg-[#7C3AED] transition-colors">
-                              <ChevronRight className="w-4 h-4" />
+                            <div className="mt-2 flex flex-col">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Elite Track</span>
+                              <span className="text-[8px] font-medium text-gray-300">Verified Skills</span>
                             </div>
                           </div>
+
+                          <button className="bg-[#111827] text-white rounded-2xl w-10 h-10 flex items-center justify-center group-hover:bg-[#7C3AED] transition-colors shadow-lg shadow-black/10">
+                            <ChevronRight size={20} />
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-10 mt-2 mb-16">
+                {/* Nav Buttons - Below Cards, shifted left */}
+                <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '24px', marginTop: '40px', width: '100%', marginLeft: '750px' }}>
                   <button
                     onClick={() => scrollCarousel('course-carousel', 'left')}
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-gray-800 transition-all bg-white/80 backdrop-blur-xl shadow-lg hover:shadow-purple-500/20 active:scale-95"
+                    style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #e5e7eb', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 30px -8px rgba(0,0,0,0.12)', fontSize: 0 }}
                   >
-                    <ChevronLeft className="w-7 h-7" />
+                    <ChevronLeft size={30} color="#374151" />
                   </button>
                   <button
                     onClick={() => scrollCarousel('course-carousel', 'right')}
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-gray-800 transition-all bg-white/80 backdrop-blur-xl shadow-lg hover:shadow-purple-500/20 active:scale-95"
+                    style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #e5e7eb', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 30px -8px rgba(0,0,0,0.12)', fontSize: 0 }}
                   >
-                    <ChevronRight className="w-7 h-7" />
+                    <ChevronRight size={30} color="#374151" />
                   </button>
                 </div>
+              </div>
 
-                {/* Trust & Certification Footer */}
-                <div className="mb-8 pt-12 border-t border-black/5 grid grid-cols-1 sm:grid-cols-2 gap-16 items-center -ml-12 sm:-ml-24">
-                  <div className="flex flex-col gap-8">
-                    <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Curriculum built by people from</span>
-                    <div className="flex items-center gap-12 transition-all">
-                      <img src="/images/meta.png" className="h-8" alt="Meta" />
-                      <img src="/images/netflix.png" className="h-8" alt="Netflix" />
-                      <img src="/images/apple.png" className="h-8" alt="Apple" />
-                      <img src="/images/nvidia.png" className="h-8" alt="Nvidia" />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-8">
-                    <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Certified by</span>
-                    <div className="flex items-center gap-12 transition-all">
-                      <img src="/images/amazon.png" className="h-9" alt="AWS" />
-                      <img src="/images/microsoft.png" className="h-8" alt="Microsoft" />
-                      <img src="/images/ibm.png" className="h-8" alt="IBM" />
-                    </div>
-                  </div>
+
+            </div>
+
+            {/* Trust & Certification Footer (Below the section as per common design patterns) */}
+            <div className="mt-20 max-w-[1700px] mx-auto pt-12 border-t border-black/5 grid grid-cols-1 sm:grid-cols-2 gap-16 items-center px-16">
+              <div className="flex flex-col gap-8">
+                <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Curriculum built by people from</span>
+                <div className="flex items-center gap-12 transition-all">
+                  <img src="/images/meta.png" className="h-8" alt="Meta" />
+                  <img src="/images/netflix.png" className="h-8" alt="Netflix" />
+                  <img src="/images/apple.png" className="h-8" alt="Apple" />
+                  <img src="/images/nvidia.png" className="h-8" alt="Nvidia" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-8">
+                <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Certified by</span>
+                <div className="flex items-center gap-12 transition-all">
+                  <img src="/images/amazon.png" className="h-9" alt="AWS" />
+                  <img src="/images/microsoft.png" className="h-8" alt="Microsoft" />
+                  <img src="/images/ibm.png" className="h-8" alt="IBM" />
                 </div>
               </div>
             </div>
@@ -387,37 +417,7 @@ const DashboardHome: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION 3: FEATURES */}
-      <div className="max-w-7xl mx-auto px-6 py-24 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, i) => {
-            const Icon = feature.icon;
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group bg-white rounded-[3rem] p-10 shadow-sm border border-gray-100 hover:border-[#7C3AED]/30 transition-all cursor-pointer relative overflow-hidden"
-              >
-                <Link to={feature.to} className="relative z-10">
-                  <div className="w-16 h-16 bg-[#F5F3FF] rounded-2xl flex items-center justify-center mb-10 group-hover:scale-110 group-hover:bg-[#7C3AED] group-hover:text-white transition-all duration-500">
-                    <Icon className="w-8 h-8 text-[#7C3AED] group-hover:text-white transition-colors" />
-                  </div>
-                  <h3 className="text-xl font-bold text-[#111827] uppercase mb-4 tracking-tight group-hover:text-[#7C3AED] transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-500 leading-relaxed text-sm">
-                    {feature.desc}
-                  </p>
-                </Link>
-                <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-[#7C3AED]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
+
 
       {/* SECTION 4: REST OF CONTENT */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 relative z-10 pb-20">
@@ -645,6 +645,7 @@ const DashboardHome: React.FC = () => {
       </div >
 
       <WhyUsSection />
+      <DevHeroSection />
       <FAQCarousel />
       <DashboardFooter />
     </>

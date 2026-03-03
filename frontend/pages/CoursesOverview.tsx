@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Clock, BarChart2, BadgeCheck, Briefcase, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 
 /* ─────────────────────────── track data ─────────────────────────── */
 const tracks = [
@@ -117,6 +118,30 @@ const CoursesOverview: React.FC = () => {
     const navigate = useNavigate();
     const [hoveredTrack, setHoveredTrack] = useState<string | null>(null);
     const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
+    const [courses, setCourses] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/courses`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    setCourses(data);
+                }
+            } catch (err) {
+                console.error("Error fetching courses:", err);
+            }
+        };
+        fetchCourses();
+    }, []);
+
+    const createSlug = (title: string, id: string) => {
+        if (!title || !id) return '';
+        const slug = title.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        return `${slug}--${id}`;
+    };
 
     const activeTrack = tracks.find(t => t.id === (selectedTrack || hoveredTrack)) || null;
 
@@ -461,6 +486,45 @@ const CoursesOverview: React.FC = () => {
                     </div>
                 </motion.div>
             </section>
+
+            {/* ── Dynamic courses from Admin ── */}
+            {courses.length > 0 && (
+                <section className="max-w-7xl mx-auto px-4 sm:px-8 pb-32">
+                    <div className="mb-12">
+                        <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.5em] mb-4 block">Proprietary Elite Modules</span>
+                        <h2 className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tighter uppercase">Recently Added <br /><span className="text-[#7C3AED]">Elite Knowledge</span>.</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {courses.map((course) => (
+                            <motion.div
+                                key={course._id}
+                                whileHover={{ y: -10 }}
+                                onClick={() => navigate(`/learn/courses/${createSlug(course.title, course._id)}`)}
+                                className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group"
+                            >
+                                <div className="h-56 relative overflow-hidden">
+                                    <img
+                                        src={course.image || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop'}
+                                        alt={course.title}
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    />
+                                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest border border-white/20">
+                                        {course.role_tag || 'Module'}
+                                    </div>
+                                </div>
+                                <div className="p-8">
+                                    <h3 className="text-xl font-black text-gray-900 mb-3 tracking-tight uppercase leading-tight">{course.title}</h3>
+                                    <p className="text-gray-500 text-xs mb-6 line-clamp-2 leading-relaxed">{course.description}</p>
+                                    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">School of {course.school || 'Engineering'}</span>
+                                        <ChevronRight className="w-4 h-4 text-[#7C3AED]" />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </section>
+            )}
         </div>
     );
 };

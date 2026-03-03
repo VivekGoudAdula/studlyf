@@ -19,6 +19,9 @@ import AssessmentIntro from './pages/AssessmentIntro';
 import JobSimulation from './pages/JobSimulation';
 import PortfolioBuilder from './pages/PortfolioBuilder';
 import Projects from './pages/Projects';
+import SystemDeconstructionLab from './pages/SystemDeconstructionLab';
+import SDLProjectCreate from './pages/SDLProjectCreate';
+import SDLProjectDetail from './pages/SDLProjectDetail';
 import MockInterview from './pages/MockInterview';
 import GroupDiscussion from './pages/GroupDiscussion';
 import PlayLearnEarn from './pages/PlayLearnEarn';
@@ -56,6 +59,7 @@ import AdminCourseManagement from './pages/admin/courses/CourseManagement';
 import AdminAssessmentManagement from './pages/admin/assessments/AssessmentManagement';
 import AdminAnalytics from './pages/admin/analytics/Analytics';
 import AdminMockInterviews from './pages/admin/interviews/MockInterviews';
+import AdminSDLManagement from './pages/admin/sdl/SDLManagement';
 import AdminProtectedRoute from './AdminProtectedRoute';
 
 const ScrollToTop = () => {
@@ -119,7 +123,9 @@ const App: React.FC = () => {
 
             <Route path="/job-prep/job-simulation" element={<ProtectedRoute><JobSimulation /></ProtectedRoute>} />
             <Route path="/job-prep/portfolio" element={<ProtectedRoute><PortfolioBuilder /></ProtectedRoute>} />
-            <Route path="/job-prep/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+            <Route path="/job-prep/projects" element={<ProtectedRoute><SystemDeconstructionLab /></ProtectedRoute>} />
+            <Route path="/job-prep/projects/create" element={<ProtectedRoute><SDLProjectCreate /></ProtectedRoute>} />
+            <Route path="/job-prep/projects/:projectId" element={<ProtectedRoute><SDLProjectDetail /></ProtectedRoute>} />
             <Route path="/job-prep/mock-interview" element={<ProtectedRoute><MockInterview /></ProtectedRoute>} />
             <Route path="/job-prep/group-discussion" element={<ProtectedRoute><GroupDiscussion /></ProtectedRoute>} />
             <Route path="/job-prep/play-learn-earn" element={<ProtectedRoute><PlayLearnEarn /></ProtectedRoute>} />
@@ -148,6 +154,7 @@ const App: React.FC = () => {
               <Route path="courses" element={<AdminCourseManagement />} />
               <Route path="assessments" element={<AdminAssessmentManagement />} />
               <Route path="mock-interviews" element={<AdminMockInterviews />} />
+              <Route path="sdl-projects" element={<AdminSDLManagement />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="mentors" element={<div className="p-8"><h1>Mentor Management Coming Soon</h1></div>} />
               <Route path="companies" element={<div className="p-8"><h1>Company Management Coming Soon</h1></div>} />
