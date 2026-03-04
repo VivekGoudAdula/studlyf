@@ -14,7 +14,7 @@ import Home from './pages/Home';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
 import CareerFit from './pages/CareerFit';
-import Assessment from './pages/Assessment';
+import SkillAssessment from './pages/SkillAssessment';
 import AssessmentIntro from './pages/AssessmentIntro';
 import JobSimulation from './pages/JobSimulation';
 import PortfolioBuilder from './pages/PortfolioBuilder';
@@ -117,7 +117,7 @@ const App: React.FC = () => {
             <Route path="/learn/course-player/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
             <Route path="/learn/career-fit" element={<ProtectedRoute><CareerFit /></ProtectedRoute>} />
             <Route path="/learn/assessment-intro" element={<ProtectedRoute><AssessmentIntro /></ProtectedRoute>} />
-            <Route path="/learn/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+            <Route path="/learn/assessment" element={<ProtectedRoute><SkillAssessment /></ProtectedRoute>} />
             <Route path="/learn/company-modules" element={<ProtectedRoute><CompanyModules /></ProtectedRoute>} />
             <Route path="/learn/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
             <Route path="/learn/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

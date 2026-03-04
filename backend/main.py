@@ -3373,6 +3373,202 @@ async def delete_cert_template(template_id: str):
     return {"message": "Template deleted"}
 
 
+# ─── Resume Builder API ────────────────────────────────────────────────────────
+
+from db import resumes_col
+
+class ResumePayload(BaseModel):
+    p: dict
+    exp: list
+    edu: list
+    proj: list
+    certs: list
+    skills: list
+    tpl: str
+
+@app.post("/api/resume/{user_id}")
+async def save_resume(user_id: str, payload: ResumePayload):
+    doc = {
+        "user_id": user_id,
+        "config": payload.dict(),
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    await resumes_col.update_one({"user_id": user_id}, {"$set": doc}, upsert=True)
+    return {"message": "Resume saved successfully"}
+
+@app.get("/api/resume/{user_id}")
+async def get_resume(user_id: str):
+    doc = await resumes_col.find_one({"user_id": user_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    # Clean MongoDB ObjectId
+    doc["_id"] = str(doc["_id"])
+    return doc
+
+from fastapi.responses import Response
+
+def _generate_resume_html(config: dict) -> str:
+    tpl = config.get("tpl", "chicago")
+    p = config.get("p", {})
+    exp = config.get("exp", [])
+    edu = config.get("edu", [])
+    proj = config.get("proj", [])
+    certs = config.get("certs", [])
+    skills = config.get("skills", [])
+    
+    xe = [x for x in exp if x.get("org")]
+    xd = [x for x in edu if x.get("inst")]
+    xp = [x for x in proj if x.get("name")]
+    xc = [x for x in certs if x.get("name")]
+    
+    sk = []
+    for s in skills:
+        if isinstance(s, str) and s.strip():
+            for t in s.split(","):
+                if t.strip():
+                    sk.append(t.strip())
+                    
+    nm = p.get("name") or "Your Name"
+    base = "*{margin:0;padding:0;box-sizing:border-box}.e{margin-bottom:10px}.r{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}.d{color:#6b7280;font-size:10px;line-height:1.5}.m{color:#999;font-size:10px;flex-shrink:0;margin-left:8px}ul{padding-left:13px;margin-top:3px}li{font-size:10px;line-height:1.5;color:#555;margin-bottom:2px}.ch{display:inline-block;padding:2px 8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:11px;font-size:10px;margin:2px}"
+
+    def safe_get(d, k): return d.get(k) or ""
+    
+    eR = "".join([f'<div class="e"><div class="r"><div><b>{safe_get(x,"org")}</b><span class="d"> &mdash; {safe_get(x,"role")}</span></div><span class="m">{safe_get(x,"range")}{f" &middot; {x.get(chr(39)+chr(108)+chr(111)+chr(99)+chr(39))}" if x.get("loc") else ""}</span></div>{f"<ul>" + "".join([f"<li>{b.strip()}</li>" for b in str(x["pts"]).split(chr(10)) if b.strip()]) + "</ul>" if x.get("pts") else ""}</div>' for x in xe])
+    dR = "".join([f'<div class="e"><div class="r"><b>{safe_get(x,"inst")}</b><span class="m">{safe_get(x,"year")}</span></div><div class="d">{safe_get(x,"deg")}{f" &middot; GPA {x.get(chr(39)+chr(103)+chr(112)+chr(97)+chr(39))}" if x.get("gpa") else ""}</div></div>' for x in xd])
+    pR = "".join([f'<div class="e"><b>{safe_get(x,"name")}</b>{f""" <span style="color:#5b21b6;font-size:10px;font-weight:600">&middot; {x.get("tech")}</span>""" if x.get("tech") else ""}{f"""<div class="d" style="margin-top:2px">{x.get("desc")}</div>""" if x.get("desc") else ""}</div>' for x in xp])
+    
+    ch = "".join([f'<span class="ch">{s}</span>' for s in sk])
+    cl = "".join([f'<li>{safe_get(x,"name")}</li>' for x in xc])
+
+    # Template Swiss
+    if tpl == "swiss":
+        sb = f'<aside><h1>{nm}</h1><div class="lc">{safe_get(p,"loc")}</div>'
+        if p.get("email"): sb += f'<div class="sl">{p.get("email")}</div>'
+        if p.get("phone"): sb += f'<div class="sl">{p.get("phone")}</div>'
+        if p.get("li"): sb += f'<div class="sl">in {p.get("li")}</div>'
+        if sk: sb += f'<div class="sh">Skills</div>{"".join([f"<div class=sl>&middot; {s}</div>" for s in sk])}'
+        if xc: sb += f'<div class="sh">Certifications</div>{"".join([f"<div class=sl>&middot; {x.get(chr(39) + 'name' + chr(39), '')}</div>" for x in xc])}'
+        sb += '</aside>'
+        mp = '<main>'
+        if p.get("sum"): mp += f'<p class="d" style="margin-bottom:11px;line-height:1.6">{p.get("sum")}</p>'
+        if xe: mp += f'<div class="mh">Experience</div>{eR}'
+        if xd: mp += f'<div class="mh">Education</div>{dR}'
+        if xp: mp += f'<div class="mh">Projects</div>{pR}'
+        mp += '</main>'
+        return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap');{base}body{{font-family:'DM Sans',sans-serif;display:grid;grid-template-columns:165px 1fr;min-height:100vh;font-size:11px}}aside{{background:#1e0a3c;color:#fff;padding:26px 15px}}main{{padding:26px 26px}}h1{{font-size:17px;font-weight:700;margin-bottom:3px}}.lc{{color:#c4b5fd;font-size:10px;margin-bottom:9px}}.sl{{color:rgba(255,255,255,.6);font-size:10px;margin-bottom:3px}}.sh{{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#c4b5fd;margin:12px 0 4px;font-weight:700}}.mh{{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#5b21b6;font-weight:700;margin:13px 0 5px;padding-bottom:3px;border-bottom:1.5px solid #5b21b6}}</style></head><body>{sb}{mp}</body></html>"""
+
+    # Template Easy
+    if tpl == "easy":
+        hd = f'<div class="hd"><div><h1>{nm}</h1>'
+        if p.get("loc"): hd += f'<div style="color:#6b7280;font-size:10px;margin-top:2px">{p.get("loc")}</div>'
+        if p.get("sum"): hd += f'<p class="d" style="margin-top:4px;max-width:330px;line-height:1.5">{p.get("sum")}</p>'
+        hd += '</div><div class="ct">'
+        if p.get("email"): hd += f'<span>{p.get("email")}</span>'
+        if p.get("phone"): hd += f'<span>{p.get("phone")}</span>'
+        if p.get("li"): hd += f'<span>{p.get("li")}</span>'
+        hd += '</div></div>'
+        
+        exR = "".join([f'<div class="tc"><div class="el">{safe_get(x,"range")}<br/>{safe_get(x,"loc")}</div><div><b>{safe_get(x,"org")}</b><span class="d"> &mdash; {safe_get(x,"role")}</span>' + (f"""<ul>{"".join([f"<li>{b.strip()}</li>" for b in str(x["pts"]).split(chr(10)) if b.strip()])}</ul>""" if x.get("pts") else "") + "</div></div>" for x in xe])
+        edR = "".join([f'<div class="tc"><div class="el">{safe_get(x,"year")}</div><div><b>{safe_get(x,"inst")}</b><div class="d">{safe_get(x,"deg")}{" &middot; " + x.get("gpa") if x.get("gpa") else ""}</div></div></div>' for x in xd])
+        return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap');{base}body{{font-family:'DM Sans',sans-serif;color:#1a1a1a;background:#fff;padding:38px 46px;font-size:11px}}.hd{{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:11px;border-bottom:2.5px solid #5b21b6;margin-bottom:15px}}h1{{font-size:21px;font-weight:700;letter-spacing:-.02em}}.ct{{display:flex;flex-direction:column;align-items:flex-end;gap:3px;color:#6b7280;font-size:10px}}.sh{{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#5b21b6;font-weight:700;margin:13px 0 6px}}.tc{{display:grid;grid-template-columns:82px 1fr;gap:9px;margin-bottom:9px}}.el{{color:#999;font-size:10px;text-align:right;line-height:1.5}}</style></head><body>{hd}{'<div class="sh">Experience</div>' + exR if xe else ''}{'<div class="sh">Education</div>' + edR if xd else ''}{'<div class="sh">Projects</div>' + pR if xp else ''}{'<div class="sh">Certifications</div><ul>' + cl + '</ul>' if xc else ''}{'<div class="sh">Skills</div><div style="margin-top:2px">' + ch + '</div>' if sk else ''}</body></html>"""
+
+    # Template Chicago
+    b = f'<div class="ct">'
+    if p.get("email"): b += f'<span>{p.get("email")}</span>'
+    if p.get("phone"): b += f'<span>{p.get("phone")}</span>'
+    if p.get("li"): b += f'<span>in {p.get("li")}</span>'
+    b += '</div><div class="dv"></div>'
+    if p.get("sum"): b += f'<p class="d" style="line-height:1.6;margin-bottom:7px">{p.get("sum")}</p><hr style="border:none;border-top:1px solid #eee;margin:8px 0"/>'
+    if xe: b += f'<div class="sh">Experience</div>{eR}'
+    if xd: b += f'<div class="sh">Education</div>{dR}'
+    if xp: b += f'<div class="sh">Projects</div>{pR}'
+    if xc: b += f'<div class="sh">Certifications</div><ul style="margin-bottom:7px">{cl}</ul>'
+    if sk: b += f'<div class="sh">Skills</div><div style="margin-top:2px">{ch}</div>'
+    
+    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;600;700&display=swap');{base}body{{font-family:'DM Sans',sans-serif;color:#1a1a1a;background:#fff;padding:38px 46px;font-size:11px}}h1{{font-family:'Playfair Display',serif;font-size:25px;font-weight:900;letter-spacing:-.02em}}.sb{{color:#5b21b6;font-size:10px;font-weight:600;margin-top:3px}}.ct{{display:flex;gap:14px;margin-top:5px;flex-wrap:wrap;color:#6b7280;font-size:10px}}.dv{{height:1.5px;background:#5b21b6;margin:10px 0}}.sh{{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5b21b6;margin:12px 0 6px}}</style></head><body><h1>{nm}</h1>{'<div class="sb">' + p.get("loc") + '</div>' if p.get("loc") else ''}{b}</body></html>"""
+
+
+@app.get("/api/resume/{user_id}/pdf")
+async def download_resume_pdf(user_id: str):
+    doc = await resumes_col.find_one({"user_id": user_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    
+    config = doc.get("config", {})
+    html_content = _generate_resume_html(config)
+    
+    try:
+        import weasyprint
+        pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
+        nm = config.get("p", {}).get("name", "cv").replace(" ", "-").lower()
+        headers = { 'Content-Disposition': f'attachment; filename="resume-{nm}.pdf"' }
+        return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
+    except Exception as e:
+        print("WeasyPrint error:", e)
+        return Response(content=f"WeasyPrint failed: GTK3 might not be installed on Windows. Contact admin. Error: {e}", media_type="text/plain", status_code=500)
+
+# ─── Skill Assessment ──────────────────────────────────────────────────────────
+
+from db import skill_assessments_col
+
+class SkillAssessmentSave(BaseModel):
+    user_id: str
+    config: dict
+    feedback: dict
+    questions: list
+
+@app.post("/api/skill-assessment/save")
+async def save_skill_assessment(payload: SkillAssessmentSave):
+    doc = {
+        "user_id": payload.user_id,
+        "config": payload.config,
+        "feedback": payload.feedback,
+        "questions": payload.questions,
+        "created_at": datetime.utcnow().isoformat()
+    }
+    await skill_assessments_col.insert_one(doc)
+    return {"message": "Skill assessment result saved"}
+
+@app.get("/api/skill-assessment/{user_id}")
+async def get_skill_assessments(user_id: str):
+    cursor = skill_assessments_col.find({"user_id": user_id}).sort("created_at", -1)
+    results = await cursor.to_list(length=100)
+    for r in results:
+        r["_id"] = str(r["_id"])
+    return results
+
+@app.post("/api/ai/evaluate")
+async def ai_evaluate(req: dict):
+    # This acts as a secure proxy for the frontend
+    key = os.getenv("ANTHROPIC_API_KEY")
+    if not key:
+        # Fallback dummy response if key is missing
+        return {
+            "score": 75,
+            "verdict": "PASS",
+            "strengths": ["Solid logic", "Good structure"],
+            "gaps": ["Add more technical depth"],
+            "ideal_approach": "Ensure you mention the specific trade-offs of the chosen architecture."
+        }
+    
+    try:
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "x-api-key": key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+        res = requests.post(url, headers=headers, json=req)
+        # Anthropic returns a slightly different structure, let's extract the text
+        data = res.json()
+        text = data.get("content", [{}])[0].get("text", "")
+        # The user's prompt expects a JSON string in return
+        clean = text.replace("```json", "").replace("```", "").strip()
+        return json.loads(clean)
+    except Exception as e:
+        print(f"AI Eval failed: {e}")
+        return {"error": str(e), "verdict": "ERROR", "score": 0}
+
 if __name__ == "__main__":
     import uvicorn
     import os

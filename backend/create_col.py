@@ -16,7 +16,7 @@ db = client[DB_NAME]
 
 async def create_collections():
     existing = await db.list_collection_names()
-    for col in ["quizzes", "certificates", "cart", "enrollments"]:
+    for col in ["quizzes", "certificates", "cart", "enrollments", "resumes", "skill_assessments"]:
         if col not in existing:
             print(f"Creating collection {col}...")
             await db.create_collection(col)

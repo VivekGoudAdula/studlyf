@@ -8,6 +8,9 @@ import { auth, githubProvider } from '../firebase';
 import { signOut, signInWithPopup, GithubAuthProvider, linkWithPopup } from 'firebase/auth';
 import DashboardFooter from '../components/DashboardFooter';
 import { downloadCertPDF } from '../utils/downloadCertPDF';
+import { generatePdfHtml } from './ResumeBuilder';
+// @ts-ignore
+import html2pdf from "html2pdf.js";
 
 const CircularProgress = ({ value, size = 180, strokeWidth = 12, color = "#7C3AED", label = "Score" }: { value: number, size?: number, strokeWidth?: number, color?: string, label: string }) => {
   const radius = (size - strokeWidth) / 2;
@@ -48,9 +51,9 @@ const CircularProgress = ({ value, size = 180, strokeWidth = 12, color = "#7C3AE
 };
 
 const LearnerDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'profile' | 'knowledge' | 'leaderboard' | 'certificates'>('profile');
+  const [activeView, setActiveView] = useState<'profile' | 'knowledge' | 'leaderboard' | 'certificates' | 'resume'>('profile');
   const [activeTab, setActiveTab] = useState<'overall' | 'dev' | 'ai'>('overall');
   const [githubData, setGithubData] = useState<any>(null);
   const [certificates, setCertificates] = useState<any[]>([]);
@@ -58,6 +61,7 @@ const LearnerDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
+  const [resumeData, setResumeData] = useState<any>(null);
 
   useEffect(() => {
     if (user?.uid) {
@@ -75,6 +79,13 @@ const LearnerDashboard: React.FC = () => {
     const token = sessionStorage.getItem('github_token');
     if (token && !savedData) {
       handleAnalyze(token);
+    }
+    // Fetch resume
+    if (user?.uid) {
+      fetch(`${API_BASE_URL}/api/resume/${user.uid}`)
+        .then(res => res.json())
+        .then(data => setResumeData(data))
+        .catch(console.error);
     }
   }, [user]);
 
@@ -122,7 +133,8 @@ const LearnerDashboard: React.FC = () => {
     { id: 'profile', label: 'My Profile', icon: '👤' },
     { id: 'knowledge', label: 'Tech Stack', icon: '🕸️' },
     { id: 'leaderboard', label: 'Rankings', icon: '🏆' },
-    { id: 'certificates', label: 'Certificates', icon: '📜' }
+    { id: 'certificates', label: 'Certificates', icon: '📜' },
+    { id: 'resume', label: 'My Resume', icon: '📄' }
   ];
 
   const renderView = () => {
@@ -311,10 +323,83 @@ const LearnerDashboard: React.FC = () => {
             </div>
           </div>
         );
+      case 'resume':
+        return (
+          <div className="space-y-8">
+            <h2 className="text-4xl font-black uppercase tracking-tighter text-[#111827]">My Resume</h2>
+            <div className="bg-white border border-gray-100 rounded-[2rem] p-12 flex flex-col items-center text-center space-y-8 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#7C3AED] to-[#A78BFA]" />
+              <div className="w-24 h-24 bg-[#F5F3FF] rounded-full flex items-center justify-center text-4xl shadow-inner relative">
+                <span className="relative z-10">📄</span>
+                <div className="absolute inset-0 rounded-full border-4 border-[#7C3AED]/10" />
+              </div>
+              <div className="max-w-xl space-y-4">
+                <h3 className="text-2xl font-black tracking-tight text-[#111827] uppercase">Stored Resume</h3>
+                <p className="text-sm font-medium text-gray-500">
+                  Your generated professional resume is automatically synced here. You can download your latest PDF or edit it directly in the Resume Builder.
+                </p>
+              </div>
+              <div className="flex gap-4 flex-col sm:flex-row mt-4">
+                <button
+                  onClick={async () => {
+                    if (!user?.uid) return alert('Kindly login first');
+                    try {
+                      // 1. Fetch from 'resumes' collection
+                      const res = await fetch(`${API_BASE_URL}/api/resume/${user.uid}`);
+                      if (!res.ok) {
+                        alert("No saved resume found. Please create one first.");
+                        return;
+                      }
+                      const data = await res.json();
+                      const config = data.config;
+                      const html = generatePdfHtml(config, config.tpl);
+
+                      // 2. Open print dialog
+                      const fr = document.createElement("iframe");
+                      fr.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;";
+                      document.body.appendChild(fr);
+
+                      if (fr.contentWindow) {
+                        fr.contentWindow.document.open();
+                        fr.contentWindow.document.write(html);
+                        fr.contentWindow.document.close();
+                        fr.onload = () => {
+                          fr.contentWindow?.focus();
+                          fr.contentWindow?.print();
+                          setTimeout(() => document.body.removeChild(fr), 2000);
+                        };
+                      }
+                    } catch (e) {
+                      console.error(e);
+                      alert("Error fetching your resume.");
+                    }
+                  }}
+                  className="py-4 px-8 bg-[#F5F3FF] text-[#7C3AED] rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:bg-[#7C3AED] hover:text-white transition-all flex justify-center items-center gap-2"
+                >
+                  ⬇ Download PDF
+                </button>
+
+                <Link to="/job-prep/resume-builder" className="py-4 px-8 bg-[#111827] text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:bg-[#7C3AED] transition-all flex justify-center items-center gap-2">
+                  Edit / Create Resume
+                </Link>
+              </div>
+            </div>
+          </div>
+        );
       case 'profile':
-      default:
         return (
           <>
+            {/* Back Button to Dashboard */}
+            <div className="mb-8">
+              <Link
+                to="/dashboard/learner"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-[#7C3AED] hover:border-[#7C3AED]/30 transition-all shadow-sm group"
+              >
+                <span className="group-hover:-translate-x-1 transition-transform">←</span>
+                Back to Hub
+              </Link>
+            </div>
+
             {/* Profile Card Section */}
             <section className="bg-[#FFFFFF] border border-gray-100 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 mb-8 sm:mb-12 relative overflow-hidden group shadow-sm">
               <div className="flex flex-col lg:flex-row gap-8 sm:gap-12 items-center lg:items-start relative z-10">
@@ -363,8 +448,11 @@ const LearnerDashboard: React.FC = () => {
                 </div>
 
                 <div className="w-full lg:w-80 space-y-4">
-                  <button className="w-full py-4 sm:py-5 bg-[#FFFFFF] border border-gray-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] hover:border-[#7C3AED]/30 transition-all flex items-center justify-center gap-3 shadow-sm">
-                    Skill Resume
+                  <button
+                    onClick={() => setActiveView('resume')}
+                    className="w-full py-4 sm:py-5 bg-[#FFFFFF] border border-gray-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] hover:border-[#7C3AED]/30 transition-all flex items-center justify-center gap-3 shadow-sm"
+                  >
+                    {resumeData ? `${resumeData.config?.tpl || 'Professional'} Resume` : 'Create Skill Resume'}
                   </button>
                   <button
                     onClick={() => {
@@ -437,6 +525,57 @@ const LearnerDashboard: React.FC = () => {
                 </div>
               </div>
             </section>
+
+            {/* Resume Integration Section */}
+            <section className="bg-white border border-gray-100 rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 mb-12 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 text-6xl opacity-10 group-hover:scale-110 transition-transform">📄</div>
+              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                <div className="w-20 h-20 bg-[#F5F3FF] rounded-2xl flex items-center justify-center text-3xl shrink-0">
+                  {resumeData ? '✅' : '📝'}
+                </div>
+                <div className="flex-grow text-center md:text-left">
+                  <h3 className="text-xl font-black uppercase text-[#111827] mb-2">
+                    {resumeData ? '1' : '0'} Resumes Stored
+                  </h3>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest leading-relaxed">
+                    {resumeData
+                      ? `Your ${resumeData.config?.tpl} template resume is synced and ready for deployment.`
+                      : "No resume detected in your profile protocol. Initialize your professional identity now."}
+                  </p>
+                </div>
+                <div className="flex gap-4 shrink-0">
+                  {resumeData && (
+                    <button
+                      onClick={async () => {
+                        const html = generatePdfHtml(resumeData.config, resumeData.config.tpl);
+                        const fr = document.createElement("iframe");
+                        fr.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;";
+                        document.body.appendChild(fr);
+                        if (fr.contentWindow) {
+                          fr.contentWindow.document.open();
+                          fr.contentWindow.document.write(html);
+                          fr.contentWindow.document.close();
+                          fr.onload = () => {
+                            fr.contentWindow?.focus();
+                            fr.contentWindow?.print();
+                            setTimeout(() => document.body.removeChild(fr), 2000);
+                          };
+                        }
+                      }}
+                      className="py-3 px-6 bg-[#F5F3FF] text-[#7C3AED] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#7C3AED] hover:text-white transition-all shadow-sm"
+                    >
+                      Download PDF
+                    </button>
+                  )}
+                  <Link
+                    to="/job-prep/resume-builder"
+                    className="py-3 px-6 bg-[#111827] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#7C3AED] transition-all shadow-lg"
+                  >
+                    {resumeData ? 'Edit Resume' : 'Build Resume'}
+                  </Link>
+                </div>
+              </div>
+            </section>
           </>
         );
     }
@@ -470,6 +609,16 @@ const LearnerDashboard: React.FC = () => {
             <span className="text-base">🏠</span>
             Hub Home
           </Link>
+          {(role === 'admin' || role === 'super_admin') && (
+            <Link
+              to="/admin"
+              className="w-full text-left px-5 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center gap-4 group text-red-500 hover:text-red-500 hover:bg-red-50 border border-red-100"
+            >
+              <span className="text-base">🛠️</span>
+              Admin Portal
+            </Link>
+          )}
+
           <button
             key="logout"
             onClick={() => signOut(auth)}
