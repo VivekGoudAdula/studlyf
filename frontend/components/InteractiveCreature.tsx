@@ -111,26 +111,26 @@ const InteractiveCreature: React.FC<InteractiveCreatureProps> = ({
                     text.includes(targetButtonText.toLowerCase());
             });
 
+            let localIsNear = false;
             if (targetButton) {
                 const buttonRect = targetButton.getBoundingClientRect();
                 const buttonCenterX = buttonRect.left + buttonRect.width / 2;
                 const buttonCenterY = buttonRect.top + buttonRect.height / 2;
 
-                // Distance from mouse to button
                 const mouseToButtonDist = Math.sqrt(
                     Math.pow(e.clientX - buttonCenterX, 2) + Math.pow(e.clientY - buttonCenterY, 2)
                 );
 
-                const triggerDistance = isCursor ? 100 : 450;
-                setIsNearButton(mouseToButtonDist < triggerDistance || !!hoveredButton || isActive);
-            } else {
-                setIsNearButton(isActive);
+                const triggerDistance = isCursor ? 100 : 250; // Reduced trigger distance for more precision
+                localIsNear = mouseToButtonDist < triggerDistance || !!hoveredButton;
             }
 
+            setIsNearButton(localIsNear);
+
             if (!isCursor) {
-                // Keep body stabilized but slightly reactive to activity
                 x.set(0);
-                y.set(isActive ? 25 : 30);
+                // Move up when near button, otherwise return to base 30px position
+                y.set(localIsNear ? -60 : 30);
             }
         };
 

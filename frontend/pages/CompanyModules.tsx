@@ -346,11 +346,7 @@ const CompanyModules: React.FC = () => {
             exit={{ opacity: 0, y: -20 }}
             className="max-w-7xl mx-auto"
           >
-            {/* Top Slim Banner */}
-            <div className="bg-[#F1F5F9] border border-[#E2E8F0] text-black py-3 px-6 rounded-full flex items-center justify-center gap-3 mb-12 w-fit mx-auto shadow-sm animate-pulse overflow-hidden">
-              <Zap className="w-5 h-5 fill-black text-black flex-shrink-0" />
-              <span className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] whitespace-nowrap">New Feature: Neural Interview Simulation Protocols Now Synchronized for 2026 Batch</span>
-            </div>
+
 
             <header className="mb-20 text-center flex flex-col items-center">
               <div className="max-w-4xl mx-auto mb-16">

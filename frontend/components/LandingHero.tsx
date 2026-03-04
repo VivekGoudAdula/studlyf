@@ -197,7 +197,7 @@ const LandingHero: React.FC = () => {
                 </div>
 
                 {/* Row 3: CTA Button */}
-                <div className="relative flex flex-col items-center pt-8 z-20">
+                <div className="relative flex flex-col items-center pt-2 md:pt-4 mb-32 z-20">
                     <motion.button
                         whileHover={{ scale: 1.05, backgroundColor: '#6D28D9' }}
                         whileTap={{ scale: 0.95 }}

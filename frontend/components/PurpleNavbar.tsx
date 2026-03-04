@@ -31,23 +31,23 @@ const BentoCard = ({ title, desc, children, className = "", to = "#", onClick }:
 );
 
 const LearnDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-w-[300px] md:min-w-[600px]">
-        <BentoCard onClick={onItemClick} to="/feature-preview/learn-courses" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[160px] md:min-h-[180px]">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-w-[300px] md:min-w-[800px]">
+        <BentoCard onClick={onItemClick} to="/learn/courses-overview" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[160px] md:min-h-[220px]">
             <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/2 h-full object-cover opacity-100 transition-all duration-700" alt="Courses" />
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/feature-preview/learn-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="md:col-span-2 h-[88px]">
+        <BentoCard onClick={onItemClick} to="/learn/company-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="md:col-span-2 h-[105px]">
             <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-100 transition-all" alt="Corporate" />
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/feature-preview/learn-blog" title="Blog" desc="Technical insights on system ownership." className="md:col-span-2 h-[88px]">
+        <BentoCard onClick={onItemClick} to="/blog" title="Blog" desc="Technical insights on system ownership." className="md:col-span-2 h-[105px]">
             <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-100 transition-all" alt="Blog" />
         </BentoCard>
     </div>
 );
 
 const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-w-[300px] md:min-w-[600px]">
-        <BentoCard onClick={onItemClick} to="/feature-preview/prep-portfolio" title="Build Portfolio" desc="Showcase evidence." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[180px] bg-[#F8FAFC]">
-            <div className="mt-1 bg-[#0F172A] rounded-lg p-3 shadow-xl border border-white/10 group-hover:scale-[1.02] transition-transform h-full">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[300px] md:min-w-[1000px]">
+        <BentoCard onClick={onItemClick} to="/job-prep/portfolio" title="Build Portfolio" desc="Showcase evidence." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[220px] bg-[#F8FAFC]">
+            <div className="mt-4 bg-[#0F172A] rounded-lg p-3 shadow-xl border border-white/10 group-hover:scale-[1.02] transition-transform h-24">
                 <div className="flex items-center gap-1 mb-1.5">
                     <div className="w-1 h-1 rounded-full bg-red-400"></div>
                     <div className="w-1 h-1 rounded-full bg-yellow-400"></div>
@@ -56,8 +56,8 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
                 <div className="space-y-1.5"><div className="h-2 w-2/3 bg-white/10 rounded"></div><div className="h-8 w-full bg-gradient-to-tr from-[#7C3AED]/30 to-transparent rounded border border-white/5"></div></div>
             </div>
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/feature-preview/prep-resume" title="Resume Builder" desc="Create instant resumes." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[180px] bg-[#F8FAFC]">
-            <div className="mt-2 mx-auto w-3/4 h-full bg-white border border-gray-200 rounded-t-lg shadow-sm group-hover:shadow-md transition-all group-hover:scale-[1.02] group-hover:-translate-y-1 relative overflow-hidden p-2">
+        <BentoCard onClick={onItemClick} to="/job-prep/resume-builder" title="Resume Builder" desc="Create instant resumes." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[220px] bg-[#F8FAFC]">
+            <div className="mt-4 mx-auto w-full h-24 bg-white border border-gray-200 rounded-t-lg shadow-sm group-hover:shadow-md transition-all group-hover:scale-[1.02] group-hover:-translate-y-1 relative overflow-hidden p-2">
                 <div className="flex gap-2 mb-2">
                     <div className="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></div>
                     <div className="space-y-1 w-full">
@@ -71,27 +71,21 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
                         <div className="h-1 w-1/3 bg-gray-200 rounded"></div>
                         <div className="h-1 w-2/3 bg-gray-100 rounded"></div>
                     </div>
-                    <div className="flex gap-1">
-                        <div className="h-1 w-1/4 bg-gray-200 rounded"></div>
-                        <div className="h-1 w-3/4 bg-gray-100 rounded"></div>
-                    </div>
-                    <div className="h-0.5 w-full bg-gray-200 mt-1"></div>
-                    <div className="space-y-1 mt-1">
-                        <div className="h-1 w-full bg-gray-100 rounded"></div>
-                        <div className="h-1 w-5/6 bg-gray-100 rounded"></div>
-                        <div className="h-1 w-4/6 bg-gray-100 rounded"></div>
-                    </div>
                 </div>
                 <div className="absolute bottom-0 right-0 w-8 h-8 bg-blue-500/10 rounded-tl-xl flex items-center justify-center">
                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                 </div>
             </div>
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/feature-preview/prep-assessment" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-2 h-[88px]">
+        <BentoCard onClick={onItemClick} to="/learn/assessment-intro" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-3 h-[105px]">
             <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/4 h-full object-cover opacity-80 group-hover:opacity-100 transition-all" alt="Assessment" />
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/feature-preview/prep-mock" title="Mock tests & interviews" desc="Practice clinical logic defense." className="h-[88px]" />
-        <BentoCard onClick={onItemClick} to="/feature-preview/prep-projects" title="Build projects" desc="Deconstruct tech giant systems." className="h-[88px]" />
+        <BentoCard onClick={onItemClick} to="/job-prep/mock-interview" title="Mock tests & interviews" desc="Practice clinical logic defense." className="md:col-span-1.5 h-[105px]" />
+        <BentoCard onClick={onItemClick} to="/job-prep/projects" title="System Deconstruction Lab" desc="Deconstruct & rebuild tech giant systems in teams." className="md:col-span-1.5 h-[105px]">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center border border-violet-500/20 opacity-60 group-hover:opacity-100 transition-opacity">
+                <span className="text-violet-400 text-sm">◆</span>
+            </div>
+        </BentoCard>
     </div>
 );
 
@@ -106,7 +100,7 @@ const PurpleNavbar: React.FC = () => {
             component: <LearnDropdown onItemClick={() => setActiveDropdown(null)} />
         },
         {
-            label: 'JOB PREP',
+            label: 'JOBS',
             component: <JobPrepDropdown onItemClick={() => setActiveDropdown(null)} />
         },
     ];

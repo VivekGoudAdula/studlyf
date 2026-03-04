@@ -97,7 +97,7 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
 
-      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome) && <Navigation />}
 
       <main className="flex-grow">
         <Suspense fallback={
