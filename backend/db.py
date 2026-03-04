@@ -35,3 +35,6 @@ sdl_members_col = db["sdl_project_members"]
 sdl_tasks_col = db["sdl_tasks"]
 sdl_comments_col = db["sdl_comments"]
 sdl_join_requests_col = db["sdl_join_requests"]
+
+# Ads / Advertisements
+ads_col = db["advertisements"]

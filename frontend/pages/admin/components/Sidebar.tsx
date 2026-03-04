@@ -21,7 +21,8 @@ import {
     Bell,
     PenTool,
     LogOut,
-    Layers
+    Layers,
+    Megaphone,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { auth } from '../../../firebase';
@@ -42,6 +43,7 @@ const navItems = [
     { name: 'Resumes', icon: FileText, path: '/admin/resumes' },
     { name: 'Mentors', icon: UserCheck, path: '/admin/mentors' },
     { name: 'Payments', icon: CreditCard, path: '/admin/payments' },
+    { name: 'Advertisements', icon: Megaphone, path: '/admin/ads' },
     { name: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
     { name: 'Content CMS', icon: PenTool, path: '/admin/content' },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },

@@ -153,8 +153,191 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": str(exc), "traceback": traceback.format_exc()},
     )
 
+# ─── Ads / Advertisements API ────────────────────────────────────────────────
+from db import ads_col
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from bson import ObjectId
+from typing import List, Optional
+import shutil
+
+# Ensure upload directory exists
+ADS_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "ads")
+os.makedirs(ADS_UPLOAD_DIR, exist_ok=True)
+
+# Serve uploaded files as static
+app.mount("/uploads", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "uploads")), name="uploads")
+
+def _ad_fix(doc: dict) -> dict:
+    if doc and "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
+@app.get("/api/ads")
+async def get_ads():
+    """Return all active ads sorted by order."""
+    cursor = ads_col.find({"active": True}).sort("order", 1)
+    ads = [_ad_fix(d) async for d in cursor]
+    return ads
+
+@app.get("/api/ads/all")
+async def get_all_ads():
+    """Admin: return all ads including inactive."""
+    cursor = ads_col.find({}).sort("order", 1)
+    ads = [_ad_fix(d) async for d in cursor]
+    return ads
+
+@app.post("/api/ads")
+async def create_ad(
+    card_type:    str  = Form(...),
+    eyebrow:      str  = Form(""),
+    title:        str  = Form(...),
+    description:  str  = Form(""),
+    media_type:   str  = Form(""),
+    tag:          str  = Form(""),
+    badge:        str  = Form(""),
+    cta_text:     str  = Form("Enroll →"),
+    cta_style:    str  = Form("primary"),
+    pills:        str  = Form(""),          # JSON array string
+    color_scheme: str  = Form("dark"),
+    bg_color:     str  = Form("blue"),
+    duration:     str  = Form(""),
+    wide_side:    str  = Form("dark"),
+    promo_tag:    str  = Form(""),
+    promo_stats:  str  = Form(""),          # JSON array string
+    order:        int  = Form(0),
+    active:       bool = Form(True),
+    media_file: Optional[UploadFile] = File(None),
+):
+    media_url = ""
+    upload_media_type = media_type
+
+    if media_file and media_file.filename:
+        ext = os.path.splitext(media_file.filename)[1].lower()
+        fname = f"{uuid.uuid4()}{ext}"
+        fpath = os.path.join(ADS_UPLOAD_DIR, fname)
+        with open(fpath, "wb") as buf:
+            shutil.copyfileobj(media_file.file, buf)
+        media_url = f"{BASE_URL}/uploads/ads/{fname}"
+        # auto-detect type
+        if ext in [".mp4", ".webm", ".mov", ".ogg"]:
+            upload_media_type = "video"
+        elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
+            upload_media_type = "image"
+
+    import json as _json
+    doc = {
+        "card_type":    card_type,
+        "eyebrow":      eyebrow,
+        "title":        title,
+        "description":  description,
+        "media_url":    media_url,
+        "media_type":   upload_media_type,
+        "tag":          tag,
+        "badge":        badge,
+        "cta_text":     cta_text,
+        "cta_style":    cta_style,
+        "pills":        _json.loads(pills) if pills else [],
+        "color_scheme": color_scheme,
+        "bg_color":     bg_color,
+        "duration":     duration,
+        "wide_side":    wide_side,
+        "promo_tag":    promo_tag,
+        "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
+        "order":        order,
+        "active":       active,
+        "created_at":   datetime.now(timezone.utc).isoformat(),
+    }
+    result = await ads_col.insert_one(doc)
+    doc["_id"] = str(result.inserted_id)
+    return doc
+
+@app.put("/api/ads/{ad_id}")
+async def update_ad(
+    ad_id:        str,
+    card_type:    str  = Form(...),
+    eyebrow:      str  = Form(""),
+    title:        str  = Form(...),
+    description:  str  = Form(""),
+    media_type:   str  = Form(""),
+    media_url_existing: str = Form(""),
+    tag:          str  = Form(""),
+    badge:        str  = Form(""),
+    cta_text:     str  = Form("Enroll →"),
+    cta_style:    str  = Form("primary"),
+    pills:        str  = Form(""),
+    color_scheme: str  = Form("dark"),
+    bg_color:     str  = Form("blue"),
+    duration:     str  = Form(""),
+    wide_side:    str  = Form("dark"),
+    promo_tag:    str  = Form(""),
+    promo_stats:  str  = Form(""),
+    order:        int  = Form(0),
+    active:       bool = Form(True),
+    media_file: Optional[UploadFile] = File(None),
+):
+    import json as _json
+    media_url = media_url_existing
+    upload_media_type = media_type
+
+    if media_file and media_file.filename:
+        ext = os.path.splitext(media_file.filename)[1].lower()
+        fname = f"{uuid.uuid4()}{ext}"
+        fpath = os.path.join(ADS_UPLOAD_DIR, fname)
+        with open(fpath, "wb") as buf:
+            shutil.copyfileobj(media_file.file, buf)
+        media_url = f"{BASE_URL}/uploads/ads/{fname}"
+        if ext in [".mp4", ".webm", ".mov", ".ogg"]:
+            upload_media_type = "video"
+        elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
+            upload_media_type = "image"
+
+    update = {
+        "card_type":    card_type,
+        "eyebrow":      eyebrow,
+        "title":        title,
+        "description":  description,
+        "media_url":    media_url,
+        "media_type":   upload_media_type,
+        "tag":          tag,
+        "badge":        badge,
+        "cta_text":     cta_text,
+        "cta_style":    cta_style,
+        "pills":        _json.loads(pills) if pills else [],
+        "color_scheme": color_scheme,
+        "bg_color":     bg_color,
+        "duration":     duration,
+        "wide_side":    wide_side,
+        "promo_tag":    promo_tag,
+        "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
+        "order":        order,
+        "active":       active,
+        "updated_at":   datetime.now(timezone.utc).isoformat(),
+    }
+    await ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": update})
+    update["_id"] = ad_id
+    return update
+
+@app.delete("/api/ads/{ad_id}")
+async def delete_ad(ad_id: str):
+    result = await ads_col.delete_one({"_id": ObjectId(ad_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    return {"deleted": ad_id}
+
+@app.patch("/api/ads/{ad_id}/toggle")
+async def toggle_ad(ad_id: str):
+    doc = await ads_col.find_one({"_id": ObjectId(ad_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    new_state = not doc.get("active", True)
+    await ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": {"active": new_state}})
+    return {"_id": ad_id, "active": new_state}
+# ─── End Ads API ──────────────────────────────────────────────────────────────
+
 @app.post("/api/assessment/generate")
 async def generate_assessment(req: AssessmentRequest):
+
     print(f"AI Assessment Triggered: {req.role} @ {req.company}")
     prompt = f"""
     Act as a Tier-1 Tech Recruiter and Technical Interviewer.

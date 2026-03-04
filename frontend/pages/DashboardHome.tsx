@@ -19,6 +19,7 @@ import { Button } from "@heroui/react";
 import DashboardFooter from '../components/DashboardFooter';
 import FAQCarousel from '../components/FAQCarousel';
 import WhyUsSection from '../components/WhyUsSection';
+import AdsCarousel from '../components/AdsCarousel';
 import { DevHeroSection } from '../components/DevHeroSection';
 import { NeonBackground } from '../components/NeonBackground';
 
@@ -101,37 +102,55 @@ const DashboardHome: React.FC = () => {
     return `${slug}--${id}`;
   };
 
-  const briefDetails: Record<string, { title: string; desc: React.ReactNode; image: string; video?: string; images?: string[] }> = {
+  const briefDetails: Record<string, { title: string; desc: React.ReactNode; image: string; video?: string; gradient: string; accent: string; icon: string }> = {
     'Cognition': {
       title: 'Cognition',
       desc: 'Studlyf understands people beyond resumes. Our AI analyzes skills, experience, learning patterns, and career intent to create meaningful connections between talent and opportunity. It delivers intelligent career guidance while helping recruiters discover true potential, not just keywords.',
-      image: '/images/producrbriefCONG.png'
+      image: '/images/producrbriefCONG.png',
+      gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+      accent: '#818cf8',
+      icon: '🧠',
     },
     'Protocol': {
       title: 'Protocol',
       desc: 'Every interaction follows a structured AI workflow — from resume analysis to hiring decisions. Automated protocols ensure fairness, transparency, and consistency across recruitment, skill evaluation, and personalized learning recommendations.',
-      image: '/images/protocol.png'
+      image: '/images/protocol.png',
+      gradient: 'linear-gradient(135deg, #0a3d2e 0%, #1a6b4a 50%, #0d4a35 100%)',
+      accent: '#34d399',
+      icon: '⚙️',
     },
     'Verification': {
       title: 'Verification',
       desc: 'Trust is built through verification. Studlyf validates skills, certifications, and professional experience using intelligent document parsing and contextual analysis. Recruiters receive confidence-based insights to make accurate hiring decisions.',
       image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
-      video: '/videos/verification.mp4'
+      video: '/videos/verification.mp4',
+      gradient: 'linear-gradient(135deg, #1a0533 0%, #5b21b6 50%, #2e1065 100%)',
+      accent: '#a78bfa',
+      icon: '✅',
     },
     'Blueprint': {
       title: 'Blueprint',
       desc: 'Studlyf transforms insights into action. Candidates receive personalized learning paths and growth plans, while recruiters gain structured hiring blueprints aligned with real job requirements and organizational goals.',
-      image: '/images/blueprint.png'
+      image: '/images/blueprint.png',
+      gradient: 'linear-gradient(135deg, #0c1a3d 0%, #1e3a8a 50%, #1e40af 100%)',
+      accent: '#60a5fa',
+      icon: '📐',
     },
     'Clinical': {
       title: 'Clinical',
       desc: 'Precision matters. Advanced analytics evaluate performance trends, interview outcomes, and behavioral signals to provide measurable improvement strategies for both candidates and hiring teams.',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800'
+      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800',
+      gradient: 'linear-gradient(135deg, #3d1a00 0%, #b45309 40%, #92400e 100%)',
+      accent: '#fb923c',
+      icon: '📊',
     },
     'Evidence': {
       title: 'Evidence',
       desc: 'Every recommendation is explainable and data-backed. Matching scores, learning suggestions, and hiring insights are supported by transparent reasoning and industry benchmarks, ensuring trust at every step.',
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
+      gradient: 'linear-gradient(135deg, #1a0a0a 0%, #9f1239 40%, #e11d48 100%)',
+      accent: '#f87171',
+      icon: '🔬',
     }
   };
 
@@ -469,41 +488,46 @@ const DashboardHome: React.FC = () => {
 
 
         {/* Product Brief Section */}
-        <section className="mb-24 mt-20 px-4 sm:px-0">
+        <section className="mb-16 mt-12 px-4 sm:px-0">
           <div className="flex flex-col items-center text-center">
             {/* Product Brief Header */}
-            <div className="flex flex-col items-center gap-4 mb-12">
-              <h2 className="text-3xl sm:text-5xl font-black text-black uppercase tracking-tighter inline-block relative w-fit">
+            <div className="flex flex-col items-center gap-3 mb-8">
+              <h2 className="text-2xl sm:text-4xl font-black text-black uppercase tracking-tighter inline-block relative w-fit">
                 Product Brief
                 <motion.div
                   initial={{ width: 0 }}
                   whileInView={{ width: '100%' }}
                   viewport={{ once: true }}
                   transition={{ duration: 1, ease: "circOut", delay: 0.2 }}
-                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-1.5 bg-[#A78BFA] rounded-full"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-1 bg-[#A78BFA] rounded-full"
                 />
               </h2>
             </div>
 
-            {/* HeroUI Ghost Buttons Section */}
+            {/* Tab Buttons — each with its own accent colour when active */}
             <div className="mb-4 flex flex-wrap justify-center gap-4">
-              {['Cognition', 'Protocol', 'Verification', 'Blueprint', 'Clinical', 'Evidence'].map((label) => (
-                <Button
-                  key={label}
-                  onClick={() => setActiveBrief(label)}
-                  className={`px-8 h-12 rounded-full border transition-all duration-300 font-bold text-sm shadow-sm ${activeBrief === label
-                    ? 'bg-[#1D74F2] text-white border-[#1D74F2] scale-110 shadow-blue-500/20'
-                    : 'bg-white text-black border-black/10 hover:border-[#1D74F2] hover:bg-neutral-50 shadow-sm'
-                    }`}
-                >
-                  {label}
-                </Button>
-              ))}
+              {['Cognition', 'Protocol', 'Verification', 'Blueprint', 'Clinical', 'Evidence'].map((label) => {
+                const detail = briefDetails[label];
+                const isActive = activeBrief === label;
+                return (
+                  <Button
+                    key={label}
+                    onClick={() => setActiveBrief(label)}
+                    className={`px-6 h-10 rounded-full border transition-all duration-300 font-bold text-xs shadow-sm flex items-center gap-2 ${isActive
+                      ? 'text-white scale-110 shadow-lg border-transparent'
+                      : 'bg-white text-black border-black/10 hover:bg-neutral-50 shadow-sm'
+                      }`}
+                    style={isActive ? { background: detail.gradient, boxShadow: `0 8px 30px -8px ${detail.accent}80` } : {}}
+                  >
+                    <span>{detail.icon}</span> {label}
+                  </Button>
+                );
+              })}
             </div>
 
             {/* Dynamic Content Display with Background */}
             <div
-              className="max-w-[1600px] w-full mx-auto min-h-[620px] relative rounded-[4rem] overflow-hidden flex items-center justify-center transition-all duration-700 py-12 px-4 sm:px-12"
+              className="max-w-[1400px] w-full mx-auto min-h-[480px] relative rounded-[3rem] overflow-hidden flex items-center justify-center transition-all duration-700 py-8 px-4 sm:px-10 -mt-2"
             >
               <div className="relative z-10 w-full h-full max-w-7xl flex items-center justify-center">
                 <AnimatePresence mode="wait">
@@ -514,22 +538,23 @@ const DashboardHome: React.FC = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 1.02 }}
                       transition={{ duration: 0.5, ease: "easeOut" }}
-                      className="relative w-full rounded-[3.5rem] overflow-hidden flex items-center justify-center p-8 sm:p-16 border border-white/20 bg-white/10 backdrop-blur-2xl"
+                      className="relative w-full rounded-[2.5rem] overflow-hidden flex items-center justify-center p-6 sm:p-10"
                       style={{
-                        backgroundImage: 'url("/images/PD2M.png")',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
+                        background: briefDetails[activeBrief].gradient,
                       }}
                     >
-                      <div className="glass-overlay opacity-30" />
 
-                      <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12 lg:gap-20 w-full">
+                      <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 lg:gap-12 w-full">
                         <div className="flex-1 text-left order-2 lg:order-1">
+                          {/* Accent label */}
+                          <span className="text-xs font-black uppercase tracking-[0.4em] mb-4 block" style={{ color: briefDetails[activeBrief].accent }}>
+                            {briefDetails[activeBrief].icon} {activeBrief} Module
+                          </span>
                           <motion.p
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2, duration: 0.3 }}
-                            className="text-black text-lg sm:text-xl leading-relaxed tracking-tight"
+                            className="text-white/90 text-base sm:text-lg leading-relaxed tracking-tight"
                             style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}
                           >
                             {briefDetails[activeBrief].desc}
@@ -538,10 +563,10 @@ const DashboardHome: React.FC = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3, duration: 0.3 }}
-                            className="mt-8"
+                            className="mt-5"
                           >
                             <Button
-                              className="bg-[#1D74F2] text-white font-bold px-10 py-5 rounded-full text-sm shadow-xl hover:bg-[#1D74F2]/90 hover:scale-105 transition-all"
+                              className="bg-[#1D74F2] text-white font-bold px-8 py-3.5 rounded-full text-xs shadow-xl hover:bg-[#1D74F2]/90 hover:scale-105 transition-all"
                             >
                               Start Journey
                             </Button>
@@ -553,7 +578,7 @@ const DashboardHome: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.1, duration: 0.4 }}
-                            className="lg:w-[380px] w-full flex-shrink-0 relative group order-1 lg:order-2 flex items-center justify-center"
+                            className="lg:w-[280px] w-full flex-shrink-0 relative group order-1 lg:order-2 flex items-center justify-center"
                           >
                             {briefDetails[activeBrief].video ? (
                               <div className="relative w-full aspect-square flex items-center justify-center">
@@ -644,8 +669,10 @@ const DashboardHome: React.FC = () => {
         </section>
       </div >
 
+      <div style={{ marginTop: '-32px' }}>
+        <AdsCarousel />
+      </div>
       <WhyUsSection />
-      <DevHeroSection />
       <FAQCarousel />
       <DashboardFooter />
     </>
