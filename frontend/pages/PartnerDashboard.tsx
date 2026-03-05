@@ -172,11 +172,11 @@ const PartnerDashboard: React.FC = () => {
       {/* Sidebar - Desktop Only */}
       <aside className="w-72 bg-[#FFFFFF] border-r border-gray-100 flex flex-col p-8 shrink-0 hidden lg:flex">
         <Link to="/" className="flex items-center gap-3 mb-16 px-2 group">
-          <div className="w-10 h-10 bg-[#7C3AED] rounded-xl flex items-center justify-center text-white font-black text-xs shadow-lg shadow-[#7C3AED]/20 group-hover:scale-110 transition-transform">S</div>
-          <div className="flex flex-col">
-            <span className="font-syne font-black text-[#111827] tracking-tighter text-lg leading-none">STUDLYF</span>
-            <span className="text-[7px] text-gray-400 uppercase tracking-[0.3em] font-mono mt-1 font-bold">Recruiter</span>
-          </div>
+          <img
+            src="/images/studlyf.png"
+            alt="STUDLYF Logo"
+            className="h-10 w-auto object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] group-hover:scale-110 transition-transform"
+          />
         </Link>
 
         <nav className="space-y-3 flex-grow">
@@ -210,8 +210,11 @@ const PartnerDashboard: React.FC = () => {
         {/* Mobile Header */}
         <div className="lg:hidden sticky top-0 z-[120] bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#7C3AED] rounded-lg flex items-center justify-center text-white font-syne font-black text-[10px]">S</div>
-            <span className="font-bold text-[10px] uppercase tracking-widest">Partner Portal</span>
+            <img
+              src="/images/studlyf.png"
+              alt="STUDLYF Logo"
+              className="h-8 w-auto object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+            />
           </Link>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

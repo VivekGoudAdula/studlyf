@@ -94,7 +94,7 @@ const WhoWeServe: React.FC = () => {
                         transition={{ duration: 0.6 }}
                         className="text-5xl md:text-7xl font-['Poppins'] font-extrabold text-black tracking-tight uppercase leading-[1.1]"
                     >
-                        WHO WE <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">SERVE</span>
+                        WHO WE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">SERVE</span>
                     </motion.h2>
                 </div>
 
@@ -113,7 +113,7 @@ const WhoWeServe: React.FC = () => {
                             className="text-3xl md:text-5xl font-['Poppins'] font-black uppercase leading-tight whitespace-nowrap lg:pl-6"
                         >
                             <span className="block text-black">Studlyf</span>
-                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">For</span>
+                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">For</span>
                         </motion.h3>
 
                         {/* Mobile decorative line */}

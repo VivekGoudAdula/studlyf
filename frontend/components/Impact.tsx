@@ -173,7 +173,7 @@ const Impact = () => {
                             viewport={{ once: true }}
                             className="text-4xl md:text-5xl lg:text-7xl font-black text-[#0F172A] leading-[1.1] tracking-tight"
                         >
-                            Our <span className="text-[#6C3BFF]">Impact</span>
+                            OUR <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">IMPACT</span>
                         </motion.h2>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
