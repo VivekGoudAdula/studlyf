@@ -205,7 +205,7 @@ const Testimonials: React.FC = () => {
                             {"See how learners like you ".split(" ").map((word, i) => (
                                 <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="inline-block mr-[0.2em]">{word}</motion.span>
                             ))}
-                            <motion.span variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="inline-block text-[#9D7CFF]">landed</motion.span>
+                            <motion.span variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">landed</motion.span>
                         </motion.span>
 
                         <motion.span
@@ -215,7 +215,7 @@ const Testimonials: React.FC = () => {
                             transition={{ staggerChildren: 0.05, delayChildren: 0.4 }}
                             className="block"
                         >
-                            <motion.span variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="inline-block text-[#9D7CFF] mr-[0.2em]">jobs,</motion.span>
+                            <motion.span variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] mr-[0.2em]">jobs,</motion.span>
                             {"built skills, and changed their ".split(" ").map((word, i) => (
                                 <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="inline-block mr-[0.2em]">{word}</motion.span>
                             ))}

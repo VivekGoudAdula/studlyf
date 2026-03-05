@@ -28,7 +28,11 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
             {/* Top Logo */}
             <Link to="/" className="absolute top-8 left-8 z-50 group transition-transform active:scale-95">
                 <div className="flex items-center">
-                    <span className="font-syne font-black text-white italic tracking-tighter text-2xl sm:text-3xl group-hover:text-purple-400 transition-colors">STUDLYF</span>
+                    <img
+                        src="/images/studlyf.png"
+                        alt="STUDLYF Logo"
+                        className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] group-hover:opacity-80 transition-opacity"
+                    />
                 </div>
             </Link>
 

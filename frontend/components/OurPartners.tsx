@@ -47,7 +47,7 @@ const OurPartners: React.FC = () => {
             {/* Section Title */}
             <div className="text-center mb-6">
                 <h2 className="text-3xl md:text-5xl font-['Poppins'] font-extrabold text-black mb-2 tracking-tight uppercase">
-                    Our <span className="text-[#6C4DFF]">Partners</span>
+                    Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">Partners</span>
                 </h2>
                 <p className="text-base md:text-lg text-gray-500 font-['Poppins'] font-medium">
                     Collaborating with industry-leading technology platforms

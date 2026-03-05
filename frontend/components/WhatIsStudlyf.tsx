@@ -92,7 +92,7 @@ const WhatIsStudlyf: React.FC = () => {
                                 ease: "backOut",
                                 delay: 0.4
                             }}
-                            className="inline-block text-[#6C4DFF] underline decoration-4 underline-offset-8 md:decoration-[10px] md:underline-offset-[16px] decoration-[#6C4DFF]/20"
+                            className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] underline decoration-4 underline-offset-8 md:decoration-[10px] md:underline-offset-[16px] decoration-[#EC4899]/20"
                         >
                             STUDLYF?
                         </motion.span>

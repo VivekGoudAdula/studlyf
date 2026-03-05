@@ -11,7 +11,11 @@ import { ShoppingCart } from 'lucide-react';
 
 const StudlyfLogo = ({ className = "h-6 sm:h-8" }: { className?: string }) => (
   <div className={`flex items-center ${className}`}>
-    <span className="font-syne font-black text-white italic tracking-tighter text-lg sm:text-2xl">STUDLYF</span>
+    <img
+      src="/images/studlyf.png"
+      alt="STUDLYF Logo"
+      className="h-full w-auto object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+    />
   </div>
 );
 
