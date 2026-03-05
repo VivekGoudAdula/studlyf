@@ -114,7 +114,7 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
 
 
 const Navigation: React.FC = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -194,11 +194,20 @@ const Navigation: React.FC = () => {
                     <ShoppingCart className="w-5 h-5 text-white" />
                   </Link>
 
+                  {(role === 'admin' || role === 'super_admin') && (
+                    <Link
+                      to="/admin"
+                      className="hidden sm:flex px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl items-center gap-2 group/admin transition-all"
+                    >
+                      <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Matrix Access</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    </Link>
+                  )}
+
                   <Link
                     to="/dashboard"
                     className="hidden sm:flex flex-col items-end mr-1 group/profile hover:opacity-80 transition-opacity"
                   >
-
                     <span className="text-[8px] text-white font-black uppercase tracking-widest leading-none mb-0.5 group-hover/profile:text-[#A78BFA] transition-colors">{user.displayName || 'MEMBER'}</span>
                     <span className="text-[7px] text-white/60 font-medium truncate max-w-[100px]">{user.email}</span>
                   </Link>

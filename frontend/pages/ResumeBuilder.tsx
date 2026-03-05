@@ -1,460 +1,434 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import {
-    FileText,
-    Upload,
-    Plus,
-    Sparkles,
-    Download,
-    CheckCircle2,
-    AlertCircle,
-    ChevronRight,
-    Building2,
-    Rocket,
-    Briefcase,
-    Zap,
-    RotateCcw,
-    ShieldCheck,
-    Brain,
-    MousePointer2,
-    Trash2,
-    Edit3,
-    Search,
-    Layout,
-    User,
-    Star,
-    Loader2,
-    ArrowRight,
-    FileCode2
-} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from "react";
+import { useAuth } from "../AuthContext";
+import { API_BASE_URL } from "../apiConfig";
+import Navigation from "../components/Navigation";
+import DashboardFooter from "../components/DashboardFooter";
+import { Link } from "react-router-dom";
+// @ts-ignore
+import html2pdf from "html2pdf.js";
 
-type Step = 'INTRO' | 'CHOICE' | 'FORM' | 'IMPROVE' | 'GENERATE';
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .resume-builder-wrapper { font-family: 'DM Sans', sans-serif; background: #fff; color: #1a1a1a; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh;}
+  .resume-builder-wrapper input, .resume-builder-wrapper textarea, .resume-builder-wrapper button { font-family: 'DM Sans', sans-serif; }
+  .resume-builder-wrapper input::placeholder, .resume-builder-wrapper textarea::placeholder { color: #c0c0c0; }
+  .resume-builder-wrapper ::-webkit-scrollbar { width: 4px; }
+  .resume-builder-wrapper ::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 2px; }
+  @keyframes in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  @keyframes r-spin { to { transform: rotate(360deg); } }
+`;
 
-const ResumeBuilder: React.FC = () => {
-    const navigate = useNavigate();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [step, setStep] = useState<Step>('INTRO');
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
+const v = {
+    purple: "#5b21b6",
+    purpleD: "#4c1d95",
+    purpleT: "rgba(91,33,182,0.06)",
+    border: "#e8e8e8",
+    borderFoc: "#5b21b6",
+    bg: "#fafafa",
+    sunken: "#f2f2f2",
+    text: "#000000",
+    mid: "#000000",
+    dim: "#000000",
+    green: "#15803d",
+    greenBg: "#f0fdf4",
+    greenBd: "#bbf7d0",
+    red: "#b91c1c",
+};
 
-    // Form State
-    const [formData, setFormData] = useState({
-        name: 'Arjun Mehta',
-        role: 'Fullstack Engineer',
-        email: 'arjun@protocol.io',
-        summary: 'Driven engineer with 3+ years experience building scalable systems.',
-        skills: 'React, Node.js, AWS, Postgres, Kubernetes',
-    });
+/* ── primitives ─────────────────────────────────────────────── */
 
-    const [experience, setExperience] = useState([
-        { company: 'TechFlow', role: 'Senior Dev', duration: '2021 - Present', bullets: 'Scaled legacy monolith to microservices architecture.' }
+function Input({ value, onChange, placeholder, rows, style, area }: any) {
+    const [f, sf] = useState(false);
+    const isArea = area || rows != null;
+    const s: React.CSSProperties = {
+        width: "100%", fontSize: 13, color: v.text, lineHeight: 1.55,
+        background: v.sunken, border: `1px solid ${f ? v.borderFoc : "transparent"}`,
+        borderRadius: 7, padding: "8px 11px", outline: "none",
+        transition: "border-color 0.12s", resize: isArea ? "vertical" : undefined,
+        fontFamily: "'DM Sans', sans-serif", ...style,
+    };
+    return isArea
+        ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} style={s} onFocus={() => sf(true)} onBlur={() => sf(false)} />
+        : <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={s} onFocus={() => sf(true)} onBlur={() => sf(false)} />;
+}
+
+const Lbl = ({ c }: any) => <div style={{ fontSize: 10, fontWeight: 700, color: "#000000", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>{c}</div>;
+const G2 = ({ children }: any) => <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>{children}</div>;
+const Field = ({ label, ...p }: any) => <div><Lbl c={label} /><Input {...p} /></div>;
+
+function Card({ children, onDel }: any) {
+    return (
+        <div style={{ background: v.bg, border: `1px solid ${v.border}`, borderRadius: 9, padding: "13px 14px", marginBottom: 9, position: "relative" }}>
+            {onDel && <button onClick={onDel} style={{ position: "absolute", top: 9, right: 9, width: 18, height: 18, borderRadius: 3, border: "none", background: "none", color: v.dim, fontSize: 14, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>}
+            {children}
+        </div>
+    );
+}
+
+function Section({ title, onAdd, children }: any) {
+    return (
+        <div style={{ marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0 8px" }}>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#000000", textTransform: "uppercase" }}>{title}</span>
+                {onAdd && <button onClick={onAdd} style={{ fontSize: 11, color: v.purple, background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: 0 }}>+ add</button>}
+            </div>
+            <div style={{ background: "#fff", border: `1px solid ${v.border}`, borderRadius: 10, padding: "14px 15px" }}>{children}</div>
+        </div>
+    );
+}
+
+/* ── template thumbs ─────────────────────────────────────────── */
+function Thumb({ id, active }: any) {
+    const L = (w: any, h = 2, c = "#e4e4e4") => <div style={{ width: w, height: h, background: c, borderRadius: 1, marginTop: 3 }} />;
+    const w: any = { width: "100%", height: 140, background: "#fff", borderRadius: 7, overflow: "hidden", border: `2px solid ${active ? v.purple : "transparent"}`, position: "relative" };
+
+    // Use the actual image from public/templates/resume/
+    return (
+        <div style={w} className="shadow-sm">
+            <img
+                src={`/templates/resume/${id}.png`}
+                alt={id}
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                onError={(e) => {
+                    // Fallback rendering just in case the image fails to load
+                    e.currentTarget.style.display = 'none';
+                }}
+            />
+            {/* CSS Fallback if image fails or before it loads fully */}
+            {!active && <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
+                {id === "chicago" && <div style={{ padding: "10px" }}>
+                    <div style={{ fontSize: 8, fontWeight: 700, fontFamily: "Georgia,serif", color: "#1a1a1a", marginBottom: 1 }}>JOHN DOE</div>
+                    {L("44%", 1.5, active ? v.purple : "#d0d0d0")}
+                    <div style={{ display: "flex", gap: 5, marginTop: 3 }}>{L("20%")}{L("16%")}{L("18%")}</div>
+                    {["74%", "56%", "66%", "52%", "68%"].map((x, i) => <div key={i}>{L(x, 2, i % 2 ? "#ebebeb" : "#e0e0e0")}</div>)}
+                </div>}
+                {id === "easy" && <div style={{ padding: 0, display: "flex", flexDirection: "row" }}>
+                    <div style={{ width: 2.5, background: active ? v.purple : "#d0d0d0", flexShrink: 0, margin: "9px 0" }} />
+                    <div style={{ flex: 1, padding: "10px 9px" }}>
+                        <div style={{ fontSize: 8, fontWeight: 700, color: "#1a1a1a", marginBottom: 1 }}>JOHN DOE</div>
+                        {L("35%", 1.5, "#ccc")}
+                        <div style={{ marginTop: 4 }}>{L("22%", 1.5, active ? v.purple : "#d0d0d0")}</div>
+                        {["58%", "46%", "62%", "44%", "56%"].map((x, i) => <div key={i}>{L(x)}</div>)}
+                    </div>
+                </div>}
+                {id === "swiss" && <div style={{ padding: 0, display: "flex", flexDirection: "row", height: "100%" }}>
+                    <div style={{ width: 42, background: active ? "#1e0a3c" : "#2a2a3a", padding: "9px 7px", flexShrink: 0 }}>
+                        <div style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(255,255,255,0.12)", margin: "0 auto 5px" }} />
+                        {["70%", "55%", "62%", "48%", "58%", "52%", "64%"].map((x, i) => <div key={i} style={{ marginTop: 3, width: x, height: 1.5, background: "rgba(255,255,255,0.18)", borderRadius: 1 }} />)}
+                    </div>
+                    <div style={{ flex: 1, padding: "10px 9px" }}>
+                        <div style={{ fontSize: 8, fontWeight: 700, color: "#1a1a1a", marginBottom: 1 }}>JOHN DOE</div>
+                        {L("32%", 1.5, active ? v.purple : "#d0d0d0")}
+                        {["64%", "48%", "68%", "52%", "58%"].map((x, i) => <div key={i}>{L(x)}</div>)}
+                    </div>
+                </div>}
+            </div>}
+        </div>
+    );
+}
+
+/* ── sidebar ─────────────────────────────────────────────────── */
+function Sidebar({ tpl, p, exp, edu, proj, skills, generated, generating, onGen, onSave, saving }: any) {
+    const tpls = { chicago: "Chicago Professional", easy: "Easy Minimal", swiss: "Swiss Minimalist" };
+
+    return (
+        <div style={{ position: "sticky", top: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+
+            {/* Template */}
+            <div style={{ border: `1px solid ${v.border}`, borderRadius: 10, padding: "13px 16px" }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: "#000000", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 9 }}>Template</div>
+                {Object.entries(tpls).map(([id, label]) => (
+                    <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", borderRadius: 6, marginBottom: 3, background: tpl === id ? v.purpleT : "transparent", border: `1px solid ${tpl === id ? v.purple + "30" : "transparent"}` }}>
+                        <span style={{ fontSize: 12, fontWeight: tpl === id ? 700 : 500, color: tpl === id ? v.purple : "#000000" }}>{label}</span>
+                        {tpl === id && <div style={{ width: 5, height: 5, borderRadius: "50%", background: v.purple }} />}
+                    </div>
+                ))}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button onClick={onSave} disabled={saving}
+                    style={{ width: "100%", padding: "12px", borderRadius: 9, border: `1px solid ${v.purple}`, background: "#fff", color: v.purple, fontWeight: 600, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, transition: "all 0.15s" }}
+                    onMouseEnter={e => { if (!saving) e.currentTarget.style.background = v.purpleT; }}
+                    onMouseLeave={e => { if (!saving) e.currentTarget.style.background = "#fff"; }}>
+                    {saving ? "Saving…" : "Save Progress"}
+                </button>
+                <button onClick={onGen} disabled={generating}
+                    style={{ width: "100%", padding: "12px", borderRadius: 9, border: "none", background: generating ? "#ccc" : v.purple, color: "#fff", fontWeight: 600, fontSize: 13, cursor: generating ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, transition: "all 0.15s" }}>
+                    {generating ? "Generating…" : "Save & Generate PDF"}
+                </button>
+            </div>
+
+            {generated && (
+                <div style={{ fontSize: 12, color: v.green, background: v.greenBg, border: `1px solid ${v.greenBd}`, borderRadius: 8, padding: "8px 11px", lineHeight: 1.5, textAlign: "center" }}>
+                    Print dialog opened —<br />select <strong>Save as PDF</strong>.
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ── pdf ──────────────────────────────────────────────────────── */
+export function generatePdfHtml({ p, exp, edu, proj, certs, skills }: any, tpl: string) {
+    const xe = exp.filter((x: any) => x.org), xd = edu.filter((x: any) => x.inst);
+    const xp = proj.filter((x: any) => x.name), xc = certs.filter((x: any) => x.name);
+    const sk = skills.filter((s: any) => s.trim()).flatMap((s: any) => s.split(",").map((t: any) => t.trim())).filter(Boolean);
+    const nm = p.name || "Your Name";
+    const eR = xe.map((x: any) => `<div class="e"><div class="r"><div><b>${x.org}</b><span class="d"> — ${x.role}</span></div><span class="m">${x.range}${x.loc ? " · " + x.loc : ""}</span></div>${x.pts ? `<ul>${x.pts.split("\n").filter((b: any) => b.trim()).map((b: any) => `<li>${b}</li>`).join("")}</ul>` : ""}</div>`).join("");
+    const dR = xd.map((x: any) => `<div class="e"><div class="r"><b>${x.inst}</b><span class="m">${x.year}</span></div><div class="d">${x.deg}${x.gpa ? " · GPA " + x.gpa : ""}</div></div>`).join("");
+    const pR = xp.map((x: any) => `<div class="e"><b>${x.name}</b>${x.tech ? ` <span style="color:#5b21b6;font-size:10px;font-weight:600">· ${x.tech}</span>` : ""}${x.desc ? `<div class="d" style="margin-top:2px">${x.desc}</div>` : ""}</div>`).join("");
+    const ch = sk.map((s: any) => `<span class="ch">${s}</span>`).join("");
+    const cl = xc.map((x: any) => `<li>${x.name}</li>`).join("");
+    const base = `*{margin:0;padding:0;box-sizing:border-box}.e{margin-bottom:10px}.r{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}.d{color:#6b7280;font-size:10px;line-height:1.5}.m{color:#999;font-size:10px;flex-shrink:0;margin-left:8px}ul{padding-left:13px;margin-top:3px}li{font-size:10px;line-height:1.5;color:#555;margin-bottom:2px}.ch{display:inline-block;padding:2px 8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:11px;font-size:10px;margin:2px}`;
+
+    if (tpl === "swiss") return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap');${base}body{font-family:'DM Sans',sans-serif;display:grid;grid-template-columns:165px 1fr;min-height:100vh;font-size:11px}aside{background:#1e0a3c;color:#fff;padding:26px 15px}main{padding:26px 26px}h1{font-size:17px;font-weight:700;margin-bottom:3px}.lc{color:#c4b5fd;font-size:10px;margin-bottom:9px}.sl{color:rgba(255,255,255,.6);font-size:10px;margin-bottom:3px}.sh{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#c4b5fd;margin:12px 0 4px;font-weight:700}.mh{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#5b21b6;font-weight:700;margin:13px 0 5px;padding-bottom:3px;border-bottom:1.5px solid #5b21b6}</style></head><body><aside><h1>${nm}</h1><div class="lc">${p.loc || ""}</div>${p.email ? `<div class="sl">${p.email}</div>` : ""}${p.phone ? `<div class="sl">${p.phone}</div>` : ""}${p.li ? `<div class="sl">in ${p.li}</div>` : ""}${sk.length ? `<div class="sh">Skills</div>${sk.map((s: any) => `<div class="sl">· ${s}</div>`).join("")}` : ""}${xc.length ? `<div class="sh">Certifications</div>${xc.map((x: any) => `<div class="sl">· ${x.name}</div>`).join("")}` : ""}</aside><main>${p.sum ? `<p class="d" style="margin-bottom:11px;line-height:1.6">${p.sum}</p>` : ""}${xe.length ? `<div class="mh">Experience</div>${eR}` : ""}${xd.length ? `<div class="mh">Education</div>${dR}` : ""}${xp.length ? `<div class="mh">Projects</div>${pR}` : ""}</main></body></html>`;
+
+    if (tpl === "easy") return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap');${base}body{font-family:'DM Sans',sans-serif;color:#1a1a1a;background:#fff;padding:38px 46px;font-size:11px}.hd{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:11px;border-bottom:2.5px solid #5b21b6;margin-bottom:15px}h1{font-size:21px;font-weight:700;letter-spacing:-.02em}.ct{display:flex;flex-direction:column;align-items:flex-end;gap:3px;color:#6b7280;font-size:10px}.sh{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#5b21b6;font-weight:700;margin:13px 0 6px}.tc{display:grid;grid-template-columns:82px 1fr;gap:9px;margin-bottom:9px}.el{color:#999;font-size:10px;text-align:right;line-height:1.5}</style></head><body><div class="hd"><div><h1>${nm}</h1>${p.loc ? `<div style="color:#6b7280;font-size:10px;margin-top:2px">${p.loc}</div>` : ""}${p.sum ? `<p class="d" style="margin-top:4px;max-width:330px;line-height:1.5">${p.sum}</p>` : ""}</div><div class="ct">${p.email ? `<span>${p.email}</span>` : ""}${p.phone ? `<span>${p.phone}</span>` : ""}${p.li ? `<span>${p.li}</span>` : ""}</div></div>${xe.length ? `<div class="sh">Experience</div>${xe.map((x: any) => `<div class="tc"><div class="el">${x.range}<br/>${x.loc}</div><div><b>${x.org}</b><span class="d"> — ${x.role}</span>${x.pts ? `<ul>${x.pts.split("\n").filter((b: any) => b.trim()).map((b: any) => `<li>${b}</li>`).join("")}</ul>` : ""}</div></div>`).join("")}` : ""}${xd.length ? `<div class="sh">Education</div>${xd.map((x: any) => `<div class="tc"><div class="el">${x.year}</div><div><b>${x.inst}</b><div class="d">${x.deg}${x.gpa ? " · " + x.gpa : ""}</div></div></div>`).join("")}` : ""}${xp.length ? `<div class="sh">Projects</div>${pR}` : ""}${xc.length ? `<div class="sh">Certifications</div><ul>${cl}</ul>` : ""}${sk.length ? `<div class="sh">Skills</div><div style="margin-top:2px">${ch}</div>` : ""}</body></html>`;
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;600;700&display=swap');${base}body{font-family:'DM Sans',sans-serif;color:#1a1a1a;background:#fff;padding:38px 46px;font-size:11px}h1{font-family:'Playfair Display',serif;font-size:25px;font-weight:900;letter-spacing:-.02em}.sb{color:#5b21b6;font-size:10px;font-weight:600;margin-top:3px}.ct{display:flex;gap:14px;margin-top:5px;flex-wrap:wrap;color:#6b7280;font-size:10px}.dv{height:1.5px;background:#5b21b6;margin:10px 0}.sh{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5b21b6;margin:12px 0 6px}</style></head><body><h1>${nm}</h1>${p.loc ? `<div class="sb">${p.loc}</div>` : ""}<div class="ct">${p.email ? `<span>${p.email}</span>` : ""}${p.phone ? `<span>${p.phone}</span>` : ""}${p.li ? `<span>in ${p.li}</span>` : ""}</div><div class="dv"></div>${p.sum ? `<p class="d" style="line-height:1.6;margin-bottom:7px">${p.sum}</p><hr style="border:none;border-top:1px solid #eee;margin:8px 0"/>` : ""}${xe.length ? `<div class="sh">Experience</div>${eR}` : ""}${xd.length ? `<div class="sh">Education</div>${dR}` : ""}${xp.length ? `<div class="sh">Projects</div>${pR}` : ""}${xc.length ? `<div class="sh">Certifications</div><ul style="margin-bottom:7px">${cl}</ul>` : ""}${sk.length ? `<div class="sh">Skills</div><div style="margin-top:2px">${ch}</div>` : ""}</body></html>`;
+}
+
+/* ── main ─────────────────────────────────────────────────────── */
+export default function ResumeBuilder() {
+    const { user } = useAuth();
+
+    const [step, ss] = useState(1);
+    const [tpl, st] = useState("chicago");
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isGenerated, setIsGenerated] = useState(false);
+
+    const [p, sp] = useState({ name: "", email: "", phone: "", loc: "", li: "", gh: "", sum: "" });
+    const [exp, se] = useState([
+        { org: "", role: "", range: "", loc: "", pts: "" },
     ]);
+    const [edu, sed] = useState([
+        { inst: "", deg: "", year: "", gpa: "" },
+    ]);
+    const [proj, spr] = useState([
+        { name: "", tech: "", desc: "" },
+    ]);
+    const [certs, sc] = useState([{ name: "" }]);
+    const [skills, sk] = useState([""]);
 
-    // AI Mock Suggestions
-    const AI_SUGGESTIONS = [
-        { target: 'Skills', suggestion: 'Add "Distributed Systems" to reach Google-level alignment.', score: '+12 Affinity' },
-        { target: 'Experience', suggestion: 'Quantify impact: Change "Scaled services" to "Improved throughput by 40%".', score: '+8 Impact' },
-        { target: 'Summary', suggestion: 'Highlight ownership: Add mention of "cross-functional leadership".', score: '+5 Clarity' }
-    ];
-
+    // Fetch resume data on mount
     useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [step]);
-
-    const handleUploadSim = (file?: File) => {
-        setIsProcessing(true);
-        // Simulate deconstructing a PDF
-        setTimeout(() => {
-            setFormData({
-                name: 'Arjun Mehta',
-                role: 'Fullstack Engineer',
-                email: 'arjun@protocol.io',
-                summary: 'Strategic engineer with 4+ years of experience in high-growth startups. Specialized in rebuilding legacy architectures into event-driven microservices.',
-                skills: 'TypeScript, Go, React, Kafka, Docker, Kubernetes, AWS (Lambda, S3), Prometheus',
-            });
-            setExperience([
-                {
-                    company: 'NeoScale Systems',
-                    role: 'Senior Software Engineer',
-                    duration: '2022 - Present',
-                    bullets: 'Orchestrated the migration of a PHP monolith to a Go-based microservices architecture, improving system throughput by 300% and reducing latency by 45ms.'
-                },
-                {
-                    company: 'StreamLine AI',
-                    role: 'Fullstack Developer',
-                    duration: '2020 - 2022',
-                    bullets: 'Developed real-time data visualization dashboards using React and WebSocket, handling over 50k concurrent users during peak operational windows.'
+        async function loadResume() {
+            if (!user?.uid) {
+                console.log("ResumeBuilder: No user UID found yet");
+                return;
+            }
+            try {
+                console.log("ResumeBuilder: Fetching resume for", user.uid);
+                const res = await fetch(`${API_BASE_URL}/api/resume/${user.uid}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.config) {
+                        if (data.config.p) sp(data.config.p);
+                        if (data.config.exp) se(data.config.exp);
+                        if (data.config.edu) sed(data.config.edu);
+                        if (data.config.proj) spr(data.config.proj);
+                        if (data.config.certs) sc(data.config.certs);
+                        if (data.config.skills) sk(data.config.skills);
+                        if (data.config.tpl) st(data.config.tpl);
+                    }
                 }
-            ]);
-            setIsProcessing(false);
-            setStep('IMPROVE');
-        }, 2500);
-    };
+            } catch (e) {
+                console.error("ResumeBuilder: Load error", e);
+            }
+        }
+        loadResume();
+    }, [user?.uid]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) handleUploadSim(file);
-    };
 
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file && (file.type === 'application/pdf' || file.name.endsWith('.doc') || file.name.endsWith('.docx'))) {
-            handleUploadSim(file);
+    const u = (set: any, i: number, f: string, val: any) => set((a: any) => a.map((x: any, j: number) => j === i ? { ...x, [f]: val } : x));
+    const add = (set: any, b: any) => set((a: any) => [...a, { ...b }]);
+    const rm = (set: any, i: number) => set((a: any) => a.filter((_: any, j: number) => j !== i));
+
+    const handleSave = async () => {
+        if (!user?.uid) {
+            console.error("handleSave triggered but user.uid is missing", user);
+            alert("Security Check: Please login again or wait for session to sync.");
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/resume/${user.uid}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ p, exp, edu, proj, certs, skills, tpl })
+            });
+            if (res.ok) {
+                console.log("Resume saved successfully");
+            } else {
+                console.error("Failed to save resume");
+                alert("Cloud Sync failed. Please check your connection.");
+            }
+        } catch (e) {
+            console.error("Error saving resume", e);
+            alert("System Error. Please try again later.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleDownload = (variant: string) => {
-        // Clinical Placeholder PDF (Base64 for a simple PDF page)
-        const pdfBase64 = "JVBERi0xLjQKJfbk/N8KMSAwIG9iaiA8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmogMiAwIG9iaiA8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PgplbmRvYmogMyAwIG9iaiA8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCA1OTUgODQyXS9SZXNvdXJjZXM8PC9Gb250PDwvRjEgNCAwIFI+Pj4+L0NvbnRlbnRzIDUgMCBSPj4KZW5kb2JqIDQgMCBvYmogPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhLUJvbGQ+PgplbmRvYmogNSAwIG9iaiA8PC9MZW5ndGggODU+PnN0cmVhbQpCVC9GMSAyNCBUZiAxIDAgMCAxIDUwIDc1MCBUaiAoU1RVRFlMWUYgVkVSSUZJRUQgUkVTVU1FKSBUaiAwIC0zMCBUZCAoR2VuZXJhdGVkIFByb2ZpbGU6ICkgVGogKFByb2Zlc3Npb25hbCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2NyAwMDAwMCBuIAowMDAwMDAwMTIxIDAwMDAwIG4gCjAwMDAwMDAyNTMgMDAwMDAgbiAKMDAwMDAwMDMzNiAwMDAwMCBuIAp0cmFpbGVyIDw8L1NpemUgNi9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjQ3MgolJUVPRgo=";
+    const generate = async () => {
+        setIsGenerating(true);
+        await handleSave();
 
-        const byteCharacters = atob(pdfBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        await new Promise(r => setTimeout(r, 1000));
+
+        // 2. Trigger Print Dialog
+        const html = generatePdfHtml({ p, exp, edu, proj, certs, skills }, tpl);
+        const fr = document.createElement("iframe");
+        fr.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;";
+        document.body.appendChild(fr);
+
+        if (fr.contentWindow) {
+            fr.contentWindow.document.open();
+            fr.contentWindow.document.write(html);
+            fr.contentWindow.document.close();
+            fr.onload = () => {
+                fr.contentWindow?.focus();
+                fr.contentWindow?.print();
+                setTimeout(() => document.body.removeChild(fr), 2000);
+            };
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${formData.name.replace(/\s+/g, '_')}_${variant}_Resume.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    };
-
-    const handleProcess = () => {
-        setIsProcessing(true);
-        setTimeout(() => {
-            setIsProcessing(false);
-            setStep('IMPROVE');
-        }, 2000);
+        setIsGenerating(false);
+        setIsGenerated(true);
     };
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 px-6 font-sans">
-            <AnimatePresence mode="wait">
+        <>
+            <style>{css}</style>
+            <div className="resume-builder-wrapper">
 
-                {/* ── STEP 1: INTRO PAGE ── */}
-                {step === 'INTRO' && (
-                    <motion.div
-                        key="intro"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="max-w-6xl mx-auto"
-                    >
-                        <header className="text-center mb-24">
-                            <div className="inline-flex items-center gap-2 bg-[#7C3AED]/10 text-[#7C3AED] px-6 py-2 rounded-full mb-8 border border-[#7C3AED]/10">
-                                <ShieldCheck className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Proprietary Verification Engine</span>
+                {/* nav */}
+                <div style={{ height: 60, marginTop: "110px", borderBottom: `1px solid ${v.border}`, padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fcfcfc" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <Link to="/learner-dashboard" style={{ fontSize: 13, fontWeight: 700, color: "#000000", textDecoration: "none", background: v.sunken, padding: "5px 12px", borderRadius: 6 }}>← Dashboard</Link>
+                        <span style={{ fontWeight: 800, fontSize: 18, color: "#000000", letterSpacing: "-0.02em" }}>Resume <span style={{ color: v.purple }}>Builder</span></span>
+                    </div>
+                    <div style={{ display: "flex", gap: 3, background: v.sunken, padding: "3px", borderRadius: 7 }}>
+                        {[{ n: 1, l: "Template" }, { n: 2, l: "Details" }].map(({ n, l }) => (
+                            <button key={n} onClick={() => ss(n)} style={{ padding: "6px 18px", borderRadius: 5, border: "none", background: step === n ? "#fff" : "transparent", color: step === n ? v.text : v.dim, fontWeight: step === n ? 600 : 400, fontSize: 13, cursor: "pointer", boxShadow: step === n ? "0 1px 3px rgba(0,0,0,0.09)" : "none", transition: "all 0.12s" }}>{l}</button>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{ maxWidth: 1000, flex: 1, margin: "0 auto", padding: "40px 24px 60px", display: "grid", gridTemplateColumns: "1fr 280px", gap: 32, alignItems: "start", width: "100%" }}>
+
+                    <div>
+                        {/* step 1 */}
+                        {step === 1 && (
+                            <div style={{ animation: "in 0.2s ease both" }}>
+                                <p style={{ fontSize: 15, color: "#000000", fontWeight: 500, marginBottom: 24 }}>Choose a layout for your resume.</p>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 24 }}>
+                                    {[
+                                        { id: "chicago", name: "Chicago Professional", desc: "Serif headline, ruled divider" },
+                                        { id: "easy", name: "Easy Minimal", desc: "Left accent bar, date columns" },
+                                        { id: "swiss", name: "Swiss Minimalist", desc: "Dark sidebar, clean main" },
+                                    ].map(t => (
+                                        <div key={t.id} onClick={() => st(t.id)} style={{ borderRadius: 10, padding: 11, cursor: "pointer", border: `2px solid ${tpl === t.id ? v.purple : v.border}`, background: tpl === t.id ? "#faf8ff" : v.bg, transition: "all 0.12s" }}>
+                                            <Thumb id={t.id} active={tpl === t.id} />
+                                            <div style={{ marginTop: 12 }}>
+                                                <div style={{ fontSize: 14, fontWeight: 600, color: v.text, marginBottom: 4 }}>{t.name}</div>
+                                                <div style={{ fontSize: 12, color: v.dim, lineHeight: 1.4 }}>{t.desc}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => ss(2)} style={{ padding: "12px 28px", borderRadius: 8, background: v.purple, color: "#fff", border: "none", fontWeight: 600, fontSize: 14, cursor: "pointer", transition: "background 0.12s" }} onMouseEnter={e => e.currentTarget.style.background = v.purpleD} onMouseLeave={e => e.currentTarget.style.background = v.purple}>
+                                    Next →
+                                </button>
                             </div>
-                            <h1 className="text-6xl sm:text-8xl font-black text-gray-900 mb-8 leading-[0.9] tracking-tighter uppercase italic">
-                                Build a <br /><span className="text-[#7C3AED]">Verification-Ready</span> <br /> Resume.
-                            </h1>
-                            <p className="text-xl text-gray-500 font-medium max-w-2xl mx-auto leading-relaxed">
-                                Ordinary resumes get filtered. Ours get verified. Build an evidence-backed profile that bypasses the gatekeepers.
-                            </p>
-                        </header>
+                        )}
 
-                        <div className="grid md:grid-cols-2 gap-8 mb-20 max-w-4xl mx-auto">
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                className="hidden"
-                                accept=".pdf,.doc,.docx"
-                                onChange={handleFileChange}
-                            />
-                            <motion.div
-                                whileHover={{ y: -5 }}
-                                onClick={() => fileInputRef.current?.click()}
-                                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                                onDragLeave={() => setIsDragging(false)}
-                                onDrop={handleDrop}
-                                className={`bg-white p-12 rounded-[3.5rem] border-2 transition-all group cursor-pointer text-center flex flex-col items-center ${isDragging ? 'border-[#7C3AED] bg-[#7C3AED]/5' : 'border-gray-100 shadow-xl shadow-gray-200/50'}`}
-                            >
-                                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-10 transition-all shadow-inner ${isDragging ? 'bg-[#7C3AED] text-white' : 'bg-gray-50 text-gray-400 group-hover:bg-[#7C3AED] group-hover:text-white'}`}>
-                                    {isProcessing ? <Loader2 className="w-8 h-8 animate-spin" /> : isDragging ? <FileCode2 className="w-8 h-8 animate-bounce" /> : <Upload className="w-8 h-8" />}
-                                </div>
-                                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-4">
-                                    {isDragging ? 'Drop Logic Here' : 'Upload Existing'}
-                                </h3>
-                                <p className="text-sm font-medium text-gray-500 leading-relaxed">
-                                    {isDragging ? 'Release to initiate verification.' : 'Drag & drop or select PDF/DOC to deconstruct.'}
-                                </p>
-                            </motion.div>
+                        {/* step 2 */}
+                        {step === 2 && (
+                            <div style={{ animation: "in 0.2s ease both" }}>
 
-                            <motion.div
-                                whileHover={{ y: -5 }}
-                                onClick={() => setStep('FORM')}
-                                className="bg-[#111827] p-12 rounded-[3.5rem] text-white shadow-2xl group cursor-pointer text-center flex flex-col items-center relative overflow-hidden"
-                            >
-                                <div className="w-20 h-20 bg-white/10 text-white rounded-3xl flex items-center justify-center mb-10 group-hover:bg-[#7C3AED] transition-all relative z-10">
-                                    <Plus className="w-8 h-8" />
-                                </div>
-                                <h3 className="text-2xl font-black uppercase tracking-tight mb-4 relative z-10">Build From Scratch</h3>
-                                <p className="text-sm font-medium text-white/50 leading-relaxed relative z-10">Architect your logical authority from the ground up.</p>
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#7C3AED]/20 rounded-full blur-[60px]" />
-                            </motion.div>
-                        </div>
-                    </motion.div>
-                )}
+                                <Section title="Personal">
+                                    <G2>
+                                        <Field label="Name" placeholder="Full name" value={p.name} onChange={(val: any) => sp(x => ({ ...x, name: val }))} />
+                                        <Field label="Email" placeholder="you@email.com" value={p.email} onChange={(val: any) => sp(x => ({ ...x, email: val }))} />
+                                        <Field label="Phone" placeholder="+91 …" value={p.phone} onChange={(val: any) => sp(x => ({ ...x, phone: val }))} />
+                                        <Field label="Location" placeholder="City, Country" value={p.loc} onChange={(val: any) => sp(x => ({ ...x, loc: val }))} />
+                                        <Field label="LinkedIn" placeholder="linkedin.com/in/…" value={p.li} onChange={(val: any) => sp(x => ({ ...x, li: val }))} />
+                                        <Field label="GitHub" placeholder="github.com/…" value={p.gh} onChange={(val: any) => sp(x => ({ ...x, gh: val }))} />
+                                    </G2>
+                                    <div style={{ marginTop: 10 }}><Lbl c="Summary" /><Input area placeholder="Short professional summary…" value={p.sum} onChange={(val: any) => sp(x => ({ ...x, sum: val }))} rows={3} /></div>
+                                </Section>
 
-                {/* ── STEP 2 & 3: FORM & IMPROVE ── */}
-                {(step === 'FORM' || step === 'IMPROVE') && (
-                    <motion.div
-                        key="form-improve"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="max-w-6xl mx-auto"
-                    >
-                        <div className="flex flex-col lg:flex-row gap-12">
-                            {/* Left: Editor */}
-                            <div className="lg:w-2/3 space-y-8">
-                                <div className="bg-white rounded-[3rem] p-12 border border-gray-100 shadow-xl overflow-hidden relative">
-                                    <div className="flex justify-between items-center mb-12">
-                                        <h2 className="text-3xl font-black uppercase tracking-tighter">Profile <span className="text-[#7C3AED]">Draft</span></h2>
-                                        {step === 'IMPROVE' && (
-                                            <div className="flex items-center gap-2 bg-green-50 text-green-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100 italic">
-                                                <Sparkles className="w-3 h-3" /> AI Verification Active
+                                <Section title="Experience" onAdd={() => add(se, { org: "", role: "", range: "", loc: "", pts: "" })}>
+                                    {exp.map((x, i) => (
+                                        <Card key={i} onDel={exp.length > 1 ? () => rm(se, i) : null}>
+                                            <G2>
+                                                <Field label="Organisation" placeholder="Company" value={x.org} onChange={(v: any) => u(se, i, "org", v)} />
+                                                <Field label="Role" placeholder="Position title" value={x.role} onChange={(v: any) => u(se, i, "role", v)} />
+                                                <Field label="Date range" placeholder="Jan 2024–Mar 2025" value={x.range} onChange={(v: any) => u(se, i, "range", v)} />
+                                                <Field label="Location" placeholder="City" value={x.loc} onChange={(v: any) => u(se, i, "loc", v)} />
+                                            </G2>
+                                            <div style={{ marginTop: 9 }}><Lbl c="Bullet points" /><Input area placeholder="One bullet per line…" value={x.pts} onChange={(v: any) => u(se, i, "pts", v)} rows={3} /></div>
+                                        </Card>
+                                    ))}
+                                </Section>
+
+                                <Section title="Education" onAdd={() => add(sed, { inst: "", deg: "", year: "", gpa: "" })}>
+                                    {edu.map((x, i) => (
+                                        <Card key={i} onDel={edu.length > 1 ? () => rm(sed, i) : null}>
+                                            <G2>
+                                                <Field label="Institution" placeholder="University" value={x.inst} onChange={(v: any) => u(sed, i, "inst", v)} />
+                                                <Field label="Degree" placeholder="B.Tech CS" value={x.deg} onChange={(v: any) => u(sed, i, "deg", v)} />
+                                                <Field label="Year" placeholder="2021–2025" value={x.year} onChange={(v: any) => u(sed, i, "year", v)} />
+                                                <Field label="GPA" placeholder="8.4 / 10" value={x.gpa} onChange={(v: any) => u(sed, i, "gpa", v)} />
+                                            </G2>
+                                        </Card>
+                                    ))}
+                                </Section>
+
+                                <Section title="Projects" onAdd={() => add(spr, { name: "", tech: "", desc: "" })}>
+                                    {proj.map((x, i) => (
+                                        <Card key={i} onDel={proj.length > 1 ? () => rm(spr, i) : null}>
+                                            <G2>
+                                                <Field label="Project name" placeholder="My Project" value={x.name} onChange={(v: any) => u(spr, i, "name", v)} />
+                                                <Field label="Stack" placeholder="Python, React" value={x.tech} onChange={(v: any) => u(spr, i, "tech", v)} />
+                                            </G2>
+                                            <div style={{ marginTop: 9 }}><Lbl c="Description" /><Input area placeholder="What it does and the outcome…" value={x.desc} onChange={(v: any) => u(spr, i, "desc", v)} rows={2} /></div>
+                                        </Card>
+                                    ))}
+                                </Section>
+
+                                <Section title="Certifications" onAdd={() => add(sc, { name: "" })}>
+                                    {certs.map((x, i) => (
+                                        <Card key={i} onDel={certs.length > 1 ? () => rm(sc, i) : null}>
+                                            <Lbl c="Name" /><Input placeholder="AWS Certified Cloud Practitioner" value={x.name} onChange={(v: any) => u(sc, i, "name", v)} />
+                                        </Card>
+                                    ))}
+                                </Section>
+
+                                <Section title="Skills" onAdd={() => sk(s => [...s, ""])}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                        {skills.map((s, i) => (
+                                            <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
+                                                <div style={{ flex: 1 }}><Lbl c="Skill group" /><Input placeholder="Python, React, SQL" value={s} onChange={(v: any) => sk((a: any) => a.map((x: any, j: number) => j === i ? v : x))} /></div>
+                                                {skills.length > 1 && <button onClick={() => sk(a => a.filter((_, j) => j !== i))} style={{ width: 24, height: 33, borderRadius: 5, border: "none", background: "none", color: v.dim, fontSize: 16, cursor: "pointer", flexShrink: 0, marginBottom: 1 }}>×</button>}
                                             </div>
-                                        )}
+                                        ))}
                                     </div>
+                                </Section>
 
-                                    <div className="space-y-10">
-                                        <div className="grid md:grid-cols-2 gap-10">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Full Identity</label>
-                                                <input
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 font-bold text-gray-800 focus:ring-2 focus:ring-[#7C3AED]/20"
-                                                />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Target Authority</label>
-                                                <input
-                                                    value={formData.role}
-                                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                                    className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 font-bold text-gray-800 focus:ring-2 focus:ring-[#7C3AED]/20"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3 relative group">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex justify-between">
-                                                Skill Matrix
-                                                {step === 'IMPROVE' && <span className="text-[#7C3AED] lowercase italic">"Verify these skills"</span>}
-                                            </label>
-                                            <textarea
-                                                value={formData.skills}
-                                                onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                                                className={`w-full bg-gray-50 border-none rounded-3xl p-6 font-bold text-gray-800 h-32 focus:ring-2 focus:ring-[#7C3AED]/20 ${step === 'IMPROVE' ? 'ring-2 ring-purple-100' : ''}`}
-                                            />
-                                            {step === 'IMPROVE' && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                                                    className="absolute -right-4 top-20 bg-purple-600 text-white p-4 rounded-2xl shadow-xl max-w-[180px] z-20 pointer-events-none"
-                                                >
-                                                    <p className="text-[10px] font-black uppercase mb-1 flex items-center gap-1"><Brain className="w-3 h-3" /> SUGGESTION</p>
-                                                    <p className="text-[11px] font-medium leading-tight">Add "Distributed Systems" for Google alignment.</p>
-                                                </motion.div>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-8">
-                                            <div className="flex justify-between items-center">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Institutional History</h4>
-                                                <button className="text-[#7C3AED] text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><Plus size={14} /> Add Experience</button>
-                                            </div>
-                                            {experience.map((exp, i) => (
-                                                <div key={i} className="p-8 bg-gray-50 rounded-[2rem] border border-gray-100 flex gap-6 group relative">
-                                                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-gray-300 group-hover:text-[#7C3AED] transition-all shadow-sm">
-                                                        <Building2 size={24} />
-                                                    </div>
-                                                    <div className="flex-grow">
-                                                        <div className="flex justify-between mb-2">
-                                                            <h5 className="font-black text-gray-900 uppercase tracking-tight">{exp.company}</h5>
-                                                            <span className="text-[10px] font-black text-gray-400 uppercase">{exp.duration}</span>
-                                                        </div>
-                                                        <p className="text-xs font-bold text-[#7C3AED] mb-4 uppercase tracking-widest">{exp.role}</p>
-                                                        <p className="text-xs text-gray-500 font-medium leading-relaxed">{exp.bullets}</p>
-                                                    </div>
-                                                    {step === 'IMPROVE' && (
-                                                        <div className="absolute -bottom-2 -right-2 bg-white p-3 rounded-full shadow-lg border border-gray-100 text-[#7C3AED]">
-                                                            <Sparkles size={14} className="animate-pulse" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-between items-center">
-                                    <button onClick={() => setStep('INTRO')} className="text-gray-400 font-black text-[10px] uppercase tracking-widest px-8 py-5">Discard Logic</button>
-                                    <button
-                                        onClick={step === 'FORM' ? handleProcess : () => setStep('GENERATE')}
-                                        className="bg-[#111827] text-white px-12 py-6 rounded-2xl font-black text-xs uppercase tracking-[0.4em] shadow-xl hover:bg-[#7C3AED] transition-all flex items-center gap-4"
-                                    >
-                                        {isProcessing ? <Loader2 className="animate-spin" /> : step === 'FORM' ? "Initiate AI Audit" : "Commit to Versions"} <ArrowRight className="w-4 h-4" />
-                                    </button>
-                                </div>
                             </div>
+                        )}
+                    </div>
 
-                            {/* Right: AI Feedback Sidebar */}
-                            <div className="lg:w-1/3 space-y-8">
-                                <div className="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-sm">
-                                    <div className="flex items-center gap-3 mb-10 pb-6 border-b border-gray-50">
-                                        <Brain className="w-5 h-5 text-[#7C3AED]" />
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-gray-900">AI Logic Audit</h4>
-                                    </div>
+                    <Sidebar tpl={tpl} p={p} exp={exp} edu={edu} proj={proj} skills={skills} generated={isGenerated} generating={isGenerating} saving={isSaving} onGen={generate} onSave={handleSave} />
+                </div>
 
-                                    {step === 'FORM' ? (
-                                        <div className="py-12 text-center space-y-6">
-                                            <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-gray-200">
-                                                <Layout size={24} />
-                                            </div>
-                                            <p className="text-xs text-gray-400 font-medium leading-relaxed max-w-[180px] mx-auto uppercase tracking-widest">Awaiting profile data commit for synthesis...</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-8">
-                                            {AI_SUGGESTIONS.map((s, i) => (
-                                                <motion.div
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: i * 0.1 }}
-                                                    key={i}
-                                                    className="group"
-                                                >
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-widest underline decoration-2 underline-offset-4">{s.target}</span>
-                                                        <span className="text-[9px] font-black text-green-500 uppercase tracking-tighter bg-green-50 px-2 py-1 rounded-md">{s.score}</span>
-                                                    </div>
-                                                    <p className="text-xs font-bold text-gray-600 leading-relaxed italic border-l-2 border-gray-100 pl-4 group-hover:border-[#7C3AED] transition-all">"{s.suggestion}"</p>
-                                                </motion.div>
-                                            ))}
-
-                                            <div className="pt-6 border-t border-gray-50 flex items-center gap-4">
-                                                <div className="flex-grow">
-                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Affinity Score</p>
-                                                    <p className="text-2xl font-black text-gray-900 tracking-tighter uppercase">82% <span className="text-green-500 text-xs tracking-normal font-bold">+12</span></p>
-                                                </div>
-                                                <div className="w-12 h-12 bg-[#7C3AED]/5 rounded-xl flex items-center justify-center text-[#7C3AED]">
-                                                    <Rocket size={24} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="bg-[#f0f4ff] p-8 rounded-[2.5rem] border border-blue-50">
-                                    <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
-                                        <Zap className="w-3.5 h-3.5" /> Strategy Focus
-                                    </h5>
-                                    <p className="text-[11px] font-medium text-blue-800/70 leading-relaxed mb-6">
-                                        "Your profile currently displays strong technical execution but lacks the senior-level ownership language favored by MNCs like Google."
-                                    </p>
-                                    <button className="text-blue-600 text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 hover:gap-3 transition-all">Apply All Corrections <ChevronRight size={12} /></button>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* ── STEP 4: GENERATE VERSIONS ── */}
-                {step === 'GENERATE' && (
-                    <motion.div
-                        key="generate"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="max-w-7xl mx-auto"
-                    >
-                        <div className="mb-20">
-                            <div className="flex items-center gap-2 text-green-500 mb-6 font-black uppercase text-[10px] tracking-[0.4em]">
-                                <CheckCircle2 size={16} /> Synthesis Complete
-                            </div>
-                            <h1 className="text-6xl sm:text-8xl font-black text-gray-900 leading-[0.8] tracking-tighter uppercase italic mb-8">
-                                Clinical <br /> <span className="text-[#7C3AED]">Generation.</span>
-                            </h1>
-                            <p className="text-xl text-gray-500 font-medium max-w-2xl leading-relaxed">
-                                We have refactored your profile into three distinct target formats. Each is optimized for specific institutional heuristics.
-                            </p>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-8 mb-16">
-                            {[
-                                {
-                                    id: 'recruiter',
-                                    title: 'The Recruiter Protocol',
-                                    desc: 'Optimized for high-speed scanning and buzzword-rich parsing logic.',
-                                    icon: <Search className="w-8 h-8" />,
-                                    color: 'from-blue-100 to-indigo-50',
-                                    text: 'text-blue-600'
-                                },
-                                {
-                                    id: 'startup',
-                                    title: 'The Startup Blueprint',
-                                    desc: 'Highlights raw ownership, speed, and cross-functional capacity.',
-                                    icon: <Rocket className="w-8 h-8" />,
-                                    color: 'from-purple-100 to-fuchsia-50',
-                                    text: 'text-purple-600'
-                                },
-                                {
-                                    id: 'mnc',
-                                    title: 'The MNC Standards',
-                                    desc: 'Clinical, standardized layout emphasizing scale, reliability, and precision.',
-                                    icon: <Building2 className="w-8 h-8" />,
-                                    color: 'from-slate-200 to-gray-50',
-                                    text: 'text-slate-600'
-                                }
-                            ].map((v, i) => (
-                                <motion.div
-                                    whileHover={{ y: -10 }}
-                                    key={v.id}
-                                    className="bg-white rounded-[3.5rem] p-12 border border-gray-100 shadow-xl shadow-gray-200/50 group flex flex-col items-center text-center"
-                                >
-                                    <div className={`w-20 h-20 bg-gradient-to-br ${v.color} ${v.text} rounded-[2rem] flex items-center justify-center mb-10 shadow-inner group-hover:scale-110 transition-transform duration-500`}>
-                                        {v.icon}
-                                    </div>
-                                    <h3 className="text-2xl font-black uppercase tracking-tight mb-6">{v.title}</h3>
-                                    <p className="text-sm font-medium text-gray-500 leading-relaxed mb-10 flex-grow">{v.desc}</p>
-                                    <button
-                                        onClick={() => handleDownload(v.id)}
-                                        className="w-full py-5 bg-[#111827] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-3 shadow-xl"
-                                    >
-                                        Download PDF <Download size={14} />
-                                    </button>
-                                </motion.div>
-                            ))}
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-10 border-t border-gray-100">
-                            <button
-                                onClick={() => setStep('FORM')}
-                                className="flex items-center gap-2 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-900 transition-all"
-                            >
-                                <RotateCcw className="w-4 h-4" /> Reset Architect
-                            </button>
-                            <button
-                                onClick={() => navigate('/dashboard/learner')}
-                                className="px-12 py-6 bg-white border border-gray-100 text-gray-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center gap-3 shadow-sm"
-                            >
-                                Exit to Dashboard <ChevronRight size={14} />
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
-            </AnimatePresence>
-            <div className="fixed inset-0 bg-grid-black/[0.02] pointer-events-none -z-10" />
-        </div>
+                <DashboardFooter />
+            </div>
+        </>
     );
-};
-
-export default ResumeBuilder;
+}

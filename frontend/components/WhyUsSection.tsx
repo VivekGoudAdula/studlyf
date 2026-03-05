@@ -36,7 +36,7 @@ const themes: Record<string, string[]> = {
 
 const StripeBurst: React.FC<StripeBurstProps> = ({ isPaused, theme }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const animationFrameRef = useRef<number>();
+    const animationFrameRef = useRef<number | undefined>(undefined);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -252,7 +252,7 @@ const WhyUsSection: React.FC = () => {
                                 <img
                                     src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800"
                                     alt="Why Us Illustration"
-                                    className="w-full h-[380px] object-cover transform group-hover:scale-105 transition-transform duration-700"
+                                    className="w-full h-[280px] object-cover transform group-hover:scale-105 transition-transform duration-700"
                                 />
                             </div>
                         </div>
@@ -281,7 +281,7 @@ const WhyUsSection: React.FC = () => {
                         </div>
                     </motion.div>
 
-                    <div className="relative h-full min-h-[400px] flex items-end justify-center bg-gradient-to-b from-transparent to-[#F5F3FF]/30 rounded-[3rem]">
+                    <div className="relative h-full min-h-[300px] flex items-end justify-center bg-gradient-to-b from-transparent to-[#F5F3FF]/30 rounded-[3rem]">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             whileInView={{ opacity: 1, scale: 1 }}
@@ -323,11 +323,10 @@ const WhyUsSection: React.FC = () => {
                                                 setCurrentTheme(theme);
                                                 setShowThemePanel(false);
                                             }}
-                                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                                                currentTheme === theme
-                                                    ? 'bg-[#7C3AED] text-white shadow-lg'
-                                                    : 'text-gray-500 hover:bg-[#F5F3FF] hover:text-[#7C3AED]'
-                                            }`}
+                                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${currentTheme === theme
+                                                ? 'bg-[#7C3AED] text-white shadow-lg'
+                                                : 'text-gray-500 hover:bg-[#F5F3FF] hover:text-[#7C3AED]'
+                                                }`}
                                         >
                                             {themeIcons[theme]}
                                             {theme}

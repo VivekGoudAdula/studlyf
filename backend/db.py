@@ -38,3 +38,9 @@ sdl_join_requests_col = db["sdl_join_requests"]
 
 # Ads / Advertisements
 ads_col = db["advertisements"]
+
+# Resume Builder
+resumes_col = db["resumes"]
+
+# Skill Assessment
+skill_assessments_col = db["skill_assessments"]

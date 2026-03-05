@@ -15,7 +15,7 @@ function useFont() {
 /* ─── CSS injection ─────────────────────────────── */
 const ADS_CSS = `
 .ads-scroll-track {
-  display:flex; gap:28px; overflow-x:auto; scroll-snap-type:x mandatory;
+  display:flex; gap:28px; overflow-x:auto;
   -webkit-overflow-scrolling:touch; scrollbar-width:none; cursor:grab; padding-right:64px;
 }
 .ads-scroll-track::-webkit-scrollbar { display:none; }
@@ -328,7 +328,7 @@ function VideoCard({ ad }: { ad: AdItem }) {
     const isVideo = ad.media_type === 'video';
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 290px', height: 380, scrollSnapAlign: 'start',
+            flex: '0 0 290px', height: 380,
             borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateRows: '1fr auto',
             background: '#1A1410'
         }}>
@@ -399,7 +399,7 @@ function VideoCard({ ad }: { ad: AdItem }) {
 function ImageCard({ ad }: { ad: AdItem }) {
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 290px', height: 380, scrollSnapAlign: 'start',
+            flex: '0 0 290px', height: 380,
             borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateRows: '1fr auto',
             background: '#fff', border: '1px solid #E5E7EB'
         }}>
@@ -454,7 +454,7 @@ function WideCard({ ad }: { ad: AdItem }) {
     const isVideo = ad.media_type === 'video';
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 480px', height: 380, scrollSnapAlign: 'start',
+            flex: '0 0 480px', height: 380,
             borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr'
         }}>
             <div style={{ position: 'relative', overflow: 'hidden' }}>
@@ -510,7 +510,7 @@ function WideCard({ ad }: { ad: AdItem }) {
 function PromoCard({ ad }: { ad: AdItem }) {
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 290px', height: 380, scrollSnapAlign: 'start',
+            flex: '0 0 290px', height: 380,
             background: '#C84B2F', color: '#FFFFFF', padding: '24px 22px', display: 'flex',
             flexDirection: 'column', justifyContent: 'space-between', borderRadius: 4,
             position: 'relative', overflow: 'hidden'
@@ -569,9 +569,7 @@ export default function AdsCarousel() {
     const [ads, setAds] = useState<AdItem[]>(DUMMY);
     const [current, setCurrent] = useState(0);
     const trackRef = useRef<HTMLDivElement>(null);
-    const fillRef = useRef<HTMLDivElement>(null);
-    const dotsRef = useRef<HTMLDivElement>(null);
-    const autoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const autoRef = useRef<number>(0);
     const pausedRef = useRef(false);
     const currentRef = useRef(0);
     const DWELL = 2200;
@@ -589,16 +587,6 @@ export default function AdsCarousel() {
     const getCards = useCallback(() =>
         Array.from(trackRef.current?.querySelectorAll<HTMLElement>('.ads-card-hover,.ads-card-active') ?? []), []);
 
-    const updateProgress = useCallback(() => {
-        if (!trackRef.current || !fillRef.current) return;
-        const max = trackRef.current.scrollWidth - trackRef.current.clientWidth;
-        fillRef.current.style.width = ((trackRef.current.scrollLeft / max) * 100) + '%';
-    }, []);
-
-    const updateDots = useCallback((idx: number) => {
-        dotsRef.current?.querySelectorAll('.ads-dot-btn').forEach((d, i) =>
-            (d as HTMLElement).classList.toggle('dot-active', i === idx));
-    }, []);
 
     const scrollToCard = useCallback((idx: number) => {
         const cards = getCards();
@@ -606,61 +594,55 @@ export default function AdsCarousel() {
         const safeIdx = ((idx % cards.length) + cards.length) % cards.length;
         currentRef.current = safeIdx;
         setCurrent(safeIdx);
-        // highlight
-        cards.forEach((c, i) => { c.classList.toggle('ads-card-active', i === safeIdx); });
         // smooth scroll
         const card = cards[safeIdx];
-        const track = trackRef.current;
-        const target = Math.max(0, Math.min(card.offsetLeft, track.scrollWidth - track.clientWidth));
-        const start = track.scrollLeft, dist = target - start, t0 = performance.now();
-        const animate = (now: number) => {
-            const p = Math.min((now - t0) / SPEED, 1);
-            track.scrollLeft = start + dist * easeOutQuint(p);
-            updateProgress();
-            if (p < 1) requestAnimationFrame(animate);
-            else if (!pausedRef.current) scheduleNext();
-        };
-        requestAnimationFrame(animate);
-        updateDots(safeIdx);
-    }, [getCards, updateProgress, updateDots]);
+        trackRef.current.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+    }, [getCards]);
 
-    const scheduleNext = useCallback(() => {
-        if (autoRef.current) clearTimeout(autoRef.current);
-        autoRef.current = setTimeout(() => scrollToCard(currentRef.current + 1), DWELL);
-    }, [scrollToCard]);
+    const startContinuousScroll = useCallback(() => {
+        if (autoRef.current) cancelAnimationFrame(autoRef.current);
+        const step = () => {
+            if (!pausedRef.current && trackRef.current) {
+                const max = trackRef.current.scrollWidth - trackRef.current.clientWidth;
+                if (trackRef.current.scrollLeft >= max - 2) {
+                    trackRef.current.scrollTo({ left: 0, behavior: 'smooth' }); // Loop back
+                    setTimeout(() => { if (!pausedRef.current) autoRef.current = requestAnimationFrame(step); }, 800);
+                    return;
+                } else {
+                    trackRef.current.scrollLeft += 1; // Smooth linear scroll velocity
+                }
+            }
+            autoRef.current = requestAnimationFrame(step);
+        };
+        autoRef.current = requestAnimationFrame(step);
+    }, []);
 
     const pause = useCallback((resumeMs = 3500) => {
         pausedRef.current = true;
-        if (autoRef.current) clearTimeout(autoRef.current);
-        setTimeout(() => { pausedRef.current = false; scheduleNext(); }, resumeMs);
-    }, [scheduleNext]);
+        setTimeout(() => { pausedRef.current = false; }, resumeMs);
+    }, []);
 
-    /* build dots when ads change */
+    /* kickstart auto scroll on mount */
     useEffect(() => {
-        if (!dotsRef.current) return;
-        dotsRef.current.innerHTML = '';
-        ads.forEach((_, i) => {
-            const btn = document.createElement('button');
-            btn.className = 'ads-dot-btn' + (i === 0 ? ' dot-active' : '');
-            btn.setAttribute('aria-label', `Card ${i + 1}`);
-            btn.addEventListener('click', () => { pause(4000); scrollToCard(i); });
-            dotsRef.current!.appendChild(btn);
-        });
-    }, [ads, scrollToCard, pause]);
+        // give it a second to render
+        const t = setTimeout(() => startContinuousScroll(), 1000);
+        return () => { clearTimeout(t); if (autoRef.current) cancelAnimationFrame(autoRef.current); };
+    }, [startContinuousScroll]);
 
-    /* kick off */
-    useEffect(() => { scheduleNext(); return () => { if (autoRef.current) clearTimeout(autoRef.current); }; }, [scheduleNext]);
+    /* cleanup on unmount */
+    useEffect(() => () => { if (autoRef.current) cancelAnimationFrame(autoRef.current); }, []);
 
     /* drag scroll */
-    const dragRef = useRef({ down: false, startX: 0, scrollStart: 0 });
+    const dragRef = useRef({ down: false, startX: 0, scrollLeft: 0 });
     const onMouseDown = (e: React.MouseEvent) => {
-        dragRef.current = { down: true, startX: e.pageX - (trackRef.current?.offsetLeft ?? 0), scrollStart: trackRef.current?.scrollLeft ?? 0 };
+        if (!trackRef.current) return;
+        dragRef.current = { down: true, startX: e.pageX - trackRef.current.offsetLeft, scrollLeft: trackRef.current.scrollLeft };
         pause(5000);
     };
     const onMouseMove = (e: React.MouseEvent) => {
         if (!dragRef.current.down || !trackRef.current) return;
         e.preventDefault();
-        trackRef.current.scrollLeft = dragRef.current.scrollStart - (e.pageX - (trackRef.current.offsetLeft) - dragRef.current.startX) * 1.4;
+        trackRef.current.scrollLeft = dragRef.current.scrollLeft - (e.pageX - (trackRef.current.offsetLeft) - dragRef.current.startX) * 1.4;
     };
     const onMouseUp = () => {
         dragRef.current.down = false;
@@ -677,68 +659,46 @@ export default function AdsCarousel() {
         <section style={{ background: '#fff', fontFamily: "'DM Sans',sans-serif", color: '#1A1410', overflow: 'hidden' }}>
 
 
-            {/* Scroll section: left btn | track | right btn, all vertically centred */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '28px 24px 28px 24px' }}>
-                {/* Left nav */}
-                <button className="ads-nav-btn" aria-label="Previous"
-                    style={{ flexShrink: 0 }}
-                    onClick={() => { pause(4000); scrollToCard(currentRef.current - 1); }}>
-                    <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-                        <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </button>
-
+            {/* Scroll section without side buttons */}
+            <div style={{ width: '100%', padding: '28px 0 0 24px', position: 'relative' }}>
                 {/* Track */}
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <div
-                        ref={trackRef}
-                        className="ads-scroll-track"
-                        style={{ paddingRight: 0 }}
-                        onMouseDown={onMouseDown}
-                        onMouseMove={onMouseMove}
-                        onMouseUp={onMouseUp}
-                        onMouseLeave={() => { dragRef.current.down = false; }}
-                        onMouseEnter={() => pause(3000)}
-                        onScroll={updateProgress}
-                        onTouchStart={e => { dragRef.current.startX = e.touches[0].clientX; pause(5000); }}
-                        onTouchEnd={e => {
-                            const dx = dragRef.current.startX - e.changedTouches[0].clientX;
-                            scrollToCard(currentRef.current + (Math.abs(dx) > 50 ? (dx > 0 ? 1 : -1) : 0));
-                        }}
-                    >
-                        {ads.map((ad, i) => renderCard(ad, i))}
-                    </div>
+                <div
+                    ref={trackRef}
+                    className="ads-scroll-track"
+                    onMouseDown={onMouseDown}
+                    onMouseMove={onMouseMove}
+                    onMouseUp={onMouseUp}
+                    onMouseLeave={() => { dragRef.current.down = false; }}
+                    onMouseEnter={() => pause(3000)}
+                    onTouchStart={e => { dragRef.current.startX = e.touches[0].clientX; pause(5000); }}
+                    onTouchEnd={e => {
+                        const dx = dragRef.current.startX - e.changedTouches[0].clientX;
+                        scrollToCard(currentRef.current + (Math.abs(dx) > 50 ? (dx > 0 ? 1 : -1) : 0));
+                    }}
+                >
+                    {ads.map((ad, i) => renderCard(ad, i))}
                 </div>
-
-                {/* Right nav */}
-                <button className="ads-nav-btn" aria-label="Next"
-                    style={{ flexShrink: 0 }}
-                    onClick={() => { pause(4000); scrollToCard(currentRef.current + 1); }}>
-                    <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-                        <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </button>
             </div>
 
-            {/* Progress + dots only (nav buttons moved beside track) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '0 24px 24px' }}>
-                <div style={{
-                    display: 'flex', alignItems: 'center', gap: 6, fontSize: '.68rem',
-                    letterSpacing: '.08em', textTransform: 'uppercase', color: '#aaa', fontWeight: 500
-                }}>
-                    <div className="ads-pulse-dot" />
-                    Auto
+            {/* Bottom Controls Area */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, padding: '32px 24px 48px' }}>
+
+
+                {/* Centered Navigation Buttons */}
+                <div style={{ display: 'flex', gap: 16 }}>
+                    <button className="ads-nav-btn" aria-label="Previous"
+                        onClick={() => { pause(4000); scrollToCard(currentRef.current - 1); }}>
+                        <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+                            <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
+                    <button className="ads-nav-btn" aria-label="Next"
+                        onClick={() => { pause(4000); scrollToCard(currentRef.current + 1); }}>
+                        <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+                            <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
                 </div>
-                <div style={{
-                    flex: 1, height: 2, background: '#E5E7EB', borderRadius: 1,
-                    overflow: 'hidden', maxWidth: 320
-                }}>
-                    <div ref={fillRef} style={{
-                        height: '100%', background: '#C84B2F',
-                        borderRadius: 1, width: '0%', transition: 'width .1s ease'
-                    }} />
-                </div>
-                <div ref={dotsRef} style={{ display: 'flex', gap: 7, alignItems: 'center' }} />
             </div>
         </section>
     );
