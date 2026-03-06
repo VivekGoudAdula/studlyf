@@ -79,8 +79,8 @@ function ConfigScreen({ onGenerate }: any) {
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.3)", borderRadius: 20, padding: "6px 14px", marginBottom: 28, width: "fit-content" }}>
                     <span style={{ color: PURPLE, fontWeight: 700, fontSize: 11, letterSpacing: 2 }}>⚙️ INSTITUTIONAL ENGINE V2.1</span>
                 </div>
-                <div style={{ fontSize: 64, fontWeight: 900, lineHeight: 1.05, color: "#1a1a2e" }}>CLINICAL</div>
-                <div style={{ fontSize: 64, fontWeight: 900, lineHeight: 1.05, color: PURPLE, fontStyle: "italic", marginBottom: 28 }}>READY.</div>
+                <div className="text-[64px] font-[900] leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CLARIFIED</div>
+                <div className="text-[64px] font-[900] leading-[1.05] italic mb-7 text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">READINESS.</div>
                 <p style={{ color: "#666", fontSize: 17, lineHeight: 1.6, maxWidth: 380 }}>
                     Calibrate your assessment protocol by specifying your target role and <span style={{ color: PURPLE, fontWeight: 600 }}>institution</span>.
                 </p>

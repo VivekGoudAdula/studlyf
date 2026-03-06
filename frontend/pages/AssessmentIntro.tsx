@@ -41,7 +41,7 @@ const AssessmentIntro: React.FC = () => {
                         transition={{ delay: 0.1 }}
                         className="text-6xl sm:text-8xl font-black text-[#111827] mb-8 leading-[0.9] tracking-tighter uppercase italic"
                     >
-                        Measure What <br /><span className="text-[#7C3AED]">Actually Matters.</span>
+                        Measure What <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">ACTUALLY MATTERS.</span>
                     </motion.h1>
 
                     <motion.p

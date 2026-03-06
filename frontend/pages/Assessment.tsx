@@ -389,7 +389,7 @@ const Assessment: React.FC = () => {
                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">Institutional Engine V2.1</span>
                 </div>
                 <h1 className="text-6xl sm:text-7xl font-black text-[#111827] mb-8 leading-[0.9] tracking-tighter uppercase italic">
-                  Clinical <br /><span className="text-[#7C3AED]">Ready.</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CLINICAL <br />READY.</span>
                 </h1>
                 <p className="text-[#6B7280] text-xl font-medium leading-relaxed max-w-md">
                   Calibrate your assessment protocol by specifying your target role and institution.

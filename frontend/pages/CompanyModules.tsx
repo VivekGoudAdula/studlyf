@@ -358,7 +358,7 @@ const CompanyModules: React.FC = () => {
                   Partner Gates • Institutional Access
                 </motion.span>
                 <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black mb-8 leading-tight tracking-tighter uppercase text-[#111827] whitespace-nowrap">
-                  COMPANY <span className="text-[#7C3AED]">MODULES.</span>
+                  COMPANY <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">MODULES.</span>
                 </h1>
                 <p className="text-lg sm:text-xl text-[#64748B] max-w-3xl mx-auto font-medium leading-relaxed">
                   Personalized preparation dashboards for global tech giants. Master the exact hiring patterns and ship like a pro.

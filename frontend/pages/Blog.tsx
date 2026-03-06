@@ -279,7 +279,7 @@ const Blog: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-4xl sm:text-6xl lg:text-7xl font-black text-[#0F172A] leading-tight tracking-tight uppercase"
                   >
-                    <span className="text-[#6C3BFF]">Blogs</span>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">BLOGS</span>
                   </motion.h1>
                 </div>
                 <motion.p

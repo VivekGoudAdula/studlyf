@@ -202,7 +202,7 @@ const WhyUsSection: React.FC = () => {
                         viewport={{ once: true }}
                         className="text-4xl sm:text-5xl font-black text-[#111827] uppercase tracking-tighter"
                     >
-                        Why <span className="text-[#7C3AED]">Us?</span>
+                        Why <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">US?</span>
                     </motion.h2>
                 </div>
 
