@@ -133,16 +133,16 @@ const SDLProjectCreate: React.FC = () => {
           <button
             onClick={() => { if (s < step) setStep(s); }}
             className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${s === step
-                ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/40'
-                : s < step
-                  ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30 cursor-pointer hover:bg-violet-500/30'
-                  : 'bg-white/[0.04] text-white/20 border border-white/[0.06]'
+              ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/40'
+              : s < step
+                ? 'bg-violet-500/20 text-violet-600 border border-violet-500/30 cursor-pointer hover:bg-violet-500/30'
+                : 'bg-white text-gray-300 border border-gray-100'
               }`}
           >
             {s < step ? '✓' : s}
           </button>
           {s < 3 && (
-            <div className={`h-[2px] w-12 rounded-full ${s < step ? 'bg-violet-500' : 'bg-white/[0.06]'}`} />
+            <div className={`h-[2px] w-12 rounded-full ${s < step ? 'bg-violet-500' : 'bg-gray-200'}`} />
           )}
         </React.Fragment>
       ))}
@@ -150,13 +150,13 @@ const SDLProjectCreate: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#080515] pt-32 pb-24 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-24 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
 
         {/* Back button */}
         <button
           onClick={() => step > 1 ? setStep(step - 1) : navigate('/job-prep/projects')}
-          className="flex items-center gap-2 text-white/30 text-xs uppercase tracking-[0.2em] font-bold mb-8 hover:text-white/50 transition-colors"
+          className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-[0.2em] font-bold mb-8 hover:text-gray-600 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           {step > 1 ? 'Previous Step' : 'Back to Lab'}
@@ -168,8 +168,8 @@ const SDLProjectCreate: React.FC = () => {
             <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
             <span className="text-[10px] font-bold text-violet-400 uppercase tracking-[0.4em]">Project Creation Protocol</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tighter leading-tight">
-            Launch Your <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Lab Project</span>
+          <h1 className="text-3xl sm:text-5xl font-black text-[#111827] tracking-tighter leading-tight">
+            Launch Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">Project</span>
           </h1>
         </motion.div>
 
@@ -179,24 +179,24 @@ const SDLProjectCreate: React.FC = () => {
           {/* ═══ STEP 1: Choose Project Type ═══ */}
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-              <h2 className="text-lg font-bold text-white/80 mb-6">Choose Project Type</h2>
+              <h2 className="text-lg font-bold text-[#111827] mb-6">Choose Project Type</h2>
               <div className="grid gap-4">
                 {PROJECT_TYPES.map((type) => (
                   <button
                     key={type.id}
                     onClick={() => setProjectType(type.id)}
                     className={`w-full text-left p-6 rounded-2xl border transition-all duration-300 ${projectType === type.id
-                        ? `${type.bg} ${type.border} shadow-lg`
-                        : 'bg-white/[0.02] border-white/[0.06] hover:border-white/10 hover:bg-white/[0.04]'
+                      ? `${type.bg} ${type.border} shadow-lg shadow-violet-500/5`
+                      : 'bg-white border-gray-100 hover:border-violet-500/20 hover:shadow-xl hover:shadow-violet-500/5'
                       }`}
                   >
                     <div className="flex items-start gap-4">
                       <span className={`text-2xl ${projectType === type.id ? 'opacity-100' : 'opacity-30'}`}>{type.icon}</span>
                       <div>
-                        <h3 className={`font-bold text-lg mb-1 ${projectType === type.id ? 'text-white' : 'text-white/60'}`}>
+                        <h3 className={`font-bold text-lg mb-1 ${projectType === type.id ? 'text-[#111827]' : 'text-gray-500'}`}>
                           {type.title}
                         </h3>
-                        <p className="text-sm text-white/30">{type.desc}</p>
+                        <p className="text-sm text-gray-400">{type.desc}</p>
                       </div>
                       {projectType === type.id && (
                         <motion.div
@@ -216,8 +216,8 @@ const SDLProjectCreate: React.FC = () => {
                 disabled={!canProceedStep1}
                 onClick={() => setStep(2)}
                 className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${canProceedStep1
-                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
-                    : 'bg-white/[0.04] text-white/20 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
+                  : 'bg-white/[0.04] text-white/20 cursor-not-allowed'
                   }`}
               >
                 Continue →
@@ -228,7 +228,7 @@ const SDLProjectCreate: React.FC = () => {
           {/* ═══ STEP 2: Define Project ═══ */}
           {step === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-              <h2 className="text-lg font-bold text-white/80 mb-6">Define Your Project</h2>
+              <h2 className="text-lg font-bold text-[#111827] mb-6">Define Your Project</h2>
               <div className="space-y-6">
                 {/* Title */}
                 <div>
@@ -237,7 +237,7 @@ const SDLProjectCreate: React.FC = () => {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g., Netflix Streaming Engine Replica"
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all shadow-sm"
                   />
                 </div>
 
@@ -249,7 +249,7 @@ const SDLProjectCreate: React.FC = () => {
                     onChange={(e) => setProblemStatement(e.target.value)}
                     placeholder="What system are you deconstructing? What engineering challenge does it solve?"
                     rows={4}
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none shadow-sm"
                   />
                 </div>
 
@@ -260,7 +260,7 @@ const SDLProjectCreate: React.FC = () => {
                     value={architectureFocus}
                     onChange={(e) => setArchitectureFocus(e.target.value)}
                     placeholder="e.g., Microservices + Event-Driven, CQRS, Serverless"
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all shadow-sm"
                   />
                 </div>
 
@@ -271,7 +271,7 @@ const SDLProjectCreate: React.FC = () => {
                     value={skillsRequired}
                     onChange={(e) => setSkillsRequired(e.target.value)}
                     placeholder="e.g., React, Node.js, Redis, Kafka, Docker"
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all shadow-sm"
                   />
                 </div>
 
@@ -282,12 +282,12 @@ const SDLProjectCreate: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setTeamSize(Math.max(1, teamSize - 1))}
-                        className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/40 hover:text-white hover:border-white/20 transition-all flex items-center justify-center"
+                        className="w-10 h-10 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-violet-600 hover:border-violet-200 transition-all flex items-center justify-center shadow-sm"
                       >−</button>
-                      <span className="text-xl font-black text-white w-8 text-center">{teamSize}</span>
+                      <span className="text-xl font-black text-[#111827] w-8 text-center">{teamSize}</span>
                       <button
                         onClick={() => setTeamSize(Math.min(10, teamSize + 1))}
-                        className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/40 hover:text-white hover:border-white/20 transition-all flex items-center justify-center"
+                        className="w-10 h-10 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-violet-600 hover:border-violet-200 transition-all flex items-center justify-center shadow-sm"
                       >+</button>
                     </div>
                   </div>
@@ -296,7 +296,7 @@ const SDLProjectCreate: React.FC = () => {
                     <select
                       value={timeline}
                       onChange={(e) => setTimeline(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:border-violet-500/40 transition-all appearance-none"
+                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm focus:outline-none focus:border-violet-500/40 transition-all appearance-none shadow-sm"
                     >
                       {TIMELINE_OPTIONS.map((t) => (
                         <option key={t} value={t} className="bg-[#1A1030] text-white">{t}</option>
@@ -314,8 +314,8 @@ const SDLProjectCreate: React.FC = () => {
                         key={tag}
                         onClick={() => toggleTag(tag)}
                         className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${tags.includes(tag)
-                            ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                            : 'bg-white/[0.03] text-white/25 border border-white/[0.06] hover:text-white/40'
+                          ? 'bg-violet-600 text-white border border-violet-500 shadow-lg shadow-violet-600/20'
+                          : 'bg-white text-gray-400 border border-gray-200 hover:border-violet-200 hover:text-violet-600'
                           }`}
                       >
                         {tag}
@@ -329,8 +329,8 @@ const SDLProjectCreate: React.FC = () => {
                 disabled={!canProceedStep2}
                 onClick={() => setStep(3)}
                 className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${canProceedStep2
-                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
-                    : 'bg-white/[0.04] text-white/20 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
               >
                 Continue →
@@ -341,24 +341,24 @@ const SDLProjectCreate: React.FC = () => {
           {/* ═══ STEP 3: Role Assignment & Details ═══ */}
           {step === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-              <h2 className="text-lg font-bold text-white/80 mb-6">Roles & Architecture Details</h2>
+              <h2 className="text-lg font-bold text-gray-800 mb-6">Roles & Architecture Details</h2>
               <div className="space-y-6">
 
                 {/* Roles */}
                 <div>
-                  <label className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-3 block">Roles Needed</label>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block">Roles Needed</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {ROLE_OPTIONS.map((role) => (
                       <button
                         key={role.id}
                         onClick={() => toggleRole(role.id)}
                         className={`p-4 rounded-xl border text-left transition-all ${rolesNeeded.includes(role.id)
-                            ? 'bg-violet-600/15 border-violet-500/30 shadow-lg shadow-violet-600/10'
-                            : 'bg-white/[0.02] border-white/[0.06] hover:border-white/10'
+                          ? 'bg-violet-600 text-white border-violet-500 shadow-lg shadow-violet-600/20'
+                          : 'bg-white border-gray-100 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-500/5'
                           }`}
                       >
                         <span className="text-lg block mb-1">{role.icon}</span>
-                        <span className={`text-sm font-bold ${rolesNeeded.includes(role.id) ? 'text-white' : 'text-white/40'}`}>
+                        <span className={`text-sm font-bold ${rolesNeeded.includes(role.id) ? 'text-white' : 'text-gray-500'}`}>
                           {role.label}
                         </span>
                       </button>
@@ -373,7 +373,7 @@ const SDLProjectCreate: React.FC = () => {
                     value={githubLink}
                     onChange={(e) => setGithubLink(e.target.value)}
                     placeholder="https://github.com/username/repo"
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all shadow-sm"
                   />
                 </div>
 
@@ -385,7 +385,7 @@ const SDLProjectCreate: React.FC = () => {
                     onChange={(e) => setOverview(e.target.value)}
                     placeholder="High-level overview of what you're building and why..."
                     rows={3}
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none shadow-sm"
                   />
                 </div>
 
@@ -397,7 +397,7 @@ const SDLProjectCreate: React.FC = () => {
                     onChange={(e) => setArchitectureBreakdown(e.target.value)}
                     placeholder="Describe the system layers, services, data flow..."
                     rows={4}
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none shadow-sm"
                   />
                 </div>
 
@@ -409,7 +409,7 @@ const SDLProjectCreate: React.FC = () => {
                     onChange={(e) => setFeatureChecklist(e.target.value)}
                     placeholder={"User authentication\nReal-time messaging\nVideo streaming pipeline\nRecommendation engine\nAdmin dashboard"}
                     rows={5}
-                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none font-mono"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[#111827] text-sm placeholder:text-gray-300 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none font-mono shadow-sm"
                   />
                 </div>
               </div>
@@ -425,7 +425,7 @@ const SDLProjectCreate: React.FC = () => {
                 {submitting ? (
                   <span className="flex items-center justify-center gap-3">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Initializing Lab...
+                    Initializing Project Lab...
                   </span>
                 ) : (
                   '◆ Launch Project'

@@ -95,7 +95,7 @@ const Cart: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="text-6xl sm:text-7xl font-black text-[#111827] tracking-tighter uppercase mb-4">
-              Your <span className="text-[#7C3AED]">Cart</span>
+              Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CART</span>
             </h1>
             <p className="text-lg text-[#6B7280] font-medium">
               {cartItems.length} {cartItems.length === 1 ? 'course' : 'courses'} ready to enroll

@@ -58,7 +58,7 @@ const AssessmentIntro: React.FC = () => {
                     {/* Methodology Section */}
                     <div className="space-y-12">
                         <div className="space-y-4">
-                            <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">The <span className="text-[#7C3AED]">Clinical</span> Edge.</h2>
+                            <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">The <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">Clinical</span> Edge.</h2>
                             <div className="h-1 w-20 bg-[#7C3AED] rounded-full" />
                         </div>
 

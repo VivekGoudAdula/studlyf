@@ -196,7 +196,7 @@ const SDLManagement: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
             <Layers size={28} className="text-purple-400" />
-            System Deconstruction Lab
+            Build A <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">Project</span>
           </h1>
           <p className="text-white/50 text-sm mt-1">Manage projects, teams, and collaboration across the platform.</p>
         </div>
