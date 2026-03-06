@@ -441,11 +441,10 @@ const SystemDeconstructionLab: React.FC = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(i)}
-              className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.15em] transition-all ${
-                activeTab === i
+              className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.15em] transition-all ${activeTab === i
                   ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
                   : 'bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/60 border border-white/[0.06]'
-              }`}
+                }`}
             >
               {tab}
             </button>
@@ -458,11 +457,10 @@ const SystemDeconstructionLab: React.FC = () => {
             <button
               key={tag}
               onClick={() => setActiveFilter(tag)}
-              className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all ${
-                activeFilter === tag
+              className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all ${activeFilter === tag
                   ? 'bg-white/10 text-white border border-white/20'
                   : 'text-white/25 hover:text-white/40 border border-transparent hover:border-white/[0.06]'
-              }`}
+                }`}
             >
               {tag}
             </button>

@@ -75,8 +75,8 @@ const WhatIsStudlyf: React.FC = () => {
                         className="text-4xl md:text-6xl lg:text-7xl font-['Poppins'] font-extrabold text-black leading-[1.1] tracking-tight"
                     >
                         <motion.span
-                            initial={{ y: 50, opacity: 0 }}
-                            whileInView={{ y: 0, opacity: 1 }}
+                            initial={{ x: -20, opacity: 0 }}
+                            whileInView={{ x: 0, opacity: 1 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6, delay: 0.2 }}
                             className="inline-block mr-2 md:mr-4"
@@ -84,15 +84,14 @@ const WhatIsStudlyf: React.FC = () => {
                             wait, what is{" "}
                         </motion.span>
                         <motion.span
-                            initial={{ y: 50, opacity: 0, scale: 0.9 }}
-                            whileInView={{ y: 0, opacity: 1, scale: 1 }}
+                            initial={{ y: 20, opacity: 0 }}
+                            whileInView={{ y: 0, opacity: 1 }}
                             viewport={{ once: true }}
                             transition={{
                                 duration: 0.6,
-                                ease: "backOut",
                                 delay: 0.4
                             }}
-                            className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] underline decoration-4 underline-offset-8 md:decoration-[10px] md:underline-offset-[16px] decoration-[#EC4899]/20"
+                            className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] uppercase"
                         >
                             STUDLYF?
                         </motion.span>

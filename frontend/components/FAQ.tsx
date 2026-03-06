@@ -89,7 +89,7 @@ const FAQ: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="font-display text-4xl sm:text-5xl italic text-[#0F172A]"
           >
-            The Standard, Clarified.
+            The Standard, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CLARIFIED.</span>
           </motion.h3>
         </div>
 

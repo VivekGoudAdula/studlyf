@@ -189,7 +189,7 @@ const DashboardHome: React.FC = () => {
     { text: 'YOUR', className: 'text-black' },
     { text: 'CAREER', className: 'text-black' },
     { text: 'STARTS', className: 'text-black' },
-    { text: 'HERE', className: 'text-[#7C3AED]' },
+    { text: 'HERE', className: 'text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]' },
   ];
 
 
@@ -324,7 +324,7 @@ const DashboardHome: React.FC = () => {
                 <TypewriterEffectSmooth words={typewriterWords} />
                 <p className="text-[11px] sm:text-[14px] font-bold text-black uppercase tracking-[0.3em] max-w-2xl text-center leading-relaxed">
                   Studlyf -- Building the student internet <br />
-                  <span className="text-[#7C3AED]">for Next generation</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">FOR NEXT GENERATION</span>
                 </p>
               </div>
 
@@ -370,7 +370,7 @@ const DashboardHome: React.FC = () => {
                   COURSES <br />
                   FOR <br />
                   EVERY <br />
-                  <span className="italic font-light text-blue-900 lowercase leading-tight block mt-2">ambition</span>
+                  <span className="italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] lowercase leading-tight block mt-2">ambition</span>
                 </h1>
                 <p className="text-xs tracking-[0.3em] uppercase text-blue-900 mb-6 font-bold leading-loose">
                   GLOBAL TRAINING <br /> FOR ROLE-READY EXCELLENCE.
@@ -493,7 +493,7 @@ const DashboardHome: React.FC = () => {
               <div className="flex flex-col gap-6 lg:w-1/2">
                 <span className="text-[10px] font-black text-black/40 uppercase tracking-[0.4em]">Career Synergy</span>
                 <h2 className="text-4xl sm:text-6xl font-black text-black tracking-tighter leading-tight">
-                  Streamline Your Career <br /> in <span className="text-[#7C3AED]">AI Era</span>.
+                  Streamline Your Career <br /> in <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">AI Era</span>.
                 </h2>
               </div>
               <div className="lg:w-1/2 flex flex-col items-end justify-center gap-0 pt-8">

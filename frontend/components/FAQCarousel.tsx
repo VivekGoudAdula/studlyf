@@ -58,7 +58,7 @@ const FAQCarousel: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="text-5xl sm:text-6xl font-black text-[#111827] uppercase tracking-tighter font-poppins"
           >
-            The Standard, <span className="text-[#7C3AED]">Clarified</span>.
+            The Standard, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CLARIFIED.</span>
           </motion.h3>
         </div>
 

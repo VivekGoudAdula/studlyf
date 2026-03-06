@@ -120,7 +120,7 @@ const MockInterview: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-[0.4em]">Simulate High-Stakes Interviews</span>
               </div>
               <h1 className="text-6xl sm:text-8xl font-black text-gray-900 mb-8 leading-[0.9] tracking-tighter uppercase italic">
-                Master the <br /><span className="text-[#7C3AED]">Hot Seat.</span>
+                Master the <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">HOT SEAT.</span>
               </h1>
               <p className="text-xl text-gray-500 font-medium max-w-2xl mx-auto leading-relaxed">
                 Elite interview simulation for engineers. Practice logical defense, technical clarity, and behavioral authority.
@@ -188,7 +188,7 @@ const MockInterview: React.FC = () => {
                   <ChevronLeft className="w-4 h-4" /> Back to Briefing
                 </button>
                 <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">
-                  Interview <span className="text-[#7C3AED]">Calibration</span>.
+                  Interview <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CALIBRATION</span>.
                 </h2>
               </div>
 

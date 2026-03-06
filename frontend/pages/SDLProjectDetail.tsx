@@ -365,11 +365,10 @@ const SDLProjectDetail: React.FC = () => {
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
               {project.views} views
             </span>
-            <span className={`text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border ${
-              project.status === 'open' ? 'bg-green-500/15 text-green-400 border-green-500/30' :
-              project.status === 'in_progress' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
-              'bg-blue-500/15 text-blue-400 border-blue-500/30'
-            }`}>
+            <span className={`text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border ${project.status === 'open' ? 'bg-green-500/15 text-green-400 border-green-500/30' :
+                project.status === 'in_progress' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                  'bg-blue-500/15 text-blue-400 border-blue-500/30'
+              }`}>
               {project.status.replace('_', ' ')}
             </span>
           </div>
@@ -378,11 +377,10 @@ const SDLProjectDetail: React.FC = () => {
         {/* ── Project Header ── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
           <div className="flex items-center gap-3 mb-4">
-            <span className={`text-[9px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border ${
-              project.project_type === 'system_replica' ? 'bg-violet-500/20 text-violet-300 border-violet-500/30' :
-              project.project_type === 'original_build' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-              'bg-amber-500/20 text-amber-300 border-amber-500/30'
-            }`}>
+            <span className={`text-[9px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border ${project.project_type === 'system_replica' ? 'bg-violet-500/20 text-violet-300 border-violet-500/30' :
+                project.project_type === 'original_build' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                  'bg-amber-500/20 text-amber-300 border-amber-500/30'
+              }`}>
               {project.project_type.replace('_', ' ')}
             </span>
             <span className="text-[10px] text-violet-400/70 font-bold uppercase tracking-[0.15em]">⟠ {project.architecture_focus}</span>
@@ -445,11 +443,10 @@ const SDLProjectDetail: React.FC = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(i)}
-              className={`px-5 py-3 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] transition-all whitespace-nowrap relative ${
-                activeTab === i
+              className={`px-5 py-3 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] transition-all whitespace-nowrap relative ${activeTab === i
                   ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
                   : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]'
-              }`}
+                }`}
             >
               {tab}
               {/* Pending requests badge for owner on Team tab */}
@@ -488,13 +485,11 @@ const SDLProjectDetail: React.FC = () => {
                           <button
                             key={i}
                             onClick={() => handleToggleFeature(i)}
-                            className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${
-                              feat.completed ? 'bg-emerald-500/5 border border-emerald-500/10' : 'bg-white/[0.01] border border-white/[0.04] hover:border-white/[0.08]'
-                            } ${isOwner ? 'cursor-pointer' : 'cursor-default'}`}
+                            className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${feat.completed ? 'bg-emerald-500/5 border border-emerald-500/10' : 'bg-white/[0.01] border border-white/[0.04] hover:border-white/[0.08]'
+                              } ${isOwner ? 'cursor-pointer' : 'cursor-default'}`}
                           >
-                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
-                              feat.completed ? 'bg-emerald-500 border-emerald-500' : 'border-white/20'
-                            }`}>
+                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${feat.completed ? 'bg-emerald-500 border-emerald-500' : 'border-white/20'
+                              }`}>
                               {feat.completed && <span className="text-white text-[10px]">✓</span>}
                             </div>
                             <span className={`text-sm ${feat.completed ? 'text-white/40 line-through' : 'text-white/60'}`}>
@@ -527,7 +522,7 @@ const SDLProjectDetail: React.FC = () => {
                           </button>
                         </div>
 
-                      /* Already has a request */
+                        /* Already has a request */
                       ) : myJoinRequest ? (
                         <div className="text-center py-4">
                           {myJoinRequest.status === 'pending' && (
@@ -559,7 +554,7 @@ const SDLProjectDetail: React.FC = () => {
                           )}
                         </div>
 
-                      /* Fresh join form — just submitted */
+                        /* Fresh join form — just submitted */
                       ) : joinSuccess ? (
                         <div className="text-center py-4">
                           <div className="w-10 h-10 mx-auto mb-3 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
@@ -569,7 +564,7 @@ const SDLProjectDetail: React.FC = () => {
                           <p className="text-white/30 text-xs">The project lead will review your request. You'll be added to the team if accepted.</p>
                         </div>
 
-                      /* Default: show form */
+                        /* Default: show form */
                       ) : (
                         <>
                           <p className="text-white/30 text-xs mb-3">Pick a role and introduce yourself to the team.</p>

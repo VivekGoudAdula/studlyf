@@ -132,13 +132,12 @@ const SDLProjectCreate: React.FC = () => {
         <React.Fragment key={s}>
           <button
             onClick={() => { if (s < step) setStep(s); }}
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-              s === step
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${s === step
                 ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/40'
                 : s < step
                   ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30 cursor-pointer hover:bg-violet-500/30'
                   : 'bg-white/[0.04] text-white/20 border border-white/[0.06]'
-            }`}
+              }`}
           >
             {s < step ? '✓' : s}
           </button>
@@ -186,11 +185,10 @@ const SDLProjectCreate: React.FC = () => {
                   <button
                     key={type.id}
                     onClick={() => setProjectType(type.id)}
-                    className={`w-full text-left p-6 rounded-2xl border transition-all duration-300 ${
-                      projectType === type.id
+                    className={`w-full text-left p-6 rounded-2xl border transition-all duration-300 ${projectType === type.id
                         ? `${type.bg} ${type.border} shadow-lg`
                         : 'bg-white/[0.02] border-white/[0.06] hover:border-white/10 hover:bg-white/[0.04]'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-4">
                       <span className={`text-2xl ${projectType === type.id ? 'opacity-100' : 'opacity-30'}`}>{type.icon}</span>
@@ -217,11 +215,10 @@ const SDLProjectCreate: React.FC = () => {
               <button
                 disabled={!canProceedStep1}
                 onClick={() => setStep(2)}
-                className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${
-                  canProceedStep1
+                className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${canProceedStep1
                     ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
                     : 'bg-white/[0.04] text-white/20 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Continue →
               </button>
@@ -316,11 +313,10 @@ const SDLProjectCreate: React.FC = () => {
                       <button
                         key={tag}
                         onClick={() => toggleTag(tag)}
-                        className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${
-                          tags.includes(tag)
+                        className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${tags.includes(tag)
                             ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
                             : 'bg-white/[0.03] text-white/25 border border-white/[0.06] hover:text-white/40'
-                        }`}
+                          }`}
                       >
                         {tag}
                       </button>
@@ -332,11 +328,10 @@ const SDLProjectCreate: React.FC = () => {
               <button
                 disabled={!canProceedStep2}
                 onClick={() => setStep(3)}
-                className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${
-                  canProceedStep2
+                className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${canProceedStep2
                     ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
                     : 'bg-white/[0.04] text-white/20 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Continue →
               </button>
@@ -357,11 +352,10 @@ const SDLProjectCreate: React.FC = () => {
                       <button
                         key={role.id}
                         onClick={() => toggleRole(role.id)}
-                        className={`p-4 rounded-xl border text-left transition-all ${
-                          rolesNeeded.includes(role.id)
+                        className={`p-4 rounded-xl border text-left transition-all ${rolesNeeded.includes(role.id)
                             ? 'bg-violet-600/15 border-violet-500/30 shadow-lg shadow-violet-600/10'
                             : 'bg-white/[0.02] border-white/[0.06] hover:border-white/10'
-                        }`}
+                          }`}
                       >
                         <span className="text-lg block mb-1">{role.icon}</span>
                         <span className={`text-sm font-bold ${rolesNeeded.includes(role.id) ? 'text-white' : 'text-white/40'}`}>
