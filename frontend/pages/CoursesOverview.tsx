@@ -177,8 +177,8 @@ const CoursesOverview: React.FC = () => {
                         className="text-5xl sm:text-7xl lg:text-8xl font-black text-[#111827] tracking-tighter leading-[0.88] mb-6 uppercase"
                     >
                         Choose Your <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] via-[#6D28D9] to-[#4F46E5]">
-                            Engineering Track
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">
+                            ENGINEERING TRACK
                         </span>
                     </motion.h1>
 
@@ -465,7 +465,7 @@ const CoursesOverview: React.FC = () => {
                         <p className="text-[10px] font-black text-[#A78BFA] uppercase tracking-[0.5em] mb-3">Not sure which track?</p>
                         <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter leading-tight">
                             Take our Career Fit <br />
-                            <span className="text-[#A78BFA]">Assessment.</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">Assessment.</span>
                         </h3>
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-4">

@@ -107,11 +107,7 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
       <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/4 h-full object-cover opacity-80 group-hover:opacity-100 transition-all" alt="Assessment" />
     </BentoCard>
     <BentoCard onClick={onItemClick} to="/job-prep/mock-interview" title="Mock tests & interviews" desc="Practice clinical logic defense." className="h-[88px]" />
-    <BentoCard onClick={onItemClick} to="/job-prep/projects" title="System Deconstruction Lab" desc="Deconstruct & rebuild tech giant systems in teams." className="h-[88px]">
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center border border-violet-500/20 opacity-60 group-hover:opacity-100 transition-opacity">
-        <span className="text-violet-400 text-sm">◆</span>
-      </div>
-    </BentoCard>
+    <BentoCard onClick={onItemClick} to="/job-prep/projects" title="Build A Project" desc="Build and scale industry-standard projects with elite engineering teams." className="h-[88px]" />
   </div>
 );
 

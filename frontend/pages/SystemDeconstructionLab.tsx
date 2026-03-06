@@ -194,7 +194,7 @@ const ProjectCard: React.FC<{ project: SDLProject; onClick: () => void }> = ({ p
     whileHover={{ y: -4, scale: 1.01 }}
     transition={{ duration: 0.3 }}
     onClick={onClick}
-    className="group cursor-pointer bg-gradient-to-br from-[#1A1030] to-[#0F0A1F] rounded-2xl border border-white/[0.06] overflow-hidden hover:border-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/10 transition-all duration-500"
+    className="group cursor-pointer bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/10 transition-all duration-500 shadow-sm"
   >
     {/* Top accent */}
     <div className="h-1 w-full bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -207,17 +207,17 @@ const ProjectCard: React.FC<{ project: SDLProject; onClick: () => void }> = ({ p
         </span>
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${statusColor(project.status)} animate-pulse`} />
-          <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">{project.status.replace('_', ' ')}</span>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">{project.status.replace('_', ' ')}</span>
         </div>
       </div>
 
       {/* Title */}
-      <h3 className="text-xl font-bold text-white mb-2 group-hover:text-violet-300 transition-colors tracking-tight leading-tight">
+      <h3 className="text-xl font-bold text-[#111827] mb-2 group-hover:text-violet-600 transition-colors tracking-tight leading-tight">
         {project.title}
       </h3>
 
       {/* Problem statement */}
-      <p className="text-white/40 text-sm leading-relaxed mb-5 line-clamp-2">
+      <p className="text-gray-500 text-sm leading-relaxed mb-5 line-clamp-2">
         {project.problem_statement}
       </p>
 
@@ -244,7 +244,7 @@ const ProjectCard: React.FC<{ project: SDLProject; onClick: () => void }> = ({ p
       {project.progress > 0 && (
         <div className="mb-5">
           <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[10px] text-white/30 uppercase tracking-wider font-medium">Progress</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Progress</span>
             <span className="text-[10px] text-violet-400 font-bold">{project.progress}%</span>
           </div>
           <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
@@ -265,7 +265,7 @@ const ProjectCard: React.FC<{ project: SDLProject; onClick: () => void }> = ({ p
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
             <span className="text-[8px] font-bold text-white">{project.owner_name.charAt(0)}</span>
           </div>
-          <span className="text-[11px] text-white/40 font-medium">{project.owner_name}</span>
+          <span className="text-[11px] text-gray-400 font-medium">{project.owner_name}</span>
         </div>
         <div className="flex items-center gap-3">
           {project.status === 'open' && (
@@ -305,11 +305,11 @@ const StatsStrip: React.FC<{ stats: any }> = ({ stats }) => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="bg-gradient-to-br from-white/[0.04] to-transparent rounded-2xl border border-white/[0.06] p-5 text-center"
+          className="bg-white rounded-2xl border border-gray-100 p-5 text-center shadow-sm"
         >
           <span className="text-violet-400 text-lg mb-1 block">{item.icon}</span>
-          <div className="text-2xl font-black text-white mb-1">{item.value}</div>
-          <div className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">{item.label}</div>
+          <div className="text-2xl font-black text-[#111827] mb-1">{item.value}</div>
+          <div className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-bold">{item.label}</div>
         </motion.div>
       ))}
     </div>
@@ -378,7 +378,7 @@ const SystemDeconstructionLab: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#080515] pt-32 pb-24 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-24 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
 
         {/* ── Hero ── */}
@@ -394,14 +394,14 @@ const SystemDeconstructionLab: React.FC = () => {
                 <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-violet-400 uppercase tracking-[0.4em]">Engineering Lab Protocol</span>
               </div>
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tighter leading-[0.9]">
-                System<br />
-                <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
-                  Deconstruction Lab
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-[#111827] mb-6 tracking-tighter leading-[0.9]">
+                Build A<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">
+                  Project
                 </span>
               </h1>
-              <p className="text-lg text-white/40 leading-relaxed max-w-xl">
-                Deconstruct tech giant systems. Collaborate in structured engineering teams. Build proof-of-skill that recruiters actually respect.
+              <p className="text-lg text-gray-600 leading-relaxed max-w-xl">
+                Build and scale industry-standard projects with elite engineering teams. Showcase architecture ownership and system thinking.
               </p>
             </div>
 
@@ -411,7 +411,7 @@ const SystemDeconstructionLab: React.FC = () => {
               onClick={() => navigate('/job-prep/projects/create')}
               className="shrink-0 px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-xs uppercase tracking-[0.25em] rounded-xl shadow-2xl shadow-violet-600/30 hover:shadow-violet-500/50 transition-all border border-violet-500/30"
             >
-              + Start a Lab Project
+              + Start a New Project
             </motion.button>
           </div>
         </motion.header>
@@ -442,8 +442,8 @@ const SystemDeconstructionLab: React.FC = () => {
               key={tab}
               onClick={() => setActiveTab(i)}
               className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.15em] transition-all ${activeTab === i
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/60 border border-white/[0.06]'
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                : 'bg-white text-gray-500 hover:text-gray-700 border border-gray-100'
                 }`}
             >
               {tab}
@@ -458,8 +458,8 @@ const SystemDeconstructionLab: React.FC = () => {
               key={tag}
               onClick={() => setActiveFilter(tag)}
               className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all ${activeFilter === tag
-                  ? 'bg-white/10 text-white border border-white/20'
-                  : 'text-white/25 hover:text-white/40 border border-transparent hover:border-white/[0.06]'
+                ? 'bg-gray-100 text-gray-900 border border-gray-200'
+                : 'text-gray-400 hover:text-gray-600 border border-transparent hover:border-gray-100'
                 }`}
             >
               {tag}
@@ -518,10 +518,10 @@ const SystemDeconstructionLab: React.FC = () => {
           viewport={{ once: true }}
           className="mt-24 bg-gradient-to-br from-violet-600/10 to-purple-600/5 rounded-3xl border border-violet-500/10 p-12 text-center"
         >
-          <h2 className="text-3xl font-black text-white mb-4 tracking-tight">
+          <h2 className="text-3xl font-black text-[#111827] mb-4 tracking-tight">
             Ready to Build Something Real?
           </h2>
-          <p className="text-white/40 mb-8 max-w-lg mx-auto">
+          <p className="text-gray-600 mb-8 max-w-lg mx-auto">
             Stop watching tutorials. Start deconstructing systems used by millions. Your portfolio will speak louder than any certificate.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
