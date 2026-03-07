@@ -388,10 +388,10 @@ const Assessment: React.FC = () => {
                   <Brain className="w-4 h-4" />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">Institutional Engine V2.1</span>
                 </div>
-                <h1 className="text-6xl sm:text-7xl font-black text-[#111827] mb-8 leading-[0.9] tracking-tighter uppercase italic">
+                <h1 className="text-5xl sm:text-7xl font-black text-[#111827] mb-8 leading-[0.9] tracking-tighter uppercase italic">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CLINICAL <br />READY.</span>
                 </h1>
-                <p className="text-[#6B7280] text-xl font-medium leading-relaxed max-w-md">
+                <p className="text-[#6B7280] text-lg sm:text-xl font-medium leading-relaxed max-w-md mx-auto lg:mx-0">
                   Calibrate your assessment protocol by specifying your target role and institution.
                 </p>
               </div>
@@ -572,16 +572,16 @@ const Assessment: React.FC = () => {
                 ))}
               </div>
 
-              <div className="bg-white rounded-[3rem] p-12 border border-gray-100 shadow-2xl relative">
-                <div className="flex justify-between items-center mb-12">
-                  <span className="bg-gray-900 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest">Question {currentIndex + 1} / {questions.length}</span>
-                  <div className={`flex items-center gap-2 font-mono font-bold text-sm ${timer < 10 ? 'text-red-500 animate-pulse' : 'text-[#7C3AED]'}`}>
+              <div className="bg-white rounded-3xl sm:rounded-[3rem] p-8 sm:p-12 border border-gray-100 shadow-2xl relative">
+                <div className="flex justify-between items-center mb-8 sm:mb-12">
+                  <span className="bg-gray-900 text-white px-3 sm:px-4 py-1 sm:py-2 rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Question {currentIndex + 1} / {questions.length}</span>
+                  <div className={`flex items-center gap-2 font-mono font-bold text-xs sm:text-sm ${timer < 10 ? 'text-red-500 animate-pulse' : 'text-[#7C3AED]'}`}>
                     <Timer className="w-4 h-4" /> {timer}s
                   </div>
                 </div>
 
-                <div className="space-y-8">
-                  <h3 className="text-3xl font-bold text-gray-900 leading-tight">{questions[currentIndex].text}</h3>
+                <div className="space-y-6 sm:space-y-8">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">{questions[currentIndex].text}</h3>
 
                   {questions[currentIndex].code && (
                     <div className="bg-[#111827] rounded-3xl p-8 font-mono text-sm text-blue-400 overflow-x-auto shadow-inner">
@@ -589,15 +589,15 @@ const Assessment: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="grid gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {questions[currentIndex].options?.map((opt, i) => (
                       <button
                         key={i}
                         onClick={() => handleNext(i === questions[currentIndex].correctAnswer)}
-                        className="w-full text-left p-6 rounded-2xl border-2 border-transparent bg-gray-50 hover:bg-white hover:border-[#7C3AED] hover:shadow-xl transition-all group flex items-center justify-between"
+                        className="w-full text-left p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-transparent bg-gray-50 hover:bg-white hover:border-[#7C3AED] hover:shadow-xl transition-all group flex items-center justify-between"
                       >
-                        <span className="font-bold text-gray-700 group-hover:text-[#7C3AED]">{opt}</span>
-                        <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED]">{String.fromCharCode(65 + i)}</div>
+                        <span className="font-bold text-sm sm:text-base text-gray-700 group-hover:text-[#7C3AED] leading-snug">{opt}</span>
+                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED] ml-4">{String.fromCharCode(65 + i)}</div>
                       </button>
                     ))}
                   </div>

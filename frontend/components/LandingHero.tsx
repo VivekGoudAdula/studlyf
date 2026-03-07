@@ -119,7 +119,7 @@ const LandingHero: React.FC = () => {
                             </motion.div>
                         </div>
 
-                        <h1 className="text-[100px] md:text-[140px] font-['Poppins'] font-bold text-black leading-none tracking-tight relative z-20">
+                        <h1 className="text-[60px] sm:text-[100px] md:text-[140px] font-['Poppins'] font-bold text-black leading-none tracking-tight relative z-20">
                             Learn
                         </h1>
 
@@ -143,9 +143,9 @@ const LandingHero: React.FC = () => {
 
                 {/* Row 2: by + doing + Decor */}
                 <div className="flex items-center justify-center w-full relative">
-                    <div className="relative flex items-center px-12 group">
+                    <div className="relative flex items-center px-6 sm:px-12 group">
                         {/* Grid Line - Attached to the text container width */}
-                        <div className="absolute left-0 right-0 bottom-[43px] h-[1.5px] bg-gray-400/80 z-0 opacity-80">
+                        <div className="absolute left-0 right-0 bottom-[30px] sm:bottom-[43px] h-[1.5px] bg-gray-400/80 z-0 opacity-80">
                             <div className="flex justify-evenly w-full h-full px-2">
                                 {[...Array(8)].map((_, i) => (
                                     <div key={i} className="w-[1.2px] h-2.5 bg-gray-400 -translate-y-[4.5px]" />
@@ -153,11 +153,9 @@ const LandingHero: React.FC = () => {
                             </div>
                         </div>
 
-
-
-                        <h1 className="text-[100px] md:text-[140px] font-['Poppins'] font-bold text-black leading-[1.1] tracking-tight flex items-center relative z-20 pb-4">
+                        <h1 className="text-[60px] sm:text-[100px] md:text-[140px] font-['Poppins'] font-bold text-black leading-[1.1] tracking-tight flex items-center relative z-20 pb-4">
                             <span>by&nbsp;</span>
-                            <span className="relative inline-block min-w-[320px] md:min-w-[580px]">
+                            <span className="relative inline-block min-w-[200px] sm:min-w-[320px] md:min-w-[580px]">
                                 <AnimatePresence mode="wait">
                                     <motion.span
                                         key={words[index]}

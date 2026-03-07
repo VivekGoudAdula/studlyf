@@ -91,8 +91,8 @@ const ResourceCenter: React.FC = () => {
     return (
         <section className="relative w-full bg-white overflow-hidden font-poppins text-[#111827]">
             {/* 🌑 Deep Purple/Navy Header Area */}
-            <div className="max-w-[1600px] mx-auto md:px-8 relative">
-                <div className="bg-[#2D0B5A] pt-12 pb-32 px-8 text-center relative overflow-hidden rounded-[3rem] md:rounded-[5rem]">
+            <div className="max-w-[1600px] mx-auto sm:px-8 relative">
+                <div className="bg-[#2D0B5A] pt-12 pb-32 px-6 sm:px-8 text-center relative overflow-hidden rounded-[2.5rem] sm:rounded-[5rem]">
                     {/* Subtle Brand Glow */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#2563EB]/15 rounded-full blur-[120px] pointer-events-none" />
 
@@ -102,7 +102,7 @@ const ResourceCenter: React.FC = () => {
                             initial={{ opacity: 0, y: -10 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="flex items-center justify-center gap-6"
+                            className="flex items-center justify-center gap-4 sm:gap-6"
                         >
                             <div className="h-[1px] flex-grow max-w-[150px] bg-gradient-to-r from-transparent via-[#2563EB]/50 to-[#2563EB]" />
                             <div className="flex flex-col items-center gap-2 shrink-0">
@@ -129,7 +129,7 @@ const ResourceCenter: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.98 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.6, delay: 0.1 }}
-                            className="text-2xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-[1.1] whitespace-nowrap"
+                            className="text-2xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-[1.1]"
                         >
                             Stay ahead of what's Next.
                         </motion.h2>

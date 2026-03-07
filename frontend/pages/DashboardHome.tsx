@@ -22,7 +22,7 @@ import WhyUsSection from '../components/WhyUsSection';
 import AdsCarousel from '../components/AdsCarousel';
 import GetHiredSection from '../components/GetHiredSection';
 import { DevHeroSection } from '../components/DevHeroSection';
-import { NeonBackground } from '../components/NeonBackground';
+// import { NeonBackground } from '../components/NeonBackground';
 
 const DUMMY_COURSES = [
   {
@@ -316,42 +316,44 @@ const DashboardHome: React.FC = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="text-2xl font-black uppercase tracking-[0.2em] mb-4"
+                  className="text-lg sm:text-2xl font-black uppercase tracking-[0.2em] mb-4"
                 >
                   <span className="text-black">Welcome ! </span>
                   <span className="text-[#7C3AED]">{user?.displayName || 'User'}</span>
                 </motion.div>
-                <TypewriterEffectSmooth words={typewriterWords} />
-                <p className="text-[11px] sm:text-[14px] font-bold text-black uppercase tracking-[0.3em] max-w-2xl text-center leading-relaxed">
+                <div className="scale-75 sm:scale-100 origin-center">
+                  <TypewriterEffectSmooth words={typewriterWords} />
+                </div>
+                <p className="text-[9px] sm:text-[14px] font-bold text-black uppercase tracking-[0.3em] max-w-2xl text-center leading-relaxed px-4">
                   Studlyf -- Building the student internet <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">FOR NEXT GENERATION</span>
                 </p>
               </div>
 
-              <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-16 relative z-20 mt-2 px-8 sm:px-16">
-                <div className="flex flex-col items-center gap-10">
-                  <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Built by alumni of</span>
-                  <div className="flex items-center gap-16">
-                    <div className="flex items-center gap-4 group">
-                      <img src="/images/google.png" className="h-8 transition-transform group-hover:scale-110" alt="Google" />
-                      <span className="font-bold text-black tracking-tight text-xl">Google</span>
+              <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 relative z-20 mt-2 px-6 sm:px-16">
+                <div className="flex flex-col items-center gap-6 md:gap-10">
+                  <span className="text-[10px] sm:text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none text-center">Built by alumni of</span>
+                  <div className="flex items-center gap-8 sm:gap-16">
+                    <div className="flex items-center gap-3 sm:gap-4 group">
+                      <img src="/images/google.png" className="h-6 sm:h-8 transition-transform group-hover:scale-110" alt="Google" />
+                      <span className="font-bold text-black tracking-tight text-lg sm:text-xl">Google</span>
                     </div>
-                    <div className="flex items-center gap-4 group">
-                      <img src="/images/amazon.png" className="h-8 transition-transform group-hover:scale-110" alt="Amazon" />
-                      <span className="font-bold text-black tracking-tight text-xl">Amazon</span>
+                    <div className="flex items-center gap-3 sm:gap-4 group">
+                      <img src="/images/amazon.png" className="h-6 sm:h-8 transition-transform group-hover:scale-110" alt="Amazon" />
+                      <span className="font-bold text-black tracking-tight text-lg sm:text-xl">Amazon</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-10">
-                  <span className="text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none">Backed by</span>
-                  <div className="flex items-center gap-16 justify-center">
-                    <div className="flex items-center gap-4 group">
-                      <img src="https://cdn.simpleicons.org/ycombinator" className="h-8 transition-transform group-hover:scale-110" alt="Y Combinator" />
-                      <span className="font-bold text-black tracking-tight text-lg">Combinator</span>
+                <div className="flex flex-col items-center gap-6 md:gap-10">
+                  <span className="text-[10px] sm:text-[12px] font-black text-black uppercase tracking-[0.4em] leading-none text-center">Backed by</span>
+                  <div className="flex items-center gap-8 sm:gap-16 justify-center">
+                    <div className="flex items-center gap-3 sm:gap-4 group">
+                      <img src="https://cdn.simpleicons.org/ycombinator" className="h-6 sm:h-8 transition-transform group-hover:scale-110" alt="Y Combinator" />
+                      <span className="font-bold text-black tracking-tight text-base sm:text-lg">Combinator</span>
                     </div>
-                    <div className="flex items-center gap-4 group">
-                      <Zap className="w-7 h-7 text-[#7C3AED] fill-current group-hover:animate-pulse" />
-                      <span className="font-bold text-black tracking-tight text-lg">Rebright</span>
+                    <div className="flex items-center gap-3 sm:gap-4 group">
+                      <Zap className="w-5 h-5 sm:w-7 sm:h-7 text-[#7C3AED] fill-current group-hover:animate-pulse" />
+                      <span className="font-bold text-black tracking-tight text-base sm:text-lg">Rebright</span>
                     </div>
                   </div>
                 </div>
@@ -362,17 +364,17 @@ const DashboardHome: React.FC = () => {
           </div>
 
           {/* SECOND SECTION: COURSES FOR EVERY ambition */}
-          <section className="px-16 py-20 bg-white relative z-10 w-full overflow-hidden">
-            <div className="max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-16 items-center">
+          <section className="px-6 sm:px-16 py-12 sm:py-20 bg-white relative z-10 w-full overflow-hidden">
+            <div className="max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 lg:gap-16 items-center">
               {/* LEFT SIDE TYPOGRAPHY */}
-              <div className="flex flex-col">
-                <h1 className="text-6xl font-extrabold leading-[0.9] mb-12 text-black uppercase tracking-tighter">
+              <div className="flex flex-col text-center lg:text-left">
+                <h1 className="text-4xl sm:text-6xl font-extrabold leading-[0.9] mb-8 sm:mb-12 text-black uppercase tracking-tighter">
                   COURSES <br />
                   FOR <br />
                   EVERY <br />
                   <span className="italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] lowercase leading-tight block mt-2">ambition</span>
                 </h1>
-                <p className="text-xs tracking-[0.3em] uppercase text-blue-900 mb-6 font-bold leading-loose">
+                <p className="text-[10px] sm:text-xs tracking-[0.3em] uppercase text-blue-900 mb-6 font-bold leading-loose">
                   GLOBAL TRAINING <br /> FOR ROLE-READY EXCELLENCE.
                 </p>
               </div>
@@ -440,22 +442,22 @@ const DashboardHome: React.FC = () => {
             </div>
 
             {/* Trust & Certification Footer */}
-            <div className="mt-20 max-w-[1700px] mx-auto pt-12 border-t border-black/5 grid grid-cols-1 sm:grid-cols-2 gap-16 items-start px-16">
-              <div className="flex flex-col items-center text-center gap-8">
-                <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Curriculum built by people from</span>
-                <div className="flex items-center justify-center gap-8 sm:gap-12 transition-all flex-wrap">
-                  <img src="/images/meta.png" className="h-8" alt="Meta" />
-                  <img src="/images/netflix.png" className="h-8" alt="Netflix" />
-                  <img src="/images/apple.png" className="h-8" alt="Apple" />
-                  <img src="/images/nvidia.png" className="h-8" alt="Nvidia" />
+            <div className="mt-12 sm:mt-20 max-w-[1700px] mx-auto pt-12 border-t border-black/5 grid grid-cols-1 sm:grid-cols-2 gap-12 sm:gap-16 items-start px-6 sm:px-16">
+              <div className="flex flex-col items-center text-center gap-6 sm:gap-8">
+                <span className="text-lg sm:text-xl font-black text-black uppercase tracking-[0.3em]">Curriculum built by people from</span>
+                <div className="flex items-center justify-center gap-6 sm:gap-12 transition-all flex-wrap">
+                  <img src="/images/meta.png" className="h-6 sm:h-8" alt="Meta" />
+                  <img src="/images/netflix.png" className="h-6 sm:h-8" alt="Netflix" />
+                  <img src="/images/apple.png" className="h-6 sm:h-8" alt="Apple" />
+                  <img src="/images/nvidia.png" className="h-6 sm:h-8" alt="Nvidia" />
                 </div>
               </div>
-              <div className="flex flex-col items-center text-center gap-8">
-                <span className="text-xl font-black text-black uppercase tracking-[0.3em]">Certified by</span>
-                <div className="flex items-center justify-center gap-8 sm:gap-12 transition-all flex-wrap">
-                  <img src="/images/amazon.png" className="h-9" alt="AWS" />
-                  <img src="/images/microsoft.png" className="h-8" alt="Microsoft" />
-                  <img src="/images/ibm.png" className="h-8" alt="IBM" />
+              <div className="flex flex-col items-center text-center gap-6 sm:gap-8">
+                <span className="text-lg sm:text-xl font-black text-black uppercase tracking-[0.3em]">Certified by</span>
+                <div className="flex items-center justify-center gap-6 sm:gap-12 transition-all flex-wrap">
+                  <img src="/images/amazon.png" className="h-7 sm:h-9" alt="AWS" />
+                  <img src="/images/microsoft.png" className="h-6 sm:h-8" alt="Microsoft" />
+                  <img src="/images/ibm.png" className="h-6 sm:h-8" alt="IBM" />
                 </div>
               </div>
             </div>
@@ -482,28 +484,28 @@ const DashboardHome: React.FC = () => {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            style={{ clipPath: 'polygon(0% 0%, 55% 0%, 62% 10%, 100% 10%, 100% 100%, 0% 100%)' }}
-            className="bg-gradient-to-br from-[#F5F3FF] via-[#EDE9FE] to-[#F3E8FF] rounded-[3rem] py-16 sm:py-24 px-10 sm:px-24 flex flex-col lg:flex-row items-center justify-between gap-16 relative overflow-hidden border border-[#7C3AED]/10 shadow-sm"
+            style={{ clipPath: window.innerWidth > 640 ? 'polygon(0% 0%, 55% 0%, 62% 10%, 100% 10%, 100% 100%, 0% 100%)' : 'none' }}
+            className="bg-gradient-to-br from-[#F5F3FF] via-[#EDE9FE] to-[#F3E8FF] rounded-[2rem] sm:rounded-[3rem] py-12 sm:py-24 px-6 sm:px-24 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16 relative overflow-hidden border border-[#7C3AED]/10 shadow-sm"
           >
             <div className="absolute top-0 right-0 w-1/2 h-full bg-[#7C3AED]/[0.02] rotate-12 translate-x-1/4 pointer-events-none" />
             <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#7C3AED]/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-10 right-10 w-6 h-6 bg-[#7C3AED]/10 rotate-45 rounded-sm border border-[#7C3AED]/20 blur-[1px]" />
 
-            <div className="flex flex-col lg:flex-row items-center justify-between w-full relative z-10 gap-16">
-              <div className="flex flex-col gap-6 lg:w-1/2">
+            <div className="flex flex-col lg:flex-row items-center justify-between w-full relative z-10 gap-10 lg:gap-16">
+              <div className="flex flex-col gap-4 sm:gap-6 lg:w-1/2 text-center lg:text-left">
                 <span className="text-[10px] font-black text-black/40 uppercase tracking-[0.4em]">Career Synergy</span>
-                <h2 className="text-4xl sm:text-6xl font-black text-black tracking-tighter leading-tight">
+                <h2 className="text-3xl sm:text-6xl font-black text-black tracking-tighter leading-tight">
                   Streamline Your Career <br /> in <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">AI Era</span>.
                 </h2>
               </div>
-              <div className="lg:w-1/2 flex flex-col items-end justify-center gap-0 pt-8">
-                <h2 className="text-3xl sm:text-5xl font-bold tracking-tighter text-right lowercase flex flex-col items-end">
-                  <span className="text-black mr-12 sm:mr-20">i am</span>
-                  <AuroraText className="bg-gradient-to-r from-[#84CC16] via-[#06B6D4] to-[#10B981] translate-x-2 sm:translate-x-4 mt-2">career dreamer</AuroraText>
+              <div className="lg:w-1/2 flex flex-col items-center lg:items-end justify-center gap-0 pt-4 lg:pt-8">
+                <h2 className="text-2xl sm:text-5xl font-bold tracking-tighter text-center lg:text-right lowercase flex flex-col items-center lg:items-end">
+                  <span className="text-black lg:mr-12 sm:lg:mr-20">i am</span>
+                  <AuroraText className="bg-gradient-to-r from-[#84CC16] via-[#06B6D4] to-[#10B981] lg:translate-x-2 sm:lg:translate-x-4 mt-2">career dreamer</AuroraText>
                 </h2>
                 <Link
                   to="/learn/career-onboarding"
-                  className="bg-[#1D74F2] text-white px-14 py-4 rounded-2xl font-bold text-xl hover:scale-105 transition-all shadow-xl shadow-blue-500/20 mr-12 sm:mr-20 mt-8"
+                  className="bg-[#1D74F2] text-white px-10 sm:px-14 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-lg sm:text-xl hover:scale-105 transition-all shadow-xl shadow-blue-500/20 lg:mr-12 sm:lg:mr-20 mt-8"
                 >
                   Start
                 </Link>

@@ -84,7 +84,7 @@ const MyCourses: React.FC = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-6xl sm:text-7xl font-black text-[#111827] tracking-tighter uppercase mb-4">
+            <h1 className="text-4xl sm:text-7xl font-black text-[#111827] tracking-tighter uppercase mb-4">
               My <span className="text-[#7C3AED]">Courses</span>
             </h1>
             <p className="text-lg text-[#6B7280] font-medium">
@@ -97,21 +97,21 @@ const MyCourses: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex gap-4 mb-12 border-b border-gray-100 pb-4"
+          className="flex flex-wrap gap-3 sm:gap-4 mb-8 sm:mb-12 border-b border-gray-100 pb-6"
         >
           <button
             onClick={() => setActiveTab('applied')}
-            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${activeTab === 'applied'
+            className={`flex-1 sm:flex-none px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${activeTab === 'applied'
               ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10'
               : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30'
               }`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center justify-center gap-2">
               <BookOpen className="w-4 h-4" />
-              Applied Courses
+              Applied
             </span>
             {enrolledCourses.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 bg-green-500 text-white text-[8px] font-black rounded-full">
+              <span className="absolute -top-2 -right-2 inline-flex items-center justify-center w-5 h-5 bg-green-500 text-white text-[8px] font-black rounded-full shadow-lg">
                 {enrolledCourses.length}
               </span>
             )}
@@ -119,17 +119,17 @@ const MyCourses: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('available')}
-            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${activeTab === 'available'
+            className={`flex-1 sm:flex-none px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border relative ${activeTab === 'available'
               ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10'
               : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30'
               }`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" />
-              Available Courses
+              Available
             </span>
             {availableCourses.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 bg-blue-500 text-white text-[8px] font-black rounded-full">
+              <span className="absolute -top-2 -right-2 inline-flex items-center justify-center w-5 h-5 bg-blue-500 text-white text-[8px] font-black rounded-full shadow-lg">
                 {availableCourses.length}
               </span>
             )}

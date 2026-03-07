@@ -99,9 +99,21 @@ const CoursesForEveryAmbition: React.FC = () => {
     })();
   }, []);
 
-  const VISIBLE = 3;
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) setVisibleCount(1);
+      else if (window.innerWidth < 1024) setVisibleCount(2);
+      else setVisibleCount(3);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const total = courses.length;
-  const maxIdx = Math.max(0, total - VISIBLE);
+  const maxIdx = Math.max(0, total - visibleCount);
 
   const step = (d: 1 | -1) => {
     if (animating.current) return;
@@ -111,7 +123,7 @@ const CoursesForEveryAmbition: React.FC = () => {
     setIdx(i => Math.min(maxIdx, Math.max(0, i + d)));
   };
 
-  const visible = courses.slice(idx, idx + VISIBLE);
+  const visible = courses.slice(idx, idx + visibleCount);
 
   return (
     <section className="py-20 bg-white overflow-hidden">

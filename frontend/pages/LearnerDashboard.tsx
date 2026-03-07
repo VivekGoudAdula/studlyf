@@ -493,8 +493,8 @@ const LearnerDashboard: React.FC = () => {
                 <div className="flex flex-col items-center">
                   <CircularProgress
                     value={githubData ? Math.round(githubData.readiness_score) : (analyzing ? 20 : 0)}
-                    size={240}
-                    strokeWidth={16}
+                    size={window.innerWidth < 640 ? 180 : 240}
+                    strokeWidth={window.innerWidth < 640 ? 12 : 16}
                     color="#7C3AED"
                     label={analyzing ? "Analyzing..." : "Studlyf Score"}
                   />
@@ -630,6 +630,29 @@ const LearnerDashboard: React.FC = () => {
         </nav>
 
       </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#FFFFFF] border-t border-gray-100 flex lg:hidden items-center justify-around p-3 z-[100] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+        {sidebarItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveView(item.id as any)}
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all ${activeView === item.id ? 'text-[#7C3AED] bg-[#F5F3FF]' : 'text-gray-400'}`}
+          >
+            <span className="text-xl">{item.icon}</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">{item.label.split(' ')[1] || item.label}</span>
+          </button>
+        ))}
+        {(role === 'admin' || role === 'super_admin') && (
+          <Link
+            to="/admin"
+            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-red-500"
+          >
+            <span className="text-xl">🛠️</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Admin</span>
+          </Link>
+        )}
+      </nav>
 
       <main className="flex-grow overflow-y-auto bg-gray-50/30">
         <div className="p-4 sm:p-6 lg:p-12">

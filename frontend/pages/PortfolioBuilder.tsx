@@ -105,9 +105,9 @@ const PortfolioBuilder: React.FC = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="max-w-2xl mx-auto text-center"
+                            className="max-w-2xl mx-auto text-center px-4"
                         >
-                            <h2 className="text-4xl font-black mb-8">How should we start?</h2>
+                            <h2 className="text-3xl sm:text-4xl font-black mb-8">How should we start?</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <button
                                     onClick={() => { setInputMethod('upload'); setStep(2); }}
@@ -143,7 +143,7 @@ const PortfolioBuilder: React.FC = () => {
                             </button>
 
                             {inputMethod === 'upload' ? (
-                                <div className="bg-gray-50 p-12 rounded-[2rem] text-center border-2 border-dashed border-gray-200">
+                                <div className="bg-gray-50 p-6 sm:p-12 rounded-[2rem] text-center border-2 border-dashed border-gray-200">
                                     <input
                                         type="file"
                                         onChange={(e) => setFile(e.target.files?.[0] || null)}
@@ -152,14 +152,14 @@ const PortfolioBuilder: React.FC = () => {
                                         accept=".pdf,.docx,.doc"
                                     />
                                     <label htmlFor="resume-upload" className="cursor-pointer block">
-                                        <Upload className="w-16 h-16 mx-auto mb-6 text-purple-600" />
-                                        <span className="text-lg font-bold block mb-2">{file ? file.name : 'Click to Upload Resume'}</span>
-                                        <span className="text-sm text-gray-500">Supported: PDF, DOCX</span>
+                                        <Upload className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-purple-600" />
+                                        <span className="text-base sm:text-lg font-bold block mb-2">{file ? file.name : 'Click to Upload Resume'}</span>
+                                        <span className="text-[10px] sm:text-sm text-gray-500">Supported: PDF, DOCX</span>
                                     </label>
                                     {file && (
                                         <button
                                             onClick={() => setStep(3)}
-                                            className="mt-8 px-8 py-3 bg-purple-600 text-white rounded-full font-bold hover:bg-purple-700 transition"
+                                            className="mt-6 sm:mt-8 px-6 sm:px-8 py-2.5 sm:py-3 bg-purple-600 text-white rounded-full font-bold hover:bg-purple-700 transition"
                                         >
                                             Continue
                                         </button>
@@ -274,10 +274,10 @@ const PortfolioBuilder: React.FC = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                         >
-                            <button onClick={() => setStep(2)} className="mb-8 text-sm font-bold text-gray-400 hover:text-gray-900 flex items-center gap-2">
+                            <button onClick={() => setStep(2)} className="mb-6 sm:mb-8 text-sm font-bold text-gray-400 hover:text-gray-900 flex items-center gap-2">
                                 ← BACK
                             </button>
-                            <h2 className="text-4xl font-black mb-8 text-center">Choose your aesthetic.</h2>
+                            <h2 className="text-3xl sm:text-4xl font-black mb-8 text-center">Choose your aesthetic.</h2>
 
                             <div className="grid md:grid-cols-3 gap-8">
                                 {[
@@ -321,11 +321,11 @@ const PortfolioBuilder: React.FC = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             className="text-center"
                         >
-                            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8 text-green-600">
-                                <Wand2 size={40} />
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 text-green-600">
+                                <Wand2 size={32} />
                             </div>
-                            <h2 className="text-5xl font-black mb-6">It's Ready.</h2>
-                            <p className="text-xl text-gray-500 mb-12">Your intelligent portfolio has been generated.</p>
+                            <h2 className="text-4xl sm:text-5xl font-black mb-4 sm:mb-6">It's Ready.</h2>
+                            <p className="text-lg sm:text-xl text-gray-500 mb-8 sm:mb-12">Your intelligent portfolio has been generated.</p>
 
                             <div className="flex justify-center gap-4">
                                 <a

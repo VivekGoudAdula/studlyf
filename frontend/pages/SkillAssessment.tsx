@@ -74,18 +74,18 @@ function ConfigScreen({ onGenerate }: any) {
     const instDisplay = customInst || institution;
 
     return (
-        <div style={{ display: "flex", minHeight: "100vh", background: BG, padding: "40px 60px", gap: 60, marginTop: "80px" }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.3)", borderRadius: 20, padding: "6px 14px", marginBottom: 28, width: "fit-content" }}>
-                    <span style={{ color: PURPLE, fontWeight: 700, fontSize: 11, letterSpacing: 2 }}>⚙️ INSTITUTIONAL ENGINE V2.1</span>
+        <div className="flex flex-col lg:flex-row min-h-screen bg-[#F4F4F6] p-6 sm:p-10 lg:p-16 gap-10 lg:gap-[60px] mt-20">
+            <div className="flex-1 flex flex-col justify-center">
+                <div className="inline-flex items-center gap-2 bg-[rgba(124,58,237,0.1)] border border-[rgba(124,58,237,0.3)] rounded-2xl px-3.5 py-1.5 mb-7 w-fit">
+                    <span className="text-[#7C3AED] font-bold text-[11px] tracking-[2px]">⚙️ INSTITUTIONAL ENGINE V2.1</span>
                 </div>
-                <div className="text-[64px] font-[900] leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CLARIFIED</div>
-                <div className="text-[64px] font-[900] leading-[1.05] italic mb-7 text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">READINESS.</div>
-                <p style={{ color: "#666", fontSize: 17, lineHeight: 1.6, maxWidth: 380 }}>
-                    Calibrate your assessment protocol by specifying your target role and <span style={{ color: PURPLE, fontWeight: 600 }}>institution</span>.
+                <div className="text-4xl sm:text-[64px] font-[900] leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block uppercase">CLARIFIED</div>
+                <div className="text-4xl sm:text-[64px] font-[900] leading-[1.05] italic mb-7 text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block uppercase">READINESS.</div>
+                <p className="text-[#666] text-base sm:text-[17px] leading-relaxed max-w-[380px]">
+                    Calibrate your assessment protocol by specifying your target role and <span className="text-[#7C3AED] font-semibold">institution</span>.
                 </p>
             </div>
-            <div style={{ width: 420, background: "white", borderRadius: 20, padding: 36, boxShadow: "0 8px 40px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", gap: 24 }}>
+            <div className="w-full max-w-[420px] mx-auto lg:mx-0 bg-white rounded-2xl p-6 sm:p-9 shadow-[0_8px_40px_rgba(0,0,0,0.08)] flex flex-col gap-6">
                 <div>
                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "#999", marginBottom: 10 }}>TARGET ROLE</div>
                     <div style={{ border: "1.5px solid #e0e0e0", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -284,27 +284,27 @@ function QuestionScreen({ config, questions, onComplete }: any) {
 
 function ReportScreen({ config, questions, feedback, onRestart }: any) {
     const scores = Object.values(feedback).filter((f: any) => f && f.score !== undefined);
-    const avg = scores.length ? Math.round(scores.reduce((a: any, b: any) => (a as any) + (b.score || 0), 0) / scores.length) : 0;
+    const avg = scores.length ? Math.round((scores.reduce((a: number, b: any) => a + (b.score || 0), 0) as number) / scores.length) : 0;
     const verdict = avg >= 80 ? "STRONG PASS" : avg >= 65 ? "PASS" : avg >= 50 ? "BORDERLINE" : "FAIL";
     return (
-        <div style={{ minHeight: "100vh", background: BG, padding: "40px 80px", marginTop: "80px" }}>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
-                <h1 style={{ fontSize: 36, fontWeight: 900, color: "#1a1a2e", margin: 0 }}>ASSESSMENT <span style={{ color: PURPLE }}>COMPLETE.</span></h1>
-                <p style={{ color: "#666", marginTop: 12 }}>{config.role} @ {config.institution} • {config.experience}</p>
+        <div className="min-h-screen bg-[#F4F4F6] p-6 sm:p-10 lg:p-20 mt-20">
+            <div className="text-center mb-12">
+                <div className="text-5xl mb-4">📊</div>
+                <h1 className="text-3xl sm:text-4xl font-black text-[#1a1a2e] m-0 uppercase">ASSESSMENT <span className="text-[#7C3AED]">COMPLETE.</span></h1>
+                <p className="text-[#666] mt-3">{config.role} @ {config.institution} • {config.experience}</p>
             </div>
-            <div style={{ display: "flex", gap: 20, justifyContent: "center", marginBottom: 40 }}>
-                <div style={{ background: "white", borderRadius: 16, padding: 32, textAlign: "center", minWidth: 160, boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
-                    <div style={{ fontSize: 48, fontWeight: 900, color: verdictColor(verdict) }}>{avg}</div>
-                    <div style={{ fontSize: 12, color: "#999", letterSpacing: 1, marginTop: 4 }}>OVERALL SCORE</div>
+            <div className="flex flex-col sm:flex-row gap-5 justify-center mb-10">
+                <div className="bg-white rounded-2xl p-8 text-center min-w-[160px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border-t-4" style={{ borderTopColor: verdictColor(verdict) }}>
+                    <div className="text-5xl font-black" style={{ color: verdictColor(verdict) }}>{avg}</div>
+                    <div className="text-xs text-[#999] tracking-widest mt-1 uppercase font-bold">OVERALL SCORE</div>
                 </div>
-                <div style={{ background: verdictColor(verdict), borderRadius: 16, padding: 32, textAlign: "center", minWidth: 160 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: "white" }}>{verdict}</div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", letterSpacing: 1, marginTop: 6 }}>FINAL VERDICT</div>
+                <div className="rounded-2xl p-8 text-center min-w-[160px] flex flex-col justify-center" style={{ backgroundColor: verdictColor(verdict) }}>
+                    <div className="text-xl sm:text-2xl font-black text-white uppercase">{verdict}</div>
+                    <div className="text-[11px] text-white/70 tracking-widest mt-1.5 uppercase font-bold">FINAL VERDICT</div>
                 </div>
-                <div style={{ background: "white", borderRadius: 16, padding: 32, textAlign: "center", minWidth: 160, boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
-                    <div style={{ fontSize: 48, fontWeight: 900, color: PURPLE }}>{scores.length}</div>
-                    <div style={{ fontSize: 12, color: "#999", letterSpacing: 1, marginTop: 4 }}>GATES COMPLETED</div>
+                <div className="bg-white rounded-2xl p-8 text-center min-w-[160px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border-t-4 border-t-[#7C3AED]">
+                    <div className="text-5xl font-black text-[#7C3AED]">{scores.length}</div>
+                    <div className="text-xs text-[#999] tracking-widest mt-1 uppercase font-bold">GATES COMPLETED</div>
                 </div>
             </div>
             {Object.entries(feedback).map(([idx, fb]: any) => {
