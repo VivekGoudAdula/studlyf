@@ -366,8 +366,8 @@ const SDLProjectDetail: React.FC = () => {
               {project.views} views
             </span>
             <span className={`text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border ${project.status === 'open' ? 'bg-green-500/15 text-green-400 border-green-500/30' :
-                project.status === 'in_progress' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
-                  'bg-blue-500/15 text-blue-400 border-blue-500/30'
+              project.status === 'in_progress' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                'bg-blue-500/15 text-blue-400 border-blue-500/30'
               }`}>
               {project.status.replace('_', ' ')}
             </span>
@@ -378,8 +378,8 @@ const SDLProjectDetail: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <span className={`text-[9px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border ${project.project_type === 'system_replica' ? 'bg-violet-500/20 text-violet-300 border-violet-500/30' :
-                project.project_type === 'original_build' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-                  'bg-amber-500/20 text-amber-300 border-amber-500/30'
+              project.project_type === 'original_build' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                'bg-amber-500/20 text-amber-300 border-amber-500/30'
               }`}>
               {project.project_type.replace('_', ' ')}
             </span>
@@ -444,8 +444,8 @@ const SDLProjectDetail: React.FC = () => {
               key={tab}
               onClick={() => setActiveTab(i)}
               className={`px-5 py-3 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] transition-all whitespace-nowrap relative ${activeTab === i
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]'
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]'
                 }`}
             >
               {tab}

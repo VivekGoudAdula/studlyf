@@ -123,25 +123,25 @@ const CareerOnboarding: React.FC = () => {
     };
 
     const renderHeaderTabs = () => (
-        <div className="fixed top-0 left-0 w-full p-8 flex justify-center z-[100] bg-[#F8F9FA]/80 backdrop-blur-sm">
-            <div className="flex gap-4 p-1.5 bg-gray-200/50 rounded-[2rem] w-full max-w-4xl shadow-inner border border-gray-100/50">
+        <div className="fixed top-0 left-0 w-full p-4 sm:p-8 flex justify-center z-[100] bg-[#F8F9FA]/80 backdrop-blur-sm">
+            <div className="flex gap-2 sm:gap-4 p-1.5 bg-gray-200/50 rounded-2xl sm:rounded-[2rem] w-full max-w-4xl shadow-inner border border-gray-100/50 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => { setActiveTab('Identity'); setStep(3); }}
-                    className={`flex-1 h-12 rounded-[1.8rem] flex items-center justify-center gap-3 text-[13px] font-bold transition-all duration-300 ${activeTab === 'Identity' ? 'bg-white shadow-md text-[#111]' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`flex-1 h-10 sm:h-12 px-4 sm:px-0 rounded-xl sm:rounded-[1.8rem] flex items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] font-bold transition-all duration-300 whitespace-nowrap ${activeTab === 'Identity' ? 'bg-white shadow-md text-[#111]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
-                    <Edit3 className="w-4 h-4" /> Career Identity
+                    <Edit3 className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Career</span> Identity
                 </button>
                 <button
                     onClick={() => { setActiveTab('Paths'); setStep(4); }}
-                    className={`flex-1 h-12 rounded-[1.8rem] flex items-center justify-center gap-3 text-[13px] font-bold transition-all duration-300 ${activeTab === 'Paths' ? 'bg-white shadow-md text-[#111]' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`flex-1 h-10 sm:h-12 px-4 sm:px-0 rounded-xl sm:rounded-[1.8rem] flex items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] font-bold transition-all duration-300 whitespace-nowrap ${activeTab === 'Paths' ? 'bg-white shadow-md text-[#111]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
-                    <Network className="w-4 h-4" /> Explore Paths
+                    <Network className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Explore</span> Paths
                 </button>
                 <button
                     onClick={() => { setActiveTab('Gemini'); setStep(5); }}
-                    className={`flex-1 h-12 rounded-[1.8rem] flex items-center justify-center gap-3 text-[13px] font-bold transition-all duration-300 ${activeTab === 'Gemini' ? 'bg-white shadow-md text-[#111]' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`flex-1 h-10 sm:h-12 px-4 sm:px-0 rounded-xl sm:rounded-[1.8rem] flex items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] font-bold transition-all duration-300 whitespace-nowrap ${activeTab === 'Gemini' ? 'bg-white shadow-md text-[#111]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
-                    <Zap className="w-4 h-4" /> Jump To Gemini
+                    <Zap className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Jump To</span> Gemini
                 </button>
             </div>
         </div>
@@ -227,8 +227,8 @@ const CareerOnboarding: React.FC = () => {
             return (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col gap-12 w-full max-w-3xl">
                     <div className="space-y-4">
-                        <h1 className="text-4xl sm:text-6xl font-light text-[#3C4043] tracking-tighter">Your current academic trajectory?</h1>
-                        <p className="text-gray-400 text-xl font-light">Share your field of study (e.g. B.Tech AIML, Robotics, or ECE)</p>
+                        <h1 className="text-3xl sm:text-6xl font-light text-[#3C4043] tracking-tighter">Your current academic trajectory?</h1>
+                        <p className="text-gray-400 text-lg sm:text-xl font-light">Share your field of study (e.g. B.Tech AIML, Robotics, or ECE)</p>
                     </div>
                     <input
                         autoFocus
@@ -236,9 +236,9 @@ const CareerOnboarding: React.FC = () => {
                         placeholder="Field of study"
                         value={formData.subject}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        className="w-full text-5xl font-light text-[#3C4043] border-b-2 border-gray-100 focus:border-blue-500 outline-none pb-6 bg-transparent"
+                        className="w-full text-2xl sm:text-5xl font-light text-[#3C4043] border-b-2 border-gray-100 focus:border-blue-500 outline-none pb-4 sm:pb-6 bg-transparent"
                     />
-                    <button onClick={handleNext} className="w-fit px-14 py-6 bg-[#E8F0FE] text-[#1967D2] rounded-[2rem] font-bold text-xl hover:bg-[#D2E3FC] transition-all shadow-xl shadow-blue-500/5">Next</button>
+                    <button onClick={handleNext} className="w-fit px-10 sm:px-14 py-4 sm:py-6 bg-[#E8F0FE] text-[#1967D2] rounded-[1.5rem] sm:rounded-[2rem] font-bold text-lg sm:text-xl hover:bg-[#D2E3FC] transition-all shadow-xl shadow-blue-500/5">Next</button>
                 </motion.div>
             );
         }
@@ -292,28 +292,28 @@ const CareerOnboarding: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-[4rem] p-16 shadow-[0_20px_80px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col justify-between h-[650px] relative">
+                    <div className="bg-white rounded-[2rem] sm:rounded-[4rem] p-8 sm:p-16 shadow-[0_20px_80px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col justify-between h-auto min-h-[500px] lg:h-[650px] relative">
                         <div>
-                            <div className="flex justify-between items-start mb-12">
+                            <div className="flex justify-between items-start mb-8 sm:mb-12">
                                 <div className="flex items-center gap-3 text-[#34A853]">
-                                    <Sparkles className="w-6 h-6" />
-                                    <span className="font-black text-[11px] uppercase tracking-widest">Career Identity Statement</span>
+                                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+                                    <span className="font-black text-[10px] sm:text-[11px] uppercase tracking-widest">Career Identity Statement</span>
                                 </div>
-                                <span className="px-5 py-1.5 bg-gray-50 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-widest border border-gray-100 italic">Starter Draft</span>
+                                <span className="px-3 sm:px-5 py-1 sm:py-1.5 bg-gray-50 rounded-lg text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest border border-gray-100 italic">Starter Draft</span>
                             </div>
-                            <p className="text-3xl sm:text-4xl text-[#3C4043] leading-[1.3] font-light">
+                            <p className="text-xl sm:text-4xl text-[#3C4043] leading-[1.3] font-light">
                                 I am an artificial intelligence professional focused on applying algorithmic thinking and machine learning to solve complex problems. With a technical foundation in {formData.skills.slice(0, 3).join(', ')}, I translate data into functional, intelligent solutions.
                             </p>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <div className="flex gap-6">
-                                <button className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100"><RefreshCw className="w-6 h-6" /></button>
-                                <button className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100"><History className="w-6 h-6" /></button>
-                                <button className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100"><Copy className="w-6 h-6" /></button>
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-8 mt-12 sm:mt-0">
+                            <div className="flex gap-4 sm:gap-6">
+                                <button className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100"><RefreshCw className="w-5 h-5 sm:w-6 sm:h-6" /></button>
+                                <button className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100"><History className="w-5 h-5 sm:w-6 sm:h-6" /></button>
+                                <button className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100"><Copy className="w-5 h-5 sm:w-6 sm:h-6" /></button>
                             </div>
                             <button
                                 onClick={() => { setActiveTab('Paths'); setStep(4); }}
-                                className="px-14 py-6 bg-[#1D74F2] text-white rounded-[2rem] font-bold text-xl hover:scale-105 transition-all shadow-xl shadow-blue-200"
+                                className="w-full sm:w-auto px-10 sm:px-14 py-4 sm:py-6 bg-[#1D74F2] text-white rounded-[1.5rem] sm:rounded-[2rem] font-bold text-lg sm:text-xl hover:scale-105 transition-all shadow-xl shadow-blue-200"
                             >
                                 Explore paths
                             </button>

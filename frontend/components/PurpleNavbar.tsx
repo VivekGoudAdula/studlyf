@@ -115,10 +115,10 @@ const PurpleNavbar: React.FC = () => {
                 <motion.div
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="w-full max-w-4xl bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED] rounded-t-[0.8rem] sm:rounded-t-[1.2rem] px-6 sm:px-10 py-0.5 sm:py-1 flex items-center justify-center shadow-[0_-10px_40px_-15px_rgba(124,58,237,0.5)] z-10 pointer-events-auto"
+                    className="w-[95%] sm:w-full max-w-4xl bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED] rounded-t-[1rem] sm:rounded-t-[1.2rem] px-4 sm:px-10 py-1 sm:py-1.5 flex items-center justify-center shadow-[0_-10px_40px_-15px_rgba(124,58,237,0.5)] z-10 pointer-events-auto"
                 >
                     {/* Navigation Items - Centered */}
-                    <div className="flex items-center gap-6 sm:gap-12 relative w-full justify-center">
+                    <div className="flex items-center gap-8 sm:gap-12 relative w-full justify-center">
                         {navItems.map((item) => (
                             <div
                                 key={item.label}
@@ -126,10 +126,10 @@ const PurpleNavbar: React.FC = () => {
                                 onMouseEnter={() => setActiveDropdown(item.label)}
                                 onMouseLeave={() => setActiveDropdown(null)}
                             >
-                                <button className="flex items-center gap-2 text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:text-white/80 transition-colors py-1">
+                                <button className="flex items-center gap-1 sm:gap-2 text-white text-[11px] sm:text-xs font-bold uppercase tracking-widest hover:text-white/80 transition-colors py-1">
                                     {item.label}
                                     <ChevronUp
-                                        size={16}
+                                        size={14}
                                         className={`transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''}`}
                                     />
                                 </button>
@@ -144,7 +144,7 @@ const PurpleNavbar: React.FC = () => {
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.98 }}
                                     transition={{ duration: 0.2 }}
-                                    className="absolute bottom-full mb-6 left-0 right-0 bg-[#F5F3FF] border border-[#7C3AED]/10 p-6 rounded-[2.5rem] shadow-2xl z-[100] cursor-auto mx-4 sm:mx-8"
+                                    className="absolute bottom-full mb-4 left-[-10px] right-[-10px] sm:left-0 sm:right-0 bg-[#F5F3FF] border border-[#7C3AED]/10 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl z-[100] cursor-auto mx-2 sm:mx-8 overflow-y-auto max-h-[70vh] no-scrollbar"
                                     onMouseEnter={() => setActiveDropdown(activeDropdown)}
                                     onMouseLeave={() => setActiveDropdown(null)}
                                 >

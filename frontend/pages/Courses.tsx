@@ -313,19 +313,19 @@ const Courses: React.FC = () => {
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-[#7C3AED]/5 to-transparent pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
-        <header className="mb-24 text-center">
+        <header className="mb-12 sm:mb-24 text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inline-block bg-[#F5F3FF] border border-[#7C3AED]/10 px-6 py-2 rounded-full mb-8"
+            className="inline-block bg-[#F5F3FF] border border-[#7C3AED]/10 px-4 sm:px-6 py-2 rounded-full mb-6 sm:mb-8"
           >
-            <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em]">Proprietary Curriculum</span>
+            <span className="text-[8px] sm:text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em]">Proprietary Curriculum</span>
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-6xl sm:text-8xl font-black text-[#111827] mb-8 tracking-tighter uppercase leading-[0.9]"
+            className="text-4xl sm:text-6xl md:text-8xl font-black text-[#111827] mb-6 sm:mb-8 tracking-tighter uppercase leading-[0.9]"
           >
             Engineering <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">READINESS.</span>
           </motion.h1>
@@ -334,18 +334,19 @@ const Courses: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-lg text-[#6B7280] max-w-2xl mx-auto font-medium leading-relaxed"
+            className="text-sm sm:text-lg text-[#6B7280] max-w-2xl mx-auto font-medium leading-relaxed px-4"
           >
             Access tracks designed by elite architects. We don't teach theory; we build clinical competence through high-entropy simulation.
           </motion.p>
         </header>
 
-        <div className="flex flex-wrap justify-center gap-2 mb-20 border-b border-gray-100 pb-12">
+        {/* Scrollable Categories on Mobile */}
+        <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-x-visible no-scrollbar justify-start sm:justify-center gap-2 mb-12 sm:mb-20 border-b border-gray-100 pb-8 sm:pb-12 -mx-4 px-4 sm:mx-0 sm:px-0">
           {dynamicCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeCategory === cat
+              className={`px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap ${activeCategory === cat
                 ? 'bg-[#111827] text-white border-[#111827] shadow-xl shadow-black/10 scale-105'
                 : 'bg-white text-gray-400 border-gray-100 hover:border-[#7C3AED]/30 hover:text-gray-600'
                 }`}

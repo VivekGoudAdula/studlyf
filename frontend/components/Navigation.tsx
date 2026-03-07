@@ -119,6 +119,7 @@ const Navigation: React.FC = () => {
   const { pathname } = useLocation();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeMobileOverlay, setActiveMobileOverlay] = useState<string | null>(null);
 
   const isDashboard = pathname.startsWith('/dashboard') || pathname.startsWith('/learn') || pathname.startsWith('/job-prep');
 
@@ -140,7 +141,7 @@ const Navigation: React.FC = () => {
   return (
     <>
       <nav className="fixed top-0 z-[100] w-full px-2 py-4 sm:px-6 sm:py-6 lg:px-12">
-        <div className="max-w-7xl mx-auto relative" onMouseLeave={handleMouseLeave}>
+        <div className="max-w-7xl mx-auto relative">
           {/* Main Purple Nav Bar */}
           <motion.div
             initial={{ y: -40, opacity: 0 }}
@@ -241,6 +242,69 @@ const Navigation: React.FC = () => {
 
           </motion.div>
 
+          {/* Mobile Overlay Trays (Slide down from navbar) */}
+          <AnimatePresence>
+            {activeMobileOverlay && (
+              <>
+                {/* Backdrop overlay */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setActiveMobileOverlay(null)}
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] lg:hidden"
+                />
+                <motion.div
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  className="absolute top-[calc(100%+8px)] left-0 right-0 z-[90] lg:hidden px-2 sm:px-0"
+                >
+                  <div className="bg-[#0B0B0F]/95 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl p-6 sm:p-8 overflow-y-auto max-h-[80vh] no-scrollbar shadow-purple-500/10">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-lg font-black text-white uppercase tracking-[0.2em]">
+                        {activeMobileOverlay === 'learn' ? 'Learn' : 'Job Prep'}
+                      </h2>
+                      <button
+                        onClick={() => setActiveMobileOverlay(null)}
+                        className="p-2 text-white/60 hover:text-white rounded-full bg-white/5"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {activeMobileOverlay === 'learn' ? (
+                        <>
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/learn/courses-overview" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="min-h-[140px] bg-white/5 border-white/10">
+                            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-20" alt="Courses" />
+                          </BentoCard>
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/learn/company-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="min-h-[140px] bg-white/5 border-white/10">
+                            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-20" alt="Corporate" />
+                          </BentoCard>
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/blog" title="Blogs" desc="Technical insights on system ownership." className="min-h-[140px] bg-white/5 border-white/10">
+                            <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-20" alt="Blog" />
+                          </BentoCard>
+                        </>
+                      ) : (
+                        <>
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/job-prep/portfolio" title="Build Portfolio" desc="Showcase evidence." className="min-h-[140px] bg-white/5 border-white/10" />
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/job-prep/resume-builder" title="Resume Builder" desc="Create instant resumes." className="min-h-[140px] bg-white/5 border-white/10" />
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/learn/assessment-intro" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="min-h-[140px] bg-white/5 border-white/10">
+                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/4 h-full object-cover opacity-20" alt="Assessment" />
+                          </BentoCard>
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/job-prep/mock-interview" title="Mock tests & interviews" desc="Practice clinical logic defense." className="min-h-[140px] bg-white/5 border-white/10" />
+                          <BentoCard onClick={() => setActiveMobileOverlay(null)} to="/job-prep/projects" title="Build A Project" desc="Build and scale industry-standard projects." className="min-h-[140px] bg-white/5 border-white/10" />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+
           {/* Desktop Dropdown Menus */}
           <AnimatePresence>
             {activeMenu && (
@@ -252,6 +316,7 @@ const Navigation: React.FC = () => {
                   exit={{ opacity: 0, y: -5, scale: 0.98 }}
                   className="hidden lg:block absolute top-[calc(100%+12px)] left-0 right-0 bg-[#F5F3FF] border border-[#7C3AED]/10 py-10 px-10 z-[90] shadow-[0_40px_80px_rgba(124,58,237,0.15)] rounded-[3rem]"
                   onMouseEnter={() => handleMouseEnter(activeMenu)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <div className="w-full">
                     {activeMenu === 'learn' && <LearnDropdown onItemClick={() => setActiveMenu(null)} />}
@@ -262,56 +327,110 @@ const Navigation: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {/* Mobile Full Screen Menu Drawer */}
+          {/* Mobile Drawer Overlay */}
           <AnimatePresence>
             {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="lg:hidden absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-[#7C3AED]/10 rounded-[2rem] shadow-2xl z-[120] overflow-hidden max-h-[80vh] overflow-y-auto"
-              >
-                <div className="p-6 space-y-8">
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em] ml-2">Main Navigation</p>
-                    <div className="grid gap-2">
-                      {[
-                        { to: '/learn/courses-overview', label: 'Learn' },
-                        { to: '/job-prep/portfolio', label: 'Job Prep' },
-                      ].map((link) => (
-                        <Link
-                          key={link.to}
-                          to={link.to}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="w-full text-left px-5 py-4 bg-gray-50 rounded-xl text-xs font-bold text-[#111827] uppercase tracking-widest hover:bg-[#7C3AED] hover:text-white transition-all"
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[115] lg:hidden"
+                />
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] sm:w-[320px] bg-[#0B0B0F] z-[120] shadow-2xl flex flex-col border-r border-white/10"
+                >
+                  <div className="p-6 flex items-center justify-between border-b border-white/5">
+                    <StudlyfLogo />
+                    <button
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-white/60 hover:text-white p-2"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+
+                  <div className="flex-grow overflow-y-auto p-6 space-y-8">
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em]">Curated Tracks</p>
+                      <div className="grid gap-3">
+                        <button
+                          onClick={() => { setActiveMobileOverlay('learn'); setMobileMenuOpen(false); }}
+                          className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-[#7C3AED]/30 transition-all hover:bg-[#7C3AED]/10 group text-left"
                         >
-                          {link.label}
-                        </Link>
-                      ))}
+                          <div className="w-10 h-10 rounded-xl bg-[#7C3AED]/20 flex items-center justify-center text-[#A78BFA]">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white uppercase tracking-wider">Learn</p>
+                            <p className="text-[10px] text-white/40">Courses, Modules, Blogs</p>
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => { setActiveMobileOverlay('jobprep'); setMobileMenuOpen(false); }}
+                          className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-[#7C3AED]/30 transition-all hover:bg-[#7C3AED]/10 group text-left"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-[#7C3AED]/20 flex items-center justify-center text-[#A78BFA]">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white uppercase tracking-wider">Job Prep</p>
+                            <p className="text-[10px] text-white/40">Portfolio & Career Tools</p>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Member Center</p>
+                      <div className="space-y-2">
+                        {user ? (
+                          <>
+                            <Link
+                              to="/dashboard"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="block w-full text-left px-5 py-4 bg-white/5 rounded-xl text-xs font-bold text-white uppercase tracking-widest hover:bg-white/10"
+                            >
+                              Dashboard
+                            </Link>
+                            <button
+                              onClick={() => { signOut(auth); setMobileMenuOpen(false); }}
+                              className="w-full py-4 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-xs font-bold uppercase tracking-[0.25em] hover:bg-red-500 hover:text-white transition-colors"
+                            >
+                              Logout
+                            </button>
+                          </>
+                        ) : (
+                          <div className="grid gap-2">
+                            <button
+                              onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
+                              className="w-full py-4 bg-[#7C3AED] text-white rounded-xl text-xs font-bold uppercase tracking-[0.25em] shadow-lg shadow-[#7C3AED]/20"
+                            >
+                              Login
+                            </button>
+                            <button
+                              onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }}
+                              className="w-full py-4 bg-white/5 text-white border border-white/10 rounded-xl text-xs font-bold uppercase tracking-[0.25em]"
+                            >
+                              Get Started
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-6 bg-[#F5F3FF] rounded-2xl border border-[#7C3AED]/5">
-                    <p className="text-[9px] font-bold text-[#7C3AED]/60 uppercase tracking-widest mb-2">{user ? 'Signed in as ' + (user.displayName || user.email) : 'Member Access'}</p>
-                    {user ? (
-                      <button
-                        onClick={() => { signOut(auth); setMobileMenuOpen(false); }}
-                        className="w-full py-4 bg-red-500 text-white rounded-xl text-xs font-bold uppercase tracking-[0.25em]"
-                      >
-                        Logout
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
-                        className="w-full py-4 bg-[#7C3AED] text-white rounded-xl text-xs font-bold uppercase tracking-[0.25em]"
-                      >
-                        Login
-                      </button>
-                    )}
+                  <div className="p-6 border-t border-white/5">
+                    <p className="text-[9px] text-center text-white/30 uppercase tracking-[0.3em]">Studlyf Engineering &copy; 2026</p>
                   </div>
-
-                </div>
-              </motion.div>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
         </div >

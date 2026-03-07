@@ -82,16 +82,16 @@ const Impact = () => {
     ];
 
     return (
-        <section className="w-full bg-white py-24 px-6 md:px-12 lg:px-24 overflow-hidden relative" id="impact">
+        <section className="w-full bg-white py-16 sm:py-24 px-4 sm:px-12 lg:px-24 overflow-hidden relative" id="impact">
             {/* Background Decorative Elements */}
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#6C3BFF]/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-50/50 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
 
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-start">
 
                 {/* LEFT SIDE: Media Grid */}
-                <div className="order-1 lg:order-1 relative group-grid">
-                    <div className="grid grid-cols-2 gap-4 md:gap-6">
+                <div className="order-1 lg:order-1 relative group-grid w-full">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-6">
                         {/* Column 1 */}
                         <div className="space-y-4 md:space-y-6 flex flex-col justify-center">
                             {images.filter((_, i) => i % 2 === 0).map((img, i) => (

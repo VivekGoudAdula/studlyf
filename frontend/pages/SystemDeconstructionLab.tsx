@@ -397,7 +397,7 @@ const SystemDeconstructionLab: React.FC = () => {
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-[#111827] mb-6 tracking-tighter leading-[0.9]">
                 Build A<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">
-                  Project
+                  PROJECT
                 </span>
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed max-w-xl">
@@ -409,7 +409,7 @@ const SystemDeconstructionLab: React.FC = () => {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/job-prep/projects/create')}
-              className="shrink-0 px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-xs uppercase tracking-[0.25em] rounded-xl shadow-2xl shadow-violet-600/30 hover:shadow-violet-500/50 transition-all border border-violet-500/30"
+              className="w-full sm:w-auto shrink-0 px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-xs uppercase tracking-[0.25em] rounded-xl shadow-2xl shadow-violet-600/30 hover:shadow-violet-500/50 transition-all border border-violet-500/30"
             >
               + Start a New Project
             </motion.button>
@@ -421,16 +421,16 @@ const SystemDeconstructionLab: React.FC = () => {
 
         {/* ── Search Bar ── */}
         <div className="mb-8">
-          <div className="relative max-w-md">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="relative w-full sm:max-w-md">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search projects, architectures, skills..."
-              className="w-full pl-11 pr-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+              placeholder="Search projects..."
+              className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-xl text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all shadow-sm"
             />
           </div>
         </div>

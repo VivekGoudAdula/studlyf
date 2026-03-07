@@ -309,7 +309,7 @@ const CourseDetail: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-5xl lg:text-6xl font-black text-[#111827] tracking-tight mb-6 leading-tight"
+              className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#111827] tracking-tight mb-6 leading-tight"
             >
               {course.title}
             </motion.h1>

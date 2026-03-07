@@ -77,6 +77,7 @@ const CoursePlayer: React.FC = () => {
     const [completionPrompt, setCompletionPrompt] = useState<{ open: boolean; nextIndex: number | null; moduleName: string }>(
         { open: false, nextIndex: null, moduleName: '' }
     );
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Support slugged URLs: "course-name--<id>"
     const extractCourseId = (slug?: string) => {
@@ -364,120 +365,149 @@ const CoursePlayer: React.FC = () => {
     const overallProgress = Math.round(((modules.filter(m => m.progress?.status === 'completed').length) / modules.length) * 100);
 
     return (
-        <div className="flex bg-[#F9FAFB] min-h-screen text-[#111827] font-sans selection:bg-[#7C3AED]/20 overflow-x-hidden">
-            <aside className="w-72 fixed left-0 top-0 bottom-0 z-40 bg-white border-r border-gray-100 flex flex-col p-6 shadow-sm">
-                <div className="mb-8">
-                    <button
-                        onClick={() => navigate('/learn/courses')}
-                        className="group flex items-center gap-3 mb-10 text-gray-400 hover:text-[#7C3AED] transition-all"
-                    >
-                        <span className="text-xl">←</span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Course Hub</span>
-                    </button>
-
-                    <div className="flex items-center gap-4 mb-10">
-                        <div className="w-11 h-11 rounded-2xl bg-[#7C3AED] flex items-center justify-center shadow-xl shadow-[#7C3AED]/30">
-                            <span className="text-white font-black text-sm">SL</span>
-                        </div>
-                        <div>
-                            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-1">Learning Path</h2>
-                            <h3 className="text-lg font-black uppercase tracking-tighter leading-none">Curriculum</h3>
-                        </div>
-                    </div>
-
-                    <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-400">Mastery Level</span>
-                            <span className="text-xs font-black text-[#7C3AED]">{overallProgress}%</span>
-                        </div>
-                        <ProgressBar progress={overallProgress} />
-                    </div>
-                </div>
-
-                <div className="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                    {modules.map((m, i) => (
-                        <button
-                            key={m._id}
-                            onClick={() => {
-                                if (m.progress?.status !== 'locked') {
-                                    setActiveModuleIndex(i);
-                                    setCoursePhase('modules');
-                                }
-                            }}
-                            className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${activeModuleIndex === i && coursePhase === 'modules'
-                                ? 'bg-[#7C3AED] border-[#7C3AED] shadow-2xl shadow-[#7C3AED]/30'
-                                : m.progress?.status === 'locked'
-                                    ? 'opacity-40 grayscale pointer-events-none border-transparent'
-                                    : 'bg-white border-gray-100 hover:border-[#7C3AED]/30 hover:bg-gray-50'
-                                }`}
+        <div className="flex bg-[#F9FAFB] min-h-screen text-[#111827] font-sans selection:bg-[#7C3AED]/20 overflow-x-hidden relative">
+            <AnimatePresence>
+                {(isSidebarOpen || window.innerWidth > 1024) && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="fixed inset-0 bg-black/50 z-[45] lg:hidden backdrop-blur-sm"
+                        />
+                        <motion.aside
+                            initial={{ x: -300 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -300 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="w-72 fixed left-0 top-0 bottom-0 z-50 bg-white border-r border-gray-100 flex flex-col p-6 shadow-2xl lg:shadow-sm"
                         >
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className={`text-[8px] font-black tracking-[0.3em] ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/60' : 'text-gray-400'}`}>PHASE {m.order_index < 10 ? `0${m.order_index}` : m.order_index}</span>
-                                    {m.progress?.status === 'completed' && (
-                                        <div className={`w-1.5 h-1.5 rounded-full ${activeModuleIndex === i && coursePhase === 'modules' ? 'bg-white' : 'bg-green-500'} shadow-lg`} />
-                                    )}
-                                </div>
-                                <p className={`text-sm font-black uppercase tracking-tighter leading-tight mb-2 ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white' : 'text-gray-900'}`}>
-                                    {m.title}
-                                </p>
-                                <span className={`text-[7px] font-bold uppercase tracking-widest ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/50' : 'text-gray-400'}`}>{m.estimated_time} EST</span>
-                            </div>
-                        </button>
-                    ))}
+                            <div className="mb-8">
+                                <button
+                                    onClick={() => navigate('/learn/courses')}
+                                    className="group flex items-center gap-3 mb-10 text-gray-400 hover:text-[#7C3AED] transition-all"
+                                >
+                                    <span className="text-xl">←</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Course Hub</span>
+                                </button>
 
-                    <div className="pt-4 mt-4 border-t border-gray-100 space-y-3">
-                        <button
-                            onClick={() => {
-                                if (modules[modules.length - 1]?.progress?.quiz_score >= 70) {
-                                    setCoursePhase('project');
-                                    setActiveModuleIndex(modules.length - 1);
-                                }
-                            }}
-                            className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${coursePhase === 'project'
-                                ? 'bg-[#111827] border-[#111827] shadow-xl shadow-[#111827]/20 flex-shrink-0'
-                                : !(modules[modules.length - 1]?.progress?.quiz_score >= 70)
-                                    ? 'opacity-40 grayscale pointer-events-none border-transparent'
-                                    : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50'
-                                }`}
-                        >
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className={`text-[8px] font-black tracking-[0.3em] ${coursePhase === 'project' ? 'text-white/50' : 'text-gray-400'}`}>CAPSTONE</span>
+                                <div className="flex items-center gap-4 mb-10">
+                                    <div className="w-11 h-11 rounded-2xl bg-[#7C3AED] flex items-center justify-center shadow-xl shadow-[#7C3AED]/30">
+                                        <span className="text-white font-black text-sm">SL</span>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-1">Learning Path</h2>
+                                        <h3 className="text-lg font-black uppercase tracking-tighter leading-none">Curriculum</h3>
+                                    </div>
                                 </div>
-                                <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${coursePhase === 'project' ? 'text-white' : 'text-gray-900'}`}>
-                                    Final Project
-                                </p>
-                            </div>
-                        </button>
 
-                        <button
-                            onClick={() => navigate('/dashboard')}
-                            className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${!(modules[modules.length - 1]?.progress?.review_status === 'approved')
-                                ? 'opacity-40 grayscale pointer-events-none border-transparent'
-                                : 'bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] border-transparent shadow-xl shadow-[#7C3AED]/20'
-                                }`}
-                        >
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className={`text-[8px] font-black tracking-[0.3em] ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-400' : 'text-white/80'}`}>CREDENTIAL</span>
+                                <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-400">Mastery Level</span>
+                                        <span className="text-xs font-black text-[#7C3AED]">{overallProgress}%</span>
+                                    </div>
+                                    <ProgressBar progress={overallProgress} />
                                 </div>
-                                <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-900' : 'text-white'}`}>
-                                    Certificate
-                                </p>
                             </div>
-                        </button>
-                    </div>
-                </div>
-            </aside>
 
-            <main className="flex-grow ml-72 p-8 lg:p-12 flex flex-col items-center overflow-x-hidden">
+                            <div className="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                {modules.map((m, i) => (
+                                    <button
+                                        key={m._id}
+                                        onClick={() => {
+                                            if (m.progress?.status !== 'locked') {
+                                                setActiveModuleIndex(i);
+                                                setCoursePhase('modules');
+                                            }
+                                        }}
+                                        className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${activeModuleIndex === i && coursePhase === 'modules'
+                                            ? 'bg-[#7C3AED] border-[#7C3AED] shadow-2xl shadow-[#7C3AED]/30'
+                                            : m.progress?.status === 'locked'
+                                                ? 'opacity-40 grayscale pointer-events-none border-transparent'
+                                                : 'bg-white border-gray-100 hover:border-[#7C3AED]/30 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <div className="relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className={`text-[8px] font-black tracking-[0.3em] ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/60' : 'text-gray-400'}`}>PHASE {m.order_index < 10 ? `0${m.order_index}` : m.order_index}</span>
+                                                {m.progress?.status === 'completed' && (
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${activeModuleIndex === i && coursePhase === 'modules' ? 'bg-white' : 'bg-green-500'} shadow-lg`} />
+                                                )}
+                                            </div>
+                                            <p className={`text-sm font-black uppercase tracking-tighter leading-tight mb-2 ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white' : 'text-gray-900'}`}>
+                                                {m.title}
+                                            </p>
+                                            <span className={`text-[7px] font-bold uppercase tracking-widest ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/50' : 'text-gray-400'}`}>{m.estimated_time} EST</span>
+                                        </div>
+                                    </button>
+                                ))}
+
+                                <div className="pt-4 mt-4 border-t border-gray-100 space-y-3">
+                                    <button
+                                        onClick={() => {
+                                            if (modules[modules.length - 1]?.progress?.quiz_score >= 70) {
+                                                setCoursePhase('project');
+                                                setActiveModuleIndex(modules.length - 1);
+                                            }
+                                        }}
+                                        className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${coursePhase === 'project'
+                                            ? 'bg-[#111827] border-[#111827] shadow-xl shadow-[#111827]/20 flex-shrink-0'
+                                            : !(modules[modules.length - 1]?.progress?.quiz_score >= 70)
+                                                ? 'opacity-40 grayscale pointer-events-none border-transparent'
+                                                : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <div className="relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className={`text-[8px] font-black tracking-[0.3em] ${coursePhase === 'project' ? 'text-white/50' : 'text-gray-400'}`}>CAPSTONE</span>
+                                            </div>
+                                            <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${coursePhase === 'project' ? 'text-white' : 'text-gray-900'}`}>
+                                                Final Project
+                                            </p>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => navigate('/dashboard')}
+                                        className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${!(modules[modules.length - 1]?.progress?.review_status === 'approved')
+                                            ? 'opacity-40 grayscale pointer-events-none border-transparent'
+                                            : 'bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] border-transparent shadow-xl shadow-[#7C3AED]/20'
+                                            }`}
+                                    >
+                                        <div className="relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className={`text-[8px] font-black tracking-[0.3em] ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-400' : 'text-white/80'}`}>CREDENTIAL</span>
+                                            </div>
+                                            <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-900' : 'text-white'}`}>
+                                                Certificate
+                                            </p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.aside>
+                    </>
+                )}
+            </AnimatePresence>
+
+            <main className={`flex-grow transition-all duration-300 ${isSidebarOpen ? 'lg:ml-72' : 'lg:ml-72'} p-4 sm:p-8 lg:p-12 flex flex-col items-center overflow-x-hidden w-full`}>
                 <div className="w-full max-w-5xl">
+                    {/* Mobile Header Toggle */}
+                    <div className="flex items-center justify-between lg:hidden mb-8 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                        <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+                            <span className="text-sm font-black uppercase tracking-widest text-[#7C3AED]">Menu</span>
+                        </button>
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Studlyf Hub</span>
+                        </div>
+                    </div>
 
                     {coursePhase === 'modules' && (
-                        <div className="sticky top-4 z-50 w-full flex justify-center mb-12">
-                            <div className="bg-white/95 backdrop-blur-2xl border border-gray-100 rounded-[2.5rem] p-4 px-8 shadow-2xl shadow-gray-200/50 flex items-center justify-center">
-                                <div className="flex items-center gap-6 lg:gap-10">
+                        <div className="sticky top-4 z-40 w-full flex justify-center mb-8 sm:mb-12">
+                            <div className="bg-white/95 backdrop-blur-2xl border border-gray-100 rounded-2xl sm:rounded-[2.5rem] p-3 sm:p-4 px-4 sm:px-8 shadow-2xl shadow-gray-200/50 flex items-center justify-center">
+                                <div className="flex items-center gap-4 sm:gap-6 lg:gap-10">
                                     <SectionIndicator
                                         label="Video"
                                         active={activeStage === 'video'}
@@ -528,9 +558,9 @@ const CoursePlayer: React.FC = () => {
                                 exit={{ opacity: 0, scale: 1.02, y: -30 }}
                                 className="space-y-12 pb-24"
                             >
-                                <div className="bg-white border border-gray-100 rounded-[4rem] p-16 lg:p-24 shadow-2xl shadow-gray-200/50 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-12 font-black text-[9px] text-gray-100 uppercase tracking-[0.5em] rotate-90 origin-top-right">PROTOCOL_THEORY</div>
-                                    <article className="prose prose-purple max-w-none text-gray-600 leading-relaxed text-xl">
+                                <div className="bg-white border border-gray-100 rounded-[2.5rem] sm:rounded-[4rem] p-8 sm:p-16 lg:p-24 shadow-2xl shadow-gray-200/50 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-8 sm:p-12 font-black text-[7px] sm:text-[9px] text-gray-100 uppercase tracking-[0.5em] sm:rotate-90 origin-top-right">PROTOCOL_THEORY</div>
+                                    <article className="prose prose-purple max-w-none text-gray-600 leading-relaxed text-lg sm:text-xl">
                                         <ReactMarkdown
                                             components={{
                                                 h1: ({ node, ...props }) => <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900 mb-8 mt-6" {...props} />,
@@ -617,16 +647,16 @@ const CoursePlayer: React.FC = () => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="w-full space-y-10 pb-24"
+                                className="w-full space-y-6 sm:space-y-10 pb-24"
                             >
                                 {moduleDetails?.quiz?.questions.map((q: any, i: number) => (
-                                    <div key={i} className="bg-white border border-gray-100 p-16 rounded-[4rem] shadow-sm relative group overflow-hidden">
-                                        <div className="flex items-center gap-6 mb-12">
-                                            <span className="font-mono text-[9px] font-black text-[#7C3AED] tracking-[0.5em]">OBJECTIVE::0{i + 1}</span>
+                                    <div key={i} className="bg-white border border-gray-100 p-8 sm:p-16 rounded-2xl sm:rounded-[4rem] shadow-sm relative group overflow-hidden">
+                                        <div className="flex items-center gap-6 mb-8 sm:mb-12">
+                                            <span className="font-mono text-[8px] sm:text-[9px] font-black text-[#7C3AED] tracking-[0.3em] sm:tracking-[0.5em]">OBJECTIVE::0{i + 1}</span>
                                             <div className="h-px flex-grow bg-gray-50" />
                                         </div>
 
-                                        <h4 className="text-3xl font-black text-gray-900 mb-12 uppercase tracking-tight leading-tight">{q.question}</h4>
+                                        <h4 className="text-xl sm:text-3xl font-black text-gray-900 mb-8 sm:mb-12 uppercase tracking-tight leading-tight">{q.question}</h4>
 
                                         <div className="grid sm:grid-cols-2 gap-6">
                                             {q.options.map((opt: string, optIdx: number) => {
@@ -664,10 +694,10 @@ const CoursePlayer: React.FC = () => {
                                                             setQuizAnswers(newAns);
                                                         }}
                                                         disabled={!!quizResult}
-                                                        className={`p-10 text-left border-2 rounded-[2.5rem] transition-all duration-500 relative group overflow-hidden ${borderColor} ${bgColor}`}
+                                                        className={`p-6 sm:p-10 text-left border-2 rounded-2xl sm:rounded-[2.5rem] transition-all duration-500 relative group overflow-hidden ${borderColor} ${bgColor}`}
                                                     >
                                                         <div className="relative z-10 flex items-center justify-between">
-                                                            <span className={`text-[15px] font-bold tracking-tight uppercase ${textColor}`}>{opt}</span>
+                                                            <span className={`text-xs sm:text-[15px] font-bold tracking-tight uppercase ${textColor}`}>{opt}</span>
                                                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-current border-current' : 'border-gray-200'}`}>
                                                                 {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                                                             </div>
@@ -748,7 +778,7 @@ const CoursePlayer: React.FC = () => {
                                 exit={{ opacity: 0, scale: 1.02 }}
                                 className="w-full pb-24"
                             >
-                                <div className="bg-white border border-gray-100 rounded-[5rem] p-24 relative overflow-hidden shadow-2xl shadow-gray-200/50">
+                                <div className="bg-white border border-gray-100 rounded-[2.5rem] sm:rounded-[5rem] p-8 sm:p-24 relative overflow-hidden shadow-2xl shadow-gray-200/50">
                                     <div className="relative z-10 flex flex-col items-center">
                                         <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.8em] mb-12">Final Capstone Phase</span>
 

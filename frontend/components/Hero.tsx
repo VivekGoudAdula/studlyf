@@ -17,7 +17,7 @@ const Hero: React.FC = () => {
 
   return (
     <section ref={containerRef} className="relative min-h-screen flex items-center bg-[#0F172A] overflow-hidden pt-32 lg:pt-0">
-      <motion.div 
+      <motion.div
         style={{ y: bgY }}
         className="absolute inset-0 z-0"
       >
@@ -25,10 +25,10 @@ const Hero: React.FC = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(124,58,237,0.12),transparent_70%)]"></div>
         <div className="absolute inset-0 bg-grid-tech opacity-[0.15]"></div>
       </motion.div>
-      
+
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 w-full relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-32 items-center">
-          
+
           {/* Left: Content - Pushed Left */}
           <motion.div style={{ y: contentY }} className="text-center lg:text-left lg:max-w-2xl lg:mr-auto">
             <motion.div
@@ -41,14 +41,14 @@ const Hero: React.FC = () => {
               <span className="font-mono text-[9px] sm:text-[11px] text-white font-bold tracking-[0.4em] sm:tracking-[0.5em] uppercase">Protocol_v3.0.1 // Active</span>
             </motion.div>
 
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 120 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.8, ease: [0.19, 1, 0.22, 1], delay: 0.1 }}
-              className="font-syne text-5xl sm:text-7xl lg:text-[6.5rem] text-white leading-[1] lg:leading-[0.95] mb-8 sm:mb-12 uppercase tracking-tighter"
+              className="font-syne text-4xl sm:text-7xl lg:text-[6.5rem] text-white leading-[1] lg:leading-[0.95] mb-6 sm:mb-12 uppercase tracking-tighter"
             >
               Engineering <br />
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 2, ease: [0.19, 1, 0.22, 1], delay: 0.3 }}
@@ -58,22 +58,22 @@ const Hero: React.FC = () => {
               </motion.span>
             </motion.h1>
 
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 1, ease: "easeOut" }}
-              className="text-lg sm:text-2xl text-gray-300 leading-relaxed max-w-xl mb-12 sm:mb-16 font-medium mx-auto lg:mx-0"
+              className="text-base sm:text-2xl text-gray-300 leading-relaxed max-w-xl mb-10 sm:mb-16 font-medium mx-auto lg:mx-0"
             >
               Defining technical authority in the generative era. We verify the human judgment that builds resilient systems.
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 1, ease: "easeOut" }}
               className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start"
             >
-              <motion.button 
+              <motion.button
                 onClick={() => navigate('/learn/courses')}
                 whileHover={{ scale: 0.96 }}
                 whileTap={{ scale: 0.92 }}
@@ -82,7 +82,7 @@ const Hero: React.FC = () => {
                 <span className="relative z-10">Explore Standards</span>
                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
               </motion.button>
-              <motion.button 
+              <motion.button
                 onClick={() => {
                   const el = document.getElementById('verification');
                   el?.scrollIntoView({ behavior: 'smooth' });
@@ -97,7 +97,7 @@ const Hero: React.FC = () => {
           </motion.div>
 
           {/* Right: Curved Image Holder - Pushed Right */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95, x: 60 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 2, delay: 0.4, ease: [0.19, 1, 0.22, 1] }}
@@ -106,14 +106,14 @@ const Hero: React.FC = () => {
             <div className="relative z-10 aspect-[4/5] w-full max-w-lg">
               <div className="absolute inset-0 bg-[#7C3AED]/20 blur-[120px] rounded-full animate-pulse" />
               <div className="relative h-full w-full rounded-[4.5rem] overflow-hidden border-8 border-white/5 shadow-[0_50px_100px_rgba(0,0,0,0.5)]">
-                <WebImage 
+                <WebImage
                   src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200"
                   alt="Engineering context"
                   aspectRatio="h-full w-full"
                   className="h-full w-full grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-1000 ease-in-out"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
-                
+
                 {/* Floating Meta Data Overlay */}
                 <div className="absolute bottom-12 left-12 right-12">
                   <div className="flex items-center gap-4 mb-4">
@@ -127,11 +127,11 @@ const Hero: React.FC = () => {
               {/* Decorative side accent */}
               <div className="absolute -right-12 top-1/2 -translate-y-1/2 flex flex-col gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <motion.div 
-                    key={i} 
+                  <motion.div
+                    key={i}
                     animate={{ opacity: [0.2, 1, 0.2] }}
                     transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-                    className="w-2 h-2 rounded-full bg-[#7C3AED]" 
+                    className="w-2 h-2 rounded-full bg-[#7C3AED]"
                   />
                 ))}
               </div>
@@ -142,7 +142,7 @@ const Hero: React.FC = () => {
       </div>
 
       <div className="absolute bottom-6 right-6 sm:bottom-12 sm:right-12 hidden sm:block">
-        <motion.div 
+        <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
           className="w-24 h-24 sm:w-32 sm:h-32 border border-white/5 rounded-full flex items-center justify-center p-2"

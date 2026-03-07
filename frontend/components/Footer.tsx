@@ -69,7 +69,7 @@ const Footer: React.FC = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 1, ease: "easeOut" }}
-                    className="relative backdrop-blur-3xl bg-white/[0.04] border border-white/10 rounded-[3.5rem] p-10 md:p-16 overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.5),0_0_50px_rgba(108,59,255,0.1)]"
+                    className="relative backdrop-blur-3xl bg-white/[0.04] border border-white/10 rounded-[2rem] sm:rounded-[3.5rem] p-8 sm:p-12 md:p-16 overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.5),0_0_50px_rgba(108,59,255,0.1)]"
                 >
                     {/* Glowing Top Border Line */}
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#9D7CFF]/50 to-transparent" />

@@ -357,7 +357,7 @@ const CompanyModules: React.FC = () => {
                 >
                   Partner Gates • Institutional Access
                 </motion.span>
-                <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black mb-8 leading-tight tracking-tighter uppercase text-[#111827] whitespace-nowrap">
+                <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black mb-8 leading-tight tracking-tighter uppercase text-[#111827]">
                   COMPANY <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">MODULES.</span>
                 </h1>
                 <p className="text-lg sm:text-xl text-[#64748B] max-w-3xl mx-auto font-medium leading-relaxed">
@@ -378,7 +378,7 @@ const CompanyModules: React.FC = () => {
             </header>
 
             {/* Quick Stats - Enhanced Visuals */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 sm:mb-20">
               {[
                 { label: 'Active Gates', val: '24', icon: ShieldCheck, color: '#7C3AED' },
                 { label: 'DSA Logic', val: '1.2k+', icon: Cpu, color: '#9D7CFF' },
@@ -475,26 +475,26 @@ const CompanyModules: React.FC = () => {
                 style={{ backgroundColor: selectedCompany.brandColor }}
               />
               <div className="relative flex flex-col lg:flex-row gap-12 items-start lg:items-center justify-between p-8 lg:p-12">
-                <div className="flex items-center gap-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8">
                   <motion.button
                     whileHover={{ x: -5 }}
                     onClick={() => setSelectedCompany(null)}
-                    className="p-4 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#7C3AED]/50 transition-all text-[#111827] shadow-sm"
+                    className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#7C3AED]/50 transition-all text-[#111827] shadow-sm"
                   >
-                    <ArrowLeft className="w-6 h-6" />
+                    <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                   </motion.button>
-                  <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-white p-3 rounded-3xl flex items-center justify-center shadow-xl border border-gray-50">
+                  <div className="flex items-center gap-4 sm:gap-6">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white p-2.5 sm:p-3 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-xl border border-gray-50">
                       <img src={selectedCompany.logo} alt="" className="max-w-full max-h-full object-contain" />
                     </div>
                     <div>
-                      <h2 className="text-4xl font-black mb-1 text-[#111827]">{selectedCompany.name}</h2>
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs font-bold text-[#64748B] flex items-center gap-1">
+                      <h2 className="text-2xl sm:text-4xl font-black mb-1 text-[#111827]">{selectedCompany.name}</h2>
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                        <span className="text-[10px] sm:text-xs font-bold text-[#64748B] flex items-center gap-1">
                           <ShieldCheck className="w-3 h-3" /> {selectedCompany.industry}
                         </span>
-                        <div className="h-1 w-1 bg-gray-200 rounded-full" />
-                        <span className="text-xs font-bold text-[#7C3AED]">{selectedCompany.difficulty} Difficulty</span>
+                        <div className="hidden sm:block h-1 w-1 bg-gray-200 rounded-full" />
+                        <span className="text-[10px] sm:text-xs font-bold text-[#7C3AED] whitespace-nowrap">{selectedCompany.difficulty} Difficulty</span>
                       </div>
                     </div>
                   </div>
@@ -514,18 +514,18 @@ const CompanyModules: React.FC = () => {
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">
-              <div className="w-full lg:w-72 space-y-2">
+              <div className="w-full lg:w-72 flex flex-row lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar">
                 {[
-                  { id: 'overview', label: 'Company Overview', icon: LayoutGrid },
-                  { id: 'dsa', label: 'DSA Practice', icon: Terminal },
-                  { id: 'tech', label: 'Technical Questions', icon: Cpu },
-                  { id: 'hr', label: 'HR Interviews', icon: Briefcase },
-                  { id: 'ai', label: 'AI Mock Agent', icon: Bot, premium: true },
+                  { id: 'overview', label: 'Overview', icon: LayoutGrid },
+                  { id: 'dsa', label: 'DSA', icon: Terminal },
+                  { id: 'tech', label: 'Tech', icon: Cpu },
+                  { id: 'hr', label: 'HR', icon: Briefcase },
+                  { id: 'ai', label: 'AI', icon: Bot, premium: true },
                 ].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id as any)}
-                    className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${activeTab === t.id
+                    className={`flex-shrink-0 lg:flex-shrink flex items-center justify-between p-4 lg:p-5 rounded-xl lg:rounded-2xl border transition-all ${activeTab === t.id
                       ? 'bg-[#7C3AED]/10 border-[#7C3AED] text-[#7C3AED]'
                       : 'bg-transparent border-transparent text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#111827]'
                       }`}
@@ -562,18 +562,18 @@ const CompanyModules: React.FC = () => {
                     {activeTab === 'overview' && (
                       <div className="space-y-12">
                         <section>
-                          <h3 className="text-3xl font-black mb-8 flex items-center gap-3 text-[#111827]">
-                            <Info className="w-8 h-8 text-[#7C3AED]" /> Overview
+                          <h3 className="text-2xl sm:text-3xl font-black mb-6 sm:mb-8 flex items-center gap-3 text-[#111827]">
+                            <Info className="w-6 h-6 sm:w-8 sm:h-8 text-[#7C3AED]" /> Overview
                           </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="bg-[#F8FAFC] p-8 rounded-3xl border border-[#E2E8F0]">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                            <div className="bg-[#F8FAFC] p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-[#E2E8F0]">
                               <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-widest block mb-4">The Culture</span>
-                              <p className="text-lg leading-relaxed text-[#64748B]">{selectedCompany.culture || "Customer-centric innovation and technical excellence."}</p>
+                              <p className="text-base sm:text-lg leading-relaxed text-[#64748B]">{selectedCompany.culture || "Customer-centric innovation and technical excellence."}</p>
                             </div>
-                            <div className="bg-[#F8FAFC] p-8 rounded-3xl border border-[#E2E8F0]">
+                            <div className="bg-[#F8FAFC] p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-[#E2E8F0]">
                               <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-widest block mb-4">Salary Scope</span>
-                              <div className="text-4xl font-black mb-2 text-[#111827]">{selectedCompany.salaryRange}</div>
-                              <p className="text-xs text-[#64748B] uppercase tracking-widest font-bold">Standard package for Entry Level</p>
+                              <div className="text-3xl sm:text-4xl font-black mb-2 text-[#111827]">{selectedCompany.salaryRange}</div>
+                              <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-bold">Standard package for Entry Level</p>
                             </div>
                           </div>
                         </section>

@@ -110,7 +110,7 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: typeof testimoni
             />
 
             <motion.div
-                className={`relative w-80 md:w-96 min-h-[480px] flex flex-col p-8 rounded-[2rem] ${testimonial.bgColor || 'bg-white'} border border-gray-100 backdrop-blur-xl overflow-hidden shadow-2xl`}
+                className={`relative w-[280px] sm:w-80 md:w-96 min-h-[420px] md:min-h-[480px] flex flex-col p-6 md:p-8 rounded-[2rem] ${testimonial.bgColor || 'bg-white'} border border-gray-100 backdrop-blur-xl overflow-hidden shadow-2xl`}
                 style={{
                     rotateX,
                     rotateY,
