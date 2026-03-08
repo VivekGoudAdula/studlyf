@@ -10,3 +10,7 @@ motor
 python-dotenv
 beautifulsoup4
 bs4
+firebase-admin
+certifi
+pydantic
+weasyprint
