@@ -179,6 +179,14 @@ const Navigation: React.FC = () => {
                     <motion.svg animate={{ rotate: activeMenu === id ? 180 : 0 }} className="w-3.5 h-3.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></motion.svg>
                   </button>
                 ))}
+
+                {/* AI Tools Direct Link */}
+                <Link
+                  to="/ai-tools"
+                  className="flex items-center transition-all h-full uppercase tracking-[0.25em] font-bold text-[11px] text-white/80 hover:text-white"
+                >
+                  AI TOOLS
+                </Link>
               </div>
             </div>
 
@@ -384,6 +392,20 @@ const Navigation: React.FC = () => {
                             <p className="text-[10px] text-white/40">Portfolio & Career Tools</p>
                           </div>
                         </button>
+
+                        <Link
+                          to="/ai-tools"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-[#7C3AED]/30 transition-all hover:bg-[#7C3AED]/10 group text-left"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-[#7C3AED]/20 flex items-center justify-center text-[#A78BFA]">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white uppercase tracking-wider">AI Tools</p>
+                            <p className="text-[10px] text-white/40">Latest AI protocols</p>
+                          </div>
+                        </Link>
                       </div>
                     </div>
 
