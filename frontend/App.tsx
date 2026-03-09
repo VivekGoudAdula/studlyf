@@ -43,6 +43,13 @@ import CareerOnboarding from './pages/CareerOnboarding';
 import CoursesOverview from './pages/CoursesOverview';
 import TrackDetail from './pages/TrackDetail';
 import EnrollmentFlow from './pages/EnrollmentFlow';
+import StackPage from './pages/StackPage';
+import QueuePage from './pages/QueuePage';
+import LinkedListPage from './pages/LinkedListPage';
+import BSTPage from './pages/BSTPage';
+import HashTablePage from './pages/HashTablePage';
+import AITools from './pages/AITools';
+
 
 // Unique Components
 import EnquiryForm from './components/EnquiryForm';
