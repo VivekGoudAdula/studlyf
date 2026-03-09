@@ -14,7 +14,7 @@ import Home from './pages/Home';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
 import CareerFit from './pages/CareerFit';
-import SkillAssessment from './pages/SkillAssessment';
+import Assessment from './pages/Assessment';
 import AssessmentIntro from './pages/AssessmentIntro';
 import JobSimulation from './pages/JobSimulation';
 import PortfolioBuilder from './pages/PortfolioBuilder';
@@ -43,7 +43,6 @@ import CareerOnboarding from './pages/CareerOnboarding';
 import CoursesOverview from './pages/CoursesOverview';
 import TrackDetail from './pages/TrackDetail';
 import EnrollmentFlow from './pages/EnrollmentFlow';
-import AITools from './pages/AITools';
 
 // Unique Components
 import EnquiryForm from './components/EnquiryForm';
@@ -118,8 +117,18 @@ const App: React.FC = () => {
             <Route path="/learn/course-player/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
             <Route path="/learn/career-fit" element={<ProtectedRoute><CareerFit /></ProtectedRoute>} />
             <Route path="/learn/assessment-intro" element={<ProtectedRoute><AssessmentIntro /></ProtectedRoute>} />
-            <Route path="/learn/assessment" element={<ProtectedRoute><SkillAssessment /></ProtectedRoute>} />
+            <Route path="/learn/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
             <Route path="/learn/company-modules" element={<ProtectedRoute><CompanyModules /></ProtectedRoute>} />
+            <Route path="/learn/visualizer/stack" element={<ProtectedRoute><StackPage /></ProtectedRoute>} />
+            <Route path="/learn/visualizer/queue" element={<ProtectedRoute><QueuePage /></ProtectedRoute>} />
+            <Route path="/learn/visualizer/linked-list" element={<ProtectedRoute><LinkedListPage /></ProtectedRoute>} />
+            <Route path="/learn/visualizer/bst" element={<ProtectedRoute><BSTPage /></ProtectedRoute>} />
+            <Route path="/learn/visualizer/hash-table" element={<ProtectedRoute><HashTablePage /></ProtectedRoute>} />
+            <Route path="/stack" element={<ProtectedRoute><StackPage /></ProtectedRoute>} />
+            <Route path="/queue" element={<ProtectedRoute><QueuePage /></ProtectedRoute>} />
+            <Route path="/linked-list" element={<ProtectedRoute><LinkedListPage /></ProtectedRoute>} />
+            <Route path="/bst" element={<ProtectedRoute><BSTPage /></ProtectedRoute>} />
+            <Route path="/hash-table" element={<ProtectedRoute><HashTablePage /></ProtectedRoute>} />
             <Route path="/learn/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
             <Route path="/learn/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
 
@@ -187,7 +196,7 @@ const App: React.FC = () => {
 
 const AppWrapper = () => (
   <HeroUIProvider>
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <ScrollToTop />
         <App />

@@ -1,449 +1,913 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Building2,
-  Briefcase,
-  ChevronRight,
-  Mic,
-  MicOff,
-  Trophy,
-  AlertCircle,
-  CheckCircle2,
-  Layout,
-  User,
-  Send,
-  Loader2,
-  ArrowRight,
-  TrendingUp,
-  Target,
-  FileText,
-  Volume2,
-  Timer,
-  Zap,
-  ShieldCheck,
-  Brain,
-  MessageSquare,
-  Sparkles,
-  BarChart3,
-  Flame,
-  Search,
-  ChevronLeft,
-  Code2
+    Code2,
+    Mic,
+    User,
+    Sparkles,
+    ArrowRight,
+    CheckCircle2,
+    Loader2,
+    Send,
+    AlertCircle,
+    MicOff,
+    Briefcase,
+    Clock,
+    ChevronRight,
+    TrendingUp,
+    Brain,
+    Award,
+    Target,
+    ShieldCheck,
+    Timer,
+    MessageSquare,
+    Zap,
+    Trophy,
+    Building2
 } from 'lucide-react';
 
+// ── Types ──────────────────────────────────────────────────────────────────
 type Step = 'INTRO' | 'SETUP' | 'INTERVIEW' | 'REPORT';
+type RoundIndex = 0 | 1 | 2;
 
-const MockInterview: React.FC = () => {
-  const [step, setStep] = useState<Step>('INTRO');
-  const [loading, setLoading] = useState(false);
-  const [setup, setSetup] = useState({
-    company: '',
-    role: '',
-    experience: 'Fresher',
-    type: 'Technical'
-  });
+interface ChatMessage {
+    role: 'interviewer' | 'user';
+    content: string;
+    timestamp: string;
+}
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [timer, setTimer] = useState(0);
-  const [transcript, setTranscript] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [responses, setResponses] = useState<any[]>([]);
+interface UserResponse {
+    round: number;
+    question: string;
+    answer: string;
+    suggestion: string;
+    wordCount: number;
+    mistakes?: string;
+}
 
-  // Mock Questions
-  const MOCK_QUESTIONS = {
-    Technical: [
-      "How would you optimize a high-frequency write-heavy database for a global trading platform?",
-      "Explain the CAP theorem and which trade-off you would choose for a social media notification system.",
-      "Identify potential memory leaks in a large-scale React application using WebWorkers."
+interface InterviewReport {
+    overall_score: number;
+    sections: {
+        label: string;
+        score: number;
+        feedback: string;
+    }[];
+    detailed_analysis: {
+        round_name: string;
+        total_words: number;
+        responses: UserResponse[];
+    }[];
+    strengths: string[];
+    weaknesses: string[];
+    verdict: string;
+}
+
+// ── Dummy Data ─────────────────────────────────────────────────────────────
+const DUMMY_QUESTIONS = [
+    [
+        "How does the Java JVM manage memory, and what is the role of the Garbage Collector?",
+        "Explain the difference between a SQL JOIN and a subquery in terms of performance.",
+        "What are decorators in Python, and how would you implement an authentication decorator?",
+        "Describe the 'vanishing gradient problem' in Deep Learning and one way to fix it.",
+        "How do you ensure data consistency in a distributed microservices architecture?"
     ],
-    Behavioral: [
-      "Describe a time you had a significant technical disagreement with a teammate. How was it resolved?",
-      "Tell me about a project that failed. What was your post-mortem analysis?",
+    [
+        "Tell me about a time you had a conflict with a teammate. How did you resolve it?",
+        "Describe a project you are most proud of. What was your specific contribution?",
+        "How do you handle tight deadlines when multiple tasks are high priority?",
+        "Tell me about a time you failed. What did you learn from that experience?",
+        "Where do you see yourself professionally in the next three to five years?"
     ],
-    HR: [
-      "Why do you want to join our engineering team specifically?",
-      "Where do you see your technical authority in 5 years?",
+    [
+        "Tell me about yourself and your background.",
+        "What are your greatest strengths and weaknesses?",
+        "Where do you see yourself in five years?",
+        "Why do you want to work at our company?",
+        "Describe a challenging situation and how you handled it.",
+        "What motivates you to perform your best at work?",
+        "How do you handle stress and pressure on the job?",
+        "Do you have any questions for me?"
     ]
-  };
+];
 
-  const currentQuestions = MOCK_QUESTIONS[setup.type as keyof typeof MOCK_QUESTIONS] || MOCK_QUESTIONS.Technical;
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [step]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (step === 'INTERVIEW' && timer > 0) {
-      interval = setInterval(() => setTimer(t => t - 1), 1000);
-    } else if (step === 'INTERVIEW' && timer === 0 && currentIndex < currentQuestions.length) {
-      // Auto-submit or handle timeout
-    }
-    return () => clearInterval(interval);
-  }, [step, timer]);
-
-  const startInterview = () => {
-    setCurrentIndex(0);
-    setTimer(180); // 3 minutes per question
-    setResponses([]);
-    setStep('INTERVIEW');
-  };
-
-  const handleNext = () => {
-    setResponses([...responses, { question: currentQuestions[currentIndex], answer: transcript }]);
-    setTranscript('');
-    if (currentIndex < currentQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setTimer(180);
-    } else {
-      setStep('REPORT');
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-20 px-4 font-sans">
-      <AnimatePresence mode="wait">
-
-        {/* ── STEP 1: INTRO PAGE ── */}
-        {step === 'INTRO' && (
-          <motion.div
-            key="intro"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="max-w-6xl mx-auto"
-          >
-            <header className="text-center mb-24">
-              <div className="inline-flex items-center gap-2 bg-[#7C3AED]/10 text-[#7C3AED] px-6 py-2 rounded-full mb-8 border border-[#7C3AED]/10">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Simulate High-Stakes Interviews</span>
-              </div>
-              <h1 className="text-6xl sm:text-8xl font-black text-gray-900 mb-8 leading-[0.9] tracking-tighter uppercase italic">
-                Master the <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">HOT SEAT.</span>
-              </h1>
-              <p className="text-xl text-gray-500 font-medium max-w-2xl mx-auto leading-relaxed">
-                Elite interview simulation for engineers. Practice logical defense, technical clarity, and behavioral authority.
-              </p>
-            </header>
-
-            <div className="grid md:grid-cols-3 gap-8 mb-20">
-              {[
+const DUMMY_REPORT: InterviewReport = {
+    overall_score: 84,
+    sections: [
+        { label: 'Technical Depth', score: 88, feedback: 'Strong grasp of core Java fundamentals and system design.' },
+        { label: 'Problem Solving', score: 82, feedback: 'Logical approach to DSA. Explained time complexity clearly.' },
+        { label: 'Communication', score: 85, feedback: 'Very articulate. Handled behavioral scenarios professionally.' },
+        { label: 'HR Final Call', score: 80, feedback: 'Professional attitude. Clearly communicated career goals.' }
+    ],
+    detailed_analysis: [
+        {
+            round_name: "Technical Round",
+            total_words: 450,
+            responses: [
                 {
-                  title: "Technical Round",
-                  icon: <Code2 className="w-8 h-8" />,
-                  desc: "System design, DSA, and deep execution logic.",
-                  color: "from-blue-500 to-indigo-600"
-                },
+                    round: 0,
+                    question: "How does the Java JVM manage memory?",
+                    answer: "It uses heap and stack memory with a garbage collector.",
+                    suggestion: "You should mention specific regions like Young Generation, Old Generation and the Metaspace for a more senior-level answer.",
+                    wordCount: 12,
+                    mistakes: "Lacked depth on generational collection."
+                }
+            ]
+        },
+        {
+            round_name: "Behavioral Round",
+            total_words: 320,
+            responses: [
                 {
-                  title: "Behavioral Round",
-                  icon: <User className="w-8 h-8" />,
-                  desc: "Leadership principles and conflict resolution protocols.",
-                  color: "from-[#7C3AED] to-purple-600"
-                },
+                    round: 1,
+                    question: "Tell me about a time you had a conflict with a teammate.",
+                    answer: "I talked to them and we sorted it out by listening to each other.",
+                    suggestion: "Try using the STAR method (Situation, Task, Action, Result). Quantify the impact of the resolution.",
+                    wordCount: 15,
+                    mistakes: "Missing 'Result' phase of the STAR method."
+                }
+            ]
+        },
+        {
+            round_name: "HR Round",
+            total_words: 280,
+            responses: [
                 {
-                  title: "HR Voice Agent",
-                  icon: <Mic className="w-8 h-8" />,
-                  desc: "Realistic voice-based followup with real-time confidence tracking.",
-                  color: "from-pink-500 to-rose-600"
-                },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ y: -10 }}
-                  className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-xl shadow-gray-200/50 group relative overflow-hidden"
-                >
-                  <div className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-white mb-8 shadow-lg`}>
-                    {item.icon}
-                  </div>
-                  <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-4">{item.title}</h3>
-                  <p className="text-sm font-medium text-gray-500 leading-relaxed">{item.desc}</p>
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity translate-x-1/2 -translate-y-1/2" />
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setStep('SETUP')}
-              className="w-full py-8 bg-[#111827] text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.5em] shadow-2xl hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-4"
-            >
-              Configure Protocol <ChevronRight className="w-6 h-6" />
-            </motion.button>
-          </motion.div>
-        )}
-
-        {/* ── STEP 2: SELECTION ── */}
-        {step === 'SETUP' && (
-          <motion.div
-            key="setup"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="bg-white rounded-[3rem] p-12 border border-gray-100 shadow-2xl">
-              <div className="mb-12">
-                <button onClick={() => setStep('INTRO')} className="flex items-center gap-2 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-900 mb-8">
-                  <ChevronLeft className="w-4 h-4" /> Back to Briefing
-                </button>
-                <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">
-                  Interview <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CALIBRATION</span>.
-                </h2>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-10">
-                <div className="space-y-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Company</label>
-                    <div className="relative">
-                      <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
-                      <input
-                        type="text"
-                        placeholder="e.g. Google, Stripe..."
-                        className="w-full bg-gray-50 border-none rounded-2xl pl-16 pr-6 py-5 font-bold text-gray-800 placeholder:text-gray-300 focus:ring-2 focus:ring-[#7C3AED]/20"
-                        value={setup.company}
-                        onChange={(e) => setSetup({ ...setup, company: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Role</label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
-                      <input
-                        type="text"
-                        placeholder="e.g. Staff Engineer..."
-                        className="w-full bg-gray-50 border-none rounded-2xl pl-16 pr-6 py-5 font-bold text-gray-800 placeholder:text-gray-300 focus:ring-2 focus:ring-[#7C3AED]/20"
-                        value={setup.role}
-                        onChange={(e) => setSetup({ ...setup, role: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Experience Level</label>
-                    <div className="flex gap-2">
-                      {['Fresher', 'Mid', 'Senior'].map(lvl => (
-                        <button
-                          key={lvl}
-                          onClick={() => setSetup({ ...setup, experience: lvl })}
-                          className={`flex-1 py-4 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all ${setup.experience === lvl ? 'bg-[#111827] text-white border-[#111827]' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'}`}
-                        >
-                          {lvl}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Interview Protocol</label>
-                    <div className="grid grid-cols-1 gap-2">
-                      {['Technical', 'Behavioral', 'HR'].map(type => (
-                        <button
-                          key={type}
-                          onClick={() => setSetup({ ...setup, type: type })}
-                          className={`w-full p-4 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-between group ${setup.type === type ? 'bg-[#7C3AED] text-white border-[#7C3AED]' : 'bg-white border-gray-100 text-gray-400 hover:border-[#7C3AED]/20'}`}
-                        >
-                          {type} Round
-                          <ChevronRight className={`w-4 h-4 transition-transform ${setup.type === type ? 'translate-x-1' : 'opacity-0'}`} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-12 pt-10 border-t border-gray-50">
-                <button
-                  disabled={!setup.company || !setup.role}
-                  onClick={startInterview}
-                  className="w-full py-6 bg-[#111827] text-white rounded-2xl font-black text-xs uppercase tracking-[0.4em] shadow-xl hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-4 disabled:opacity-30 disabled:grayscale"
-                >
-                  Initiate Interview <Zap className="w-5 h-5 text-yellow-400" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── STEP 3: INTERVIEW INTERFACE ── */}
-        {step === 'INTERVIEW' && (
-          <motion.div
-            key="interview"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="max-w-6xl mx-auto h-[70vh] flex flex-col pt-10"
-          >
-            <div className="flex justify-between items-center mb-12">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[#7C3AED] mb-2 block">{setup.type} Deep Dive</span>
-                <p className="text-xl font-black uppercase tracking-tighter text-gray-900">Question {currentIndex + 1} of {currentQuestions.length}</p>
-              </div>
-              <div className={`flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm font-mono font-bold text-lg ${timer < 30 ? 'text-red-500 animate-pulse' : 'text-[#7C3AED]'}`}>
-                <Timer className="w-5 h-5" />
-                {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
-              </div>
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-12 flex-grow overflow-hidden">
-              {/* Question Section */}
-              <div className="bg-[#111827] rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden flex flex-col justify-center">
-                <div className="relative z-10">
-                  <div className="w-16 h-16 bg-[#7C3AED] rounded-2xl flex items-center justify-center mb-8 shadow-xl shadow-[#7C3AED]/40">
-                    <MessageSquare className="w-8 h-8 text-white" />
-                  </div>
-                  <h2 className="text-3xl sm:text-4xl font-bold leading-tight mb-8">
-                    {currentQuestions[currentIndex]}
-                  </h2>
-                  <div className="flex items-center gap-4 text-white/40 text-[10px] font-black uppercase tracking-widest border-l-2 border-[#7C3AED] pl-6 italic">
-                    "Deliver your logical defense with conviction and technical precision."
-                  </div>
-                </div>
-                <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#7C3AED]/20 rounded-full blur-[100px]" />
-              </div>
-
-              {/* Interaction Section */}
-              <div className="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-xl flex flex-col relative">
-                <div className="flex-grow">
-                  <textarea
-                    autoFocus
-                    placeholder="Construct your response protocol here... Explain trade-offs and clarify your reasoning."
-                    className="w-full h-full p-8 bg-gray-50 border-none rounded-3xl outline-none font-medium text-lg text-gray-800 placeholder:text-gray-300 resize-none transition-all focus:bg-white focus:ring-2 focus:ring-[#7C3AED]/10 shadow-inner"
-                    value={transcript}
-                    onChange={(e) => setTranscript(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex gap-4 mt-8">
-                  <button
-                    onClick={() => setIsListening(!isListening)}
-                    className={`p-6 rounded-2xl border transition-all flex items-center justify-center ${isListening ? 'bg-red-500 border-red-500 text-white animate-pulse' : 'bg-white border-gray-100 text-[#7C3AED] hover:border-[#7C3AED]/20'}`}
-                  >
-                    {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    disabled={!transcript.trim()}
-                    className="flex-grow py-6 bg-[#111827] text-white rounded-2xl font-black text-xs uppercase tracking-[0.4em] shadow-xl hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-4 disabled:opacity-30 disabled:grayscale"
-                  >
-                    Submit Reasoning <ArrowRight className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white px-5 py-2 rounded-full border border-gray-100 shadow-sm whitespace-nowrap">
-                  <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">End-to-End Analysis Active</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── STEP 4: FEEDBACK REPORT ── */}
-        {step === 'REPORT' && (
-          <motion.div
-            key="report"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-7xl mx-auto space-y-12"
-          >
-            <div className="flex flex-col lg:flex-row gap-12 items-end">
-              <div className="flex-grow">
-                <div className="flex items-center gap-2 text-[#7C3AED] mb-6">
-                  <Brain className="w-5 h-5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Interview Audit Complete</span>
-                </div>
-                <h1 className="text-6xl sm:text-8xl font-black text-gray-900 leading-[0.8] tracking-tighter uppercase italic">
-                  Performance <br /> <span className="text-[#7C3AED]">Verdict.</span>
-                </h1>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 w-full lg:w-auto">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg text-center">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Technical Clarity</p>
-                  <p className="text-6xl font-black text-gray-900">88%</p>
-                </div>
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg text-center">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Logical Strength</p>
-                  <p className="text-6xl font-black text-[#7C3AED]">92%</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 bg-white rounded-[4rem] p-12 border border-gray-100 shadow-sm space-y-12">
-                <div className="grid sm:grid-cols-2 gap-12">
-                  <div className="space-y-10">
-                    <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.5em] border-b border-gray-50 pb-4">Audit Breakdown</h4>
-                    {[
-                      { label: 'Technical Accuracy', score: 88, color: '#3B82F6' },
-                      { label: 'Communication Ease', score: 75, color: '#7C3AED' },
-                      { label: 'Confidence Score', score: 94, color: '#10B981' },
-                      { label: 'Culture Alignment', score: 82, color: '#F59E0B' }
-                    ].map((stat, i) => (
-                      <div key={i} className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">{stat.label}</span>
-                          <span className="text-[10px] font-bold text-gray-500">{stat.score}%</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${stat.score}%` }}
-                            transition={{ duration: 1.5, delay: 0.5 + (i * 0.1) }}
-                            className="h-full rounded-full"
-                            style={{ backgroundColor: stat.color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-8">
-                    <div className="bg-red-50/50 p-8 rounded-[2.5rem] border border-red-50 space-y-4">
-                      <h5 className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2">
-                        <Flame className="w-3.5 h-3.5" /> Red Flags Detected
-                      </h5>
-                      <ul className="space-y-3">
-                        <li className="text-[11px] font-medium text-red-800 leading-relaxed">• Brief hesitation on CAP theorem trade-offs.</li>
-                        <li className="text-[11px] font-medium text-red-800 leading-relaxed">• Over-optimistic scaling estimation without justification.</li>
-                      </ul>
-                    </div>
-                    <div className="bg-green-50/50 p-8 rounded-[2.5rem] border border-green-50 space-y-4">
-                      <h5 className="text-[10px] font-black text-green-600 uppercase tracking-widest flex items-center gap-2">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Defense Strengths
-                      </h5>
-                      <p className="text-[11px] font-medium text-green-800 leading-relaxed">
-                        Strong logical defense during system design queries. Effectively clarified ambiguities before execution.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-sm text-center">
-                  <TrendingUp className="w-8 h-8 text-indigo-600 mx-auto mb-6" />
-                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Mastery Gap</h4>
-                  <p className="text-[11px] text-gray-400 font-medium mb-10 italic">"Focus on explaining latency trade-offs in distributed systems to reach elite readiness."</p>
-                  <button
-                    onClick={() => setStep('SETUP')}
-                    className="w-full py-4 text-[#7C3AED] border-2 border-[#7C3AED] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#7C3AED] hover:text-white transition-all flex items-center justify-center gap-2"
-                  >
-                    Re-Calibrate <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-      </AnimatePresence>
-      <div className="fixed inset-0 bg-grid-black/[0.02] pointer-events-none -z-10" />
-    </div>
-  );
+                    round: 2,
+                    question: "Where do you see yourself in five years?",
+                    answer: "Working at a big company like yours in a lead position.",
+                    suggestion: "Focus more on specific skill growth and how that growth helps the company specifically.",
+                    wordCount: 14
+                }
+            ]
+        }
+    ],
+    strengths: ['Backend System Design', 'JVM Internals', 'Articulate Communication'],
+    weaknesses: ['Deep Learning Edge Cases', 'SQL Query Tuning'],
+    verdict: 'Recommended for Hire'
 };
 
-export default MockInterview;
+export default function MockInterview() {
+    const [step, setStep] = useState<Step>('INTRO');
+    const [setup, setSetup] = useState({ company: '', role: '', experience: 'FRESHER' });
+    const [roundIndex, setRoundIndex] = useState<RoundIndex>(0);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [allResponses, setAllResponses] = useState<UserResponse[]>([]);
+
+    const [userInput, setUserInput] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+
+    const [isListening, setIsListening] = useState(false);
+    const [voiceTranscript, setVoiceTranscript] = useState('');
+    const voiceTimeoutRef = useRef<any>(null);
+    const recognitionRef = useRef<any>(null);
+
+    const [report, setReport] = useState<InterviewReport | null>(null);
+    const [loadingReport, setLoadingReport] = useState(false);
+    const [hrCallOver, setHrCallOver] = useState(false);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const [isDummyMode, setIsDummyMode] = useState(false);
+    const dummyQIdxRef = useRef(0);
+
+    const [blink, setBlink] = useState(false);
+    const [mouthOpen, setMouthOpen] = useState(false);
+    const mouthIntervalRef = useRef<any>(null);
+    const chatEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => { window.scrollTo(0, 0); }, [step]);
+    useEffect(() => {
+        if (chatEndRef.current?.parentElement) {
+            const container = chatEndRef.current.parentElement;
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [messages]);
+
+    // Character Logic
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setBlink(true);
+            setTimeout(() => setBlink(false), 150);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (isSpeaking) {
+            mouthIntervalRef.current = setInterval(() => {
+                setMouthOpen(m => !m);
+            }, 180);
+        } else {
+            clearInterval(mouthIntervalRef.current);
+            setMouthOpen(false);
+        }
+        return () => clearInterval(mouthIntervalRef.current);
+    }, [isSpeaking]);
+
+    // Speech Recognition
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window as any).webkitSpeechRecognition) {
+            const SpeechRecognition = (window as any).webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
+            recognitionRef.current.lang = 'en-US';
+
+            recognitionRef.current.onresult = (event: any) => {
+                let currentTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    currentTranscript += event.results[i][0].transcript;
+                }
+                if (currentTranscript.trim()) {
+                    setVoiceTranscript(currentTranscript);
+                    if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current);
+                    voiceTimeoutRef.current = setTimeout(() => {
+                        handleVoiceAnswer(currentTranscript);
+                        recognitionRef.current?.stop();
+                    }, 2000);
+                }
+            };
+            recognitionRef.current.onend = () => setIsListening(false);
+            recognitionRef.current.onerror = () => setIsListening(false);
+        }
+    }, [sessionId]);
+
+    const startInterview = async () => {
+        if (!setup.company.trim() || !setup.role.trim()) return;
+        setLoading(true);
+        setError('');
+        try {
+            const res = await fetch('http://localhost:8000/api/interview/setup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(setup)
+            });
+            const data = await res.json();
+            setSessionId(data._id);
+            setStep('INTERVIEW');
+            setRoundIndex(0);
+
+            // Add introduction for technical round
+            const intro = `Hello! I'm Alex Chen, Senior Technical Lead at ${setup.company}. I'll be conducting your technical interview today.`;
+            const firstQ = data.first_question || "Could you please introduce yourself and tell me about your technical background?";
+            const fullMsg = `${intro} ${firstQ}`;
+
+            setMessages([{ role: 'interviewer', content: fullMsg, timestamp: new Date().toLocaleTimeString() }]);
+            speak(fullMsg, 0);
+        } catch (err) {
+            setIsDummyMode(true);
+            setStep('INTERVIEW');
+            setRoundIndex(0);
+            const intro = `Hello! I'm Alex Chen, Senior Technical Lead at ${setup.company}. I'll be conducting your technical interview today.`;
+            const firstQ = DUMMY_QUESTIONS[0][0];
+            const fullMsg = `${intro} ${firstQ}`;
+            setMessages([{ role: 'interviewer', content: fullMsg, timestamp: new Date().toLocaleTimeString() }]);
+            speak(fullMsg, 0);
+        } finally { setLoading(false); }
+    };
+
+    const handleSendChat = async () => {
+        if (!userInput.trim() || isSending || isSpeaking) return;
+        const turn = userInput;
+        const lastQ = messages.filter(m => m.role === 'interviewer').slice(-1)[0]?.content || "";
+
+        setMessages(prev => [...prev, { role: 'user', content: turn, timestamp: new Date().toLocaleTimeString() }]);
+
+        // Track response metadata
+        const newResponse: UserResponse = {
+            round: roundIndex,
+            question: lastQ,
+            answer: turn,
+            wordCount: turn.split(' ').length,
+            suggestion: roundIndex === 0 ? "Be more specific with technical terminology." : "Use the STAR method for better context.",
+            mistakes: roundIndex === 1 ? "Incomplete STAR methodology." : undefined
+        };
+        setAllResponses(prev => [...prev, newResponse]);
+
+        setUserInput('');
+        setIsSending(true);
+        try {
+            if (isDummyMode) {
+                setTimeout(() => {
+                    dummyQIdxRef.current++;
+                    if (dummyQIdxRef.current >= 5) advanceRound();
+                    else {
+                        const nextQ = DUMMY_QUESTIONS[roundIndex][dummyQIdxRef.current];
+                        setMessages(prev => [...prev, { role: 'interviewer', content: nextQ, timestamp: new Date().toLocaleTimeString() }]);
+                        speak(nextQ, roundIndex);
+                    }
+                    setIsSending(false);
+                }, 1000);
+                return;
+            }
+            const res = await fetch('http://localhost:8000/api/interview/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, user_response: turn, round_index: roundIndex })
+            });
+            const data = await res.json();
+            if (data.is_round_complete) {
+                advanceRound();
+            } else {
+                setMessages(prev => [...prev, { role: 'interviewer', content: data.interviewer_text, timestamp: new Date().toLocaleTimeString() }]);
+                speak(data.interviewer_text, roundIndex);
+            }
+        } catch (err) {
+            console.error("Chat Error:", err);
+            // Optional: fallback to dummy if backend is down
+        } finally { setIsSending(false); }
+    };
+
+    const advanceRound = async () => {
+        setIsSending(true);
+        const nextRound = (roundIndex + 1) as RoundIndex;
+
+        if (nextRound > 2) {
+            setHrCallOver(true);
+            setTimeout(() => fetchReport(), 2000);
+            setIsSending(false);
+            return;
+        }
+
+        try {
+            // Fetch first question of next round from AI
+            const res = await fetch('http://localhost:8000/api/interview/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, user_response: "", round_index: nextRound })
+            });
+            const data = await res.json();
+
+            setRoundIndex(nextRound);
+            setMessages([]); // Clear chat for new round
+
+            // Add introduction based on round
+            let intro = "";
+            if (nextRound === 1) {
+                intro = `Hello! I'm Sarah Johnson, Senior Engineering Manager at ${setup.company}. I'll be conducting your behavioral interview now.`;
+            } else if (nextRound === 2) {
+                intro = `Hello! I'm Michael Rodriguez, HR Director at ${setup.company}. I'll be conducting your final HR interview.`;
+            }
+            const fullMsg = `${intro} ${data.interviewer_text}`;
+
+            setMessages([{ role: 'interviewer', content: fullMsg, timestamp: new Date().toLocaleTimeString() }]);
+            speak(fullMsg, nextRound);
+        } catch (err) {
+            console.error("Transition Error:", err);
+            // Fallback
+            setRoundIndex(nextRound);
+            if (nextRound === 2) startHrVoiceRound();
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const walkOut = () => {
+        // Stop any ongoing speech
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+        setIsSpeaking(false);
+        setIsListening(false);
+        
+        // Reset all interview state
+        setStep('INTRO');
+        setRoundIndex(0);
+        setMessages([]);
+        setSessionId(null);
+        setIsDummyMode(false);
+        setHrCallOver(false);
+        setAllResponses([]);
+        setReport(null);
+        setUserInput('');
+        
+        // Redirect to main page (assuming this is a navigation function)
+        window.location.href = '/';
+    };
+
+    const toggleMic = () => {
+        if (isListening) {
+            setIsListening(false);
+            recognitionRef.current?.stop();
+            if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current);
+            if (voiceTranscript.trim()) handleVoiceAnswer(voiceTranscript);
+        } else {
+            setVoiceTranscript('');
+            setIsListening(true);
+            try { recognitionRef.current?.start(); } catch (err) { setIsListening(false); }
+        }
+    };
+
+    const handleVoiceAnswer = async (text: string) => {
+        if (!text.trim()) return;
+        const lastQ = messages.filter(m => m.role === 'interviewer').slice(-1)[0]?.content || "";
+        setIsSending(true);
+        setVoiceTranscript('');
+        setMessages(prev => [...prev, { role: 'user', content: text, timestamp: new Date().toLocaleTimeString() }]);
+
+        const newResponse: UserResponse = {
+            round: 2,
+            question: lastQ,
+            answer: text,
+            wordCount: text.split(' ').length,
+            suggestion: "Expand your answers more to show confidence. Aim for 30+ words.",
+            mistakes: text.split(' ').length < 10 ? "Answer is too short." : undefined
+        };
+        setAllResponses(prev => [...prev, newResponse]);
+
+        try {
+            if (isDummyMode) {
+                setTimeout(() => {
+                    dummyQIdxRef.current++;
+                    if (dummyQIdxRef.current >= 5) {
+                        setHrCallOver(true);
+                        speak("That was a great conversation. I'm finalizing your report now.", 2);
+                        setTimeout(() => fetchReport(), 3000);
+                    } else {
+                        const nextQ = DUMMY_QUESTIONS[2][dummyQIdxRef.current];
+                        setMessages(prev => [...prev, { role: 'interviewer', content: nextQ, timestamp: new Date().toLocaleTimeString() }]);
+                        speak(nextQ, 2);
+                    }
+                    setIsSending(false);
+                }, 1000);
+                return;
+            }
+            const res = await fetch('http://localhost:8000/api/interview/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, user_response: text, round_index: 2 })
+            });
+            const data = await res.json();
+
+            if (data.is_round_complete) {
+                setHrCallOver(true);
+                setMessages(prev => [...prev, { role: 'interviewer', content: data.interviewer_text, timestamp: new Date().toLocaleTimeString() }]);
+                speak(data.interviewer_text, 2);
+                setTimeout(() => fetchReport(), 2500);
+            } else {
+                setMessages(prev => [...prev, { role: 'interviewer', content: data.interviewer_text, timestamp: new Date().toLocaleTimeString() }]);
+                speak(data.interviewer_text, 2);
+            }
+        } catch (err) { console.error(err); } finally { setIsSending(false); }
+    };
+
+    const speak = (text: string, currentRound: number) => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            // Voice Selection based on round
+            const voices = window.speechSynthesis.getVoices();
+            if (currentRound === 2) {
+                // Female Voice for HR
+                const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Google US English'));
+                if (femaleVoice) utterance.voice = femaleVoice;
+                utterance.pitch = 1.2;
+                utterance.rate = 1.0;
+            } else {
+                // Male Voice for Technical/Behavioral
+                const maleVoice = voices.find(v => v.name.includes('Male') || v.name.includes('Alex') || v.name.includes('Google UK English Male'));
+                if (maleVoice) utterance.voice = maleVoice;
+                utterance.pitch = 0.9;
+                utterance.rate = 1.0;
+            }
+
+            utterance.onstart = () => {
+                setIsSpeaking(true);
+                if (isListening) recognitionRef.current?.stop();
+            };
+            utterance.onend = () => {
+                setIsSpeaking(false);
+                if (currentRound === 2 && !hrCallOver) {
+                    setIsListening(true);
+                    try { recognitionRef.current?.start(); } catch (e) { }
+
+                    // Initial 2s silence timeout (if user doesn't speak at all)
+                    if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current);
+                    voiceTimeoutRef.current = setTimeout(() => {
+                        handleVoiceAnswer("No response received.");
+                        recognitionRef.current?.stop();
+                    }, 2000);
+                }
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+    };
+
+    const fetchReport = async () => {
+        // Stop any ongoing speech when transitioning to report
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+        setIsSpeaking(false);
+        setIsListening(false);
+        
+        setStep('REPORT');
+        setLoadingReport(true);
+        if (!sessionId || isDummyMode) {
+            // Build detailed dummy report based on actual responses
+            const reportData = { ...DUMMY_REPORT };
+            const rounds = ["Technical Round", "Behavioral Round", "HR Round"];
+            reportData.detailed_analysis = rounds.map((r, i) => {
+                const roundRes = allResponses.filter(res => res.round === i);
+                return {
+                    round_name: r,
+                    total_words: roundRes.reduce((acc, curr) => acc + curr.wordCount, 0),
+                    responses: roundRes
+                };
+            });
+            setReport(reportData);
+            setLoadingReport(false);
+            return;
+        }
+        try {
+            const res = await fetch(`http://localhost:8000/api/interview/report?session_id=${sessionId}`);
+            const data = await res.json();
+            setReport(data);
+        } catch (err) { setReport(DUMMY_REPORT); } finally { setLoadingReport(false); }
+    };
+
+    // Auto-fetch voices when they are loaded (some browsers load them asynchronously)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+        }
+    }, []);
+
+    const ROUND_META = [
+        { label: 'Technical Round', icon: <Code2 className="w-5 h-5" />, color: '#7C3AED', hint: 'DSA, Architecture, and Logic. Type your answers.' },
+        { label: 'Behavioral Round', icon: <User className="w-5 h-5" />, color: '#1D74F2', hint: 'Situational scenarios and culture fit. Type your answers.' },
+        { label: 'HR Voice Round', icon: <Mic className="w-5 h-5" />, color: '#EC4899', hint: 'Real-time voice conversation with Sophia.' },
+    ];
+
+    const SpeakingAvatar = ({ isHR }: { isHR: boolean }) => {
+        const eyeScaleY = blink ? 0.05 : 1;
+        const getMouthPath = () => isSpeaking && mouthOpen ? "M 95 168 Q 110 180 125 168 Q 110 190 95 168 Z" : "M 92 168 Q 110 185 128 168";
+        return (
+            <div className="flex flex-col items-center">
+                <style>{`@keyframes glowPulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.8;transform:scale(1.05)} } @keyframes breathing { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.01)} }`}</style>
+                <div className="relative">
+                    <div className={`absolute inset-0 ${isHR ? 'bg-cyan-400' : 'bg-[#7C3AED]'} rounded-full blur-[80px] opacity-15 animate-[glowPulse_3s_infinite]`} />
+                    <svg width="180" height="300" viewBox="0 0 220 380" className="relative z-10 drop-shadow-xl overflow-visible">
+                        <defs>
+                            <radialGradient id="faceGrad" cx="50%" cy="45%" r="55%"><stop offset="0%" stopColor="#FFE0BB" /><stop offset="60%" stopColor="#F5C28A" /><stop offset="100%" stopColor="#E8A96B" /></radialGradient>
+                            <linearGradient id="suitGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#1e3a5f" /><stop offset="100%" stopColor="#0f2340" /></linearGradient>
+                            <linearGradient id="maleSuit" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#2c3e50" /><stop offset="100%" stopColor="#1c2833" /></linearGradient>
+                        </defs>
+                        <g style={{ transformOrigin: "110px 300px", animation: "breathing 3s ease-in-out infinite" }}>
+                            <path d="M 20 260 Q 10 310 8 380 L 212 380 Q 210 310 200 260 Q 168 282 110 284 Q 52 282 20 260 Z" fill={isHR ? "url(#suitGrad)" : "url(#maleSuit)"} />
+                            <path d="M 78 226 L 110 220 L 142 226 L 126 276 L 110 282 L 94 276 Z" fill="#f0f4ff" />
+                            <rect x="95" y="204" width="30" height="28" rx="10" fill="url(#faceGrad)" />
+                        </g>
+                        <ellipse cx="110" cy="138" rx="63" ry="68" fill="url(#faceGrad)" />
+                        <path d="M 48 125 Q 46 70 72 52 Q 92 38 110 37 Q 128 38 148 52 Q 174 70 172 125 Q 158 100 142 93 Q 126 87 110 88 Q 94 87 78 93 Q 62 100 48 125 Z" fill={isHR ? "#1b0a33" : "#2c2c2c"} />
+                        <g style={{ transformOrigin: "89px 130px", transform: `scaleY(${eyeScaleY})` }}>
+                            <ellipse cx="89" cy="130" rx="14" ry="11" fill="white" /><circle cx="89" cy="131" r="9" fill="#3a1870" /><circle cx="89" cy="131" r="4.5" fill="#0a0416" /><circle cx="93" cy="127" r="2.8" fill="white" />
+                        </g>
+                        <g style={{ transformOrigin: "131px 130px", transform: `scaleY(${eyeScaleY})` }}>
+                            <ellipse cx="131" cy="130" rx="14" ry="11" fill="white" /><circle cx="131" cy="131" r="9" fill="#3a1870" /><circle cx="131" cy="131" r="4.5" fill="#0a0416" /><circle cx="135" cy="127" r="2.8" fill="white" />
+                        </g>
+                        <path d={getMouthPath()} fill={isSpeaking && mouthOpen ? "#8B2040" : "none"} stroke="#b03050" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="min-h-screen bg-white pt-24 pb-20">
+            <AnimatePresence mode="wait">
+                {step === 'INTRO' && (
+                    <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-7xl mx-auto px-6 pt-12">
+                        <div className="grid lg:grid-cols-2 gap-20 items-center">
+                            <div>
+                                <span className="text-[#7C3AED] font-bold uppercase tracking-[0.5em] text-[10px] mb-6 block">Interview Readiness</span>
+                                <h1 className="text-5xl sm:text-7xl font-black text-[#111827] mb-8 leading-[0.9] tracking-tighter uppercase">
+                                    Mock <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">INTERVIEW.</span>
+                                </h1>
+                                <p className="text-xl text-[#475569] mb-12 leading-relaxed max-w-lg font-medium">
+                                    Simulate high-stakes interviews with our AI protocol. Practice Technical, Behavioral, and HR rounds to build clinical authority.
+                                </p>
+                                <button onClick={() => setStep('SETUP')} className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 hover:scale-105 transition-all shadow-xl shadow-violet-900/20">
+                                    Start Practice <ArrowRight className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="hidden lg:block relative h-[520px] w-full max-w-[520px] ml-auto">
+                                <div className="absolute inset-0 bg-[#7C3AED]/5 rounded-[4rem] border-8 border-gray-50 overflow-hidden shadow-2xl">
+                                    <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=1200" className="w-full h-full object-cover grayscale opacity-40 mix-blend-multiply" alt="Mock Interview Visualization" />
+                                    <div className="absolute bottom-12 left-12 right-12 bg-white/90 backdrop-blur-md p-8 rounded-3xl border border-white/20">
+                                        <div className="flex gap-2 mb-4">
+                                            <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
+                                            <div className="w-2 h-2 rounded-full bg-[#7C3AED]/30" />
+                                            <div className="w-2 h-2 rounded-full bg-[#7C3AED]/30" />
+                                        </div>
+                                        <p className="text-sm font-bold text-[#111827] leading-relaxed">"Practice is the hardest part of learning, and training is the essence of transformation."</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {step === 'SETUP' && (
+                    <motion.div key="setup" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md mx-auto px-6 pt-16 relative">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[250px] bg-gradient-to-b from-[#7C3AED]/10 to-transparent blur-[100px] pointer-events-none -z-10" />
+                        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-2xl space-y-6">
+                            <div className="text-center">
+                                <h2 className="text-3xl font-black mb-2 uppercase tracking-tighter italic">
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block pb-1">
+                                        Session Config.
+                                    </span>
+                                </h2>
+                                <div className="h-1 w-16 bg-black mx-auto rounded-full" />
+                            </div>
+                            <div className="space-y-6 text-left">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-black uppercase tracking-widest ml-4">Target Role</label>
+                                    <div className="relative">
+                                        <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                                        <input type="text" placeholder="e.g. Backend Developer" className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-14 py-4 text-sm font-bold focus:ring-4 focus:ring-violet-500/10 placeholder:text-gray-300" value={setup.role} onChange={e => setSetup({ ...setup, role: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-black uppercase tracking-widest ml-4">Target Institution</label>
+                                    <div className="relative">
+                                        <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                                        <input type="text" placeholder="e.g. Google" className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-14 py-4 text-sm font-bold focus:ring-4 focus:ring-violet-500/10 placeholder:text-gray-300" value={setup.company} onChange={e => setSetup({ ...setup, company: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center ml-4">
+                                        <label className="text-[10px] font-black text-black uppercase tracking-widest">Experience Range</label>
+                                        <span className="text-[11px] font-black text-black uppercase tracking-widest px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 italic transition-all">{setup.experience}</span>
+                                    </div>
+                                    <div className="px-5 py-6 bg-gray-50/50 rounded-3xl border border-gray-100 shadow-inner">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="3"
+                                            step="1"
+                                            value={['FRESHER', '1-2 YRS', '2-3 YRS', '3+ YRS'].indexOf(setup.experience)}
+                                            onChange={(e) => {
+                                                const lvls = ['FRESHER', '1-2 YRS', '2-3 YRS', '3+ YRS'];
+                                                setSetup({ ...setup, experience: lvls[parseInt(e.target.value)] });
+                                            }}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#7C3AED] hover:accent-[#6C4DFF] focus:outline-none transition-all"
+                                        />
+                                        <div className="flex justify-between mt-4 px-1">
+                                            {['FRESHER', '1-2 YRS', '2-3 YRS', '3+ YRS'].map((lvl, i) => (
+                                                <div key={lvl} className="flex flex-col items-center gap-2">
+                                                    <div className={`w-1 h-1 rounded-full ${setup.experience === lvl ? 'bg-black' : 'bg-gray-300'}`} />
+                                                    <span className={`text-[8px] font-black uppercase tracking-widest text-black`}>{lvl}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="pt-3">
+                                    <button onClick={startInterview} disabled={loading || !setup.company || !setup.role} className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.4em] shadow-xl transition-all flex items-center justify-center gap-4 ${loading || !setup.company || !setup.role ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-black text-white hover:bg-[#7C3AED]'}`}>
+                                        {loading ? <Loader2 className="animate-spin" /> : <>Generate Protocol <ArrowRight className="w-4 h-4" /></>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {step === 'INTERVIEW' && (
+                    <motion.div key="interview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto px-6 pt-12">
+                        <div className="flex items-center gap-4 mb-12">
+                            {ROUND_META.map((m, i) => (
+                                <div key={i} className="flex-1 flex flex-col gap-2">
+                                    <div className={`h-1.5 rounded-full transition-all duration-700 ${i <= roundIndex ? 'bg-[#7C3AED]' : 'bg-gray-100'}`} />
+                                    <span className={`text-[9px] font-black uppercase tracking-widest ${i === roundIndex ? 'text-[#7C3AED]' : 'text-gray-400'}`}>{m.label}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <AnimatePresence mode="wait">
+                            {roundIndex < 2 ? (
+                                <motion.div
+                                    key={`round-${roundIndex}`}
+                                    initial={{ opacity: 0, scale: 0.98, x: 20 }}
+                                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 1.02, x: -20 }}
+                                    transition={{ duration: 0.5, ease: "anticipate" }}
+                                    className="bg-white rounded-[3rem] border border-gray-100 shadow-3xl overflow-hidden h-[550px] flex"
+                                >
+                                    <div className="w-1/4 bg-gray-50 border-r border-gray-100 flex flex-col items-center justify-center p-6 sticky top-0 self-start h-full">
+                                        <div className="mb-4 scale-90 origin-center"><SpeakingAvatar isHR={false} /></div>
+                                        <div className="bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{roundIndex === 0 ? 'Alex Chen - Tech Lead' : 'Sarah Johnson - Eng Manager'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 flex flex-col h-full overflow-hidden">
+                                        <div className="p-8 border-b border-gray-50 flex items-center justify-between shrink-0">
+                                            <div className="flex items-center gap-3"><MessageSquare className="w-5 h-5 text-[#7C3AED]" /><h4 className="font-bold text-[#111827] text-sm uppercase tracking-tight">{ROUND_META[roundIndex].label}</h4></div>
+                                            <div className="flex items-center gap-3">
+                                                <button onClick={walkOut} className="text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-full uppercase tracking-widest transition-colors">Walk Out</button>
+                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full uppercase italic">{ROUND_META[roundIndex].hint}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow p-8 space-y-6 overflow-y-auto">
+                                            {messages.map((m, i) => (
+                                                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    <div className={`max-w-[75%] px-6 py-4 rounded-[1.5rem] text-[13px] font-medium leading-relaxed ${m.role === 'interviewer' ? 'bg-[#F9FAFB] text-[#111827] rounded-tl-none border border-gray-100' : 'bg-[#7C3AED] text-white rounded-tr-none shadow-lg shadow-violet-500/10'}`}>{m.content}</div>
+                                                </div>
+                                            ))}
+                                            {(isSending || isSpeaking) && <div className="flex items-center gap-2 text-gray-400 italic text-[10px] ml-4"><div className="w-1.5 h-1.5 bg-[#7C3AED] rounded-full animate-bounce" /><span>Alex is thinking...</span></div>}
+                                            <div ref={chatEndRef} />
+                                        </div>
+                                        <div className="p-8 border-t border-gray-50 bg-gray-50/50 flex gap-4 items-center">
+                                            <textarea rows={1} className="flex-1 bg-white border border-gray-100 rounded-2xl px-8 py-4 text-sm font-medium focus:ring-0 resize-none shadow-sm" placeholder="Draft your response..." value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendChat())} />
+                                            <button onClick={handleSendChat} disabled={!userInput.trim() || isSending || isSpeaking} className="w-14 h-14 bg-black text-white rounded-2xl flex items-center justify-center hover:bg-[#7C3AED] transition-all"><Send className="w-5 h-5" /></button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="hr-round"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="bg-[#0f1b2a] rounded-[4rem] border border-white/5 shadow-3xl overflow-hidden relative min-h-[700px] flex"
+                                >
+                                    <div className="absolute top-6 right-6 z-10">
+                                        <button onClick={walkOut} className="text-[10px] font-bold text-red-400 bg-red-500/20 hover:bg-red-500/30 px-4 py-2 rounded-full uppercase tracking-widest transition-colors border border-red-500/30">Walk Out</button>
+                                    </div>
+                                    <div className="w-full flex">
+                                        <div className="w-1/2 flex flex-col items-center justify-center p-12 border-r border-white/5 sticky top-0 self-start h-full min-h-[700px]">
+                                            <SpeakingAvatar isHR={true} />
+                                            <div className="mt-8 px-6 py-2 bg-white/5 rounded-full border border-white/10">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-2 h-2 rounded-full ${isSpeaking ? 'bg-cyan-400 animate-pulse' : isListening ? 'bg-red-500' : 'bg-green-500'}`} />
+                                                    <span className="text-[9px] font-black text-white/40 uppercase tracking-widest italic">{isSpeaking ? 'Michael Speaking' : isListening ? 'Listening' : 'Protocol Active'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="w-1/2 flex flex-col p-16 justify-center">
+                                            <div className="bg-white/5 border border-white/10 p-10 rounded-[2.5rem] mb-12 shadow-2xl backdrop-blur-3xl">
+                                                <p className="text-[9px] font-black text-cyan-400 uppercase tracking-widest mb-6 underline decoration-cyan-400/30">Michael Rodriguez (HR Director) says:</p>
+                                                {messages.filter(m => m.role === 'interviewer').slice(-1).map((m, i) => (
+                                                    <p key={i} className="text-xl text-white font-medium italic leading-relaxed">"{m.content}"</p>
+                                                ))}
+                                            </div>
+                                            {voiceTranscript && (
+                                                <div className="bg-black/20 p-8 rounded-3xl border border-white/5 mb-8">
+                                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">Transcription Engine:</p>
+                                                    <p className="text-sm text-cyan-200/60 font-medium italic">"{voiceTranscript}"</p>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-center">
+                                                {!hrCallOver ? (
+                                                    <button onClick={toggleMic} disabled={isSpeaking} className={`w-24 h-24 rounded-full flex items-center justify-center shadow-3xl transition-all ${isListening ? 'bg-red-500 scale-110' : 'bg-white text-black hover:scale-105'}`}>{isListening ? <MicOff size={32} /> : <Mic size={32} />}</button>
+                                                ) : (
+                                                    <div className="bg-green-500/20 px-8 py-3 rounded-full border border-green-500/30 font-black text-green-400 text-[10px] uppercase tracking-widest">Protocol finalized</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+                )}
+
+                {step === 'REPORT' && (
+                    <motion.div key="report" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-6xl mx-auto px-6 py-12">
+                        <div className="bg-white rounded-[4rem] border border-gray-100 p-12 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-violet-50 rounded-full blur-[100px] -mr-32 -mt-32 opacity-50" />
+
+                            <div className="relative z-10 text-center mb-16">
+                                <h2 className="text-6xl font-black text-[#111827] uppercase tracking-tighter italic leading-none mb-4">Outcome <span className="text-[#7C3AED]">Protocol.</span></h2>
+                                <p className="text-gray-400 font-bold uppercase tracking-[0.3em] text-[10px]">Session Analytics & Clinical Verdict</p>
+                            </div>
+
+                            <div className="grid lg:grid-cols-3 gap-12 mb-20">
+                                <div className="lg:col-span-1 flex flex-col items-center justify-center bg-gray-50 rounded-[3rem] p-12 border border-gray-100 shadow-inner">
+                                    <div className="relative">
+                                        <svg className="w-48 h-48 transform -rotate-90">
+                                            <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-200" />
+                                            <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={552} strokeDashoffset={552 - (552 * (report?.overall_score || 0)) / 100} className="text-[#7C3AED] transition-all duration-1000" />
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span className="text-5xl font-black text-[#111827]">{report?.overall_score}%</span>
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-8 text-center">
+                                        <div className="px-6 py-2 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block">{report?.verdict}</div>
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-2 space-y-8">
+                                    <h3 className="text-xl font-black text-[#111827] uppercase tracking-tighter italic mb-6 flex items-center gap-3"><TrendingUp className="text-[#7C3AED]" /> Section Performance</h3>
+                                    <div className="grid sm:grid-cols-2 gap-6">
+                                        {report?.sections.map((s, i) => (
+                                            <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                                                <div className="flex justify-between items-end mb-4">
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
+                                                        <h4 className="font-bold text-gray-900 leading-none">{s.score}%</h4>
+                                                    </div>
+                                                </div>
+                                                <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${s.score}%` }} className="h-full bg-black rounded-full" />
+                                                </div>
+                                                <p className="mt-4 text-[11px] text-gray-500 font-medium leading-relaxed italic">"{s.feedback}"</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-12 mb-20">
+                                <h3 className="text-3xl font-black text-[#111827] uppercase tracking-tighter italic mb-10 flex items-center gap-4">
+                                    <MessageSquare className="w-8 h-8 text-[#7C3AED]" />
+                                    Step-by-Step Analysis
+                                </h3>
+
+                                {report?.detailed_analysis.map((round, ri) => (
+                                    <div key={ri} className="bg-gray-50 rounded-[3.5rem] p-10 border border-gray-100">
+                                        <div className="flex flex-wrap items-center justify-between mb-8 pb-6 border-b border-gray-200">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center font-black">{ri + 1}</div>
+                                                <h4 className="text-2xl font-black text-[#111827] uppercase tracking-tighter italic">{round.round_name}</h4>
+                                            </div>
+                                            <div className="flex gap-6">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vocabulary Load</p>
+                                                    <p className="text-lg font-bold text-[#7C3AED] leading-none">{round.total_words} Words</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            {round.responses.map((res, idx) => (
+                                                <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+                                                    <div className="grid md:grid-cols-2 gap-10">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <MessageSquare className="w-4 h-4 text-violet-500" />
+                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Question</span>
+                                                            </div>
+                                                            <p className="text-sm font-bold text-gray-900 leading-relaxed italic">"{res.question}"</p>
+
+                                                            <div className="pt-2 flex items-center gap-3">
+                                                                <User className="w-4 h-4 text-cyan-500" />
+                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Answer</span>
+                                                            </div>
+                                                            <p className="text-sm font-medium text-gray-600 leading-relaxed">"{res.answer}"</p>
+                                                            <div className="flex items-center gap-2 mt-2">
+                                                                <Clock className="w-3 h-3 text-gray-300" />
+                                                                <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">{res.wordCount} words analyzed</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-6 bg-violet-50/50 p-6 rounded-3xl border border-violet-100">
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                                                    <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">How to Improve</span>
+                                                                </div>
+                                                                <p className="text-[12px] font-bold text-[#7C3AED] leading-relaxed line-clamp-3">"{res.suggestion}"</p>
+                                                            </div>
+
+                                                            {res.mistakes && (
+                                                                <div className="pt-4 border-t border-violet-100 space-y-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <AlertCircle className="w-4 h-4 text-red-500" />
+                                                                        <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Observed Mistake</span>
+                                                                    </div>
+                                                                    <p className="text-[11px] font-bold text-red-900/60 leading-relaxed italic">"{res.mistakes}"</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                                <button onClick={() => window.location.reload()} className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 hover:scale-105 transition-all shadow-xl shadow-violet-900/20">
+                                    Restart Protocol <Zap className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => window.print()} className="px-12 py-5 bg-black text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 hover:scale-105 transition-all">
+                                    Export Results <CheckCircle2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}

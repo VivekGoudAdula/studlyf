@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ShieldCheck,
   ChevronRight,
@@ -22,7 +22,8 @@ import {
   Zap,
   Info,
   ChevronDown,
-  Globe
+  Globe,
+  ChevronLeft
 } from 'lucide-react';
 
 // --- Types ---
@@ -327,13 +328,39 @@ const THEME = {
 
 const CompanyModules: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'dsa' | 'tech' | 'hr' | 'ai'>('overview');
+
+  useEffect(() => {
+    const state = location.state as { companyId?: string } | null;
+    if (state?.companyId && !selectedCompany) {
+      const company = MOCK_COMPANIES.find(c => c.id === state.companyId);
+      if (company) {
+        setSelectedCompany(company);
+        setActiveTab('dsa');
+      }
+    }
+  }, [location.state]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const filteredCompanies = MOCK_COMPANIES.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getVisualizerRoute = (companyId: string) => {
+    const stackCompanies = new Set(['google', 'infosys']);
+    const queueCompanies = new Set(['microsoft', 'accenture', 'tcs']);
+    const linkedListCompanies = new Set(['netflix', 'wipro']);
+    const bstCompanies = new Set(['nvidia', 'apple']);
+
+    if (stackCompanies.has(companyId)) return '/learn/visualizer/stack';
+    if (queueCompanies.has(companyId)) return '/learn/visualizer/queue';
+    if (linkedListCompanies.has(companyId)) return '/learn/visualizer/linked-list';
+    if (bstCompanies.has(companyId)) return '/learn/visualizer/bst';
+    return '/learn/visualizer/hash-table';
+  };
 
   return (
     <div className="min-h-screen pt-32 pb-12 px-4 sm:px-8 font-['Poppins'] bg-white transition-colors duration-500">
@@ -513,44 +540,79 @@ const CompanyModules: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-8">
-              <div className="w-full lg:w-72 flex flex-row lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar">
-                {[
-                  { id: 'overview', label: 'Overview', icon: LayoutGrid },
-                  { id: 'dsa', label: 'DSA', icon: Terminal },
-                  { id: 'tech', label: 'Tech', icon: Cpu },
-                  { id: 'hr', label: 'HR', icon: Briefcase },
-                  { id: 'ai', label: 'AI', icon: Bot, premium: true },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id as any)}
-                    className={`flex-shrink-0 lg:flex-shrink flex items-center justify-between p-4 lg:p-5 rounded-xl lg:rounded-2xl border transition-all ${activeTab === t.id
-                      ? 'bg-[#7C3AED]/10 border-[#7C3AED] text-[#7C3AED]'
-                      : 'bg-transparent border-transparent text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#111827]'
-                      }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <t.icon className="w-5 h-5" />
-                      <span className="text-sm font-bold">{t.label}</span>
-                    </div>
-                    {t.premium && <Bot className="w-4 h-4 text-amber-500" />}
-                    {activeTab === t.id && <ChevronRight className="w-4 h-4" />}
-                  </button>
-                ))}
-
-                <div className="mt-8 p-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-3xl relative overflow-hidden shadow-sm">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#7C3AED]/5 blur-2xl rounded-full" />
-                  <BarChart3 className="w-8 h-8 text-[#7C3AED] mb-4" />
-                  <h4 className="font-bold text-sm mb-2 text-[#111827]">Overall Progress</h4>
-                  <div className="text-3xl font-black mb-4 text-[#111827]">{selectedCompany.completion}%</div>
-                  <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#7C3AED]" style={{ width: `${selectedCompany.completion}%` }} />
+            <div className="flex gap-8">
+              {/* Sidebar */}
+              <div className={`flex-shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-72'}`}>
+                <div className="sticky top-32">
+                <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm overflow-hidden">
+                <div className={`p-4 border-b border-[#E2E8F0] ${sidebarCollapsed ? 'px-3' : ''}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    {!sidebarCollapsed && (
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 bg-[#7C3AED] rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Briefcase className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="font-bold text-sm text-[#111827] truncate">{selectedCompany.name}</h2>
+                          <p className="text-xs text-[#6B7280] truncate">{selectedCompany.hiringRoles?.[0] || selectedCompany.industry}</p>
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                      className={`p-2 hover:bg-[#F3F4F6] rounded-lg transition-colors flex-shrink-0 ${sidebarCollapsed ? 'mx-auto' : ''}`}
+                      title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    >
+                      {sidebarCollapsed ? <ChevronRight className="w-4 h-4 text-[#6B7280]" /> : <ChevronLeft className="w-4 h-4 text-[#6B7280]" />}
+                    </button>
                   </div>
+                </div>
+
+                <div className={`p-2 space-y-1 ${sidebarCollapsed ? 'px-1.5' : ''}`}>
+                  {[
+                    { id: 'overview', label: 'Overview', icon: LayoutGrid },
+                    { id: 'dsa', label: 'DSA', icon: Terminal },
+                    { id: 'tech', label: 'Tech', icon: Cpu },
+                    { id: 'hr', label: 'HR', icon: Briefcase },
+                    { id: 'ai', label: 'AI', icon: Bot, premium: true },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTab(t.id as any)}
+                      title={t.label}
+                      className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} p-3 rounded-xl border transition-all ${activeTab === t.id
+                        ? 'bg-[#7C3AED]/10 border-[#7C3AED] text-[#7C3AED]'
+                        : 'bg-transparent border-transparent text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#111827]'
+                        }`}
+                    >
+                      <div className={`flex items-center ${sidebarCollapsed ? '' : 'gap-3'}`}>
+                        <t.icon className="w-5 h-5 flex-shrink-0" />
+                        {!sidebarCollapsed && <span className="text-sm font-bold">{t.label}</span>}
+                      </div>
+                      {!sidebarCollapsed && t.premium && <Bot className="w-4 h-4 text-amber-500" />}
+                      {!sidebarCollapsed && activeTab === t.id && <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  ))}
+
+                  {!sidebarCollapsed && (
+                    <div className="mt-4 p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-[#7C3AED]/5 blur-2xl rounded-full" />
+                      <div className="flex items-center gap-2 mb-2">
+                        <BarChart3 className="w-4 h-4 text-[#7C3AED]" />
+                        <h4 className="font-bold text-xs text-[#111827]">Progress</h4>
+                      </div>
+                      <div className="text-2xl font-black mb-2 text-[#111827]">{selectedCompany.completion}%</div>
+                      <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#7C3AED]" style={{ width: `${selectedCompany.completion}%` }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                </div>
                 </div>
               </div>
 
-              <div className="flex-grow">
+              <div className="flex-grow min-w-0">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeTab}
@@ -611,6 +673,10 @@ const CompanyModules: React.FC = () => {
                         </div>
 
                         <div className="space-y-4">
+                          <button onClick={() => navigate(getVisualizerRoute(selectedCompany.id), { state: { companyId: selectedCompany.id } })} className="w-full py-5 mb-8 bg-[#7C3AED] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-lg shadow-[#7C3AED]/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
+                            <Play className="w-4 h-4 fill-white" /> Start 3D DSA Visualizer
+                          </button>
+
                           {(selectedCompany.dsa && selectedCompany.dsa.length > 0) ? selectedCompany.dsa.map((q) => (
                             <div key={q.id} className="p-8 bg-[#F8FAFC] rounded-[2.5rem] border border-[#E2E8F0] hover:border-[#7C3AED]/20 transition-all group shadow-sm">
                               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
@@ -626,9 +692,6 @@ const CompanyModules: React.FC = () => {
                                     <span className="text-[8px] font-black text-[#64748B] uppercase block mb-1">Complexity</span>
                                     <span className="font-bold text-[#111827]">{q.time} | {q.space}</span>
                                   </div>
-                                  <button onClick={() => navigate('/job-prep/mock-interview')} className="w-full py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-lg shadow-[#7C3AED]/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
-                                    <Play className="w-4 h-4 fill-white" /> Start Practice
-                                  </button>
                                 </div>
                                 <div className="p-6 bg-white rounded-2xl border border-[#E2E8F0]">
                                   <span className="text-[10px] font-black text-[#7C3AED] uppercase block mb-2">Solution Insight</span>
@@ -637,9 +700,10 @@ const CompanyModules: React.FC = () => {
                               </div>
                             </div>
                           )) : (
-                            <div className="py-20 text-center opacity-40">
+                            <div className="py-12 text-center opacity-40">
                               <Terminal className="w-12 h-12 mx-auto mb-4 text-[#64748B]" />
-                              <h4 className="text-xl font-bold text-[#111827]">Protocol Sync Pending</h4>
+                              <h4 className="text-xl font-bold text-[#111827]">DSA Questions Coming Soon</h4>
+                              <p className="text-sm text-[#64748B] mt-2">Use the 3D Visualizer above to practice data structures</p>
                             </div>
                           )}
                         </div>
