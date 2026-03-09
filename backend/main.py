@@ -15,6 +15,7 @@ import uuid
 import traceback
 from groq import Groq
 import requests
+from services.ai_tools_scraper import fetch_ai_tools
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime, timezone
 import firebase_admin
@@ -3770,3 +3771,15 @@ if __name__ == "__main__":
     import os
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+
+# ─── AI Tools Scraping Endpoint ──────────────────────────────────────────────
+@app.get("/api/ai-tools")
+async def get_ai_tools():
+    """Fetch AI tools scraped from StartupStash."""
+    try:
+        tools = fetch_ai_tools()
+        return tools
+    except Exception as e:
+        print(f"ERROR fetching AI tools: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch AI tools")
+# ─── End AI Tools API ────────────────────────────────────────────────────────

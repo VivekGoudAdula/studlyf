@@ -43,11 +43,6 @@ import CareerOnboarding from './pages/CareerOnboarding';
 import CoursesOverview from './pages/CoursesOverview';
 import TrackDetail from './pages/TrackDetail';
 import EnrollmentFlow from './pages/EnrollmentFlow';
-import StackPage from './pages/StackPage';
-import QueuePage from './pages/QueuePage';
-import LinkedListPage from './pages/LinkedListPage';
-import BSTPage from './pages/BSTPage';
-import HashTablePage from './pages/HashTablePage';
 
 // Unique Components
 import EnquiryForm from './components/EnquiryForm';
@@ -155,6 +150,7 @@ const App: React.FC = () => {
             <Route path="/feature-preview/:id" element={<PublicRoute><FeaturePreview /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
+            <Route path="/ai-tools" element={<AITools />} />
 
             <Route path="/dashboard" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
