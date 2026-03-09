@@ -40,8 +40,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     } else {
                         setRole('student');
                     }
-                } catch (error) {
-                    console.error("Error fetching user role:", error);
+                } catch (error: any) {
+                    if (error?.code !== 'permission-denied' && error?.code !== 'firestore/permission-denied') {
+                        console.error("Error fetching user role:", error);
+                    }
                     setRole('student');
                 }
             } else {
