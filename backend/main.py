@@ -3822,5 +3822,4 @@ async def get_ai_tools():
     except Exception as e:
         print(f"ERROR fetching AI tools: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch AI tools")
-# ─── End AI Tools API ────────────────────────────────────────────────────────
-sh
+# ─── End AI Tools API ────────────────────────────────────────────────────────
