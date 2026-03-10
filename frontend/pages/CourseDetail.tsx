@@ -137,6 +137,7 @@ const CourseDetail: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
+  const [courseModules, setCourseModules] = useState<any[]>([]);
   const [userState, setUserState] = useState<'NOT_PURCHASED' | 'IN_CART' | 'ENROLLED'>('NOT_PURCHASED');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -171,6 +172,17 @@ const CourseDetail: React.FC = () => {
 
         if (foundCourse) {
           setCourse(foundCourse);
+
+          // Fetch modules from the modules collection
+          try {
+            const modulesRes = await fetch(`${API_BASE_URL}/api/courses/${foundCourse._id}/modules`);
+            const modulesData = await modulesRes.json();
+            if (Array.isArray(modulesData) && modulesData.length > 0) {
+              setCourseModules(modulesData);
+            }
+          } catch (modErr) {
+            console.error('Error fetching modules:', modErr);
+          }
 
           // Get user state for this course
           if (userId) {
@@ -387,19 +399,22 @@ const CourseDetail: React.FC = () => {
             >
               <h2 className="text-3xl font-black text-[#111827] mb-6 uppercase tracking-tight">Course Content</h2>
               <div className="space-y-4">
-                {(course as any).modules && (course as any).modules.length > 0 ? (
-                  (course as any).modules.map((module: any, idx: number) => (
-                    <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#7C3AED]/30 transition-all">
+                {courseModules.length > 0 ? (
+                  courseModules.map((module: any, idx: number) => (
+                    <div key={module._id || idx} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#7C3AED]/30 transition-all">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <PlayCircle className="w-5 h-5 text-[#7C3AED]" />
+                          <div className="w-10 h-10 rounded-xl bg-[#7C3AED]/10 flex items-center justify-center text-[#7C3AED] font-black text-sm">
+                            {idx + 1}
+                          </div>
                           <div>
                             <h3 className="font-bold text-gray-900">{module.title || `Module ${idx + 1}`}</h3>
                             <p className="text-sm text-gray-600">
-                              {module.lessons?.length || 0} lesson{(module.lessons?.length || 0) !== 1 ? 's' : ''} • {module.duration || '45 min'}
+                              Theory • Video • Quiz • {module.estimated_time || '45 min'}
                             </p>
                           </div>
                         </div>
+                        <PlayCircle className="w-5 h-5 text-[#7C3AED]" />
                       </div>
                     </div>
                   ))
