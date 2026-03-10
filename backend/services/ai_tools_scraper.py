@@ -5,16 +5,15 @@ import os
 import time
 
 # Cache mechanisms
-CACHE_FILE = "ai_tools_cache.json"
 CACHE_DURATION = 86400  # 24 hours
 
+# In-memory cache: avoids disk I/O and re-scraping on every request
+_cache: dict = {"tools": [], "timestamp": 0}
+
 def fetch_ai_tools():
-    # Check cache first
-    # if os.path.exists(CACHE_FILE):
-    #     with open(CACHE_FILE, "r") as f:
-    #         cache_data = json.load(f)
-    #         if time.time() - cache_data.get("timestamp", 0) < CACHE_DURATION:
-    #             return cache_data.get("tools", [])
+    # Serve from in-memory cache if still fresh (instant response)
+    if _cache["tools"] and (time.time() - _cache["timestamp"]) < CACHE_DURATION:
+        return _cache["tools"]
 
     url = "https://startupstash.com/explore/"
     headers = {
@@ -97,7 +96,7 @@ def fetch_ai_tools():
     try:
         # In this specific environment, external requests to StartupStash might be blocked.
         # We attempt the scrape but provide the robust fallback for a seamless demo experience.
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers, timeout=3)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             tools = []
@@ -127,12 +126,14 @@ def fetch_ai_tools():
                     tools.append(tool)
             
             if tools:
-                # Cache results
-                # with open(CACHE_FILE, "w") as f:
-                #     json.dump({"timestamp": time.time(), "tools": tools}, f)
+                # Populate in-memory cache so subsequent requests are instant
+                _cache["tools"] = tools
+                _cache["timestamp"] = time.time()
                 return tools
     except Exception as e:
-        print(f"Scraping error: {e}")
+        print(f"Scraping error (using fallback): {e}")
 
-    # Return fallback if scraping unsuccessful
+    # Cache the fallback too so next hit is instant
+    _cache["tools"] = fallback_tools
+    _cache["timestamp"] = time.time()
     return fallback_tools

@@ -123,6 +123,8 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studlyff.vercel.app")
 origins = [
     FRONTEND_URL,
     "https://studlyff.vercel.app",
+    "https://www.studlyf.in",
+    "www.studlyf.in",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
@@ -3775,9 +3777,11 @@ if __name__ == "__main__":
 # ─── AI Tools Scraping Endpoint ──────────────────────────────────────────────
 @app.get("/api/ai-tools")
 async def get_ai_tools():
-    """Fetch AI tools scraped from StartupStash."""
+    """Fetch AI tools — served from in-memory cache after first load."""
     try:
-        tools = fetch_ai_tools()
+        import asyncio
+        loop = asyncio.get_event_loop()
+        tools = await loop.run_in_executor(None, fetch_ai_tools)
         return tools
     except Exception as e:
         print(f"ERROR fetching AI tools: {e}")
