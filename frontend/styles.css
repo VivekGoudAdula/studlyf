@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-family-sans: 'Poppins', sans-serif;
+  --font-family-poppins: 'Poppins', sans-serif;
+  --font-family-display: 'Instrument Serif', serif;
+  --font-family-syne: 'Syne', sans-serif;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.45);
+}
+
+.neon-input {
+  width: 100%;
+  border: 1px solid rgba(196, 181, 253, 0.45);
+  background: rgba(30, 27, 75, 0.55);
+  color: #f5f3ff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.neon-input:focus {
+  border-color: rgba(139, 92, 246, 0.95);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.22);
+}
+
+.neon-button {
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(76, 29, 149, 0.95));
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.neon-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+}

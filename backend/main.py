@@ -3,7 +3,7 @@ import subprocess
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 import pdfplumber
 import docx
@@ -15,6 +15,7 @@ import uuid
 import traceback
 from groq import Groq
 import requests
+from services.ai_tools_scraper import fetch_ai_tools
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime, timezone
 import firebase_admin
@@ -70,10 +71,11 @@ class AssessmentRequest(BaseModel):
     experience: str
 
 class InterviewSetupRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     company: str
     role: str
-    experience_level: str
+    experience_level: Optional[str] = None
+    experience: Optional[str] = None
 
 class InterviewInteractionRequest(BaseModel):
     session_id: str
@@ -121,10 +123,14 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studlyff.vercel.app")
 origins = [
     FRONTEND_URL,
     "https://studlyff.vercel.app",
+    "https://www.studlyf.in",
+    "www.studlyf.in",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
     "http://localhost:8000",
     "http://127.0.0.1:8000"
 ]
@@ -413,6 +419,11 @@ async def startup_event():
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "YOUR-GROQ-API-KEY")
 # Configure the Client for Groq
 client = Groq(api_key=GROQ_API_KEY)
+
+XAI_API_KEY = os.getenv("XAI_API_KEY") or os.getenv("GROK_API_KEY")
+XAI_API_BASE = os.getenv("XAI_API_BASE", "https://api.x.ai/v1").rstrip("/")
+GROK_MODEL = os.getenv("GROK_MODEL", "grok-3-mini")
+GROQ_INTERVIEW_MODEL = os.getenv("GROQ_INTERVIEW_MODEL", "llama-3.3-70b-versatile")
 
 
 def get_github_data(token: str, endpoint: str, session=None):
@@ -1750,170 +1761,517 @@ async def get_course_full_details(course_id: str, user_id: Optional[str] = None)
 
 # --- MOCK INTERVIEW SYSTEM ---
 
-async def generate_interviewer_persona(company: str, round_type: str, experience_level: str):
+ROUND_LIMITS = {
+    "technical": 5,
+    "behavioural": 5,
+    "hr_voice": 5,
+}
+
+ROUND_DISPLAY_NAMES = {
+    "technical": "Technical Round",
+    "behavioural": "Behavioral Round",
+    "hr_voice": "HR Round",
+}
+
+
+def get_experience_level(req: InterviewSetupRequest) -> str:
+    return (req.experience_level or req.experience or "FRESHER").strip() or "FRESHER"
+
+
+def extract_json_object(raw_text: str) -> Dict[str, Any]:
+    text = (raw_text or "").strip()
+    if not text:
+        raise ValueError("Empty model response")
+
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError(f"No JSON object found in response: {text[:200]}")
+
+    return json.loads(text[start:end + 1])
+
+
+def grok_model_candidates() -> List[str]:
+    candidates = [
+        GROK_MODEL,
+        os.getenv("GROK_FALLBACK_MODEL"),
+        "grok-2-latest",
+        "grok-beta",
+    ]
+    deduped: List[str] = []
+    for candidate in candidates:
+        if candidate and candidate not in deduped:
+            deduped.append(candidate)
+    return deduped
+
+
+def grok_chat(messages: List[Dict[str, str]], temperature: float = 0.4, max_tokens: int = 900) -> str:
+    errors: List[str] = []
+
+    if XAI_API_KEY:
+        headers = {
+            "Authorization": f"Bearer {XAI_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        for model in grok_model_candidates():
+            try:
+                response = requests.post(
+                    f"{XAI_API_BASE}/chat/completions",
+                    headers=headers,
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                    },
+                    timeout=45,
+                )
+                if response.status_code >= 400:
+                    errors.append(f"{model}: {response.status_code} {response.text[:180]}")
+                    continue
+
+                payload = response.json()
+                return payload["choices"][0]["message"]["content"].strip()
+            except Exception as exc:
+                errors.append(f"{model}: {exc}")
+
+    if GROQ_API_KEY and GROQ_API_KEY != "YOUR-GROQ-API-KEY":
+        try:
+            response = client.chat.completions.create(
+                model=GROQ_INTERVIEW_MODEL,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as exc:
+            errors.append(f"groq:{GROQ_INTERVIEW_MODEL}: {exc}")
+
+    raise RuntimeError(" | ".join(errors[:3]) or "Missing xAI/Grok and Groq credentials for interview generation")
+
+
+def grok_json(messages: List[Dict[str, str]], temperature: float = 0.3, max_tokens: int = 900) -> Dict[str, Any]:
+    return extract_json_object(grok_chat(messages, temperature=temperature, max_tokens=max_tokens))
+
+
+def build_round_topics(role: str, round_type: str) -> str:
+    role_name = (role or "software engineer").strip()
+    if round_type == "technical":
+        return f"Role-specific depth for a {role_name}: core engineering fundamentals, architecture decisions, APIs, debugging, testing, databases, scaling, and trade-offs."
+    if round_type == "behavioural":
+        return f"Behavioral readiness for a {role_name}: ownership, conflict resolution, ambiguity, delivery pressure, collaboration, leadership signals, and measurable outcomes using STAR."
+    return f"HR readiness for a {role_name}: motivation for joining, company fit, growth plans, compensation maturity, communication, and long-term alignment."
+
+
+def fallback_persona(company: str, round_type: str) -> Dict[str, str]:
+    role_map = {
+        "technical": "Senior Engineering Manager",
+        "behavioural": "Hiring Manager",
+        "hr_voice": "HR Business Partner",
+    }
+    name_map = {
+        "technical": "Alex Chen",
+        "behavioural": "Jordan Ellis",
+        "hr_voice": "Sid Rao",
+    }
+    return {
+        "name": name_map.get(round_type, "Alex Chen"),
+        "role": role_map.get(round_type, "Interviewer"),
+        "company_style": f"Interview style aligned to {company}: structured, professional, role-focused, and realistic.",
+        "tone": "professional",
+        "depth": "structured",
+        "follow_up_style": "probing",
+    }
+
+
+def fallback_answer_analysis(question: str, answer: str, round_type: str) -> Dict[str, Any]:
+    word_count = len(answer.split())
+    base_score = 55
+    if word_count >= 80:
+        base_score = 84
+    elif word_count >= 50:
+        base_score = 76
+    elif word_count >= 25:
+        base_score = 68
+    elif word_count >= 12:
+        base_score = 61
+
+    if round_type == "technical":
+        suggestion = "Add more concrete architecture choices, trade-offs, and implementation detail."
+        mistakes = "Answer could go deeper on technical specifics." if word_count < 35 else ""
+    elif round_type == "behavioural":
+        suggestion = "Use STAR more explicitly and quantify the result."
+        mistakes = "Situation, action, or result was not fully clear." if word_count < 35 else ""
+    else:
+        suggestion = "Link your answer more directly to company fit, intent, and long-term growth."
+        mistakes = "Answer felt brief or generic." if word_count < 25 else ""
+
+    return {
+        "score": base_score,
+        "strengths": ["Answer addressed the prompt"],
+        "gaps": [mistakes] if mistakes else [],
+        "suggestion": suggestion,
+        "mistakes": mistakes,
+        "follow_up_focus": f"Probe deeper on the candidate's {round_type} judgment and specificity.",
+        "question": question,
+        "answer": answer,
+        "word_count": word_count,
+    }
+
+
+async def generate_interviewer_persona(company: str, round_type: str, experience_level: str, role: str):
     prompt = f"""
-    Create a highly realistic interviewer persona for a {round_type} interview at {company} for a {experience_level} position.
-    
-    The persona should reflect the company's culture:
-    - Big Tech (Google, Meta, etc.) -> structured, clinical, analytical, high technical bar.
-    - Startups -> conversational, fast-paced, deep dives into specific problems, practical.
-    - Service-based (TCS, Infosys, etc.) -> fundamentals-focused, clear communication, polite but structured.
-    
-    Output JSON ONLY:
+    Create a highly realistic interviewer persona for the {ROUND_DISPLAY_NAMES.get(round_type, round_type)} at {company}.
+
+    Candidate target:
+    - Role: {role}
+    - Experience: {experience_level}
+
+    Return JSON only with this exact shape:
     {{
-        "name": "Full Name",
-        "role": "Current Role at Company",
-        "company_style": "brief description of company interview culture",
-        "tone": "formal" | "neutral" | "friendly" | "intense",
-        "depth": "structured" | "conversational" | "deep-dive",
-        "follow_up_style": "aggressive" | "probing" | "gentle"
+      "name": "Full Name",
+      "role": "Current title at the company",
+      "company_style": "How this company runs this round",
+      "tone": "professional|friendly|intense|neutral",
+      "depth": "structured|conversational|deep-dive",
+      "follow_up_style": "probing|direct|supportive|aggressive"
     }}
     """
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        persona_data = json.loads(response.choices[0].message.content)
-        return persona_data
+        return grok_json([
+            {"role": "system", "content": "You create realistic interviewer personas for mock interview simulations. Return valid JSON only."},
+            {"role": "user", "content": prompt},
+        ], temperature=0.6, max_tokens=400)
     except Exception as e:
-        print(f"Error generating persona: {e}")
-        return {
-            "name": "Alex Chen",
-            "role": "Senior Engineer",
-            "company_style": "Standard tech interview",
-            "tone": "neutral",
-            "depth": "structured",
-            "follow_up_style": "probing"
-        }
+        print(f"Error generating Grok persona: {e}")
+        return fallback_persona(company, round_type)
 
+
+def format_round_history(history: List[Dict[str, Any]], round_index: int) -> str:
+    lines: List[str] = []
+    for item in history:
+        if item.get("round_index") != round_index:
+            continue
+        speaker = "Candidate" if item.get("role") == "candidate" else "Interviewer"
+        lines.append(f"{speaker}: {item.get('content', '')}")
+    return "\n".join(lines[-12:]) or "No prior exchange in this round."
+
+
+def sanitize_answer_analysis(payload: Dict[str, Any], question: str, answer: str, round_type: str) -> Dict[str, Any]:
+    fallback = fallback_answer_analysis(question, answer, round_type)
+    score = payload.get("score", fallback["score"])
+    try:
+        score = max(0, min(100, int(score)))
+    except Exception:
+        score = fallback["score"]
+
+    strengths = payload.get("strengths") if isinstance(payload.get("strengths"), list) else fallback["strengths"]
+    gaps = payload.get("gaps") if isinstance(payload.get("gaps"), list) else fallback["gaps"]
+    suggestion = str(payload.get("suggestion") or fallback["suggestion"]).strip()
+    mistakes = str(payload.get("mistakes") or fallback["mistakes"]).strip()
+    follow_up_focus = str(payload.get("follow_up_focus") or fallback["follow_up_focus"]).strip()
+
+    return {
+        "score": score,
+        "strengths": [str(item).strip() for item in strengths if str(item).strip()][:3],
+        "gaps": [str(item).strip() for item in gaps if str(item).strip()][:3],
+        "suggestion": suggestion,
+        "mistakes": mistakes,
+        "follow_up_focus": follow_up_focus,
+        "question": question,
+        "answer": answer,
+        "word_count": len(answer.split()),
+    }
+
+
+def analyze_candidate_answer(session: Dict[str, Any], current_round: Dict[str, Any], question: str, answer: str) -> Dict[str, Any]:
+    round_type = current_round.get("round_type", "technical")
+    prompt = f"""
+    Evaluate this interview answer for a mock interview.
+
+    Company: {session['company']}
+    Role: {session['role']}
+    Experience Level: {session['experience_level']}
+    Round: {ROUND_DISPLAY_NAMES.get(round_type, round_type)}
+    Question: {question}
+    Candidate Answer: {answer}
+
+    Grade for realism and hiring signal.
+    Return JSON only with this exact shape:
+    {{
+      "score": 0,
+      "strengths": ["short bullet"],
+      "gaps": ["short bullet"],
+      "suggestion": "one concise coaching suggestion",
+      "mistakes": "largest issue in one sentence",
+      "follow_up_focus": "what the interviewer should probe next"
+    }}
+    """
+    try:
+        raw = grok_json([
+            {"role": "system", "content": "You are an expert interviewer coach. Return valid JSON only and keep it concise."},
+            {"role": "user", "content": prompt},
+        ], temperature=0.2, max_tokens=450)
+        return sanitize_answer_analysis(raw, question, answer, round_type)
+    except Exception as exc:
+        print(f"Answer analysis fallback triggered: {exc}")
+        return fallback_answer_analysis(question, answer, round_type)
+
+
+def generate_next_interview_message(
+    session: Dict[str, Any],
+    current_round: Dict[str, Any],
+    round_index: int,
+    round_history: List[Dict[str, Any]],
+    question_count: int,
+    recent_analysis: Optional[Dict[str, Any]],
+    is_round_start: bool,
+) -> Dict[str, Any]:
+    round_type = current_round.get("round_type", "technical")
+    persona = current_round.get("persona", fallback_persona(session["company"], round_type))
+    round_limit = ROUND_LIMITS.get(round_type, 5)
+    history_text = format_round_history(round_history, round_index)
+    analysis_text = json.dumps(recent_analysis, ensure_ascii=True) if recent_analysis else "None yet."
+    start_instruction = "Ask the opening question for this round." if is_round_start else "Ask the next best question based on the last answer and its gaps."
+
+    prompt = f"""
+    You are an interviewer conducting the {ROUND_DISPLAY_NAMES.get(round_type, round_type)} for a candidate at {session['company']}.
+
+    Candidate:
+    - Role: {session['role']}
+    - Experience: {session['experience_level']}
+    - Company target: {session['company']}
+
+    Interview style:
+    - Company style: {persona.get('company_style', '')}
+    - Tone: {persona.get('tone', 'professional')}
+    - Depth: {persona.get('depth', 'structured')}
+    - Follow-up style: {persona.get('follow_up_style', 'probing')}
+    - Topic focus: {current_round.get('topics', build_round_topics(session['role'], round_type))}
+
+    Round transcript so far:
+    {history_text}
+
+    Most recent answer analysis:
+    {analysis_text}
+
+    Instructions:
+    - {start_instruction}
+    - Ask exactly one interview question.
+    - Keep it natural, realistic, and specific to the role, company, and round.
+    - Do not provide coaching, scoring, or feedback to the candidate.
+    - Do not include your name or introduction in the question.
+    - Stay concise enough for voice delivery.
+    - This is question number {question_count + 1} of at most {round_limit}.
+
+    Return JSON only:
+    {{
+      "interviewer_text": "the next interview question",
+      "is_round_complete": false
+    }}
+    """
+
+    raw = grok_json([
+        {"role": "system", "content": "You simulate interviewers in live mock interviews. Return valid JSON only."},
+        {"role": "user", "content": prompt},
+    ], temperature=0.5, max_tokens=350)
+
+    interviewer_text = str(raw.get("interviewer_text") or "Could you walk me through a recent example that best represents your work?").strip()
+    if not interviewer_text.endswith("?"):
+        interviewer_text = interviewer_text.rstrip(". ") + "?"
+
+    return {
+        "interviewer_text": interviewer_text,
+        "is_round_complete": False,
+    }
 
 @app.post("/api/interview/setup")
 async def setup_interview(req: InterviewSetupRequest):
+    experience_level = get_experience_level(req)
+
     # 1. Generate Personas for 3 rounds
-    tech_persona = await generate_interviewer_persona(req.company, "Technical", req.experience_level)
-    behavioral_persona = await generate_interviewer_persona(req.company, "Behavioral", req.experience_level)
-    hr_persona = await generate_interviewer_persona(req.company, "HR Voice Call", req.experience_level)
+    tech_persona = await generate_interviewer_persona(req.company, "technical", experience_level, req.role)
+    behavioral_persona = await generate_interviewer_persona(req.company, "behavioural", experience_level, req.role)
+    hr_persona = await generate_interviewer_persona(req.company, "hr_voice", experience_level, req.role)
     
-    # 2. Create Rounds
+    # 2. Create Rounds with topics
     rounds = [
-        {"round_type": "technical", "persona": tech_persona, "status": "pending"},
-        {"round_type": "behavioral", "persona": behavioral_persona, "status": "pending"},
-        {"round_type": "hr_voice", "persona": hr_persona, "status": "pending"}
+        {"round_type": "technical", "persona": tech_persona, "status": "pending", "topics": build_round_topics(req.role, "technical")},
+        {"round_type": "behavioural", "persona": behavioral_persona, "status": "pending", "topics": build_round_topics(req.role, "behavioural")},
+        {"round_type": "hr_voice", "persona": hr_persona, "status": "pending", "topics": build_round_topics(req.role, "hr_voice")}
     ]
     
     # 3. Create Session with explicit string ID
     session_id = str(uuid.uuid4())
+    
+    # Generate First Question dynamically with Grok
+    try:
+        first_q_data = generate_next_interview_message(
+            {
+                "company": req.company,
+                "role": req.role,
+                "experience_level": experience_level,
+            },
+            rounds[0],
+            0,
+            [],
+            0,
+            None,
+            True,
+        )
+        first_question = first_q_data["interviewer_text"]
+    except:
+        first_question = "Welcome. Let's start with a brief overview of your technical background and a project you're most proud of."
+
     session = {
         "_id": session_id,
-        "user_id": req.user_id,
+        "user_id": req.user_id or "anonymous",
         "company": req.company,
         "role": req.role,
-        "experience_level": req.experience_level,
+        "experience_level": experience_level,
         "rounds": rounds,
         "current_round_index": 0,
         "status": "in_progress",
         "created_at": datetime.now(timezone.utc),
-        "chat_history": [],
-        "voice_logs": [] 
+        "chat_history": [{"role": "interviewer", "content": first_question, "round_index": 0}],
+        "voice_logs": [],
+        "answer_analyses": [],
     }
     
     await interviews_col.insert_one(session)
-    return fix_id(session)
+    data = fix_id(session)
+    data["first_question"] = first_question
+    return data
 
 @app.post("/api/interview/chat")
 async def interview_chat(req: InterviewInteractionRequest):
     session = await interviews_col.find_one({"_id": req.session_id})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    if req.round_index < 0 or req.round_index >= len(session.get("rounds", [])):
+        raise HTTPException(status_code=400, detail="Invalid round index")
     
     current_round = session["rounds"][req.round_index]
-    persona = current_round["persona"]
     round_type = current_round["round_type"]
     history = session.get("chat_history", [])
+    voice_logs = list(session.get("voice_logs", []))
+    answer_analyses = list(session.get("answer_analyses", []))
     
     # Update status to active if pending
     if current_round["status"] == "pending":
         await interviews_col.update_one(
             {"_id": req.session_id},
-            {"$set": {f"rounds.{req.round_index}.status": "active"}}
+            {"$set": {f"rounds.{req.round_index}.status": "active", "current_round_index": req.round_index}}
         )
 
     # Calculate how many questions have been asked in this SPECIFIC round
     round_messages = [m for m in history if m.get("round_index") == req.round_index]
     question_count = len([m for m in round_messages if m["role"] == "interviewer"])
-    
-    # Determine Round Limits
-    round_limit = 3
-    
-    # Select System Prompt based on round
-    if round_type == "technical":
-        system_prompt = f"You are a technical interviewer persona: {persona['name']}, {persona['role']} at {session['company']}. Ask role-specific technical questions for a {session['experience_level']} {session['role']} position. Ask one question at a time. Increase difficulty gradually. Do not provide feedback during the round. Stay in character: {persona['company_style']}."
-    else:
-        system_prompt = f"You are a behavioural interviewer persona: {persona['name']}, {persona['role']} at {session['company']}. Ask situational and experience-based questions for a {session['experience_level']} {session['role']} position. Focus on teamwork, conflict, ownership, and decision-making. Ask follow-up questions when answers are shallow. Do not provide feedback during the round. Stay in character: {persona['company_style']}."
+    round_limit = ROUND_LIMITS.get(round_type, 5)
 
-    system_prompt += "\n\nReturn JSON ONLY:\n{{\n  \"interviewer_text\": \"Your response\",\n  \"is_round_complete\": true/false\n}}"
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for m in history[-8:]:
-        if m.get("round_index") == req.round_index:
-             messages.append({"role": "user" if m["role"] == "candidate" else "assistant", "content": m["content"]})
-    
+    new_history = list(history)
+    recent_analysis: Optional[Dict[str, Any]] = None
     if req.user_response:
-        messages.append({"role": "user", "content": req.user_response})
-    
-    prompt_instruction = f"\n\nInterview Status: Round {req.round_index + 1} ({round_type}), Question {question_count + 1} of {round_limit}. "
-    if question_count >= round_limit:
-        prompt_instruction += f"\nSTRICT RULE: You MUST wrap up and end this round. Set is_round_complete to true."
-    else:
-        prompt_instruction += "\nAsk the next question. Set is_round_complete to false."
-
-    messages[-1]["content"] += prompt_instruction
-
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            response_format={"type": "json_object"}
+        last_question = next(
+            (m.get("content", "") for m in reversed(round_messages) if m.get("role") == "interviewer"),
+            "",
         )
-        
-        # Groq might return raw text if model doesn't support json_object well, but 70b does.
-        # However, we need to wrap the response in the expected format if the AI doesn't.
-        raw_response = response.choices[0].message.content
-        try:
-            data = json.loads(raw_response)
-        except:
-            # Fallback if it's not JSON
-            data = {
-                "interviewer_text": raw_response,
-                "is_round_complete": question_count >= round_limit
-            }
+        recent_analysis = analyze_candidate_answer(session, current_round, last_question, req.user_response)
+        answer_analyses.append({
+            "round_index": req.round_index,
+            "round_type": round_type,
+            "word_count": len(req.user_response.split()),
+            "question": last_question,
+            "answer": req.user_response,
+            **recent_analysis,
+        })
+        new_history.append({"role": "candidate", "content": req.user_response, "round_index": req.round_index})
+        if round_type == "hr_voice":
+            voice_logs.append({
+                "round_index": req.round_index,
+                "question": last_question,
+                "answer": req.user_response,
+                "analysis": recent_analysis,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
 
-        # Update history
-        new_history = list(history)
-        if req.user_response:
-            new_history.append({"role": "candidate", "content": req.user_response, "round_index": req.round_index})
-        
-        interviewer_text = data.get("interviewer_text", raw_response if isinstance(data, str) else "I see. Let's move on.")
-        new_history.append({"role": "interviewer", "content": interviewer_text, "round_index": req.round_index})
-        
-        is_complete = data.get("is_round_complete") or (question_count >= round_limit)
-        
-        update_data = {"chat_history": new_history}
-        if is_complete:
-            update_data[f"rounds.{req.round_index}.status"] = "completed"
-            data["is_round_complete"] = True
-            
+    if req.user_response and question_count >= round_limit:
+        closing_text = "Thank you. That concludes this round."
+        if round_type == "hr_voice":
+            closing_text = "Thank you. That concludes the HR round. I'm compiling your interview report now."
+        new_history.append({"role": "interviewer", "content": closing_text, "round_index": req.round_index})
         await interviews_col.update_one(
             {"_id": req.session_id},
-            {"$set": update_data}
+            {
+                "$set": {
+                    "chat_history": new_history,
+                    "voice_logs": voice_logs,
+                    "answer_analyses": answer_analyses,
+                    f"rounds.{req.round_index}.status": "completed",
+                    "current_round_index": req.round_index,
+                }
+            }
         )
-        
-        return data
+        return {
+            "interviewer_text": closing_text,
+            "is_round_complete": True,
+            "answer_analysis": recent_analysis,
+        }
+
+    try:
+        data = generate_next_interview_message(
+            session,
+            current_round,
+            req.round_index,
+            new_history,
+            question_count,
+            recent_analysis,
+            not bool(req.user_response),
+        )
+
+        interviewer_text = data.get("interviewer_text", "Could you tell me more about that?")
+        new_history.append({"role": "interviewer", "content": interviewer_text, "round_index": req.round_index})
+
+        await interviews_col.update_one(
+            {"_id": req.session_id},
+            {
+                "$set": {
+                    "chat_history": new_history,
+                    "voice_logs": voice_logs,
+                    "answer_analyses": answer_analyses,
+                    "current_round_index": req.round_index,
+                }
+            }
+        )
+
+        return {
+            **data,
+            "answer_analysis": recent_analysis,
+        }
     except Exception as e:
         print(f"Chat Error: {e}")
-        return {"interviewer_text": "I see. Could you elaborate on that?", "is_round_complete": False}
+        fallback_question = "Could you give me a concrete example with the technical decisions you made?" if round_type == "technical" else "Could you walk me through a specific example and the result?"
+        new_history.append({"role": "interviewer", "content": fallback_question, "round_index": req.round_index})
+        await interviews_col.update_one(
+            {"_id": req.session_id},
+            {
+                "$set": {
+                    "chat_history": new_history,
+                    "voice_logs": voice_logs,
+                    "answer_analyses": answer_analyses,
+                    "current_round_index": req.round_index,
+                }
+            }
+        )
+        return {"interviewer_text": fallback_question, "is_round_complete": False, "answer_analysis": recent_analysis}
 
 
 @app.post("/api/interview/voice-analysis")
@@ -1929,7 +2287,7 @@ async def voice_analysis(req: InterviewInteractionRequest):
     
     round_messages = [m for m in history if m.get("round_index") == req.round_index]
     question_count = len([m for m in round_messages if m["role"] == "interviewer"])
-    round_limit = 3
+    round_limit = 5
 
     system_prompt = f"""You are a professional HR interviewer conducting the final round of a job interview.
     Company: {session['company']}
@@ -2011,72 +2369,109 @@ async def voice_analysis(req: InterviewInteractionRequest):
         return {"interviewer_response": "I see. Thank you for that. Let's wrap up.", "is_call_over": True, "is_round_complete": True}
 
 
-@app.get("/api/interview/{session_id}/report")
+@app.get("/api/interview/report")
 async def get_interview_report(session_id: str):
     session = await interviews_col.find_one({"_id": session_id})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
-    prompt = f"""
-    Generate a comprehensive interview performance report for:
-    Candidate for {session['role']} @ {session['company']}
-    Experience Level: {session['experience_level']}
-    
-    Chat History: {session.get('chat_history', [])}
-    Voice Logs: {session.get('voice_logs', [])}
-    
-    Provide structured feedback on:
-    - Communication (Clarity, Tone)
-    - Confidence
-    - Technical Knowledge / Behavioural Alignment
-    - Overall HR readiness
-    
-    Output JSON ONLY:
+
+    answer_analyses = session.get("answer_analyses", [])
+    rounds = [(0, "Technical Round"), (1, "Behavioral Round"), (2, "HR Round")]
+    detailed_analysis = []
+
+    for round_index, round_name in rounds:
+        round_entries = [entry for entry in answer_analyses if entry.get("round_index") == round_index]
+        detailed_analysis.append({
+            "round_name": round_name,
+            "total_words": sum(int(entry.get("word_count", 0)) for entry in round_entries),
+            "responses": [
+                {
+                    "round": round_index,
+                    "question": entry.get("question", ""),
+                    "answer": entry.get("answer", ""),
+                    "suggestion": entry.get("suggestion", ""),
+                    "wordCount": int(entry.get("word_count", 0)),
+                    "mistakes": entry.get("mistakes") or ", ".join(entry.get("gaps", [])[:2]) or None,
+                }
+                for entry in round_entries
+            ],
+        })
+
+    average_score = 0
+    if answer_analyses:
+        average_score = int(sum(int(entry.get("score", 0)) for entry in answer_analyses) / len(answer_analyses))
+
+    report_prompt = f"""
+    Generate a final interview report for a candidate.
+
+    Candidate target:
+    - Role: {session['role']}
+    - Institution: {session['company']}
+    - Experience: {session['experience_level']}
+
+    Round-by-round answer analyses:
+    {json.dumps(answer_analyses, ensure_ascii=True)}
+
+    Return JSON only with this exact shape:
     {{
-        "technical_readiness": "Score (e.g., Senior Level, Needs Improvement)",
-        "behavioral_fit": "High/Med/Low",
-        "communication_confidence": 0-100,
-        "company_readiness": "High/Med/Low",
-        "feedback": {{
-            "strengths": ["list"],
-            "weaknesses": ["list"],
-            "red_flags": ["list"],
-            "improvement_advice": "Detailed advice"
-        }},
-        "roadmap": [
-            {{ "topic": "Name", "action": "Specific drill or resource", "priority": "High/Med/Low" }}
-        ]
+      "overall_score": 0,
+      "sections": [
+        {{"label": "Technical Depth", "score": 0, "feedback": "one sentence"}},
+        {{"label": "Problem Solving", "score": 0, "feedback": "one sentence"}},
+        {{"label": "Communication", "score": 0, "feedback": "one sentence"}},
+        {{"label": "HR Final Call", "score": 0, "feedback": "one sentence"}}
+      ],
+      "strengths": ["short bullet"],
+      "weaknesses": ["short bullet"],
+      "verdict": "Recommended for Hire|Borderline|Needs More Practice"
     }}
     """
+
+    fallback_report = {
+        "overall_score": average_score or 72,
+        "sections": [
+            {"label": "Technical Depth", "score": average_score or 72, "feedback": "Technical answers were assessed from the live interview transcript."},
+            {"label": "Problem Solving", "score": max(60, (average_score or 72) - 2), "feedback": "Responses showed partial reasoning and can improve with more explicit trade-offs."},
+            {"label": "Communication", "score": min(95, (average_score or 72) + 4), "feedback": "Communication was understandable, but some answers can be sharper and more structured."},
+            {"label": "HR Final Call", "score": max(58, (average_score or 72) - 1), "feedback": "Company-fit answers were evaluated from motivation, clarity, and maturity."},
+        ],
+        "strengths": list({strength for entry in answer_analyses for strength in entry.get("strengths", []) if strength})[:4] or ["Completed all interview rounds"],
+        "weaknesses": list({gap for entry in answer_analyses for gap in entry.get("gaps", []) if gap})[:4] or ["Needs more specificity in answers"],
+        "verdict": "Recommended for Hire" if (average_score or 72) >= 80 else "Borderline" if (average_score or 72) >= 65 else "Needs More Practice",
+    }
+
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        report = json.loads(response.choices[0].message.content)
-        
-        await interviews_col.update_one(
-            {"_id": session_id},
-            {"$set": {"report": report, "status": "completed"}}
-        )
-        
-        return report
+        grok_report = grok_json([
+            {"role": "system", "content": "You are an expert interview evaluator. Return valid JSON only."},
+            {"role": "user", "content": report_prompt},
+        ], temperature=0.2, max_tokens=700)
+
+        # Validate sections more thoroughly
+        grok_sections = grok_report.get("sections")
+        valid_sections = fallback_report["sections"]
+        if isinstance(grok_sections, list) and len(grok_sections) > 0:
+            # Check if each section has required fields
+            if all(isinstance(s, dict) and "label" in s and "score" in s and "feedback" in s for s in grok_sections):
+                valid_sections = grok_sections
+
+        report = {
+            "overall_score": int(grok_report.get("overall_score", fallback_report["overall_score"])),
+            "sections": valid_sections,
+            "detailed_analysis": detailed_analysis,
+            "strengths": grok_report.get("strengths") if isinstance(grok_report.get("strengths"), list) and grok_report.get("strengths") else fallback_report["strengths"],
+            "weaknesses": grok_report.get("weaknesses") if isinstance(grok_report.get("weaknesses"), list) and grok_report.get("weaknesses") else fallback_report["weaknesses"],
+            "verdict": str(grok_report.get("verdict") or fallback_report["verdict"]),
+        }
     except Exception as e:
         print(f"Report Generation Error: {e}")
-        return {
-            "technical_readiness": "Evaluation Pending",
-            "behavioral_fit": "Medium",
-            "communication_confidence": 70,
-            "company_readiness": "Medium",
-            "feedback": {
-                "strengths": ["Completed all rounds"],
-                "weaknesses": ["Data analysis incomplete"],
-                "red_flags": [],
-                "improvement_advice": "Consult interviewer feedback directly."
-            },
-            "roadmap": []
-        }
+        report = {**fallback_report, "detailed_analysis": detailed_analysis}
+
+    await interviews_col.update_one(
+        {"_id": session_id},
+        {"$set": {"report": report, "status": "completed"}}
+    )
+
+    return report
 
 
 # --- ADMIN SECURITY MIDDLEWARE ---
@@ -3409,204 +3804,22 @@ async def delete_cert_template(template_id: str):
     return {"message": "Template deleted"}
 
 
-# ─── Resume Builder API ────────────────────────────────────────────────────────
-
-from db import resumes_col
-
-class ResumePayload(BaseModel):
-    p: dict
-    exp: list
-    edu: list
-    proj: list
-    certs: list
-    skills: list
-    tpl: str
-
-@app.post("/api/resume/{user_id}")
-async def save_resume(user_id: str, payload: ResumePayload):
-    doc = {
-        "user_id": user_id,
-        "config": payload.dict(),
-        "updated_at": datetime.utcnow().isoformat()
-    }
-    await resumes_col.update_one({"user_id": user_id}, {"$set": doc}, upsert=True)
-    return {"message": "Resume saved successfully"}
-
-@app.get("/api/resume/{user_id}")
-async def get_resume(user_id: str):
-    doc = await resumes_col.find_one({"user_id": user_id})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Resume not found")
-    # Clean MongoDB ObjectId
-    doc["_id"] = str(doc["_id"])
-    return doc
-
-from fastapi.responses import Response
-
-def _generate_resume_html(config: dict) -> str:
-    tpl = config.get("tpl", "chicago")
-    p = config.get("p", {})
-    exp = config.get("exp", [])
-    edu = config.get("edu", [])
-    proj = config.get("proj", [])
-    certs = config.get("certs", [])
-    skills = config.get("skills", [])
-    
-    xe = [x for x in exp if x.get("org")]
-    xd = [x for x in edu if x.get("inst")]
-    xp = [x for x in proj if x.get("name")]
-    xc = [x for x in certs if x.get("name")]
-    
-    sk = []
-    for s in skills:
-        if isinstance(s, str) and s.strip():
-            for t in s.split(","):
-                if t.strip():
-                    sk.append(t.strip())
-                    
-    nm = p.get("name") or "Your Name"
-    base = "*{margin:0;padding:0;box-sizing:border-box}.e{margin-bottom:10px}.r{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}.d{color:#6b7280;font-size:10px;line-height:1.5}.m{color:#999;font-size:10px;flex-shrink:0;margin-left:8px}ul{padding-left:13px;margin-top:3px}li{font-size:10px;line-height:1.5;color:#555;margin-bottom:2px}.ch{display:inline-block;padding:2px 8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:11px;font-size:10px;margin:2px}"
-
-    def safe_get(d, k): return d.get(k) or ""
-    
-    eR = "".join([f'<div class="e"><div class="r"><div><b>{safe_get(x,"org")}</b><span class="d"> &mdash; {safe_get(x,"role")}</span></div><span class="m">{safe_get(x,"range")}{f" &middot; {x.get(chr(39)+chr(108)+chr(111)+chr(99)+chr(39))}" if x.get("loc") else ""}</span></div>{f"<ul>" + "".join([f"<li>{b.strip()}</li>" for b in str(x["pts"]).split(chr(10)) if b.strip()]) + "</ul>" if x.get("pts") else ""}</div>' for x in xe])
-    dR = "".join([f'<div class="e"><div class="r"><b>{safe_get(x,"inst")}</b><span class="m">{safe_get(x,"year")}</span></div><div class="d">{safe_get(x,"deg")}{f" &middot; GPA {x.get(chr(39)+chr(103)+chr(112)+chr(97)+chr(39))}" if x.get("gpa") else ""}</div></div>' for x in xd])
-    pR = "".join([f'<div class="e"><b>{safe_get(x,"name")}</b>{f""" <span style="color:#5b21b6;font-size:10px;font-weight:600">&middot; {x.get("tech")}</span>""" if x.get("tech") else ""}{f"""<div class="d" style="margin-top:2px">{x.get("desc")}</div>""" if x.get("desc") else ""}</div>' for x in xp])
-    
-    ch = "".join([f'<span class="ch">{s}</span>' for s in sk])
-    cl = "".join([f'<li>{safe_get(x,"name")}</li>' for x in xc])
-
-    # Template Swiss
-    if tpl == "swiss":
-        sb = f'<aside><h1>{nm}</h1><div class="lc">{safe_get(p,"loc")}</div>'
-        if p.get("email"): sb += f'<div class="sl">{p.get("email")}</div>'
-        if p.get("phone"): sb += f'<div class="sl">{p.get("phone")}</div>'
-        if p.get("li"): sb += f'<div class="sl">in {p.get("li")}</div>'
-        if sk: sb += f'<div class="sh">Skills</div>{"".join([f"<div class=sl>&middot; {s}</div>" for s in sk])}'
-        if xc: sb += f'<div class="sh">Certifications</div>{"".join([f"<div class=sl>&middot; {x.get(chr(39) + 'name' + chr(39), '')}</div>" for x in xc])}'
-        sb += '</aside>'
-        mp = '<main>'
-        if p.get("sum"): mp += f'<p class="d" style="margin-bottom:11px;line-height:1.6">{p.get("sum")}</p>'
-        if xe: mp += f'<div class="mh">Experience</div>{eR}'
-        if xd: mp += f'<div class="mh">Education</div>{dR}'
-        if xp: mp += f'<div class="mh">Projects</div>{pR}'
-        mp += '</main>'
-        return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap');{base}body{{font-family:'DM Sans',sans-serif;display:grid;grid-template-columns:165px 1fr;min-height:100vh;font-size:11px}}aside{{background:#1e0a3c;color:#fff;padding:26px 15px}}main{{padding:26px 26px}}h1{{font-size:17px;font-weight:700;margin-bottom:3px}}.lc{{color:#c4b5fd;font-size:10px;margin-bottom:9px}}.sl{{color:rgba(255,255,255,.6);font-size:10px;margin-bottom:3px}}.sh{{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#c4b5fd;margin:12px 0 4px;font-weight:700}}.mh{{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#5b21b6;font-weight:700;margin:13px 0 5px;padding-bottom:3px;border-bottom:1.5px solid #5b21b6}}</style></head><body>{sb}{mp}</body></html>"""
-
-    # Template Easy
-    if tpl == "easy":
-        hd = f'<div class="hd"><div><h1>{nm}</h1>'
-        if p.get("loc"): hd += f'<div style="color:#6b7280;font-size:10px;margin-top:2px">{p.get("loc")}</div>'
-        if p.get("sum"): hd += f'<p class="d" style="margin-top:4px;max-width:330px;line-height:1.5">{p.get("sum")}</p>'
-        hd += '</div><div class="ct">'
-        if p.get("email"): hd += f'<span>{p.get("email")}</span>'
-        if p.get("phone"): hd += f'<span>{p.get("phone")}</span>'
-        if p.get("li"): hd += f'<span>{p.get("li")}</span>'
-        hd += '</div></div>'
-        
-        exR = "".join([f'<div class="tc"><div class="el">{safe_get(x,"range")}<br/>{safe_get(x,"loc")}</div><div><b>{safe_get(x,"org")}</b><span class="d"> &mdash; {safe_get(x,"role")}</span>' + (f"""<ul>{"".join([f"<li>{b.strip()}</li>" for b in str(x["pts"]).split(chr(10)) if b.strip()])}</ul>""" if x.get("pts") else "") + "</div></div>" for x in xe])
-        edR = "".join([f'<div class="tc"><div class="el">{safe_get(x,"year")}</div><div><b>{safe_get(x,"inst")}</b><div class="d">{safe_get(x,"deg")}{" &middot; " + x.get("gpa") if x.get("gpa") else ""}</div></div></div>' for x in xd])
-        return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap');{base}body{{font-family:'DM Sans',sans-serif;color:#1a1a1a;background:#fff;padding:38px 46px;font-size:11px}}.hd{{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:11px;border-bottom:2.5px solid #5b21b6;margin-bottom:15px}}h1{{font-size:21px;font-weight:700;letter-spacing:-.02em}}.ct{{display:flex;flex-direction:column;align-items:flex-end;gap:3px;color:#6b7280;font-size:10px}}.sh{{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#5b21b6;font-weight:700;margin:13px 0 6px}}.tc{{display:grid;grid-template-columns:82px 1fr;gap:9px;margin-bottom:9px}}.el{{color:#999;font-size:10px;text-align:right;line-height:1.5}}</style></head><body>{hd}{'<div class="sh">Experience</div>' + exR if xe else ''}{'<div class="sh">Education</div>' + edR if xd else ''}{'<div class="sh">Projects</div>' + pR if xp else ''}{'<div class="sh">Certifications</div><ul>' + cl + '</ul>' if xc else ''}{'<div class="sh">Skills</div><div style="margin-top:2px">' + ch + '</div>' if sk else ''}</body></html>"""
-
-    # Template Chicago
-    b = f'<div class="ct">'
-    if p.get("email"): b += f'<span>{p.get("email")}</span>'
-    if p.get("phone"): b += f'<span>{p.get("phone")}</span>'
-    if p.get("li"): b += f'<span>in {p.get("li")}</span>'
-    b += '</div><div class="dv"></div>'
-    if p.get("sum"): b += f'<p class="d" style="line-height:1.6;margin-bottom:7px">{p.get("sum")}</p><hr style="border:none;border-top:1px solid #eee;margin:8px 0"/>'
-    if xe: b += f'<div class="sh">Experience</div>{eR}'
-    if xd: b += f'<div class="sh">Education</div>{dR}'
-    if xp: b += f'<div class="sh">Projects</div>{pR}'
-    if xc: b += f'<div class="sh">Certifications</div><ul style="margin-bottom:7px">{cl}</ul>'
-    if sk: b += f'<div class="sh">Skills</div><div style="margin-top:2px">{ch}</div>'
-    
-    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;600;700&display=swap');{base}body{{font-family:'DM Sans',sans-serif;color:#1a1a1a;background:#fff;padding:38px 46px;font-size:11px}}h1{{font-family:'Playfair Display',serif;font-size:25px;font-weight:900;letter-spacing:-.02em}}.sb{{color:#5b21b6;font-size:10px;font-weight:600;margin-top:3px}}.ct{{display:flex;gap:14px;margin-top:5px;flex-wrap:wrap;color:#6b7280;font-size:10px}}.dv{{height:1.5px;background:#5b21b6;margin:10px 0}}.sh{{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5b21b6;margin:12px 0 6px}}</style></head><body><h1>{nm}</h1>{'<div class="sb">' + p.get("loc") + '</div>' if p.get("loc") else ''}{b}</body></html>"""
-
-
-@app.get("/api/resume/{user_id}/pdf")
-async def download_resume_pdf(user_id: str):
-    doc = await resumes_col.find_one({"user_id": user_id})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Resume not found")
-    
-    config = doc.get("config", {})
-    html_content = _generate_resume_html(config)
-    
-    try:
-        import weasyprint
-        pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
-        nm = config.get("p", {}).get("name", "cv").replace(" ", "-").lower()
-        headers = { 'Content-Disposition': f'attachment; filename="resume-{nm}.pdf"' }
-        return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
-    except Exception as e:
-        print("WeasyPrint error:", e)
-        return Response(content=f"WeasyPrint failed: GTK3 might not be installed on Windows. Contact admin. Error: {e}", media_type="text/plain", status_code=500)
-
-# ─── Skill Assessment ──────────────────────────────────────────────────────────
-
-from db import skill_assessments_col
-
-class SkillAssessmentSave(BaseModel):
-    user_id: str
-    config: dict
-    feedback: dict
-    questions: list
-
-@app.post("/api/skill-assessment/save")
-async def save_skill_assessment(payload: SkillAssessmentSave):
-    doc = {
-        "user_id": payload.user_id,
-        "config": payload.config,
-        "feedback": payload.feedback,
-        "questions": payload.questions,
-        "created_at": datetime.utcnow().isoformat()
-    }
-    await skill_assessments_col.insert_one(doc)
-    return {"message": "Skill assessment result saved"}
-
-@app.get("/api/skill-assessment/{user_id}")
-async def get_skill_assessments(user_id: str):
-    cursor = skill_assessments_col.find({"user_id": user_id}).sort("created_at", -1)
-    results = await cursor.to_list(length=100)
-    for r in results:
-        r["_id"] = str(r["_id"])
-    return results
-
-@app.post("/api/ai/evaluate")
-async def ai_evaluate(req: dict):
-    # This acts as a secure proxy for the frontend
-    key = os.getenv("ANTHROPIC_API_KEY")
-    if not key:
-        # Fallback dummy response if key is missing
-        return {
-            "score": 75,
-            "verdict": "PASS",
-            "strengths": ["Solid logic", "Good structure"],
-            "gaps": ["Add more technical depth"],
-            "ideal_approach": "Ensure you mention the specific trade-offs of the chosen architecture."
-        }
-    
-    try:
-        url = "https://api.anthropic.com/v1/messages"
-        headers = {
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json"
-        }
-        res = requests.post(url, headers=headers, json=req)
-        # Anthropic returns a slightly different structure, let's extract the text
-        data = res.json()
-        text = data.get("content", [{}])[0].get("text", "")
-        # The user's prompt expects a JSON string in return
-        clean = text.replace("```json", "").replace("```", "").strip()
-        return json.loads(clean)
-    except Exception as e:
-        print(f"AI Eval failed: {e}")
-        return {"error": str(e), "verdict": "ERROR", "score": 0}
-
 if __name__ == "__main__":
     import uvicorn
     import os
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+
+# ─── AI Tools Scraping Endpoint ──────────────────────────────────────────────
+@app.get("/api/ai-tools")
+async def get_ai_tools():
+    """Fetch AI tools — served from in-memory cache after first load."""
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+        tools = await loop.run_in_executor(None, fetch_ai_tools)
+        return tools
+    except Exception as e:
+        print(f"ERROR fetching AI tools: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch AI tools")
+# ─── End AI Tools API ────────────────────────────────────────────────────────
