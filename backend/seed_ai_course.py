@@ -141,72 +141,61 @@ Image models like **Midjourney** or **Stable Diffusion** generate images from te
 
 ## 2.1 — Machine Learning Basics
 
-**Machine Learning (ML)** is a branch of AI where computers learn patterns from data instead of being explicitly programmed.
+**Machine Learning (ML)** is the engine behind AI. Instead of writing fixed rules, we feed data to algorithms that learn to recognize patterns.
 
-```
-Traditional: Rules + Data → Output
-ML:          Data + Learning Algorithm → Model → Predictions
-```
+### The Three Pillars of Machine Learning
 
-### Three Main Types
-1. **Supervised Learning** — learns from labeled data (e.g., images labeled cat/dog)
-2. **Unsupervised Learning** — finds patterns without labels (e.g., customer segmentation)
-3. **Reinforcement Learning** — learns through trial and error with rewards
-
-### Tools: TensorFlow, PyTorch, Scikit-learn
-
-📚 [ML Crash Course](https://developers.google.com/machine-learning/crash-course)
+| Type | Description | Real World Example |
+|---|---|---|
+| **Supervised** | Learns from labeled data (Input + Correct Answer) | Email Spam Detection |
+| **Unsupervised** | Finds hidden patterns in unlabeled data | Customer Segmentation |
+| **Reinforcement** | Learns through trial and error (Rewards/Penalties) | AI playing Chess or Video Games |
 
 ---
 
-## 2.2 — Neural Networks Explained Simply
+## 2.2 — Neural Networks: The Digital Brain
 
-Neural networks are ML models inspired by the human brain, consisting of layers of **neurons**.
+Neural networks are mathematical models inspired by the human brain. They consist of layers of **neurons** that process information.
 
-- **Input Layer** — receives data (e.g., words in a sentence)
-- **Hidden Layers** — process and detect patterns (deep learning = many layers)
-- **Output Layer** — produces results (predicted word, classification)
-
-> ChatGPT is built on very large neural networks with **billions of parameters**.
+- **Input Layer:** Receives the data (e.g., words in a prompt).
+- **Hidden Layers:** Where the "thinking" happens. Deep Learning refers to models with many hidden layers.
+- **Output Layer:** Provides the result (e.g., the next word in a sentence).
 
 ---
 
-## 2.3 — Transformers Architecture
+## 2.3 — The Transformer Architecture
 
-Modern GenAI uses **Transformers** (introduced in *"Attention Is All You Need"*, 2017).
+The "T" in ChatGPT stands for **Transformer**. This architecture changed everything in 2017.
 
-The key innovation: **Attention Mechanism** — the model understands relationships between ALL words simultaneously.
+> **Key Innovation:** The **Attention Mechanism**. It allows the model to look at every word in a sentence simultaneously to understand context.
 
-Example: *"AI is transforming the world"*
-- AI → subject, transforming → action, world → object
-
-All major LLMs (ChatGPT, Claude, Gemini) are transformer-based.
-
-📚 [Original Paper](https://arxiv.org/abs/1706.03762)
+Example: *"The bank was closed because it was a holiday."*
+The Transformer knows that "bank" refers to a financial institution, not a river bank, by looking at the word "closed".
 
 ---
 
 ## 2.4 — Tokens and Embeddings
 
-AI models convert text into smaller units called **tokens** (word, sub-word, or punctuation).
+AI doesn't read words like humans. It breaks text into **Tokens** (chunks of characters).
 
-Example: `Artificial Intelligence is powerful` → `Artificial | Intelligence | is | powerful`
+1. **Tokenization:** `Generative AI` → `Generative` | ` AI`
+2. **Embeddings:** Each token is converted into a list of numbers (a vector) that represents its *meaning*.
 
-Each token becomes a **vector (embedding)** representing its meaning. Similar words cluster together:
-> King - Man + Woman ≈ Queen
+> Words with similar meanings are mathematically "close" to each other in this numerical space.
 
 ---
 
 ## 2.5 — Large Language Models (LLMs)
 
-LLMs (GPT, Claude, Gemini) are trained on billions of sentences to understand and generate language.
+LLMs are Transformers trained on massive amounts of internet data.
 
-**How they generate text:** predict the most probable next word repeatedly.
+| Feature | Description |
+|---|---|
+| **Parameters** | The "knowledge" pieces (GPT-4 has trillions) |
+| **Context Window** | How much text the AI can "remember" at once |
+| **Next-Token Prediction** | The core task: guessing the very next word |
 
-```
-Prompt: "The capital of France is"
-Model predicts: "Paris"
-```
+📚 [TensorFlow Playground](https://playground.tensorflow.org)
 """
 },
 
@@ -313,26 +302,45 @@ Tools like **Jasper AI**, **Notion AI**, **Copy.ai** for marketing content and b
     "markdown_content": """# Module 5 — AI Image Generation
 
 ## 5.1 — What is AI Image Generation?
-`Text Prompt → AI Model → Generated Image`
 
-Tools: **Midjourney**, **Stable Diffusion**, **DALL·E**
+AI Image Generation turns words into visuals. It allows anyone to create high-quality art, logos, and designs without traditional drawing skills.
 
-## 5.2 — Diffusion Models Explained
-Generate images by gradually removing noise (denoising) from random patterns.
+### The Leading AI Image Tools
 
-## 5.3 — Writing Effective Image Prompts
-Include: **Subject** + **Style** + **Lighting** + **Composition**
+| Tool | Strengths | Use Case |
+|---|---|---|
+| **Midjourney** | Incredible artistic quality & lighting | Concept art, illustrations |
+| **Stable Diffusion** | Open-source, runs locally, total control | Precise editing, custom training |
+| **DALL·E 3** | Best prompt adherence & intelligence | Fast, simple, integrated with ChatGPT |
 
-```
-A futuristic robot standing in a cyberpunk city,
-neon lighting, cinematic style, high detail, 8k resolution
-```
+---
 
-## 5.4 — Using Midjourney
-`/imagine prompt: futuristic city skyline at sunset`
+## 5.2 — How it Works: Diffusion Models
 
-## 5.5 — Using Stable Diffusion
-Open-source, can run locally, fully customizable.
+Modern image AI uses **Diffusion**. 
+
+1. **The Noise Phase:** The model starts with a canvas of random static (noise).
+2. **The Denoising Phase:** It gradually removes noise to reveal an image that matches your prompt.
+
+> Think of it like a sculptor carving a statue out of a block of marble.
+
+---
+
+## 5.3 — Master the Image Prompt
+
+A great image prompt follows a specific formula:
+
+**[Subject] + [Action/Setting] + [Artistic Style] + [Lighting/Technical Specs]**
+
+*Example:* `A cyberpunk detective walking in rain, neon-lit alleyway, hyper-realistic, 8k resolution, cinematic lighting.`
+
+---
+
+## 5.4 — Advanced Techniques
+
+- **Inpainting:** Replacing a specific part of an image (e.g., change a cat to a dog).
+- **Outpainting:** Expanding an image beyond its original borders.
+- **Image-to-Image:** Using an existing photo as a reference for the AI.
 """
 },
 
@@ -376,19 +384,47 @@ Test prompts, integrate models, build AI features.
     "key_takeaways": ["Understand embeddings and vector databases", "Learn RAG architecture", "Build simple RAG systems"],
     "markdown_content": """# Module 8 — Vector Databases & RAG
 
-## 8.1 — Why AI Models Need External Knowledge
-Knowledge cutoff, no access to private data, hallucinations.
+## 8.1 — The Knowledge Problem
 
-## 8.2 — Embeddings Explained
-Words → numerical vectors. Similar meanings cluster together.
+Standard AI models have two major flaws:
+1. **Knowledge Cutoff:** They don't know about recent events.
+2. **No Private Access:** They don't know about your custom business data.
 
-## 8.3 — Vector Databases
-Store embeddings for semantic search. Tools: **Pinecone**, **Weaviate**, **Chroma**
+---
 
-## 8.4 — Retrieval-Augmented Generation (RAG)
-```
-Question → Embedding → Vector DB Search → Retrieved Docs → LLM → Answer
-```
+## 8.2 — What is RAG?
+
+**Retrieval-Augmented Generation (RAG)** solves this by giving the AI a "library" to look at before answering.
+
+### RAG vs. Fine-Tuning
+
+| Feature | RAG (Retrieval) | Fine-Tuning (Training) |
+|---|---|
+| **Analogy** | Taking an Open-Book Exam | Memorizing the Textbook |
+| **Updates** | Instant (Update the library) | Hard (Requires re-training) |
+| **Cost** | Low | High |
+| **Accuracy** | High (Cites sources) | Moderate (May hallucinate) |
+
+---
+
+## 8.3 — The Vector Database
+
+To perform RAG, we need a **Vector Database**. Instead of searching for exact keywords, it searches for **meanings**.
+
+- **Pinecone:** Fully managed, cloud-native.
+- **Weaviate:** Open-source, handles multi-modal data.
+- **Chroma:** Simple, perfect for local development.
+
+---
+
+## 8.4 — The RAG Workflow
+
+1. **Retrieve:** Find relevant documents in the Vector DB based on the user's question.
+2. **Augment:** Combine those documents with the original prompt.
+3. **Generate:** The AI answers the question using the provided context.
+
+> This allows an AI to act as an expert on *your specific documents*.
+
 Reduces hallucinations, increases accuracy, enables private data access.
 
 ## 8.5 — Building a Simple RAG System

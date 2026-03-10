@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../AuthContext';
 import { API_BASE_URL } from '../apiConfig';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Module {
     _id: string;
@@ -562,14 +563,65 @@ const CoursePlayer: React.FC = () => {
                                     <div className="absolute top-0 right-0 p-8 sm:p-12 font-black text-[7px] sm:text-[9px] text-gray-100 uppercase tracking-[0.5em] sm:rotate-90 origin-top-right">PROTOCOL_THEORY</div>
                                     <article className="prose prose-purple max-w-none text-gray-600 leading-relaxed text-lg sm:text-xl">
                                         <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
                                             components={{
-                                                h1: ({ node, ...props }) => <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900 mb-8 mt-6" {...props} />,
-                                                h2: ({ node, ...props }) => <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 mb-6 mt-12" {...props} />,
-                                                h3: ({ node, ...props }) => <h4 className="text-base font-black uppercase tracking-widest text-[#7C3AED] mb-4 mt-10" {...props} />,
-                                                p: ({ node, ...props }) => <p className="mb-6" {...props} />,
+                                                h1: ({ node, ...props }) => <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-gray-900 mb-8 mt-6 pb-4 border-b-2 border-[#7C3AED]/10" {...props} />,
+                                                h2: ({ node, ...props }) => <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-gray-900 mb-6 mt-14 pb-3 border-b border-gray-100" {...props} />,
+                                                h3: ({ node, ...props }) => <h4 className="text-base sm:text-lg font-black uppercase tracking-widest text-[#7C3AED] mb-4 mt-10" {...props} />,
+                                                p: ({ node, ...props }) => <p className="mb-6 text-gray-600 text-base sm:text-lg leading-relaxed" {...props} />,
                                                 strong: ({ node, ...props }) => <strong className="text-gray-900 font-bold" {...props} />,
-                                                li: ({ node, ...props }) => <li className="mb-4 marker:text-[#7C3AED]" {...props} />,
-                                                code: ({ node, ...props }) => <code className="bg-gray-50 text-[#7C3AED] px-3 py-1 rounded-xl font-mono text-[16px] border border-gray-100" {...props} />
+                                                em: ({ node, ...props }) => <em className="text-gray-700 italic" {...props} />,
+                                                ul: ({ node, ...props }) => <ul className="mb-8 ml-2 space-y-3 list-none" {...props} />,
+                                                ol: ({ node, ...props }) => <ol className="mb-8 ml-2 space-y-3 list-none counter-reset-custom" {...props} />,
+                                                li: ({ node, children, ...props }) => (
+                                                    <li className="flex items-start gap-3 text-gray-600 text-base sm:text-lg leading-relaxed" {...props}>
+                                                        <span className="mt-2 w-2 h-2 min-w-[8px] rounded-full bg-[#7C3AED]/40 flex-shrink-0" />
+                                                        <span className="flex-1">{children}</span>
+                                                    </li>
+                                                ),
+                                                blockquote: ({ node, ...props }) => (
+                                                    <blockquote className="my-8 pl-6 py-4 pr-6 border-l-4 border-[#7C3AED] bg-[#7C3AED]/5 rounded-r-2xl text-gray-700 italic text-base sm:text-lg [&>p]:mb-0" {...props} />
+                                                ),
+                                                a: ({ node, ...props }) => (
+                                                    <a className="text-[#7C3AED] font-semibold hover:underline underline-offset-4 transition-colors hover:text-[#6D28D9]" target="_blank" rel="noopener noreferrer" {...props} />
+                                                ),
+                                                hr: () => (
+                                                    <div className="my-12 flex items-center gap-4">
+                                                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#7C3AED]/20 to-transparent" />
+                                                        <div className="w-2 h-2 rounded-full bg-[#7C3AED]/20" />
+                                                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#7C3AED]/20 to-transparent" />
+                                                    </div>
+                                                ),
+                                                table: ({ node, ...props }) => (
+                                                    <div className="my-8 overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
+                                                        <table className="w-full text-left border-collapse" {...props} />
+                                                    </div>
+                                                ),
+                                                thead: ({ node, ...props }) => (
+                                                    <thead className="bg-[#7C3AED]/5 border-b-2 border-[#7C3AED]/10" {...props} />
+                                                ),
+                                                tbody: ({ node, ...props }) => (
+                                                    <tbody className="divide-y divide-gray-100 [&>tr:nth-child(even)]:bg-gray-50/50" {...props} />
+                                                ),
+                                                tr: ({ node, ...props }) => (
+                                                    <tr className="transition-colors hover:bg-[#7C3AED]/[0.03]" {...props} />
+                                                ),
+                                                th: ({ node, ...props }) => (
+                                                    <th className="px-5 py-4 text-xs sm:text-sm font-black uppercase tracking-wider text-[#7C3AED] whitespace-nowrap" {...props} />
+                                                ),
+                                                td: ({ node, ...props }) => (
+                                                    <td className="px-5 py-4 text-sm sm:text-base text-gray-600 font-medium" {...props} />
+                                                ),
+                                                pre: ({ node, ...props }) => (
+                                                    <pre className="my-8 p-6 bg-[#1E1E2E] text-gray-100 rounded-2xl overflow-x-auto text-sm sm:text-base font-mono leading-relaxed border border-gray-700/50 shadow-lg [&>code]:bg-transparent [&>code]:border-none [&>code]:p-0 [&>code]:text-gray-100 [&>code]:text-sm [&>code]:sm:text-base" {...props} />
+                                                ),
+                                                code: ({ node, className, children, ...props }) => {
+                                                    const isInline = !className;
+                                                    if (isInline) {
+                                                        return <code className="bg-gray-100 text-[#7C3AED] px-2.5 py-1 rounded-lg font-mono text-[0.9em] border border-gray-200 font-semibold" {...props}>{children}</code>;
+                                                    }
+                                                    return <code className={className} {...props}>{children}</code>;
+                                                },
                                             }}
                                         >
                                             {moduleDetails?.theory?.markdown_content}
