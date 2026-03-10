@@ -2230,13 +2230,12 @@ async def create_admin_course(data: dict):
             existing = await courses_col.find_one({"_id": course_id})
             if existing:
                 is_update = True
-                print(f"DEBUG: Performing UPDATE via POST for {course_id}")
-            else:
-                print(f"DEBUG: ID provided but not found, performing CREATE for {course_id}")
         else:
             course_id = str(uuid.uuid4())
-            print(f"DEBUG: No ID provided, performing CREATE")
 
+        # Extract modules before saving course doc
+        modules_data = data.pop("modules", []) if "modules" in data else []
+        
         # Build course document
         course_doc = dict(data)
         course_doc["_id"] = course_id
@@ -2245,14 +2244,34 @@ async def create_admin_course(data: dict):
         course_doc.setdefault("price", 0)
         course_doc.setdefault("difficulty", "Beginner")
         course_doc.setdefault("image", "")
-        course_doc["modules_count"] = len(course_doc.get("modules", [])) if isinstance(course_doc.get("modules"), list) else 0
-        course_doc.setdefault("lessons", [])
+        course_doc["modules_count"] = len(modules_data)
         course_doc.setdefault("status", data.get("status", "published"))
 
         if is_update:
             await courses_col.replace_one({"_id": course_id}, course_doc)
         else:
             await courses_col.insert_one(course_doc)
+
+        # Sync modules to modules_col
+        # 1. Clean up existing modules if it's an update to prevent duplicates
+        if is_update:
+            await modules_col.delete_many({"course_id": course_id})
+
+        # 2. Insert new modules
+        for idx, mod in enumerate(modules_data):
+            mod_id = mod.get("_id") or mod.get("id")
+            if not mod_id or str(mod_id).isdigit(): # If it's a numeric temp ID from frontend
+                mod_id = str(uuid.uuid4())
+            
+            module_doc = {
+                "_id": mod_id,
+                "course_id": course_id,
+                "title": mod.get("title", "Untitled Module"),
+                "order_index": idx + 1,
+                "lessons": mod.get("lessons", []),
+                "estimated_time": mod.get("estimated_time", "1 hour")
+            }
+            await modules_col.insert_one(module_doc)
 
         # Optional final assessment quiz
         questions = course_doc.get("questions", [])
@@ -2284,19 +2303,37 @@ async def update_admin_course(course_id: str, data: dict):
     # Check if course exists
     existing = await courses_col.find_one({"_id": course_id})
     if not existing:
-        print(f"DEBUG: Course {course_id} NOT FOUND")
         raise HTTPException(status_code=404, detail="Course not found")
 
-    # Build update document - MERGE with existing to preserve other fields
+    # Extract modules
+    modules_data = data.pop("modules", []) if "modules" in data else []
+
+    # Build update document
     update_doc = {**existing, **data}
-    update_doc["_id"] = course_id # Ensure ID stays the same
-    update_doc["modules_count"] = len(update_doc.get("modules", [])) if isinstance(update_doc.get("modules"), list) else 0
+    update_doc["_id"] = course_id
+    update_doc["modules_count"] = len(modules_data)
     
     # Update the course
-    result = await courses_col.replace_one({"_id": course_id}, update_doc)
-    print(f"DEBUG: Course update result: {result.modified_count} modified")
+    await courses_col.replace_one({"_id": course_id}, update_doc)
 
-    # Update or create final assessment quiz
+    # Sync modules
+    await modules_col.delete_many({"course_id": course_id})
+    for idx, mod in enumerate(modules_data):
+        mod_id = mod.get("_id") or mod.get("id")
+        if not mod_id or str(mod_id).isdigit():
+            mod_id = str(uuid.uuid4())
+        
+        module_doc = {
+            "_id": mod_id,
+            "course_id": course_id,
+            "title": mod.get("title", "Untitled Module"),
+            "order_index": idx + 1,
+            "lessons": mod.get("lessons", []),
+            "estimated_time": mod.get("estimated_time", "1 hour")
+        }
+        await modules_col.insert_one(module_doc)
+
+    # Update final assessment quiz
     questions = update_doc.get("questions", [])
     if questions:
         quiz_doc = {
@@ -2312,7 +2349,6 @@ async def update_admin_course(course_id: str, data: dict):
             {"$set": quiz_doc},
             upsert=True
         )
-        print(f"DEBUG: Updated final assessment for {course_id}")
 
     return {"status": "success", "id": course_id}
 

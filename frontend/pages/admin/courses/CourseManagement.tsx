@@ -38,6 +38,9 @@ const CourseManagement: React.FC = () => {
     const [courseRoleTag, setCourseRoleTag] = useState("AI");
     const [courseSchool, setCourseSchool] = useState("Elite Systems");
     const [courseImage, setCourseImage] = useState("");
+    const [courseSkills, setCourseSkills] = useState("");
+    const [courseDuration, setCourseDuration] = useState("10 Weeks");
+    const [customId, setCustomId] = useState("");
     const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
 
     const [modules, setModules] = useState<any[]>([
@@ -52,6 +55,9 @@ const CourseManagement: React.FC = () => {
         setCourseRoleTag("AI");
         setCourseSchool("Elite Systems");
         setCourseImage("");
+        setCourseSkills("");
+        setCourseDuration("10 Weeks");
+        setCustomId("");
         setModules([{ id: 1, title: 'Introduction to Course', lessons: [{ type: 'video', title: 'Setting up Environment' }] }]);
         setQuestions([{ question: 'What is the primary role of this technology?', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answers: [0], explanation: '' }]);
         setEditingCourseId(null);
@@ -66,6 +72,9 @@ const CourseManagement: React.FC = () => {
         setCourseRoleTag(course.role_tag || "AI");
         setCourseSchool(course.school || "Elite Systems");
         setCourseImage(course.image || "");
+        setCourseSkills(Array.isArray(course.skills) ? course.skills.join(", ") : "");
+        setCourseDuration(course.duration || "10 Weeks");
+        setCustomId(course._id || "");
         setModules(course.modules || []);
         setQuestions(course.questions || []);
         setView('create');
@@ -218,6 +227,8 @@ const CourseManagement: React.FC = () => {
                 role_tag: courseRoleTag,
                 school: courseSchool,
                 image: courseImage || 'https://miro.medium.com/max/938/0*lbtSAeYRtmUMAWeY.png',
+                skills: courseSkills.split(",").map(s => s.trim()).filter(s => s !== ""),
+                duration: courseDuration,
                 modules: modules,
                 questions: questions
             };
@@ -227,9 +238,11 @@ const CourseManagement: React.FC = () => {
             const url = `${API_BASE_URL}/api/admin/courses`;
             const method = 'POST';
 
-            // Ensure the ID is in the payload for an update
+            // Ensure the ID is in the payload for an update or custom ID for new course
             if (editingCourseId) {
                 (coursePayload as any)._id = editingCourseId;
+            } else if (customId) {
+                (coursePayload as any)._id = customId;
             }
 
             console.log('Publishing course (via POST)...', {
@@ -606,6 +619,34 @@ const CourseManagement: React.FC = () => {
                                                 <option className="bg-gray-900 text-white" value="Frontend">Frontend</option>
                                                 <option className="bg-gray-900 text-white" value="Backend">Backend</option>
                                             </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Internal Course ID (e.g. ai-01)</label>
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
+                                                value={customId}
+                                                onChange={(e) => setCustomId(e.target.value)}
+                                                disabled={!!editingCourseId}
+                                                placeholder="ai-01"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Skills (Comma separated)</label>
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
+                                                value={courseSkills}
+                                                onChange={(e) => setCourseSkills(e.target.value)}
+                                                placeholder="LLMs, GPT, Transformers"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Duration</label>
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
+                                                value={courseDuration}
+                                                onChange={(e) => setCourseDuration(e.target.value)}
+                                                placeholder="10 Weeks"
+                                            />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">School Name</label>

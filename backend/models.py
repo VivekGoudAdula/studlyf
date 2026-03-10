@@ -12,6 +12,7 @@ class Course(BaseModel):
     skills: Optional[List[str]] = None
     duration: Optional[str] = None
     standard: Optional[str] = None
+    school: Optional[str] = None
     # Marketplace fields
     price: float = 0.0
     rating: float = 4.5

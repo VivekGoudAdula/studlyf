@@ -622,7 +622,14 @@ const CoursePlayer: React.FC = () => {
                                     <iframe
                                         width="100%"
                                         height="100%"
-                                        src={moduleDetails?.video?.video_url}
+                                        src={(() => {
+                                            const url = moduleDetails?.video?.video_url || '';
+                                            // Convert youtube.com/watch?v=ID to youtube.com/embed/ID
+                                            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+                                            if (match) return `https://www.youtube.com/embed/${match[1]}`;
+                                            return url;
+                                        })()}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                         allowFullScreen
                                     ></iframe>
                                 </div>
