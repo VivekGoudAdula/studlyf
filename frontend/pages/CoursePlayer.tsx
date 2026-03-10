@@ -619,30 +619,23 @@ const CoursePlayer: React.FC = () => {
                                 className="w-full space-y-16"
                             >
                                 <div className="aspect-video bg-gray-900 rounded-[4rem] overflow-hidden shadow-2xl shadow-gray-400/20 border-8 border-white relative group">
-                                    {(() => {
-                                        const url = moduleDetails?.video?.video_url || '';
-                                        const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
-                                        const videoId = match ? match[1] : '';
-                                        const embedUrl = videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1` : '';
-                                        
-                                        return embedUrl ? (
-                                            <iframe
-                                                width="100%"
-                                                height="100%"
-                                                src={embedUrl}
-                                                title="Course Video"
-                                                frameBorder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                referrerPolicy="strict-origin-when-cross-origin"
-                                                allowFullScreen
-                                                style={{ border: 'none' }}
-                                            ></iframe>
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-white/60">
-                                                <span className="text-sm font-bold uppercase tracking-widest">Video Unavailable</span>
-                                            </div>
-                                        );
-                                    })()}
+                                    {moduleDetails?.video?.video_url ? (
+                                        <iframe
+                                            width="100%"
+                                            height="100%"
+                                            src={moduleDetails.video.video_url}
+                                            title="Course Video"
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            referrerPolicy="strict-origin-when-cross-origin"
+                                            allowFullScreen
+                                            style={{ border: 'none' }}
+                                        ></iframe>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-white/60">
+                                            <span className="text-sm font-bold uppercase tracking-widest">Video Unavailable</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex justify-center">
