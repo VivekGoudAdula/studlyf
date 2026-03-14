@@ -82,7 +82,8 @@ const CoursePlayer: React.FC = () => {
 
   // Sidebar
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar collapse
 
   // Right tools
   const [activeToolTab, setActiveToolTab] = useState<'notes' | 'transcript' | 'resources'>('notes');
@@ -358,12 +359,14 @@ const CoursePlayer: React.FC = () => {
       <div className={`cp-mobile-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
 
       {/* ══════ LEFT SIDEBAR ══════ */}
-      <aside className={`cp-sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`cp-sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="cp-sidebar-header">
           <button className="cp-sidebar-back" onClick={() => navigate('/learn/courses')}>
             <ChevronLeft size={16} /> Back to courses
           </button>
-          <div className="cp-sidebar-title">Course Curriculum</div>
+          <div className="cp-sidebar-title-row">
+            <div className="cp-sidebar-title">Course Curriculum</div>
+          </div>
           <div className="cp-sidebar-progress-wrap">
             <div className="cp-sidebar-progress-bar">
               <div className="cp-sidebar-progress-fill" style={{ width: `${overallProgress}%` }} />
@@ -438,6 +441,9 @@ const CoursePlayer: React.FC = () => {
         {/* Top Bar */}
         <div className="cp-topbar">
           <div className="cp-topbar-left">
+            <button className="cp-collapse-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}>
+              <Menu size={18} />
+            </button>
             <span className="cp-topbar-lesson-title">{currentLessonTitle}</span>
           </div>
           <div className="cp-topbar-right">

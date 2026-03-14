@@ -22,7 +22,14 @@
   flex-direction: column;
   height: 100vh;
   z-index: 30;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.cp-sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  border-right: none;
 }
 
 .cp-sidebar-header {
@@ -47,18 +54,26 @@
 }
 .cp-sidebar-back:hover { color: #7C3AED; }
 
+.cp-sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
 .cp-sidebar-title {
   font-size: 15px;
   font-weight: 700;
   color: #111827;
   line-height: 1.4;
-  margin-bottom: 14px;
+  white-space: nowrap;
 }
 
 .cp-sidebar-progress-wrap {
   display: flex;
   align-items: center;
   gap: 10px;
+  white-space: nowrap;
 }
 .cp-sidebar-progress-bar {
   flex: 1;
@@ -258,7 +273,25 @@
 .cp-topbar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+}
+.cp-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cp-collapse-btn:hover {
+  background: #f9fafb;
+  color: #111827;
+  border-color: #d1d5db;
 }
 .cp-topbar-lesson-title {
   font-size: 14px;
