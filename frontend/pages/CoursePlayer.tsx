@@ -1,986 +1,857 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../AuthContext';
 import { API_BASE_URL } from '../apiConfig';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {
+  ChevronDown, ChevronLeft, ChevronRight, Play, FileText, HelpCircle,
+  CheckCircle2, Menu, X, BookOpen, MessageCircle, Download, StickyNote,
+  AlignLeft
+} from 'lucide-react';
+import './CoursePlayerStyles.css';
 
+/* ═══════ Types ═══════ */
 interface Module {
-    _id: string;
-    title: string;
-    order_index: number;
-    estimated_time: string;
-    progress?: {
-        status: string;
-        theory_completed: boolean;
-        video_completed: boolean;
-        quiz_score: number;
-        quiz_answers: number[][];
-        project_status: string;
-        review_status?: string;
-    };
+  _id: string;
+  title: string;
+  order_index: number;
+  estimated_time: string;
+  progress?: {
+    status: string;
+    theory_completed: boolean;
+    video_completed: boolean;
+    quiz_score: number;
+    quiz_answers: number[][];
+    project_status: string;
+    review_status?: string;
+  };
 }
 
-const ProgressBar = ({ progress }: { progress: number }) => (
-    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-100">
-        <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            className="h-full bg-gradient-to-r from-[#7C3AED] to-[#A855F7] shadow-[0_0_10px_rgba(124,58,237,0.2)]"
-        />
-    </div>
-);
+type LessonType = 'video' | 'theory' | 'quiz';
 
-const SectionIndicator = ({ label, active, completed, locked, onClick }: { label: string, active: boolean, completed: boolean, locked: boolean, onClick: () => void }) => (
-    <button
-        onClick={onClick}
-        disabled={locked}
-        className={`flex flex-col items-center gap-1.5 transition-all duration-500 ${locked ? 'opacity-20 cursor-not-allowed' : 'opacity-100 cursor-pointer hover:scale-105'
-            }`}
-    >
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all duration-500 ${active ? 'border-[#7C3AED] bg-white shadow-xl shadow-[#7C3AED]/20 scale-110 z-10' :
-            completed ? 'border-green-500 bg-green-50' : 'border-gray-100 bg-white'
-            }`}>
-            {completed ? (
-                <span className="text-green-500 text-sm font-bold">✓</span>
-            ) : (
-                <span className={`text-[9px] font-black ${active ? 'text-[#7C3AED]' : 'text-gray-300'}`}>{label[0]}</span>
-            )}
-        </div>
-        <span className={`text-[8px] font-black uppercase tracking-tight transition-colors ${active ? 'text-[#111]' : 'text-gray-400'}`}>{label}</span>
-    </button>
-);
+interface FlatLesson {
+  moduleIndex: number;
+  type: LessonType;
+  label: string;
+}
 
+/* ═══════ Helpers ═══════ */
+const extractCourseId = (slug?: string) => {
+  if (!slug) return '';
+  const parts = slug.split('--');
+  return parts.length > 1 ? parts[parts.length - 1] : slug;
+};
+
+const getModuleProgress = (mod: Module): number => {
+  const p = mod.progress;
+  if (!p) return 0;
+  let done = 0;
+  if (p.video_completed) done++;
+  if (p.theory_completed) done++;
+  if (p.quiz_score >= 60 || p.status === 'completed') done++;
+  return Math.round((done / 3) * 100);
+};
+
+const getLessonLabel = (type: LessonType): string => {
+  if (type === 'video') return 'Video Lesson';
+  if (type === 'theory') return 'Reading Material';
+  return 'Assessment Quiz';
+};
+
+const DUMMY_TRANSCRIPT = [
+  { time: '0:00', text: "Welcome back to this module. Today we'll explore the core concepts behind system architecture and design patterns." },
+  { time: '0:45', text: "Let's start by understanding the fundamental building blocks. Every scalable system relies on a few essential principles." },
+  { time: '1:30', text: "The first principle is separation of concerns. This ensures each component has a single, well-defined responsibility." },
+  { time: '2:15', text: "Next, we'll look at fault tolerance — how systems recover gracefully when individual components fail." },
+  { time: '3:00', text: "Finally, we'll discuss scalability vectors: horizontal vs vertical scaling and when to choose each approach." },
+];
+
+/* ═══════ Component ═══════ */
 const CoursePlayer: React.FC = () => {
-    const { courseId } = useParams<{ courseId: string }>();
-    const { user } = useAuth();
-    const navigate = useNavigate();
+  const { courseId } = useParams<{ courseId: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-    const [modules, setModules] = useState<Module[]>([]);
-    const [activeModuleIndex, setActiveModuleIndex] = useState(0);
-    const [moduleDetails, setModuleDetails] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [activeStage, setActiveStage] = useState<'theory' | 'video' | 'quiz'>('theory');
-    const [coursePhase, setCoursePhase] = useState<'modules' | 'project' | 'certificate'>('modules');
-    const [initialLoad, setInitialLoad] = useState(true);
-    const [lastLoadedModuleId, setLastLoadedModuleId] = useState<string | null>(null);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [activeModuleIndex, setActiveModuleIndex] = useState(0);
+  const [moduleDetails, setModuleDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeStage, setActiveStage] = useState<LessonType>('video');
 
-    // Quiz state
-    const [quizAnswers, setQuizAnswers] = useState<number[][]>([]);
-    const [quizResult, setQuizResult] = useState<any>(null);
+  // Sidebar
+  const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    // Project state
-    const [deployedLink, setDeployedLink] = useState('');
-    const [githubLink, setGithubLink] = useState('');
-    const [projectFile, setProjectFile] = useState<File | null>(null);
+  // Right tools
+  const [activeToolTab, setActiveToolTab] = useState<'notes' | 'transcript' | 'resources'>('notes');
+  const [notes, setNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
 
-    const [completionPrompt, setCompletionPrompt] = useState<{ open: boolean; nextIndex: number | null; moduleName: string }>(
-        { open: false, nextIndex: null, moduleName: '' }
-    );
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Quiz
+  const [quizAnswers, setQuizAnswers] = useState<number[][]>([]);
+  const [quizResult, setQuizResult] = useState<any>(null);
+  const [currentQuizQ, setCurrentQuizQ] = useState(0);
 
-    // Support slugged URLs: "course-name--<id>"
-    const extractCourseId = (slug?: string) => {
-        if (!slug) return '';
-        const parts = slug.split('--');
-        return parts.length > 1 ? parts[parts.length - 1] : slug;
-    };
+  // Project
+  const [deployedLink, setDeployedLink] = useState('');
+  const [githubLink, setGithubLink] = useState('');
+  const [projectFile, setProjectFile] = useState<File | null>(null);
 
-    const resolvedCourseId = extractCourseId(courseId);
+  // Completion modal
+  const [completionPrompt, setCompletionPrompt] = useState<{
+    open: boolean; nextIndex: number | null; moduleName: string;
+  }>({ open: false, nextIndex: null, moduleName: '' });
 
-    useEffect(() => {
-        if (resolvedCourseId) {
-            fetchModules();
+  const resolvedCourseId = extractCourseId(courseId);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  /* ── Build flat lesson list ── */
+  const buildLessons = (mods: Module[]): FlatLesson[] => {
+    const list: FlatLesson[] = [];
+    mods.forEach((_, i) => {
+      list.push({ moduleIndex: i, type: 'video', label: 'Video Lesson' });
+      list.push({ moduleIndex: i, type: 'theory', label: 'Reading Material' });
+      list.push({ moduleIndex: i, type: 'quiz', label: 'Assessment Quiz' });
+    });
+    return list;
+  };
+
+  const flatLessons = buildLessons(modules);
+  const currentFlatIndex = flatLessons.findIndex(
+    l => l.moduleIndex === activeModuleIndex && l.type === activeStage
+  );
+
+  /* ── Data Fetching ── */
+  useEffect(() => {
+    if (resolvedCourseId) fetchModules();
+  }, [resolvedCourseId, user]);
+
+  const fetchModules = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid || ''}`);
+      const data = await res.json();
+      let fetched = Array.isArray(data) ? data : [];
+      if (fetched.length === 0) {
+        fetched = [
+          { _id: 'dummy-mod-1', title: 'Foundations & Architectures', order_index: 1, estimated_time: '2h 30m', progress: { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' } },
+          { _id: 'dummy-mod-2', title: 'Advanced Implementations', order_index: 2, estimated_time: '3h 15m', progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' } },
+          { _id: 'dummy-mod-3', title: 'Production Deployment', order_index: 3, estimated_time: '2h 45m', progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' } },
+          { _id: 'dummy-mod-4', title: 'Testing & CI/CD Pipelines', order_index: 4, estimated_time: '1h 50m', progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' } },
+        ];
+      }
+      setModules(fetched);
+      setLoading(false);
+      return fetched;
+    } catch {
+      setModules([]);
+      setLoading(false);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    if (modules.length > 0) fetchModuleDetails(modules[activeModuleIndex]._id);
+  }, [activeModuleIndex, modules]);
+
+  const fetchModuleDetails = async (moduleId: string) => {
+    let data: any = {};
+    if (moduleId.startsWith('dummy-mod')) {
+      data = {
+        theory: {
+          markdown_content: "# System Architectures & Frameworks\n\nWelcome to the simulated track.\n\n## Subsystem Overview\n\n1. Component isolation\n2. Fault tolerance parameters\n3. Scalability vectors\n\n> **Note:** Understanding these metrics is critical for successful system initialization.\n\n## Design Patterns\n\n### Microservices\nBreak monoliths into independently deployable services.\n\n### Event-Driven Architecture\nUse message queues and event buses for loose coupling.\n\n| Pattern | Use Case | Complexity |\n|---------|----------|------------|\n| MVC | Web apps | Low |\n| CQRS | High-read systems | Medium |\n| Event Sourcing | Audit trails | High |\n\n```python\ndef initialize_system(config):\n    services = load_services(config)\n    for svc in services:\n        svc.start()\n    return SystemStatus.READY\n```\n\nUnderstand the metrics and variables for successful initialization.",
+          key_takeaways: ["Understand system boundaries", "Deploy fault-tolerant systems", "End-to-end telemetry mapping"]
+        },
+        video: { video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+        quiz: {
+          questions: [
+            { question: "What primarily drives system latency here?", options: ["Bandwidth", "Distance", "Processing Overhead", "All of the above"], correct_answers: [3], explanation: "All elements heavily impact latency." },
+            { question: "Which protocol is connection-oriented?", options: ["UDP", "TCP", "ICMP", "IP"], correct_answers: [1], explanation: "TCP guarantees reliable delivery." },
+            { question: "What does CAP theorem state about distributed systems?", options: ["You can have all three guarantees", "You can only pick two of Consistency, Availability, Partition tolerance", "It only applies to databases", "It was disproven"], correct_answers: [1], explanation: "CAP theorem states you must choose two out of three." },
+          ]
+        },
+        project: { problem_statement: "Deploy a foundational analytics service proxy.", requirements: ["Implement basic rate limiting", "Route dynamic health-checks", "Ensure secure CORS headers"] }
+      };
+    } else {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/modules/${moduleId}`);
+        if (res.ok) data = await res.json();
+      } catch {}
+    }
+    setModuleDetails(data);
+
+    const prog = modules[activeModuleIndex].progress;
+    if (!prog?.video_completed) setActiveStage('video');
+    else if (!prog?.theory_completed) setActiveStage('theory');
+    else setActiveStage('quiz');
+
+    if (prog?.quiz_answers?.length) setQuizAnswers(prog.quiz_answers);
+    else setQuizAnswers(data.quiz?.questions.map(() => []) || []);
+
+    if (prog?.quiz_score && prog.quiz_score > 0) {
+      setQuizResult({ score: prog.quiz_score, passed: prog.quiz_score >= 60 });
+    } else {
+      setQuizResult(null);
+    }
+    setCurrentQuizQ(0);
+  };
+
+  /* ── Progress Updates ── */
+  const updateProgress = async (updates: any) => {
+    if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
+      const updated = [...modules];
+      const cur = updated[activeModuleIndex];
+      if (!cur.progress) cur.progress = { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' };
+      Object.assign(cur.progress, updates);
+      if (updates.status === 'completed' || updates.project_status === 'submitted' || updates.quiz_score >= 60) {
+        cur.progress.status = 'completed';
+        if (activeModuleIndex + 1 < updated.length) {
+          if (!updated[activeModuleIndex + 1].progress) updated[activeModuleIndex + 1].progress = {} as any;
+          updated[activeModuleIndex + 1].progress!.status = 'unlocked';
         }
-    }, [resolvedCourseId, user]);
+      }
+      setModules(updated);
+      return;
+    }
+    await fetch(`${API_BASE_URL}/api/progress/update`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user?.uid, course_id: resolvedCourseId, module_id: modules[activeModuleIndex]._id, updates })
+    });
+    fetchModules();
+  };
 
-    const fetchModules = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid || ''}`);
-            const data = await res.json();
+  /* ── Quiz ── */
+  const handleQuizSubmit = async () => {
+    let score = 0;
+    let data: any = {};
+    if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
+      let correct = 0;
+      const qs = moduleDetails?.quiz?.questions || [];
+      qs.forEach((q: any, i: number) => {
+        const sel = quizAnswers[i] || [];
+        const ans = q.correct_answers || [];
+        if (sel.length === ans.length && sel.every((v: number) => ans.includes(v))) correct++;
+      });
+      score = Math.round((correct / Math.max(qs.length, 1)) * 100);
+      data = { score, passed: score >= 60 };
+    } else {
+      const res = await fetch(`${API_BASE_URL}/api/quiz/submit`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user?.uid, module_id: modules[activeModuleIndex]._id, answers: quizAnswers })
+      });
+      data = await res.json();
+      score = data.score;
+    }
+    setQuizResult(data);
+    setTimeout(() => updateProgress({ quiz_score: score, quiz_answers: quizAnswers }), 500);
+  };
 
-            let fetchedModules = Array.isArray(data) ? data : [];
+  /* ── Navigation ── */
+  const goToPrevLesson = () => {
+    if (currentFlatIndex <= 0) return;
+    const prev = flatLessons[currentFlatIndex - 1];
+    if (prev.moduleIndex !== activeModuleIndex) setActiveModuleIndex(prev.moduleIndex);
+    setActiveStage(prev.type);
+    scrollContentTop();
+  };
 
-            if (fetchedModules.length === 0) {
-                // Fallback to dummy modules for newly created empty courses
-                fetchedModules = [
-                    {
-                        _id: 'dummy-mod-1',
-                        title: 'Foundations & Architectures',
-                        order_index: 1,
-                        estimated_time: '2h 30m',
-                        progress: { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' }
-                    },
-                    {
-                        _id: 'dummy-mod-2',
-                        title: 'Advanced Implementations',
-                        order_index: 2,
-                        estimated_time: '3h 15m',
-                        progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' }
-                    }
-                ];
-            }
+  const goToNextLesson = () => {
+    if (currentFlatIndex >= flatLessons.length - 1) return;
+    const next = flatLessons[currentFlatIndex + 1];
+    if (next.moduleIndex !== activeModuleIndex) setActiveModuleIndex(next.moduleIndex);
+    setActiveStage(next.type);
+    scrollContentTop();
+  };
 
-            setModules(fetchedModules);
+  const scrollContentTop = () => {
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-            if (fetchedModules.length > 0) {
-                if (initialLoad) {
-                    const activeIndex = fetchedModules.findIndex((m: any) => m.progress?.status !== 'locked');
-                    setActiveModuleIndex(activeIndex !== -1 ? activeIndex : 0);
-                    setInitialLoad(false);
-                }
-            }
-            setLoading(false);
-            return fetchedModules;
-        } catch (err) {
-            console.error(err);
-            setModules([]);
-            setLoading(false);
-            return [];
-        }
-    };
+  const toggleModule = (idx: number) => {
+    const s = new Set(expandedModules);
+    s.has(idx) ? s.delete(idx) : s.add(idx);
+    setExpandedModules(s);
+  };
 
-    useEffect(() => {
-        if (modules.length > 0) {
-            fetchModuleDetails(modules[activeModuleIndex]._id);
-        }
-    }, [activeModuleIndex, modules]);
+  const selectLesson = (modIdx: number, type: LessonType) => {
+    const mod = modules[modIdx];
+    setActiveModuleIndex(modIdx);
+    setActiveStage(type);
+    setSidebarOpen(false);
+    scrollContentTop();
+    const s = new Set(expandedModules);
+    s.add(modIdx);
+    setExpandedModules(s);
+  };
 
-    const fetchModuleDetails = async (moduleId: string) => {
-        let data: any = {};
-        if (moduleId.startsWith('dummy-mod')) {
-            data = {
-                theory: {
-                    markdown_content: "# System Architectures & Frameworks\n\nWelcome to the simulated track. \n\n## Subsystem Overview\n\n1. Component isolation\n2. Fault tolerance parameters\n3. Scalability vectors\n\nUnderstand the metrics and variables for successful initialization.",
-                    key_takeaways: ["Understand boundaries", "Deploy fault-tolerant systems", "End-to-end telemetry mapping"]
-                },
-                video: {
-                    video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ"
-                },
-                quiz: {
-                    questions: [
-                        { question: "What primarily drives system latency here?", options: ["Bandwidth", "Distance", "Processing Overhead", "All of the above"], correct_answers: [3], explanation: "All elements heavily impact latency." },
-                        { question: "Which protocol is connection-oriented?", options: ["UDP", "TCP", "ICMP", "IP"], correct_answers: [1], explanation: "TCP guarantees reliable delivery." }
-                    ]
-                },
-                project: {
-                    problem_statement: "Deploy a foundational analytics service proxy.",
-                    requirements: ["Implement basic rate limiting", "Route dynamic health-checks", "Ensure secure CORS headers"]
-                }
-            };
-        } else {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/modules/${moduleId}`);
-                if (res.ok) data = await res.json();
-            } catch (err) { console.error(err); }
-        }
+  const handleMarkComplete = async () => {
+    if (activeStage === 'video') {
+      await updateProgress({ video_completed: true });
+      goToNextLesson();
+    } else if (activeStage === 'theory') {
+      await updateProgress({ theory_completed: true });
+      goToNextLesson();
+    }
+  };
 
-        setModuleDetails(data);
+  const isLessonComplete = (modIdx: number, type: LessonType): boolean => {
+    const p = modules[modIdx]?.progress;
+    if (!p) return false;
+    if (type === 'video') return !!p.video_completed;
+    if (type === 'theory') return !!p.theory_completed;
+    return (p.quiz_score || 0) > 0;
+  };
 
-        const prog = modules[activeModuleIndex].progress;
+  const isCurrentLessonComplete = isLessonComplete(activeModuleIndex, activeStage);
+  const currentModule = modules[activeModuleIndex];
+  
+  // Calculate more granular overall progress by summing all individual module progress percentages
+  const overallProgress = modules.length > 0 
+    ? Math.round((modules.reduce((acc, m) => acc + getModuleProgress(m), 0)) / modules.length)
+    : 0;
 
-        if (!prog?.video_completed) setActiveStage('video');
-        else if (!prog?.theory_completed) setActiveStage('theory');
-        else setActiveStage('quiz');
-        setLastLoadedModuleId(moduleId);
+  const currentLessonTitle = currentModule
+    ? `${currentModule.title} — ${getLessonLabel(activeStage)}`
+    : 'Loading...';
 
-        // Restore answers if they exist
-        if (prog?.quiz_answers && prog.quiz_answers.length > 0) {
-            setQuizAnswers(prog.quiz_answers);
-        } else {
-            setQuizAnswers(data.quiz?.questions.map(() => []) || []);
-        }
-
-        if (prog?.quiz_score !== undefined && prog?.quiz_score !== null && prog?.quiz_score > 0) {
-            setQuizResult({ score: prog.quiz_score, passed: prog.quiz_score >= 70 });
-        } else {
-            setQuizResult(null);
-        }
-    };
-
-    const updateProgress = async (updates: any) => {
-        if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
-            const updatedModules = [...modules];
-            const currentMod = updatedModules[activeModuleIndex];
-            if (!currentMod.progress) {
-                currentMod.progress = { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' };
-            }
-            Object.assign(currentMod.progress, updates);
-
-            if (updates.status === 'completed' || updates.project_status === 'submitted' || updates.quiz_score >= 70) {
-                currentMod.progress.status = 'completed';
-                if (updates.project_status === 'submitted') currentMod.progress.project_status = 'submitted';
-                if (activeModuleIndex + 1 < updatedModules.length) {
-                    if (!updatedModules[activeModuleIndex + 1].progress) updatedModules[activeModuleIndex + 1].progress = {} as any;
-                    updatedModules[activeModuleIndex + 1].progress!.status = 'unlocked';
-                }
-            }
-            setModules(updatedModules);
-            return;
-        }
-
-        await fetch(`${API_BASE_URL}/api/progress/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: user?.uid,
-                course_id: resolvedCourseId,
-                module_id: modules[activeModuleIndex]._id,
-                updates
-            })
-        });
-        fetchModules();
-    };
-
-    const goToNextModule = () => {
-        const nextIndex = modules.findIndex((m, idx) => idx > activeModuleIndex && m.progress?.status !== 'locked');
-        if (nextIndex !== -1) {
-            setActiveModuleIndex(nextIndex);
-            setActiveStage('theory');
-        }
-    };
-
-    const handleQuizSubmit = async () => {
-        let score = 0;
-        let data: any = {};
-
-        if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
-            let correctCount = 0;
-            const qs = moduleDetails?.quiz?.questions || [];
-            qs.forEach((q: any, i: number) => {
-                const selected = quizAnswers[i] || [];
-                const correct = q.correct_answers || [];
-                if (selected.length === correct.length && selected.every(v => correct.includes(v))) {
-                    correctCount++;
-                }
-            });
-            score = Math.round((correctCount / Math.max(qs.length, 1)) * 100);
-            data = { score, passed: score >= 70 };
-        } else {
-            const res = await fetch(`${API_BASE_URL}/api/quiz/submit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: user?.uid,
-                    module_id: modules[activeModuleIndex]._id,
-                    answers: quizAnswers
-                })
-            });
-            data = await res.json();
-            score = data.score;
-        }
-
-        setQuizResult(data);
-        setTimeout(() => updateProgress({ quiz_score: score, quiz_answers: quizAnswers }), 1500);
-    };
-
-    const handleRestartModule = async () => {
-        setQuizResult(null);
-        setQuizAnswers(moduleDetails?.quiz?.questions.map(() => []) || []);
-        setActiveStage('theory');
-        // Reset backend progress to ensure they genuinely restart
-        await updateProgress({
-            theory_completed: false,
-            video_completed: false,
-            quiz_score: 0,
-            quiz_answers: []
-        });
-    };
-
-    const handleProjectSubmit = async () => {
-        if (!deployedLink || !deployedLink.trim()) {
-            alert('Deployed link is required!');
-            return;
-        }
-        if (githubLink && !githubLink.includes('github.com')) {
-            alert('Please provide a valid GitHub repository link or leave it blank.');
-            return;
-        }
-
-        if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
-            await updateProgress({ project_status: 'submitted', status: 'completed' });
-            setTimeout(() => {
-                const nextModIdx = activeModuleIndex + 1;
-                const hasNext = nextModIdx < modules.length;
-                setCompletionPrompt({
-                    open: true,
-                    nextIndex: hasNext ? nextModIdx : null,
-                    moduleName: modules[activeModuleIndex].title || 'Current Module'
-                });
-            }, 300);
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('user_id', user?.uid || '');
-        formData.append('module_id', modules[activeModuleIndex]._id);
-        formData.append('deployed_link', deployedLink);
-        if (githubLink) formData.append('github_link', githubLink);
-        if (projectFile) formData.append('file', projectFile);
-
-        const res = await fetch(`${API_BASE_URL}/api/project/submit`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (res.ok) {
-            await updateProgress({ project_status: 'submitted', status: 'completed' });
-            const updatedModules = await fetchModules();
-            const nextIndex = updatedModules.findIndex((m: any, idx: number) => idx > activeModuleIndex && m.progress?.status !== 'locked');
-            setCompletionPrompt({
-                open: true,
-                nextIndex: nextIndex !== -1 ? nextIndex : null,
-                moduleName: modules[activeModuleIndex].title || 'Current Module'
-            });
-        } else {
-            const err = await res.json().catch(() => ({}));
-            alert(err?.detail || 'Submission failed. Please check your links.');
-        }
-    };
-
-    if (loading) return (
-        <div className="h-screen bg-white flex flex-col items-center justify-center font-sans overflow-hidden relative">
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                className="w-12 h-12 border-4 border-[#7C3AED]/10 border-t-[#7C3AED] rounded-full"
-            />
-            <span className="mt-8 text-[11px] text-gray-400 uppercase tracking-[0.5em] font-black animate-pulse">Initializing Protocol...</span>
-        </div>
-    );
-
-    if (!modules || modules.length === 0) return (
-        <div className="h-screen bg-[#F9FAFB] flex flex-col items-center justify-center font-sans overflow-hidden relative p-6">
-            <div className="max-w-md text-center bg-white border border-gray-100 p-12 rounded-[3.5rem] shadow-xl">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Content Protocol Offline</span>
-                <h2 className="text-3xl font-black text-gray-900 mb-6 uppercase tracking-tighter leading-tight">No Modules <br /> <span className="text-[#7C3AED]">Found.</span></h2>
-                <p className="text-gray-500 mb-8 font-medium leading-relaxed">This course does not have any modules configured yet or it doesn't exist. Check back later.</p>
-                <button onClick={() => navigate('/dashboard')} className="px-10 py-5 bg-[#111827] hover:scale-105 transition-all text-white font-black text-[10px] uppercase tracking-widest rounded-3xl shadow-2xl">Return to Dashboard</button>
-            </div>
-        </div>
-    );
-
-    const currentModule = modules[activeModuleIndex];
-    const progress = currentModule?.progress;
-    const overallProgress = Math.round(((modules.filter(m => m.progress?.status === 'completed').length) / modules.length) * 100);
-
+  /* ═══════ Render ═══════ */
+  if (courseId && !courseId.toLowerCase().includes('generative-ai')) {
     return (
-        <div className="flex bg-[#F9FAFB] min-h-screen text-[#111827] font-sans selection:bg-[#7C3AED]/20 overflow-x-hidden relative">
-            <AnimatePresence>
-                {(isSidebarOpen || window.innerWidth > 1024) && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsSidebarOpen(false)}
-                            className="fixed inset-0 bg-black/50 z-[45] lg:hidden backdrop-blur-sm"
-                        />
-                        <motion.aside
-                            initial={{ x: -300 }}
-                            animate={{ x: 0 }}
-                            exit={{ x: -300 }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="w-72 fixed left-0 top-0 bottom-0 z-50 bg-white border-r border-gray-100 flex flex-col p-6 shadow-2xl lg:shadow-sm"
-                        >
-                            <div className="mb-8">
-                                <button
-                                    onClick={() => navigate('/learn/courses')}
-                                    className="group flex items-center gap-3 mb-10 text-gray-400 hover:text-[#7C3AED] transition-all"
-                                >
-                                    <span className="text-xl">←</span>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Course Hub</span>
-                                </button>
-
-                                <div className="flex items-center gap-4 mb-10">
-                                    <div className="w-11 h-11 rounded-2xl bg-[#7C3AED] flex items-center justify-center shadow-xl shadow-[#7C3AED]/30">
-                                        <span className="text-white font-black text-sm">SL</span>
-                                    </div>
-                                    <div>
-                                        <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-1">Learning Path</h2>
-                                        <h3 className="text-lg font-black uppercase tracking-tighter leading-none">Curriculum</h3>
-                                    </div>
-                                </div>
-
-                                <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-400">Mastery Level</span>
-                                        <span className="text-xs font-black text-[#7C3AED]">{overallProgress}%</span>
-                                    </div>
-                                    <ProgressBar progress={overallProgress} />
-                                </div>
-                            </div>
-
-                            <div className="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                                {modules.map((m, i) => (
-                                    <button
-                                        key={m._id}
-                                        onClick={() => {
-                                            if (m.progress?.status !== 'locked') {
-                                                setActiveModuleIndex(i);
-                                                setCoursePhase('modules');
-                                            }
-                                        }}
-                                        className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${activeModuleIndex === i && coursePhase === 'modules'
-                                            ? 'bg-[#7C3AED] border-[#7C3AED] shadow-2xl shadow-[#7C3AED]/30'
-                                            : m.progress?.status === 'locked'
-                                                ? 'opacity-40 grayscale pointer-events-none border-transparent'
-                                                : 'bg-white border-gray-100 hover:border-[#7C3AED]/30 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="relative z-10">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className={`text-[8px] font-black tracking-[0.3em] ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/60' : 'text-gray-400'}`}>PHASE {m.order_index < 10 ? `0${m.order_index}` : m.order_index}</span>
-                                                {m.progress?.status === 'completed' && (
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${activeModuleIndex === i && coursePhase === 'modules' ? 'bg-white' : 'bg-green-500'} shadow-lg`} />
-                                                )}
-                                            </div>
-                                            <p className={`text-sm font-black uppercase tracking-tighter leading-tight mb-2 ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white' : 'text-gray-900'}`}>
-                                                {m.title}
-                                            </p>
-                                            <span className={`text-[7px] font-bold uppercase tracking-widest ${activeModuleIndex === i && coursePhase === 'modules' ? 'text-white/50' : 'text-gray-400'}`}>{m.estimated_time} EST</span>
-                                        </div>
-                                    </button>
-                                ))}
-
-                                <div className="pt-4 mt-4 border-t border-gray-100 space-y-3">
-                                    <button
-                                        onClick={() => {
-                                            if (modules[modules.length - 1]?.progress?.quiz_score >= 70) {
-                                                setCoursePhase('project');
-                                                setActiveModuleIndex(modules.length - 1);
-                                            }
-                                        }}
-                                        className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${coursePhase === 'project'
-                                            ? 'bg-[#111827] border-[#111827] shadow-xl shadow-[#111827]/20 flex-shrink-0'
-                                            : !(modules[modules.length - 1]?.progress?.quiz_score >= 70)
-                                                ? 'opacity-40 grayscale pointer-events-none border-transparent'
-                                                : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="relative z-10">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className={`text-[8px] font-black tracking-[0.3em] ${coursePhase === 'project' ? 'text-white/50' : 'text-gray-400'}`}>CAPSTONE</span>
-                                            </div>
-                                            <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${coursePhase === 'project' ? 'text-white' : 'text-gray-900'}`}>
-                                                Final Project
-                                            </p>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => navigate('/dashboard')}
-                                        className={`w-full group relative transition-all duration-500 rounded-3xl p-6 text-left border ${!(modules[modules.length - 1]?.progress?.review_status === 'approved')
-                                            ? 'opacity-40 grayscale pointer-events-none border-transparent'
-                                            : 'bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] border-transparent shadow-xl shadow-[#7C3AED]/20'
-                                            }`}
-                                    >
-                                        <div className="relative z-10">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className={`text-[8px] font-black tracking-[0.3em] ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-400' : 'text-white/80'}`}>CREDENTIAL</span>
-                                            </div>
-                                            <p className={`text-sm font-black uppercase tracking-tighter leading-tight ${!(modules[modules.length - 1]?.progress?.review_status === 'approved') ? 'text-gray-900' : 'text-white'}`}>
-                                                Certificate
-                                            </p>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.aside>
-                    </>
-                )}
-            </AnimatePresence>
-
-            <main className={`flex-grow transition-all duration-300 ${isSidebarOpen ? 'lg:ml-72' : 'lg:ml-72'} p-4 sm:p-8 lg:p-12 flex flex-col items-center overflow-x-hidden w-full`}>
-                <div className="w-full max-w-5xl">
-                    {/* Mobile Header Toggle */}
-                    <div className="flex items-center justify-between lg:hidden mb-8 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                        <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-xl transition-all">
-                            <span className="text-sm font-black uppercase tracking-widest text-[#7C3AED]">Menu</span>
-                        </button>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Studlyf Hub</span>
-                        </div>
-                    </div>
-
-                    {coursePhase === 'modules' && (
-                        <div className="sticky top-4 z-40 w-full flex justify-center mb-8 sm:mb-12">
-                            <div className="bg-white/95 backdrop-blur-2xl border border-gray-100 rounded-2xl sm:rounded-[2.5rem] p-3 sm:p-4 px-4 sm:px-8 shadow-2xl shadow-gray-200/50 flex items-center justify-center">
-                                <div className="flex items-center gap-4 sm:gap-6 lg:gap-10">
-                                    <SectionIndicator
-                                        label="Video"
-                                        active={activeStage === 'video'}
-                                        completed={!!progress?.video_completed}
-                                        locked={false}
-                                        onClick={() => setActiveStage('video')}
-                                    />
-                                    <div className="w-8 lg:w-12 h-px bg-gray-100" />
-                                    <SectionIndicator
-                                        label="Theory"
-                                        active={activeStage === 'theory'}
-                                        completed={!!progress?.theory_completed}
-                                        locked={!progress?.video_completed}
-                                        onClick={() => setActiveStage('theory')}
-                                    />
-                                    <div className="w-8 lg:w-12 h-px bg-gray-100" />
-                                    <SectionIndicator
-                                        label="Quiz"
-                                        active={activeStage === 'quiz'}
-                                        completed={progress?.quiz_score !== undefined && progress?.quiz_score !== null && progress.quiz_score > 0}
-                                        locked={!progress?.theory_completed}
-                                        onClick={() => setActiveStage('quiz')}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {coursePhase === 'modules' && (
-                        <header className="mb-16 text-center">
-                            <div className="flex items-center justify-center gap-3 mb-6">
-                                <div className="w-8 h-px bg-[#7C3AED]" />
-                                <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em]">Current Phase</span>
-                                <div className="w-8 h-px bg-[#7C3AED]" />
-                            </div>
-                            <h1 className="text-3xl lg:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-tight max-w-4xl mx-auto">
-                                {currentModule.title.split(' ').slice(0, -1).join(' ')} <span className="text-[#7C3AED]">{currentModule.title.split(' ').slice(-1)}</span>
-                            </h1>
-                        </header>
-                    )}
-
-                    <AnimatePresence mode="wait">
-                        {coursePhase === 'modules' && activeStage === 'theory' && (
-                            <motion.div
-                                key="theory"
-                                initial={{ opacity: 0, scale: 0.98, y: 30 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 1.02, y: -30 }}
-                                className="space-y-12 pb-24"
-                            >
-                                <div className="bg-white border border-gray-100 rounded-[2.5rem] sm:rounded-[4rem] p-8 sm:p-16 lg:p-24 shadow-2xl shadow-gray-200/50 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-8 sm:p-12 font-black text-[7px] sm:text-[9px] text-gray-100 uppercase tracking-[0.5em] sm:rotate-90 origin-top-right">PROTOCOL_THEORY</div>
-                                    <article className="prose prose-purple max-w-none text-gray-600 leading-relaxed text-lg sm:text-xl">
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
-                                            components={{
-                                                h1: ({ node, ...props }) => <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-gray-900 mb-8 mt-6 pb-4 border-b-2 border-[#7C3AED]/10" {...props} />,
-                                                h2: ({ node, ...props }) => <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-gray-900 mb-6 mt-14 pb-3 border-b border-gray-100" {...props} />,
-                                                h3: ({ node, ...props }) => <h4 className="text-base sm:text-lg font-black uppercase tracking-widest text-[#7C3AED] mb-4 mt-10" {...props} />,
-                                                p: ({ node, ...props }) => <p className="mb-6 text-gray-600 text-base sm:text-lg leading-relaxed" {...props} />,
-                                                strong: ({ node, ...props }) => <strong className="text-gray-900 font-bold" {...props} />,
-                                                em: ({ node, ...props }) => <em className="text-gray-700 italic" {...props} />,
-                                                ul: ({ node, ...props }) => <ul className="mb-8 ml-2 space-y-3 list-none" {...props} />,
-                                                ol: ({ node, ...props }) => <ol className="mb-8 ml-2 space-y-3 list-none counter-reset-custom" {...props} />,
-                                                li: ({ node, children, ...props }) => (
-                                                    <li className="flex items-start gap-3 text-gray-600 text-base sm:text-lg leading-relaxed" {...props}>
-                                                        <span className="mt-2 w-2 h-2 min-w-[8px] rounded-full bg-[#7C3AED]/40 flex-shrink-0" />
-                                                        <span className="flex-1">{children}</span>
-                                                    </li>
-                                                ),
-                                                blockquote: ({ node, ...props }) => (
-                                                    <blockquote className="my-8 pl-6 py-4 pr-6 border-l-4 border-[#7C3AED] bg-[#7C3AED]/5 rounded-r-2xl text-gray-700 italic text-base sm:text-lg [&>p]:mb-0" {...props} />
-                                                ),
-                                                a: ({ node, ...props }) => (
-                                                    <a className="text-[#7C3AED] font-semibold hover:underline underline-offset-4 transition-colors hover:text-[#6D28D9]" target="_blank" rel="noopener noreferrer" {...props} />
-                                                ),
-                                                hr: () => (
-                                                    <div className="my-12 flex items-center gap-4">
-                                                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#7C3AED]/20 to-transparent" />
-                                                        <div className="w-2 h-2 rounded-full bg-[#7C3AED]/20" />
-                                                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#7C3AED]/20 to-transparent" />
-                                                    </div>
-                                                ),
-                                                table: ({ node, ...props }) => (
-                                                    <div className="my-8 overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
-                                                        <table className="w-full text-left border-collapse" {...props} />
-                                                    </div>
-                                                ),
-                                                thead: ({ node, ...props }) => (
-                                                    <thead className="bg-[#7C3AED]/5 border-b-2 border-[#7C3AED]/10" {...props} />
-                                                ),
-                                                tbody: ({ node, ...props }) => (
-                                                    <tbody className="divide-y divide-gray-100 [&>tr:nth-child(even)]:bg-gray-50/50" {...props} />
-                                                ),
-                                                tr: ({ node, ...props }) => (
-                                                    <tr className="transition-colors hover:bg-[#7C3AED]/[0.03]" {...props} />
-                                                ),
-                                                th: ({ node, ...props }) => (
-                                                    <th className="px-5 py-4 text-xs sm:text-sm font-black uppercase tracking-wider text-[#7C3AED] whitespace-nowrap" {...props} />
-                                                ),
-                                                td: ({ node, ...props }) => (
-                                                    <td className="px-5 py-4 text-sm sm:text-base text-gray-600 font-medium" {...props} />
-                                                ),
-                                                pre: ({ node, ...props }) => (
-                                                    <pre className="my-8 p-6 bg-[#1E1E2E] text-gray-100 rounded-2xl overflow-x-auto text-sm sm:text-base font-mono leading-relaxed border border-gray-700/50 shadow-lg [&>code]:bg-transparent [&>code]:border-none [&>code]:p-0 [&>code]:text-gray-100 [&>code]:text-sm [&>code]:sm:text-base" {...props} />
-                                                ),
-                                                code: ({ node, className, children, ...props }) => {
-                                                    const isInline = !className;
-                                                    if (isInline) {
-                                                        return <code className="bg-gray-100 text-[#7C3AED] px-2.5 py-1 rounded-lg font-mono text-[0.9em] border border-gray-200 font-semibold" {...props}>{children}</code>;
-                                                    }
-                                                    return <code className={className} {...props}>{children}</code>;
-                                                },
-                                            }}
-                                        >
-                                            {moduleDetails?.theory?.markdown_content}
-                                        </ReactMarkdown>
-                                    </article>
-
-                                    <div className="mt-24 pt-16 border-t border-gray-50 grid lg:grid-cols-2 gap-20">
-                                        <div className="space-y-10">
-                                            <header>
-                                                <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em] mb-3 block">Actionable Data</span>
-                                                <h4 className="text-xl font-black uppercase tracking-tight text-gray-900">Key Considerations</h4>
-                                            </header>
-                                            <div className="grid gap-4">
-                                                {moduleDetails?.theory?.key_takeaways.map((t: string, i: number) => (
-                                                    <div key={i} className="flex items-center gap-6 p-6 bg-gray-50 rounded-3xl border border-transparent hover:border-[#7C3AED]/20 hover:bg-white transition-all group">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]/30 group-hover:bg-[#7C3AED] transition-colors" />
-                                                        <span className="text-sm text-gray-500 font-bold leading-tight">{t}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col justify-end">
-                                            <button
-                                                onClick={async () => {
-                                                    await updateProgress({ theory_completed: true });
-                                                    setActiveStage('video');
-                                                }}
-                                                className="w-full relative overflow-hidden py-9 bg-[#111827] text-white font-black text-[12px] uppercase tracking-[0.5em] rounded-[2.5rem] transition-all hover:scale-[1.03] shadow-2xl hover:bg-[#7C3AED]"
-                                            >
-                                                <span className="relative z-10 transition-colors duration-500">
-                                                    {progress?.theory_completed ? 'Content Mastered ✓' : 'Mark as Complete'}
-                                                </span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {coursePhase === 'modules' && activeStage === 'video' && (
-                            <motion.div
-                                key="video"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 1.05 }}
-                                className="w-full space-y-16"
-                            >
-                                <div className="aspect-video bg-gray-900 rounded-[4rem] overflow-hidden shadow-2xl shadow-gray-400/20 border-8 border-white relative group">
-                                    {moduleDetails?.video?.video_url ? (
-                                        <iframe
-                                            width="100%"
-                                            height="100%"
-                                            src={moduleDetails.video.video_url}
-                                            title="Course Video"
-                                            frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                            referrerPolicy="strict-origin-when-cross-origin"
-                                            allowFullScreen
-                                            style={{ border: 'none' }}
-                                        ></iframe>
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-white/60">
-                                            <span className="text-sm font-bold uppercase tracking-widest">Video Unavailable</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex justify-center">
-                                    <button
-                                        onClick={async () => {
-                                            await updateProgress({ video_completed: true });
-                                            setActiveStage('quiz');
-                                        }}
-                                        className="px-24 py-9 bg-[#7C3AED] text-white font-black text-[12px] uppercase tracking-[0.6em] rounded-[2.5rem] hover:bg-[#111827] transition-all duration-500 shadow-xl shadow-[#7C3AED]/20"
-                                    >
-                                        Seal Visual Session
-                                    </button>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {coursePhase === 'modules' && activeStage === 'quiz' && (
-                            <motion.div
-                                key="quiz"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="w-full space-y-6 sm:space-y-10 pb-24"
-                            >
-                                {moduleDetails?.quiz?.questions.map((q: any, i: number) => (
-                                    <div key={i} className="bg-white border border-gray-100 p-8 sm:p-16 rounded-2xl sm:rounded-[4rem] shadow-sm relative group overflow-hidden">
-                                        <div className="flex items-center gap-6 mb-8 sm:mb-12">
-                                            <span className="font-mono text-[8px] sm:text-[9px] font-black text-[#7C3AED] tracking-[0.3em] sm:tracking-[0.5em]">OBJECTIVE::0{i + 1}</span>
-                                            <div className="h-px flex-grow bg-gray-50" />
-                                        </div>
-
-                                        <h4 className="text-xl sm:text-3xl font-black text-gray-900 mb-8 sm:mb-12 uppercase tracking-tight leading-tight">{q.question}</h4>
-
-                                        <div className="grid sm:grid-cols-2 gap-6">
-                                            {q.options.map((opt: string, optIdx: number) => {
-                                                const isSelected = quizAnswers[i]?.includes(optIdx);
-                                                const isCorrect = q.correct_answers.includes(optIdx);
-                                                const showFeedback = quizResult !== null;
-
-                                                let borderColor = 'border-gray-50';
-                                                let bgColor = 'bg-gray-50/30';
-                                                let textColor = 'text-gray-400';
-
-                                                if (showFeedback) {
-                                                    if (isSelected && isCorrect) { borderColor = 'border-green-500'; bgColor = 'bg-green-50'; textColor = 'text-green-600'; }
-                                                    else if (isSelected && !isCorrect) { borderColor = 'border-red-500'; bgColor = 'bg-red-50'; textColor = 'text-red-600'; }
-                                                    else if (isCorrect) { borderColor = 'border-green-300'; bgColor = 'bg-green-50/30'; textColor = 'text-green-500'; }
-                                                    else { borderColor = 'border-gray-50'; bgColor = 'bg-gray-50/10'; textColor = 'text-gray-300'; }
-                                                } else if (isSelected) {
-                                                    borderColor = 'border-[#7C3AED]';
-                                                    bgColor = 'bg-[#7C3AED]/5';
-                                                    textColor = 'text-[#7C3AED]';
-                                                }
-
-                                                return (
-                                                    <button
-                                                        key={optIdx}
-                                                        onClick={() => {
-                                                            if (quizResult) return;
-                                                            const newAns = [...quizAnswers];
-                                                            const current = newAns[i] || [];
-                                                            if (current.includes(optIdx)) {
-                                                                newAns[i] = current.filter(idx => idx !== optIdx);
-                                                            } else {
-                                                                newAns[i] = [...current, optIdx];
-                                                            }
-                                                            setQuizAnswers(newAns);
-                                                        }}
-                                                        disabled={!!quizResult}
-                                                        className={`p-6 sm:p-10 text-left border-2 rounded-2xl sm:rounded-[2.5rem] transition-all duration-500 relative group overflow-hidden ${borderColor} ${bgColor}`}
-                                                    >
-                                                        <div className="relative z-10 flex items-center justify-between">
-                                                            <span className={`text-xs sm:text-[15px] font-bold tracking-tight uppercase ${textColor}`}>{opt}</span>
-                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-current border-current' : 'border-gray-200'}`}>
-                                                                {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {quizResult && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 p-8 bg-gray-50 rounded-3xl border border-gray-100">
-                                                <span className="text-[9px] font-black text-[#7C3AED] uppercase tracking-widest block mb-4">Verification Intelligence</span>
-                                                <p className="text-gray-600 font-medium leading-relaxed">{q.explanation}</p>
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                ))}
-
-                                {!quizResult ? (
-                                    <div className="flex justify-center pt-10">
-                                        <button
-                                            onClick={handleQuizSubmit}
-                                            className="px-24 py-9 bg-[#111827] text-white font-black text-[12px] uppercase tracking-[0.6em] rounded-[2.5rem] hover:bg-[#7C3AED] transition-all duration-500 shadow-2xl hover:scale-105"
-                                        >
-                                            Evaluate Intelligence
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className={`p-16 rounded-[4rem] text-center border-4 ${quizResult.passed ? 'border-green-500 bg-green-50/30' : 'border-red-500 bg-red-50/30'}`}
-                                    >
-                                        <span className="text-[12px] font-black uppercase tracking-[0.4em] mb-6 block">Final Assessment Result</span>
-                                        <div className="text-8xl font-black mb-6 tracking-tighter">
-                                            {Math.round(quizResult.score)}<span className="text-4xl">%</span>
-                                        </div>
-                                        <p className={`text-xl font-bold uppercase tracking-widest ${quizResult.passed ? 'text-green-600' : 'text-red-600'}`}>
-                                            {quizResult.passed ? 'Phase Certification: Success' : 'Phase Certification: Insufficient Data'}
-                                        </p>
-                                        {quizResult.passed ? (
-                                            <button
-                                                onClick={() => {
-                                                    const nextModIdx = activeModuleIndex + 1;
-                                                    const hasNext = nextModIdx < modules.length;
-                                                    if (hasNext) {
-                                                        setCompletionPrompt({
-                                                            open: true,
-                                                            nextIndex: nextModIdx,
-                                                            moduleName: modules[activeModuleIndex].title || 'Current Module'
-                                                        });
-                                                    } else {
-                                                        setCoursePhase('project');
-                                                    }
-                                                }}
-                                                className="mt-12 px-12 py-6 bg-[#111827] text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#7C3AED] transition-all"
-                                            >
-                                                {activeModuleIndex + 1 < modules.length ? 'Unlock Next Phase' : 'Initiate Final Capstone'}
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={handleRestartModule}
-                                                className="mt-12 px-12 py-6 bg-[#111827] text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-600 transition-all"
-                                            >
-                                                Restart Protocol From Beginning
-                                            </button>
-                                        )}
-                                    </motion.div>
-                                )}
-                            </motion.div>
-                        )}
-
-                        {coursePhase === 'project' && (
-                            <motion.div
-                                key="project"
-                                initial={{ opacity: 0, scale: 0.98 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 1.02 }}
-                                className="w-full pb-24"
-                            >
-                                <div className="bg-white border border-gray-100 rounded-[2.5rem] sm:rounded-[5rem] p-8 sm:p-24 relative overflow-hidden shadow-2xl shadow-gray-200/50">
-                                    <div className="relative z-10 flex flex-col items-center">
-                                        <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.8em] mb-12">Final Capstone Phase</span>
-
-                                        <h5 className="text-3xl sm:text-4xl font-black text-center text-gray-900 mb-12 uppercase tracking-tighter leading-none max-w-4xl">
-                                            {moduleDetails?.project?.problem_statement || "Build an AI Resume Analyzer"}
-                                        </h5>
-
-                                        <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl mb-24">
-                                            {moduleDetails?.project?.requirements.map((r: string, i: number) => (
-                                                <div key={i} className="bg-gray-50 border border-transparent p-10 rounded-[3rem] flex items-start gap-6 group hover:border-[#7C3AED]/20 transition-all">
-                                                    <div className="mt-1.5 w-2 h-2 rounded-full bg-[#7C3AED]" />
-                                                    <span className="text-sm text-gray-500 font-black uppercase tracking-widest leading-relaxed text-left">{r}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="w-full max-w-2xl space-y-8 text-center">
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-center gap-3">
-                                                    <label className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.3em]">
-                                                        Deployed Link
-                                                    </label>
-                                                    <span className="text-[8px] font-black text-red-500 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Required</span>
-                                                </div>
-                                                <input
-                                                    type="url"
-                                                    placeholder="https://your-app.vercel.app or https://your-app.netlify.app"
-                                                    value={deployedLink}
-                                                    onChange={(e) => setDeployedLink(e.target.value)}
-                                                    required
-                                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2.5rem] px-8 py-6 text-gray-900 font-bold text-center focus:outline-none focus:border-[#7C3AED] focus:bg-white transition-all shadow-inner placeholder:text-gray-300 placeholder:text-sm"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-center gap-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
-                                                        GitHub Repository
-                                                    </label>
-                                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">Optional</span>
-                                                </div>
-                                                <input
-                                                    type="url"
-                                                    placeholder="https://github.com/username/repo (optional)"
-                                                    value={githubLink}
-                                                    onChange={(e) => setGithubLink(e.target.value)}
-                                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2.5rem] px-8 py-6 text-gray-900 font-bold text-center focus:outline-none focus:border-gray-300 focus:bg-white transition-all shadow-inner placeholder:text-gray-300 placeholder:text-sm"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-center gap-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
-                                                        Upload Archive / PDF
-                                                    </label>
-                                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">Optional</span>
-                                                </div>
-                                                <input
-                                                    type="file"
-                                                    accept=".zip,.rar,.pdf"
-                                                    onChange={(e) => setProjectFile(e.target.files?.[0] || null)}
-                                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2.5rem] px-8 py-6 text-gray-900 font-bold text-center focus:outline-none focus:border-gray-300 focus:bg-white transition-all shadow-inner file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#7C3AED]/10 file:text-[#7C3AED] hover:file:bg-[#7C3AED]/20"
-                                                />
-                                            </div>
-
-                                            <button
-                                                onClick={handleProjectSubmit}
-                                                className="w-full py-10 bg-[#7C3AED] text-white font-black text-[12px] uppercase tracking-[0.6em] rounded-[2.5rem] hover:bg-[#111827] shadow-xl shadow-[#7C3AED]/20 transition-all duration-700 hover:scale-[1.03]"
-                                            >
-                                                {progress?.project_status === 'submitted' ? 'Resubmit Links' : 'Finalize Project Deployment'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </main>
-
-            <AnimatePresence>
-                {completionPrompt.open && (
-                    <motion.div
-                        key="completion-modal"
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                            animate={{ scale: 1, y: 0, opacity: 1 }}
-                            exit={{ scale: 0.9, y: 20, opacity: 0 }}
-                            className="bg-white rounded-3xl p-10 shadow-2xl max-w-md w-full mx-4 text-center border border-gray-100"
-                        >
-                            <div className="text-5xl mb-4">🎉</div>
-                            <h3 className="text-2xl font-black text-[#111827] mb-2">Module Completed</h3>
-                            <p className="text-sm text-gray-600 mb-6">{completionPrompt.moduleName} is done.</p>
-                            {completionPrompt.nextIndex !== null ? (
-                                <button
-                                    onClick={() => {
-                                        setCompletionPrompt({ open: false, nextIndex: null, moduleName: '' });
-                                        setActiveModuleIndex(completionPrompt.nextIndex as number);
-                                        setActiveStage('theory');
-                                    }}
-                                    className="w-full py-4 bg-[#7C3AED] text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-2xl hover:bg-[#111827] transition-all"
-                                >
-                                    Go to Next Module
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setCompletionPrompt({ open: false, nextIndex: null, moduleName: '' })}
-                                    className="w-full py-4 bg-[#111827] text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-2xl hover:bg-[#7C3AED] transition-all"
-                                >
-                                    All Modules Completed
-                                </button>
-                            )}
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #E5E7EB;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #7C3AED;
-                }
-            `}</style>
+      <div className="cp-shell" style={{ alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div>
+          <div style={{ fontSize: 64, marginBottom: 20 }}>🚀</div>
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: '#111827', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>Course to be launched soon!</h1>
+          <p style={{ color: '#6b7280', fontSize: 16, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>We are currently crafting high-quality visual and practical content for this track. It will be live very soon.</p>
+          <button 
+            onClick={() => navigate('/learn/courses')}
+            style={{ marginTop: 32, padding: '14px 32px', background: '#111827', color: '#fff', borderRadius: 99, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 13, border: 'none', cursor: 'pointer' }}
+          >
+            Return to Courses
+          </button>
         </div>
+      </div>
     );
+  }
+
+  if (loading) return (
+    <div className="cp-loading">
+      <div className="cp-spinner" />
+      <span className="cp-loading-text">Loading course...</span>
+    </div>
+  );
+
+  if (!modules.length) return (
+    <div className="cp-empty">
+      <h2>No Modules Found</h2>
+      <p>This course doesn't have any content yet. Please check back later.</p>
+      <button onClick={() => navigate('/dashboard')}>Return to Dashboard</button>
+    </div>
+  );
+
+  return (
+    <div className="cp-shell">
+      {/* Mobile Toggle */}
+      <button className="cp-mobile-toggle" onClick={() => setSidebarOpen(true)}>
+        <Menu size={20} />
+      </button>
+      <div className={`cp-mobile-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+
+      {/* ══════ LEFT SIDEBAR ══════ */}
+      <aside className={`cp-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="cp-sidebar-header">
+          <button className="cp-sidebar-back" onClick={() => navigate('/learn/courses')}>
+            <ChevronLeft size={16} /> Back to courses
+          </button>
+          <div className="cp-sidebar-title">Course Curriculum</div>
+          <div className="cp-sidebar-progress-wrap">
+            <div className="cp-sidebar-progress-bar">
+              <div className="cp-sidebar-progress-fill" style={{ width: `${overallProgress}%` }} />
+            </div>
+            <span className="cp-sidebar-progress-text">{overallProgress}%</span>
+          </div>
+        </div>
+
+        <div className="cp-sidebar-modules">
+          {modules.map((mod, modIdx) => {
+            const isExpanded = expandedModules.has(modIdx);
+            const isLocked = false;
+            const isCompleted = mod.progress?.status === 'completed';
+            const modProgress = getModuleProgress(mod);
+            const lessons: LessonType[] = ['video', 'theory', 'quiz'];
+
+            return (
+              <div key={mod._id} className="cp-module-group" style={{ opacity: isLocked ? 0.45 : 1 }}>
+                <button className="cp-module-header" onClick={() => !isLocked && toggleModule(modIdx)}>
+                  <div className="cp-module-header-left">
+                    <div className={`cp-module-number ${isCompleted ? 'completed' : modIdx === activeModuleIndex ? 'active' : ''}`}>
+                      {isCompleted ? <CheckCircle2 size={14} /> : mod.order_index}
+                    </div>
+                    <div className="cp-module-info">
+                      <div className="cp-module-name">{mod.title}</div>
+                      <div className="cp-module-meta">
+                        {`${mod.estimated_time} · 3 lessons`}
+                      </div>
+                    </div>
+                  </div>
+                  {!isLocked && <ChevronDown size={16} className={`cp-module-chevron ${isExpanded ? 'open' : ''}`} />}
+                </button>
+
+                {!isLocked && modProgress > 0 && modProgress < 100 && (
+                  <div className="cp-module-progress-mini">
+                    <div className="cp-module-progress-mini-fill" style={{ width: `${modProgress}%` }} />
+                  </div>
+                )}
+
+                {isExpanded && !isLocked && (
+                  <div className="cp-lesson-list">
+                    {lessons.map(type => {
+                      const isActive = modIdx === activeModuleIndex && activeStage === type;
+                      const done = isLessonComplete(modIdx, type);
+                      const Icon = type === 'video' ? Play : type === 'theory' ? FileText : HelpCircle;
+                      return (
+                        <button
+                          key={type}
+                          className={`cp-lesson-item ${isActive ? 'active' : ''} ${done ? 'completed' : ''}`}
+                          onClick={() => selectLesson(modIdx, type)}
+                        >
+                          <Icon size={16} className="cp-lesson-icon" />
+                          <span className="cp-lesson-name">{getLessonLabel(type)}</span>
+                          {done ? (
+                            <div className="cp-lesson-check done"><CheckCircle2 size={10} /></div>
+                          ) : (
+                            <div className="cp-lesson-check" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+
+      {/* ══════ MAIN + RIGHT ══════ */}
+      <div className="cp-main">
+        {/* Top Bar */}
+        <div className="cp-topbar">
+          <div className="cp-topbar-left">
+            <span className="cp-topbar-lesson-title">{currentLessonTitle}</span>
+          </div>
+          <div className="cp-topbar-right">
+            {activeStage !== 'quiz' && (
+              <button
+                className={`cp-topbar-btn ${isCurrentLessonComplete ? 'completed-btn' : 'primary'}`}
+                onClick={handleMarkComplete}
+                disabled={isCurrentLessonComplete}
+              >
+                <CheckCircle2 size={15} />
+                {isCurrentLessonComplete ? 'Completed' : 'Mark Complete'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content + Right Sidebar Wrapper */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {/* Main Content Area */}
+          <div className="cp-content-area" ref={contentRef} style={{ flex: 1 }}>
+            <AnimatePresence mode="wait">
+              {/* ── VIDEO ── */}
+              {activeStage === 'video' && (
+                <motion.div key="video" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="cp-video-container">
+                    {moduleDetails?.video?.video_url ? (
+                      <iframe
+                        src={moduleDetails.video.video_url}
+                        title="Course Video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="cp-video-unavailable">
+                        <span>Video content unavailable</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="cp-lesson-info">
+                    <h1>{currentModule.title} — Video Lesson</h1>
+                    <p>Watch this video lecture to understand the core concepts covered in this module. Take notes using the panel on the right for better retention.</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── THEORY ── */}
+              {activeStage === 'theory' && (
+                <motion.div key="theory" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="cp-text-lesson">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({ children, ...props }) => <h1 {...props}>{children}</h1>,
+                        h2: ({ children, ...props }) => <h2 {...props}>{children}</h2>,
+                        h3: ({ children, ...props }) => <h3 {...props}>{children}</h3>,
+                        p: ({ children, ...props }) => <p {...props}>{children}</p>,
+                        blockquote: ({ children, ...props }) => <blockquote {...props}>{children}</blockquote>,
+                        pre: ({ children, ...props }) => <pre {...props}>{children}</pre>,
+                        code: ({ className, children, ...props }) => {
+                          const isInline = !className;
+                          if (isInline) return <code {...props}>{children}</code>;
+                          return <code className={className} {...props}>{children}</code>;
+                        },
+                        table: ({ children, ...props }) => <table {...props}>{children}</table>,
+                        thead: ({ children, ...props }) => <thead {...props}>{children}</thead>,
+                        tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+                        th: ({ children, ...props }) => <th {...props}>{children}</th>,
+                        td: ({ children, ...props }) => <td {...props}>{children}</td>,
+                      }}
+                    >
+                      {moduleDetails?.theory?.markdown_content || ''}
+                    </ReactMarkdown>
+
+                    {moduleDetails?.theory?.key_takeaways?.length > 0 && (
+                      <div style={{ marginTop: 40, paddingTop: 28, borderTop: '1px solid #e8e8ed' }}>
+                        <h3 style={{ color: '#111827', fontWeight: 700, marginBottom: 16 }}>Key Takeaways</h3>
+                        {moduleDetails.theory.key_takeaways.map((t: string, i: number) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                            <CheckCircle2 size={16} style={{ color: '#10b981', marginTop: 2, flexShrink: 0 }} />
+                            <span style={{ fontSize: 15, color: '#374151' }}>{t}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── QUIZ ── */}
+              {activeStage === 'quiz' && (
+                <motion.div key="quiz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="cp-quiz-container">
+                    {!quizResult ? (
+                      <>
+                        <div className="cp-quiz-header">
+                          <h2>Module Assessment</h2>
+                          <div className="cp-quiz-progress-text">
+                            Question {currentQuizQ + 1} of {moduleDetails?.quiz?.questions?.length || 0}
+                          </div>
+                          <div className="cp-quiz-progress-bar">
+                            <div className="cp-quiz-progress-fill" style={{
+                              width: `${((currentQuizQ + 1) / (moduleDetails?.quiz?.questions?.length || 1)) * 100}%`
+                            }} />
+                          </div>
+                        </div>
+
+                        {moduleDetails?.quiz?.questions?.map((q: any, qIdx: number) => (
+                          <div key={qIdx} style={{ display: qIdx === currentQuizQ ? 'block' : 'none' }}>
+                            <div className="cp-quiz-question">
+                              <div className="cp-quiz-question-text">{q.question}</div>
+                              <div className="cp-quiz-options">
+                                {q.options.map((opt: string, optIdx: number) => {
+                                  const isSelected = quizAnswers[qIdx]?.includes(optIdx);
+                                  return (
+                                    <button
+                                      key={optIdx}
+                                      className={`cp-quiz-option ${isSelected ? 'selected' : ''}`}
+                                      onClick={() => {
+                                        const newAns = [...quizAnswers];
+                                        newAns[qIdx] = [optIdx];
+                                        setQuizAnswers(newAns);
+                                      }}
+                                    >
+                                      <div className="cp-quiz-radio">
+                                        {isSelected && <div className="cp-quiz-radio-dot" />}
+                                      </div>
+                                      {opt}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+                              <button
+                                className="cp-bottom-nav-btn"
+                                disabled={currentQuizQ === 0}
+                                onClick={() => setCurrentQuizQ(Math.max(0, currentQuizQ - 1))}
+                              >
+                                <ChevronLeft size={16} /> Previous
+                              </button>
+                              {currentQuizQ < (moduleDetails?.quiz?.questions?.length || 1) - 1 ? (
+                                <button
+                                  className="cp-bottom-nav-btn next"
+                                  onClick={() => setCurrentQuizQ(currentQuizQ + 1)}
+                                  disabled={!quizAnswers[qIdx]?.length}
+                                >
+                                  Next <ChevronRight size={16} />
+                                </button>
+                              ) : (
+                                <div className="cp-quiz-submit">
+                                  <button
+                                    onClick={handleQuizSubmit}
+                                    disabled={quizAnswers.some(a => !a?.length)}
+                                  >
+                                    Submit Answers
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div>
+                        <div className={`cp-quiz-result ${quizResult.passed ? 'passed' : 'failed'}`}>
+                          <div className="cp-quiz-result-score">{Math.round(quizResult.score)}%</div>
+                          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+                            {quizResult.passed ? 'Assessment Passed!' : 'Did not pass'}
+                          </div>
+                          <p style={{ fontSize: 14, color: '#6b7280' }}>
+                            {quizResult.passed
+                              ? 'Congratulations! Great work! You can proceed to the next module.'
+                              : 'You need 60% to pass. Review the material and try again.'}
+                          </p>
+                        </div>
+
+                        {/* Show answers with feedback */}
+                        <div style={{ marginTop: 32 }}>
+                          {moduleDetails?.quiz?.questions?.map((q: any, qIdx: number) => {
+                            const selected = quizAnswers[qIdx] || [];
+                            return (
+                              <div key={qIdx} style={{ marginBottom: 28 }}>
+                                <div style={{ fontSize: 15, fontWeight: 600, color: '#111827', marginBottom: 12 }}>
+                                  {qIdx + 1}. {q.question}
+                                </div>
+                                {q.options.map((opt: string, optIdx: number) => {
+                                  const isSel = selected.includes(optIdx);
+                                  const isCorrect = q.correct_answers.includes(optIdx);
+                                  let cls = 'cp-quiz-option';
+                                  if (isSel && isCorrect) cls += ' correct';
+                                  else if (isSel && !isCorrect) cls += ' incorrect';
+                                  else if (isCorrect) cls += ' show-correct';
+                                  return (
+                                    <div key={optIdx} className={cls} style={{ cursor: 'default', marginBottom: 6 }}>
+                                      <div className="cp-quiz-radio">
+                                        {(isSel || isCorrect) && <div className="cp-quiz-radio-dot" />}
+                                      </div>
+                                      {opt}
+                                    </div>
+                                  );
+                                })}
+                                <div className="cp-quiz-explanation">{q.explanation}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24 }}>
+                          {quizResult.passed ? (
+                            <button
+                              className="cp-bottom-nav-btn next"
+                              onClick={() => {
+                                const nextIdx = activeModuleIndex + 1;
+                                if (nextIdx < modules.length) {
+                                  setCompletionPrompt({ open: true, nextIndex: nextIdx, moduleName: currentModule.title });
+                                } else {
+                                  setCompletionPrompt({ open: true, nextIndex: null, moduleName: currentModule.title });
+                                }
+                              }}
+                            >
+                              {activeModuleIndex + 1 < modules.length ? 'Next Module' : 'Complete Course'}
+                              <ChevronRight size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              className="cp-bottom-nav-btn"
+                              onClick={() => {
+                                setQuizResult(null);
+                                setQuizAnswers(moduleDetails?.quiz?.questions.map(() => []) || []);
+                                setCurrentQuizQ(0);
+                                setActiveStage('video');
+                                updateProgress({ theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [] });
+                              }}
+                            >
+                              Retry Module
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ══════ RIGHT SIDEBAR ══════ */}
+          <div className="cp-tools-sidebar">
+            <div className="cp-tools-tabs">
+              <button
+                className={`cp-tools-tab ${activeToolTab === 'notes' ? 'active' : ''}`}
+                onClick={() => setActiveToolTab('notes')}
+              >
+                <StickyNote size={13} style={{ display: 'inline', marginRight: 4 }} /> Notes
+              </button>
+              <button
+                className={`cp-tools-tab ${activeToolTab === 'transcript' ? 'active' : ''}`}
+                onClick={() => setActiveToolTab('transcript')}
+              >
+                <AlignLeft size={13} style={{ display: 'inline', marginRight: 4 }} /> Transcript
+              </button>
+              <button
+                className={`cp-tools-tab ${activeToolTab === 'resources' ? 'active' : ''}`}
+                onClick={() => setActiveToolTab('resources')}
+              >
+                <BookOpen size={13} style={{ display: 'inline', marginRight: 4 }} /> Resources
+              </button>
+            </div>
+
+            <div className="cp-tools-content">
+              {activeToolTab === 'notes' && (
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#6b7280', marginBottom: 10 }}>
+                    Your notes for this lesson
+                  </div>
+                  <textarea
+                    className="cp-notes-area"
+                    placeholder="Type your notes here..."
+                    value={notes}
+                    onChange={e => { setNotes(e.target.value); setNotesSaved(false); }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button className="cp-notes-save-btn" onClick={() => setNotesSaved(true)}>
+                      Save Notes
+                    </button>
+                    {notesSaved && (
+                      <span style={{ fontSize: 12, color: '#10b981', fontWeight: 600 }}>✓ Saved</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeToolTab === 'transcript' && (
+                <div className="cp-transcript-block">
+                  {activeStage === 'video' ? (
+                    DUMMY_TRANSCRIPT.map((seg, i) => (
+                      <div key={i} style={{ marginBottom: 16 }}>
+                        <span className="cp-transcript-timestamp">{seg.time}</span>
+                        {seg.text}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ fontSize: 14, color: '#9ca3af', textAlign: 'center', padding: 40 }}>
+                      Transcript is only available for video lessons.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeToolTab === 'resources' && (
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#6b7280', marginBottom: 12 }}>
+                    Downloadable Materials
+                  </div>
+                  <a href="#" className="cp-resource-item" style={{ textDecoration: 'none' }}>
+                    <Download size={16} style={{ color: '#7C3AED' }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Lecture Slides</div>
+                      <div style={{ fontSize: 12, color: '#9ca3af' }}>PDF · 2.4 MB</div>
+                    </div>
+                  </a>
+                  <a href="#" className="cp-resource-item" style={{ textDecoration: 'none' }}>
+                    <Download size={16} style={{ color: '#7C3AED' }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Code Starter Kit</div>
+                      <div style={{ fontSize: 12, color: '#9ca3af' }}>ZIP · 890 KB</div>
+                    </div>
+                  </a>
+                  <a href="#" className="cp-resource-item" style={{ textDecoration: 'none' }}>
+                    <Download size={16} style={{ color: '#7C3AED' }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Cheat Sheet</div>
+                      <div style={{ fontSize: 12, color: '#9ca3af' }}>PDF · 420 KB</div>
+                    </div>
+                  </a>
+                  <button className="cp-ask-btn">
+                    <MessageCircle size={18} />
+                    Ask a question about this lesson
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Nav */}
+        <div className="cp-bottom-nav">
+          <button className="cp-bottom-nav-btn" onClick={goToPrevLesson} disabled={currentFlatIndex <= 0}>
+            <ChevronLeft size={16} /> Previous Lesson
+          </button>
+
+          <div className="cp-bottom-progress">
+            <div className="cp-bottom-progress-bar">
+              <div className="cp-bottom-progress-fill" style={{ width: `${overallProgress}%` }} />
+            </div>
+            <span className="cp-bottom-progress-text">{overallProgress}% complete</span>
+          </div>
+
+          <button
+            className="cp-bottom-nav-btn next"
+            onClick={goToNextLesson}
+            disabled={currentFlatIndex >= flatLessons.length - 1}
+          >
+            Next Lesson <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* ══════ COMPLETION MODAL ══════ */}
+      <AnimatePresence>
+        {completionPrompt.open && (
+          <motion.div
+            className="cp-modal-overlay"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="cp-modal"
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+            >
+              <div className="cp-modal-emoji">🎉</div>
+              <h3>Congratulations!</h3>
+              <p>You have successfully completed <strong>{completionPrompt.moduleName}</strong>.</p>
+              {completionPrompt.nextIndex !== null ? (
+                <button
+                  className="cp-modal-primary"
+                  onClick={() => {
+                    setCompletionPrompt({ open: false, nextIndex: null, moduleName: '' });
+                    setActiveModuleIndex(completionPrompt.nextIndex as number);
+                    setActiveStage('video');
+                    setQuizResult(null);
+                    const s = new Set(expandedModules);
+                    s.add(completionPrompt.nextIndex as number);
+                    setExpandedModules(s);
+                    scrollContentTop();
+                  }}
+                >
+                  Go to Next Module →
+                </button>
+              ) : (
+                <button
+                  className="cp-modal-secondary"
+                  onClick={() => setCompletionPrompt({ open: false, nextIndex: null, moduleName: '' })}
+                >
+                  All Modules Completed ✓
+                </button>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
 
 export default CoursePlayer;
