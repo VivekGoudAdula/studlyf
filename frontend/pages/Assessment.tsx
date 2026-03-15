@@ -247,8 +247,8 @@ const RadialProgress = ({ value, label }: { value: number; label: string }) => (
       />
     </svg>
     <div className="absolute flex flex-col items-center">
-      <span className="text-2xl font-black text-[#111827]">{value}%</span>
-      <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+      <span className="text-xl font-black text-[#111827]">{value}%</span>
+      <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
     </div>
   </div>
 );
@@ -388,15 +388,15 @@ const Assessment: React.FC = () => {
                   <Brain className="w-4 h-4" />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">Institutional Engine V2.1</span>
                 </div>
-                <h1 className="text-5xl sm:text-7xl font-black text-[#111827] mb-8 leading-[0.9] tracking-tighter uppercase italic">
+                <h1 className="text-4xl sm:text-5xl font-black text-[#111827] mb-6 leading-[0.9] tracking-tighter uppercase italic">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block">CLINICAL <br />READY.</span>
                 </h1>
-                <p className="text-[#6B7280] text-lg sm:text-xl font-medium leading-relaxed max-w-md mx-auto lg:mx-0">
+                <p className="text-[#6B7280] text-sm sm:text-base font-medium leading-relaxed max-w-[320px] mx-auto lg:mx-0">
                   Calibrate your assessment protocol by specifying your target role and institution.
                 </p>
               </div>
 
-              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 sm:p-12 shadow-2xl space-y-8 relative">
+              <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl space-y-6 relative max-w-[420px] mx-auto">
                 {/* ROLE INPUT */}
                 <div className="relative">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Target Role</label>
@@ -412,7 +412,7 @@ const Assessment: React.FC = () => {
                         setShowRoleSuggestions(true);
                       }}
                       onFocus={() => setShowRoleSuggestions(true)}
-                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-14 py-5 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:bg-white transition-all font-bold text-gray-800 placeholder:text-gray-300"
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-12 py-4 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:bg-white transition-all font-bold text-gray-800 text-sm placeholder:text-gray-300"
                     />
                   </div>
                   <AnimatePresence>
@@ -459,7 +459,7 @@ const Assessment: React.FC = () => {
                         setShowCompanySuggestions(true);
                       }}
                       onFocus={() => setShowCompanySuggestions(true)}
-                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-14 py-5 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:bg-white transition-all font-bold text-gray-800 placeholder:text-gray-300"
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-12 py-4 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:bg-white transition-all font-bold text-gray-800 text-sm placeholder:text-gray-300"
                     />
                   </div>
                   <AnimatePresence>
@@ -519,9 +519,9 @@ const Assessment: React.FC = () => {
                       setStep('prep');
                     }}
                     disabled={!roleInput || !companyInput}
-                    className="w-full py-6 bg-[#111827] text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.4em] hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-4 shadow-xl disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
+                    className="w-full py-5 bg-[#111827] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-3 shadow-xl disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
                   >
-                    Generate Protocol <ArrowRight className="w-4 h-4" />
+                    Generate Protocol <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -565,14 +565,14 @@ const Assessment: React.FC = () => {
             >
               <div className="flex justify-between items-center mb-12">
                 {['Logic', 'Code', 'System Thinking'].map((section, idx) => (
-                  <div key={section} className="flex flex-col items-center gap-2">
-                    <div className={`h-1 w-24 rounded-full transition-all duration-500 ${currentSection === section ? 'bg-[#7C3AED] shadow-lg shadow-[#7C3AED]/40' : idx < ['Logic', 'Code', 'System Thinking'].indexOf(currentSection) ? 'bg-[#111827]' : 'bg-gray-200'}`} />
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${currentSection === section ? 'text-[#7C3AED]' : 'text-gray-400'}`}>{section}</span>
+                  <div key={section} className="flex flex-col items-center gap-1.5">
+                    <div className={`h-1 w-16 rounded-full transition-all duration-500 ${currentSection === section ? 'bg-[#7C3AED] shadow-lg shadow-[#7C3AED]/40' : idx < ['Logic', 'Code', 'System Thinking'].indexOf(currentSection) ? 'bg-[#111827]' : 'bg-gray-200'}`} />
+                    <span className={`text-[8px] font-black uppercase tracking-widest ${currentSection === section ? 'text-[#7C3AED]' : 'text-gray-400'}`}>{section}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-white rounded-3xl sm:rounded-[3rem] p-8 sm:p-12 border border-gray-100 shadow-2xl relative">
+              <div className="bg-white rounded-[2rem] p-8 sm:p-10 border border-gray-100 shadow-2xl relative">
                 <div className="flex justify-between items-center mb-8 sm:mb-12">
                   <span className="bg-gray-900 text-white px-3 sm:px-4 py-1 sm:py-2 rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Question {currentIndex + 1} / {questions.length}</span>
                   <div className={`flex items-center gap-2 font-mono font-bold text-xs sm:text-sm ${timer < 10 ? 'text-red-500 animate-pulse' : 'text-[#7C3AED]'}`}>
@@ -581,7 +581,7 @@ const Assessment: React.FC = () => {
                 </div>
 
                 <div className="space-y-6 sm:space-y-8">
-                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">{questions[currentIndex].text}</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{questions[currentIndex].text}</h3>
 
                   {questions[currentIndex].code && (
                     <div className="bg-[#111827] rounded-3xl p-8 font-mono text-sm text-blue-400 overflow-x-auto shadow-inner">
@@ -596,8 +596,8 @@ const Assessment: React.FC = () => {
                         onClick={() => handleNext(i === questions[currentIndex].correctAnswer)}
                         className="w-full text-left p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-transparent bg-gray-50 hover:bg-white hover:border-[#7C3AED] hover:shadow-xl transition-all group flex items-center justify-between"
                       >
-                        <span className="font-bold text-sm sm:text-base text-gray-700 group-hover:text-[#7C3AED] leading-snug">{opt}</span>
-                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED] ml-4">{String.fromCharCode(65 + i)}</div>
+                        <span className="font-bold text-xs sm:text-sm text-gray-700 group-hover:text-[#7C3AED] leading-snug">{opt}</span>
+                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED] ml-4">{String.fromCharCode(65 + i)}</div>
                       </button>
                     ))}
                   </div>
@@ -628,25 +628,25 @@ const Assessment: React.FC = () => {
                     <ShieldCheck className="w-5 h-5" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Verified Clinical Verdict</span>
                   </div>
-                  <h1 className="text-6xl sm:text-8xl font-black text-gray-900 leading-[0.8] tracking-tighter uppercase italic">
+                  <h1 className="text-4xl sm:text-6xl font-black text-gray-900 leading-[0.8] tracking-tighter uppercase italic">
                     Logic <br /> <span className="text-[#7C3AED]">Certified.</span>
                   </h1>
                 </div>
 
                 <div className="grid grid-cols-2 gap-8 w-full lg:w-auto">
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Proficiency</p>
-                    <p className="text-6xl font-black text-gray-900">{results.overall}%</p>
+                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg text-center">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Proficiency</p>
+                    <p className="text-4xl font-black text-gray-900">{results.overall}%</p>
                   </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Alignment</p>
-                    <p className="text-6xl font-black text-[#7C3AED]">{results.alignment}%</p>
+                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg text-center">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Alignment</p>
+                    <p className="text-4xl font-black text-[#7C3AED]">{results.alignment}%</p>
                   </div>
                 </div>
               </div>
 
               <div className="grid lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white rounded-[3rem] p-12 border border-gray-100 shadow-sm space-y-10">
+                <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 sm:p-10 border border-gray-100 shadow-sm space-y-8">
                   <h4 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.5em] mb-4">Authority Heatmap</h4>
                   <div className="grid sm:grid-cols-2 gap-12">
                     <div className="space-y-6">

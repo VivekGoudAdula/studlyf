@@ -90,7 +90,9 @@ const App: React.FC = () => {
   const isCheckout = pathname === '/learn/checkout';
   const isHome = pathname === '/';
   const isFeaturePreview = pathname.startsWith('/feature-preview');
-  const isOnboarding = pathname === '/learn/career-onboarding';
+  const isResume = pathname === '/job-prep/resume-builder';
+  const isVisualizer = pathname.startsWith('/learn/visualizer') || 
+                       ['/stack', '/queue', '/linked-list', '/bst', '/hash-table'].includes(pathname);
 
   // Admin Redirect Logic
   useEffect(() => {
@@ -104,7 +106,7 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
 
-      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer) && <Navigation />}
 
       <main className="flex-grow">
         <Suspense fallback={

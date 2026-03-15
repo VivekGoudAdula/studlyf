@@ -168,7 +168,7 @@ const Navigation: React.FC = () => {
 
             {/* Desktop Center Links */}
             <div className="flex-grow flex justify-center h-full">
-              <div className="hidden lg:flex items-center space-x-12 h-full">
+              <div className="hidden lg:flex items-center space-x-16 h-full">
                 {['learn', 'jobprep'].map((id) => (
                   <button
                     key={id}
@@ -191,7 +191,7 @@ const Navigation: React.FC = () => {
             </div>
 
             {/* Right Action Button */}
-            <div className="flex items-center lg:w-[250px] justify-end shrink-0 gap-4">
+            <div className="flex items-center lg:w-[250px] justify-end shrink-0 gap-6">
               {user ? (
                 <div className="flex items-center gap-3">
                   {/* Cart Icon */}

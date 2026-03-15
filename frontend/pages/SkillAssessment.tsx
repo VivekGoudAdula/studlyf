@@ -79,24 +79,24 @@ function ConfigScreen({ onGenerate }: any) {
                 <div className="inline-flex items-center gap-2 bg-[rgba(124,58,237,0.1)] border border-[rgba(124,58,237,0.3)] rounded-2xl px-3.5 py-1.5 mb-7 w-fit">
                     <span className="text-[#7C3AED] font-bold text-[11px] tracking-[2px]">⚙️ INSTITUTIONAL ENGINE V2.1</span>
                 </div>
-                <div className="text-4xl sm:text-[64px] font-[900] leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block uppercase">CLARIFIED</div>
-                <div className="text-4xl sm:text-[64px] font-[900] leading-[1.05] italic mb-7 text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block uppercase">READINESS.</div>
-                <p className="text-[#666] text-base sm:text-[17px] leading-relaxed max-w-[380px]">
+                <div className="text-2xl sm:text-3xl font-[900] leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block uppercase">CLARIFIED</div>
+                <div className="text-2xl sm:text-3xl font-[900] leading-[1.05] italic mb-6 text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block uppercase">READINESS.</div>
+                <p className="text-[#666] text-xs sm:text-sm leading-relaxed max-w-[280px]">
                     Calibrate your assessment protocol by specifying your target role and <span className="text-[#7C3AED] font-semibold">institution</span>.
                 </p>
             </div>
-            <div className="w-full max-w-[420px] mx-auto lg:mx-0 bg-white rounded-2xl p-6 sm:p-9 shadow-[0_8px_40px_rgba(0,0,0,0.08)] flex flex-col gap-6">
+            <div className="w-full max-w-[380px] mx-auto lg:mx-0 bg-white rounded-2xl p-5 sm:p-7 shadow-[0_8px_40px_rgba(0,0,0,0.08)] flex flex-col gap-5">
                 <div>
                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "#999", marginBottom: 10 }}>TARGET ROLE</div>
-                    <div style={{ border: "1.5px solid #e0e0e0", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <div style={{ border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                         <span>💼</span>
-                        <select value={role} onChange={e => setRole(e.target.value)} style={{ border: "none", outline: "none", fontSize: 15, fontWeight: 600, color: "#1a1a2e", flex: 1, background: "transparent", cursor: "pointer" }}>
+                        <select value={role} onChange={e => setRole(e.target.value)} style={{ border: "none", outline: "none", fontSize: 13, fontWeight: 600, color: "#1a1a2e", flex: 1, background: "transparent", cursor: "pointer" }}>
                             {roles.map(r => <option key={r}>{r}</option>)}
                         </select>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {["Backend Developer", "Frontend Developer", "Data Analyst"].map(r => (
-                            <button key={r} onClick={() => setRole(r)} style={{ background: role === r ? PURPLE : "transparent", color: role === r ? "white" : "#888", border: "1px solid " + (role === r ? PURPLE : "#ddd"), borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: 0.5 }}>{r.toUpperCase()}</button>
+                            <button key={r} onClick={() => setRole(r)} style={{ background: role === r ? PURPLE : "transparent", color: role === r ? "white" : "#888", border: "1px solid " + (role === r ? PURPLE : "#ddd"), borderRadius: 6, padding: "4px 8px", fontSize: 10, fontWeight: 600, cursor: "pointer", letterSpacing: 0.5 }}>{r.toUpperCase()}</button>
                         ))}
                     </div>
                 </div>
@@ -108,7 +108,7 @@ function ConfigScreen({ onGenerate }: any) {
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {["Google", "Amazon", "Microsoft", "Stripe"].map(inst => (
-                            <button key={inst} onClick={() => { setInstitution(inst); setCustomInst(""); }} style={{ background: instDisplay === inst ? PURPLE : "transparent", color: instDisplay === inst ? "white" : "#888", border: "1px solid " + (instDisplay === inst ? PURPLE : "#ddd"), borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: 0.5 }}>{inst.toUpperCase()}</button>
+                            <button key={inst} onClick={() => { setInstitution(inst); setCustomInst(""); }} style={{ background: instDisplay === inst ? PURPLE : "transparent", color: instDisplay === inst ? "white" : "#888", border: "1px solid " + (instDisplay === inst ? PURPLE : "#ddd"), borderRadius: 6, padding: "4px 8px", fontSize: 10, fontWeight: 600, cursor: "pointer", letterSpacing: 0.5 }}>{inst.toUpperCase()}</button>
                         ))}
                     </div>
                 </div>
@@ -116,11 +116,11 @@ function ConfigScreen({ onGenerate }: any) {
                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "#999", marginBottom: 10 }}>EXPERIENCE LEVEL</div>
                     <div style={{ display: "flex", gap: 10 }}>
                         {["FRESHER", "1-3 YRS", "3-5 YRS"].map(lvl => (
-                            <button key={lvl} onClick={() => setExperience(lvl)} style={{ flex: 1, background: experience === lvl ? PURPLE : "white", color: experience === lvl ? "white" : "#555", border: "1.5px solid " + (experience === lvl ? PURPLE : "#ddd"), borderRadius: 10, padding: "12px 0", fontWeight: 700, fontSize: 12, cursor: "pointer", letterSpacing: 0.5 }}>{lvl}</button>
+                            <button key={lvl} onClick={() => setExperience(lvl)} style={{ flex: 1, background: experience === lvl ? PURPLE : "white", color: experience === lvl ? "white" : "#555", border: "1.5px solid " + (experience === lvl ? PURPLE : "#ddd"), borderRadius: 8, padding: "8px 0", fontWeight: 700, fontSize: 11, cursor: "pointer", letterSpacing: 0.5 }}>{lvl}</button>
                         ))}
                     </div>
                 </div>
-                <button onClick={handleGenerate} disabled={generating} style={{ background: generating ? "#ccc" : PURPLE, color: "white", border: "none", borderRadius: 12, padding: "18px", fontWeight: 800, fontSize: 13, letterSpacing: 2, cursor: generating ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                <button onClick={handleGenerate} disabled={generating} style={{ background: generating ? "#ccc" : PURPLE, color: "white", border: "none", borderRadius: 8, padding: "14px", fontWeight: 800, fontSize: 11, letterSpacing: 2, cursor: generating ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
                     {generating ? "GENERATING PROTOCOL..." : "GENERATE PROTOCOL →"}
                 </button>
                 <div style={{ textAlign: "center", fontSize: 10, color: "#bbb", letterSpacing: 1, marginTop: -12 }}>ENCRYPTION LEVEL: AES-256 VALIDATED</div>
@@ -139,16 +139,16 @@ function SyncScreen({ config, onStart }: any) {
             <p style={{ color: "#555", fontSize: 16, marginTop: 16, marginBottom: 40 }}>We have synthesized an adaptive assessment for <strong>{config.role}</strong> at <strong>{config.institution}</strong>. The difficulty will pivot based on your performance.</p>
             <div style={{ display: "flex", gap: 20, marginBottom: 48 }}>
                 {[["🧠", "STYLE", "PROBLEM-SOLVING"], ["🕐", "ADAPTIVE", "ON"], ["🛡️", "VERIFICATION", "CLINICAL"]].map(([icon, label, value]) => (
-                    <div key={label} style={{ background: "white", borderRadius: 14, padding: "24px 32px", border: "1px solid #eee", minWidth: 160, textAlign: "left", boxShadow: "0 4px 16px rgba(0,0,0,0.05)" }}>
-                        <div style={{ fontSize: 22, marginBottom: 10, color: PURPLE }}>{icon}</div>
+                    <div key={label} style={{ background: "white", borderRadius: 14, padding: "16px 20px", border: "1px solid #eee", minWidth: 140, textAlign: "left", boxShadow: "0 4px 16px rgba(0,0,0,0.05)" }}>
+                        <div style={{ fontSize: 18, marginBottom: 8, color: PURPLE }}>{icon}</div>
                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "#999", marginBottom: 6 }}>{label}</div>
                         <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1a2e" }}>{value}</div>
                     </div>
                 ))}
             </div>
             <div style={{ display: "flex", gap: 16 }}>
-                <button style={{ background: "white", border: "1.5px solid #ddd", borderRadius: 10, padding: "14px 28px", fontWeight: 700, fontSize: 12, cursor: "pointer", color: "#555", letterSpacing: 1 }}>RE-CALIBRATE</button>
-                <button onClick={() => ready && onStart()} style={{ background: ready ? PURPLE : "#aaa", color: "white", border: "none", borderRadius: 10, padding: "14px 28px", fontWeight: 700, fontSize: 12, cursor: ready ? "pointer" : "not-allowed", letterSpacing: 1 }}>
+                <button style={{ background: "white", border: "1.5px solid #ddd", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 10, cursor: "pointer", color: "#555", letterSpacing: 1 }}>RE-CALIBRATE</button>
+                <button onClick={() => ready && onStart()} style={{ background: ready ? PURPLE : "#aaa", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 10, cursor: ready ? "pointer" : "not-allowed", letterSpacing: 1 }}>
                     {ready ? "BEGIN ASSESSMENT →" : "SYNTHESIZING PROTOCOL..."}
                 </button>
             </div>
@@ -161,7 +161,7 @@ function Timer({ start }: any) {
     useEffect(() => { const t = setInterval(() => setElapsed(p => p + 1), 1000); return () => clearInterval(t); }, [start]);
     const remaining = Math.max(0, 180 - elapsed);
     const color = remaining < 30 ? "#EF4444" : remaining < 60 ? "#F59E0B" : PURPLE;
-    return <span style={{ color, fontWeight: 700, fontSize: 14 }}>⏱ {remaining}s</span>;
+    return <span style={{ color, fontWeight: 700, fontSize: 12 }}>⏱ {remaining}s</span>;
 }
 
 function QuestionScreen({ config, questions, onComplete }: any) {
@@ -205,28 +205,28 @@ function QuestionScreen({ config, questions, onComplete }: any) {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ background: PURPLE, color: "white", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>GATE {q.gate}</div>
+                        <div style={{ background: PURPLE, color: "white", borderRadius: 6, padding: "3px 8px", fontSize: 9, fontWeight: 800, letterSpacing: 1 }}>GATE {q.gate}</div>
                         <span style={{ fontSize: 11, color: "#888", fontWeight: 600, letterSpacing: 1 }}>{q.topic}</span>
                     </div>
                     {!isSubmitted && <Timer start={gateIdx} />}
                 </div>
-                <div style={{ background: "white", borderRadius: 16, padding: 32, boxShadow: "0 4px 20px rgba(0,0,0,0.06)", flex: 1 }}>
-                    <p style={{ fontSize: 22, fontWeight: 800, color: "#1a1a2e", lineHeight: 1.5, margin: "0 0 24px" }}>{questionText}</p>
+                <div style={{ background: "white", borderRadius: 12, padding: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.06)", flex: 1 }}>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: "#1a1a2e", lineHeight: 1.5, margin: "0 0 16px" }}>{questionText}</p>
                     {!isSubmitted ? (
                         <>
-                            <textarea value={currentAnswer} onChange={e => setAnswers((p: any) => ({ ...p, [gateIdx]: e.target.value }))} placeholder="Type your technical response, architectural sketch, or solution logic here..." style={{ width: "100%", minHeight: 160, border: "1.5px solid #e0e0e0", borderRadius: 10, padding: 16, fontSize: 14, fontFamily: "monospace", resize: "vertical", outline: "none", boxSizing: "border-box", color: "#333", lineHeight: 1.6 }} />
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
-                                <span style={{ fontSize: 11, color: "#bbb", letterSpacing: 1 }}>SUPPORTS MARKDOWN & LOGIC SCHEMAS</span>
-                                <button onClick={handleSubmit} disabled={loading || !currentAnswer.trim()} style={{ background: loading || !currentAnswer.trim() ? "#ccc" : PURPLE, color: "white", border: "none", borderRadius: 10, padding: "12px 28px", fontWeight: 800, fontSize: 12, cursor: loading || !currentAnswer.trim() ? "not-allowed" : "pointer", letterSpacing: 1 }}>
+                            <textarea value={currentAnswer} onChange={e => setAnswers((p: any) => ({ ...p, [gateIdx]: e.target.value }))} placeholder="Type your technical response..." style={{ width: "100%", minHeight: 120, border: "1.5px solid #e0e0e0", borderRadius: 8, padding: 12, fontSize: 12, fontFamily: "monospace", resize: "vertical", outline: "none", boxSizing: "border-box", color: "#333", lineHeight: 1.6 }} />
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+                                <span style={{ fontSize: 9, color: "#bbb", letterSpacing: 1 }}>SUPPORTS MARKDOWN & LOGIC SCHEMAS</span>
+                                <button onClick={handleSubmit} disabled={loading || !currentAnswer.trim()} style={{ background: loading || !currentAnswer.trim() ? "#ccc" : PURPLE, color: "white", border: "none", borderRadius: 8, padding: "10px 24px", fontWeight: 800, fontSize: 10, cursor: loading || !currentAnswer.trim() ? "not-allowed" : "pointer", letterSpacing: 1 }}>
                                     {loading ? "EVALUATING..." : "SUBMIT INTELLIGENCE →"}
                                 </button>
                             </div>
                         </>
                     ) : fb && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                            <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                                <div style={{ background: verdictColor(fb.verdict), color: "white", borderRadius: 10, padding: "10px 20px", fontWeight: 800, fontSize: 14 }}>{fb.verdict}</div>
-                                <div style={{ fontSize: 28, fontWeight: 900, color: verdictColor(fb.verdict) }}>{fb.score}/100</div>
+                            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                                <div style={{ background: verdictColor(fb.verdict), color: "white", borderRadius: 8, padding: "8px 16px", fontWeight: 800, fontSize: 12 }}>{fb.verdict}</div>
+                                <div style={{ fontSize: 24, fontWeight: 900, color: verdictColor(fb.verdict) }}>{fb.score}/100</div>
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                                 <div style={{ background: "#F0FDF4", borderRadius: 10, padding: 16 }}>
@@ -245,7 +245,7 @@ function QuestionScreen({ config, questions, onComplete }: any) {
                                 </div>
                             )}
                             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                                <button onClick={() => isLast ? onComplete(feedback) : setGateIdx(p => p + 1)} style={{ background: PURPLE, color: "white", border: "none", borderRadius: 10, padding: "12px 28px", fontWeight: 800, fontSize: 12, cursor: "pointer", letterSpacing: 1 }}>
+                                <button onClick={() => isLast ? onComplete(feedback) : setGateIdx(p => p + 1)} style={{ background: PURPLE, color: "white", border: "none", borderRadius: 8, padding: "10px 24px", fontWeight: 800, fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>
                                     {isLast ? "VIEW FINAL REPORT →" : `PROCEED TO GATE ${q.gate + 1} →`}
                                 </button>
                             </div>
@@ -256,7 +256,7 @@ function QuestionScreen({ config, questions, onComplete }: any) {
                     {questions.map((_: any, i: number) => <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: i < gateIdx ? PURPLE : i === gateIdx ? "#8B5CF6" : "#ddd" }} />)}
                 </div>
             </div>
-            <div style={{ width: 280, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ width: 240, display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ background: "#0f0a1a", borderRadius: 16, padding: 24, boxShadow: "0 8px 30px rgba(0,0,0,0.3)" }}>
                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "#666", marginBottom: 16 }}>LIVE RESPONSE MESH</div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
@@ -294,17 +294,17 @@ function ReportScreen({ config, questions, feedback, onRestart }: any) {
                 <p className="text-[#666] mt-3">{config.role} @ {config.institution} • {config.experience}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-5 justify-center mb-10">
-                <div className="bg-white rounded-2xl p-8 text-center min-w-[160px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border-t-4" style={{ borderTopColor: verdictColor(verdict) }}>
-                    <div className="text-5xl font-black" style={{ color: verdictColor(verdict) }}>{avg}</div>
-                    <div className="text-xs text-[#999] tracking-widest mt-1 uppercase font-bold">OVERALL SCORE</div>
+                <div className="bg-white rounded-2xl p-6 text-center min-w-[140px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border-t-4" style={{ borderTopColor: verdictColor(verdict) }}>
+                    <div className="text-3xl font-black" style={{ color: verdictColor(verdict) }}>{avg}</div>
+                    <div className="text-[10px] text-[#999] tracking-widest mt-1 uppercase font-bold">OVERALL SCORE</div>
                 </div>
-                <div className="rounded-2xl p-8 text-center min-w-[160px] flex flex-col justify-center" style={{ backgroundColor: verdictColor(verdict) }}>
-                    <div className="text-xl sm:text-2xl font-black text-white uppercase">{verdict}</div>
-                    <div className="text-[11px] text-white/70 tracking-widest mt-1.5 uppercase font-bold">FINAL VERDICT</div>
+                <div className="rounded-2xl p-6 text-center min-w-[140px] flex flex-col justify-center" style={{ backgroundColor: verdictColor(verdict) }}>
+                    <div className="text-lg sm:text-xl font-black text-white uppercase">{verdict}</div>
+                    <div className="text-[10px] text-white/70 tracking-widest mt-1.5 uppercase font-bold">FINAL VERDICT</div>
                 </div>
-                <div className="bg-white rounded-2xl p-8 text-center min-w-[160px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border-t-4 border-t-[#7C3AED]">
-                    <div className="text-5xl font-black text-[#7C3AED]">{scores.length}</div>
-                    <div className="text-xs text-[#999] tracking-widest mt-1 uppercase font-bold">GATES COMPLETED</div>
+                <div className="bg-white rounded-2xl p-6 text-center min-w-[140px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border-t-4 border-t-[#7C3AED]">
+                    <div className="text-3xl font-black text-[#7C3AED]">{scores.length}</div>
+                    <div className="text-[10px] text-[#999] tracking-widest mt-1 uppercase font-bold">GATES COMPLETED</div>
                 </div>
             </div>
             {Object.entries(feedback).map(([idx, fb]: any) => {

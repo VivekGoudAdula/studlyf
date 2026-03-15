@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../apiConfig';
 import {
     Code2,
     Mic,
@@ -162,6 +163,7 @@ export default function MockInterview() {
     const [voiceTranscript, setVoiceTranscript] = useState('');
     const voiceTimeoutRef = useRef<any>(null);
     const recognitionRef = useRef<any>(null);
+    const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
     const [report, setReport] = useState<InterviewReport | null>(null);
     const [loadingReport, setLoadingReport] = useState(false);
@@ -242,7 +244,7 @@ export default function MockInterview() {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://localhost:8000/api/interview/setup', {
+            const res = await fetch(`${API_BASE_URL}/api/interview/setup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(setup)
@@ -305,7 +307,7 @@ export default function MockInterview() {
                 }, 1000);
                 return;
             }
-            const res = await fetch('http://localhost:8000/api/interview/chat', {
+            const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId, user_response: turn, round_index: roundIndex })
@@ -336,7 +338,7 @@ export default function MockInterview() {
 
         try {
             // Fetch first question of next round from AI
-            const res = await fetch('http://localhost:8000/api/interview/chat', {
+            const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId, user_response: "", round_index: nextRound })
@@ -365,6 +367,12 @@ export default function MockInterview() {
         } finally {
             setIsSending(false);
         }
+    };
+
+    const startHrVoiceRound = () => {
+        const intro = `Hello! I'm Michael Rodriguez, HR Director at ${setup.company}. I'll be conducting your final HR interview. Tell me about your long-term career goals.`;
+        setMessages([{ role: 'interviewer', content: intro, timestamp: new Date().toLocaleTimeString() }]);
+        speak(intro, 2);
     };
 
     const walkOut = () => {
@@ -437,7 +445,7 @@ export default function MockInterview() {
                 }, 1000);
                 return;
             }
-            const res = await fetch('http://localhost:8000/api/interview/chat', {
+            const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId, user_response: text, round_index: 2 })
@@ -460,6 +468,7 @@ export default function MockInterview() {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
+            utteranceRef.current = utterance; // Prevent garbage collection
 
             // Voice Selection based on round
             const voices = window.speechSynthesis.getVoices();
@@ -526,7 +535,7 @@ export default function MockInterview() {
             return;
         }
         try {
-            const res = await fetch(`http://localhost:8000/api/interview/report?session_id=${sessionId}`);
+            const res = await fetch(`${API_BASE_URL}/api/interview/report?session_id=${sessionId}`);
             const data = await res.json();
             setReport(data);
         } catch (err) { setReport(DUMMY_REPORT); } finally { setLoadingReport(false); }
@@ -701,7 +710,7 @@ export default function MockInterview() {
                                     className="bg-white rounded-[3rem] border border-gray-100 shadow-3xl overflow-hidden h-[550px] flex"
                                 >
                                     <div className="w-1/4 bg-gray-50 border-r border-gray-100 flex flex-col items-center justify-center p-6 sticky top-0 self-start h-full">
-                                        <div className="mb-4 scale-90 origin-center"><SpeakingAvatar isHR={false} /></div>
+                                        <div className="mb-4 scale-75 origin-center"><SpeakingAvatar isHR={false} /></div>
                                         <div className="bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{roundIndex === 0 ? 'Alex Chen - Tech Lead' : 'Sarah Johnson - Eng Manager'}</p>
                                         </div>

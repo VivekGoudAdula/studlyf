@@ -306,7 +306,7 @@ export default function ResumeBuilder() {
             <div className="resume-builder-wrapper">
 
                 {/* nav */}
-                <div style={{ height: 60, marginTop: "110px", borderBottom: `1px solid ${v.border}`, padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fcfcfc" }}>
+                <div style={{ height: 60, marginTop: "20px", borderBottom: `1px solid ${v.border}`, padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fcfcfc" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                         <Link to="/learner-dashboard" style={{ fontSize: 13, fontWeight: 700, color: "#000000", textDecoration: "none", background: v.sunken, padding: "5px 12px", borderRadius: 6 }}>← Dashboard</Link>
                         <span style={{ fontWeight: 800, fontSize: 18, color: "#000000", letterSpacing: "-0.02em" }}>Resume <span style={{ color: v.purple }}>Builder</span></span>
@@ -427,7 +427,6 @@ export default function ResumeBuilder() {
                     <Sidebar tpl={tpl} p={p} exp={exp} edu={edu} proj={proj} skills={skills} generated={isGenerated} generating={isGenerating} saving={isSaving} onGen={generate} onSave={handleSave} />
                 </div>
 
-                <DashboardFooter />
             </div>
         </>
     );
