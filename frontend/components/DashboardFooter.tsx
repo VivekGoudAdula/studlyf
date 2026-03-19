@@ -33,58 +33,6 @@ const DashboardFooter: React.FC = () => {
     return (
         <section className="w-full bg-[#111827] pt-0 pb-10">
 
-            {/* TOP CTA BANNER */}
-            <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-                className="relative overflow-hidden w-full"
-                style={{
-                    background: 'linear-gradient(135deg, #7C3AED 0%, #9D67FF 40%, #6D28D9 100%)',
-                }}
-            >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#7C3AED]/20 rounded-full blur-3xl" />
-
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between px-8 md:px-20 lg:px-32 py-8 md:py-12 max-w-screen-2xl mx-auto">
-
-                    <div className="max-w-xl mb-8 md:mb-0">
-                        <motion.h2
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="text-white text-3xl md:text-5xl font-black leading-tight mb-6 uppercase tracking-tighter"
-                        >
-                            Take your first step into the{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
-                                magical world of coding
-                            </span>
-                        </motion.h2>
-
-                        <motion.button
-                            whileHover={{ scale: 1.05, boxShadow: "0 20px 40px -12px rgba(124,58,237,0.4)" }}
-                            whileTap={{ scale: 0.97 }}
-                            className="bg-white text-[#7C3AED] font-black px-10 py-4 rounded-full text-[14px] uppercase tracking-[0.2em] inline-flex items-center gap-3 shadow-2xl transition-all"
-                        >
-                            Try a free lesson
-                            <ArrowRight size={18} />
-                        </motion.button>
-                    </div>
-
-                    <div className="relative flex items-center justify-center w-48 h-32 md:w-64 md:h-48 flex-shrink-0">
-                        <div className="absolute inset-0 bg-white/20 rounded-full blur-2xl animate-pulse" />
-                        <div className="relative z-10 flex flex-col items-center justify-center text-white">
-                            <Sparkles size={48} className="text-white mb-2 animate-bounce" />
-                            <span className="text-white font-black text-xs md:text-sm uppercase tracking-widest text-center leading-relaxed">
-                                Fun coding for<br />kids & teens
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
