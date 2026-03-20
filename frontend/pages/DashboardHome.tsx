@@ -22,6 +22,7 @@ import WhyUsSection from '../components/WhyUsSection';
 import AdsCarousel from '../components/AdsCarousel';
 import GetHiredSection from '../components/GetHiredSection';
 import { DevHeroSection } from '../components/DevHeroSection';
+import FeaturedColleges from '../components/FeaturedColleges';
 // import { NeonBackground } from '../components/NeonBackground';
 
 const DUMMY_COURSES = [
@@ -657,6 +658,7 @@ const DashboardHome: React.FC = () => {
       <div className="relative z-20">
         <AdsCarousel />
       </div>
+      <FeaturedColleges />
       <WhyUsSection />
       <FAQCarousel />
       <DashboardFooter />
