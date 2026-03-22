@@ -20,7 +20,6 @@ const AITools: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('All');
 
     useEffect(() => {
         fetchTools();
@@ -46,10 +45,6 @@ const AITools: React.FC = () => {
     useEffect(() => {
         let result = tools;
 
-        if (selectedCategory !== 'All') {
-            result = result.filter(tool => tool.category.toLowerCase() === selectedCategory.toLowerCase());
-        }
-
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             result = result.filter(tool =>
@@ -60,7 +55,7 @@ const AITools: React.FC = () => {
         }
 
         setFilteredTools(result);
-    }, [searchQuery, selectedCategory, tools]);
+    }, [searchQuery, tools]);
 
     return (
         <div className="min-h-screen bg-white text-[#111827] pt-32 pb-20 px-6 sm:px-12 relative overflow-hidden">
@@ -86,11 +81,11 @@ const AITools: React.FC = () => {
                         transition={{ delay: 0.1 }}
                         className="text-[#6B7280] text-base max-w-2xl mx-auto font-medium leading-relaxed"
                     >
-                        Elite database of industry-leading AI tools. Automated synchronization with global repositories to ensure you have the latest tactical engineering assets.
+                        Elite database of industry-leading AI tools. Manual curated selection of premium engineering assets.
                     </motion.p>
                 </div>
 
-                {/* Search and Filters */}
+                {/* Search */}
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -98,8 +93,8 @@ const AITools: React.FC = () => {
                 >
                     <AIToolSearch
                         onSearch={setSearchQuery}
-                        onCategoryChange={setSelectedCategory}
-                        selectedCategory={selectedCategory}
+                        onCategoryChange={() => {}}
+                        selectedCategory=""
                     />
                 </motion.div>
 
