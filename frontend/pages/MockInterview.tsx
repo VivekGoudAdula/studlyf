@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../apiConfig';
 import {
     Code2,
@@ -148,6 +149,7 @@ const DUMMY_REPORT: InterviewReport = {
 };
 
 export default function MockInterview() {
+    const navigate = useNavigate();
     const [step, setStep] = useState<Step>('INTRO');
     const [setup, setSetup] = useState({ company: '', role: '', experience: 'FRESHER' });
     const [roundIndex, setRoundIndex] = useState<RoundIndex>(0);
@@ -394,8 +396,8 @@ export default function MockInterview() {
         setReport(null);
         setUserInput('');
         
-        // Redirect to main page (assuming this is a navigation function)
-        window.location.href = '/';
+        // Redirect to dashboard/learner page
+        navigate('/dashboard/learner');
     };
 
     const toggleMic = () => {
@@ -906,6 +908,9 @@ export default function MockInterview() {
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                                <button onClick={() => navigate('/dashboard/learner')} className="px-12 py-5 bg-white border border-gray-200 text-black rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 hover:bg-gray-50 hover:scale-105 transition-all">
+                                    Return to Dashboard <ChevronRight className="w-4 h-4" />
+                                </button>
                                 <button onClick={() => window.location.reload()} className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 hover:scale-105 transition-all shadow-xl shadow-violet-900/20">
                                     Restart Protocol <Zap className="w-4 h-4" />
                                 </button>

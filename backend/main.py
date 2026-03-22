@@ -20,6 +20,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime, timezone
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+import shutil
 import json
 
 # Load from root .env specifically
@@ -636,6 +637,34 @@ async def get_course_modules(course_id: str, user_id: Optional[str] = None):
             default_status = "unlocked" if module["order_index"] == 1 else "locked"
             module["progress"] = fix_progress(prog, default_status)
         modules.append(module)
+        
+    # Append Final Assessment if it exists
+    final_quiz = await quizzes_col.find_one({"course_id": course_id, "module_id": "FINAL_ASSESSMENT"})
+    if final_quiz:
+        questions = final_quiz.get("questions", [])
+        if questions:
+            # Check if all previous modules are completed to unlock
+            all_completed = True
+            if user_id:
+                for m in modules:
+                    if m.get("progress", {}).get("status") != "completed":
+                        all_completed = False
+                        break
+            
+            modules.append({
+                "_id": "FINAL_ASSESSMENT",
+                "title": "Final Certificate Assessment",
+                "is_final": True,
+                "lessons": [{
+                    "type": "quiz",
+                    "title": "Final Course Assessment",
+                    "questions": questions
+                }],
+                "progress": {
+                    "status": "unlocked" if all_completed else "locked"
+                } if user_id else None
+            })
+            
     return modules
 
 async def generate_ai_quiz(module_id: str, theory_content: str):
@@ -701,34 +730,61 @@ async def update_progress(data: dict):
     user_id = data.get("user_id")
     module_id = data.get("module_id")
     course_id = data.get("course_id")
-    updates = data.get("updates", {}) # e.g. {"theory_completed": True}
+    updates = data.get("updates", {})
     
-    if not user_id or not module_id:
-        raise HTTPException(status_code=400, detail="Missing user_id or module_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id")
 
-    # Update current module progress
+    if not module_id:
+        # Course level update (e.g. final assessment)
+        if course_id:
+            await progress_col.update_one(
+                {"user_id": user_id, "course_id": course_id, "is_final_step": True},
+                {"$set": {**updates, "updated_at": datetime.utcnow().isoformat()}},
+                upsert=True
+            )
+            return {"status": "final_step_updated"}
+        raise HTTPException(status_code=400, detail="Missing module_id or course_id")
+
+    # 1. Update/Upsert module progress
     await progress_col.update_one(
         {"user_id": user_id, "module_id": module_id},
-        {"$set": {**updates, "course_id": course_id}},
+        {"$set": {**updates, "course_id": course_id, "updated_at": datetime.utcnow().isoformat()}},
         upsert=True
     )
     
-    # Check if module is now complete to unlock next one
+    # 2. Get current state & module definition to check requirements
     prog = await progress_col.find_one({"user_id": user_id, "module_id": module_id})
-    if (prog.get("theory_completed") and 
-        prog.get("video_completed") and 
-        prog.get("quiz_score", 0) >= 70):
-        
+    module_def = await modules_col.find_one({"_id": module_id})
+    
+    if not module_def:
+         return {"status": "updated", "info": "Module definition missing, progress saved"}
+
+    lessons = module_def.get("lessons", [])
+    has_video = any(l.get("type") == "video" for l in lessons)
+    has_theory = any(l.get("type") in ["text", "theory"] for l in lessons)
+    has_quiz = any(l.get("type") == "quiz" for l in lessons)
+
+    # If no lessons array, fallback to legacy check
+    if not lessons:
+        has_video = has_theory = has_quiz = True
+
+    # 3. Validation logic
+    video_ok = not has_video or prog.get("video_completed")
+    theory_ok = not has_theory or prog.get("theory_completed")
+    quiz_ok = not has_quiz or prog.get("quiz_score", 0) >= 60
+
+    if video_ok and theory_ok and quiz_ok:
         await progress_col.update_one(
             {"user_id": user_id, "module_id": module_id},
             {"$set": {"status": "completed"}}
         )
         
-        # Find and unlock next module
-        current_mod = await modules_col.find_one({"_id": module_id})
+        # 4. Find next module
+        order = module_def.get("order_index", 1)
         next_mod = await modules_col.find_one({
             "course_id": course_id, 
-            "order_index": current_mod["order_index"] + 1
+            "order_index": order + 1
         })
         
         if next_mod:
@@ -737,9 +793,11 @@ async def update_progress(data: dict):
                 {"$set": {"status": "unlocked", "course_id": course_id}},
                 upsert=True
             )
-            return {"status": "module_completed", "unlocked_next": True}
+            return {"status": "module_completed", "unlocked_next": True, "next_id": next_mod["_id"]}
         else:
-            return {"status": "course_completed"}
+            return {"status": "course_completed", "info": "All modules finished"}
+    
+    return {"status": "updated", "requirements_met": False}
 
     return {"status": "updated"}
 
@@ -2479,10 +2537,11 @@ from fastapi import Header
 
 async def admin_required(x_admin_email: str = Header(None)):
     """Simple middleware to protect admin routes"""
-    if not x_admin_email or x_admin_email.lower() != "admin@studlyf.com":
+    allowed_admins = ["admin@studlyf.com", "saieshwarerelli10@gmail.com"]
+    if not x_admin_email or x_admin_email.lower() not in allowed_admins:
         raise HTTPException(
             status_code=403, 
-            detail="Forbidden: This endpoint requires super-admin privileges."
+            detail=f"Forbidden: {x_admin_email} does not have super-admin privileges."
         )
     return x_admin_email
 
@@ -2604,12 +2663,75 @@ async def get_admin_students():
         print(f"Error fetching students: {e}")
         return []
 
+# --- ADMIN RESOURCE UPLOADS ---
+from fastapi import File, UploadFile
+
+CERT_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "certificates")
+os.makedirs(CERT_UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/admin/upload-certificate", dependencies=[Depends(admin_required)])
+async def upload_admin_certificate(file: UploadFile = File(...)):
+    """Upload a custom certificate for a student"""
+    try:
+        ext = os.path.splitext(file.filename)[1] or ".pdf"
+        filename = f"{uuid.uuid4()}{ext}"
+        filepath = os.path.join(CERT_UPLOAD_DIR, filename)
+        
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return {
+            "status": "success",
+            "url": f"{BASE_URL}/uploads/certificates/{filename}"
+        }
+    except Exception as e:
+        print(f"Cert Upload Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload certificate")
+
+@app.post("/api/admin/upload-image", dependencies=[Depends(admin_required)])
+async def upload_admin_image(file: UploadFile = File(...)):
+    """Upload an image for a lesson and return its local URL to avoid long Base64 strings in Markdown"""
+    try:
+        # Generate a unique filename
+        ext = os.path.splitext(file.filename)[1] or ".png"
+        filename = f"{uuid.uuid4()}{ext}"
+        filepath = os.path.join(LESSONS_UPLOAD_DIR, filename)
+        
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return {
+            "status": "success",
+            "url": f"{BASE_URL}/uploads/lessons/{filename}"
+        }
+    except Exception as e:
+        print(f"Upload Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload image")
+
 @app.get("/api/admin/courses", dependencies=[Depends(admin_required)])
 async def get_admin_courses():
-    """Fetch all courses from MongoDB"""
+    """Fetch all courses with their full modules and assessment questions from MongoDB"""
     courses = []
     async for course in courses_col.find():
-        courses.append(fix_id(course))
+        course_data = fix_id(course)
+        course_id = course_data["_id"]
+        
+        # 1. Fetch and attach modules
+        modules = []
+        async for mod in modules_col.find({"course_id": course_id}):
+            modules.append(fix_id(mod))
+        # Sort by order_index
+        modules.sort(key=lambda x: x.get("order_index", 0))
+        course_data["modules"] = modules
+        
+        # 2. Fetch and attach final assessment questions
+        final_quiz = await quizzes_col.find_one({"course_id": course_id, "module_id": "FINAL_ASSESSMENT"})
+        if final_quiz:
+            course_data["questions"] = final_quiz.get("questions", [])
+        else:
+            course_data["questions"] = []
+            
+        courses.append(course_data)
     return courses
 
 
@@ -2749,9 +2871,30 @@ async def update_admin_course(course_id: str, data: dict):
 
 @app.delete("/api/admin/courses/{course_id}", dependencies=[Depends(admin_required)])
 async def delete_admin_course(course_id: str):
-    """Delete a course from MongoDB"""
-    result = await courses_col.delete_one({"_id": course_id})
-    return {"status": "deleted" if result.deleted_count > 0 else "not_found"}
+    """Delete a course and all its associated modules and quizzes from MongoDB"""
+    try:
+        # Delete the main course document
+        result = await courses_col.delete_one({"_id": course_id})
+        
+        if result.deleted_count > 0:
+            # Clean up associated modules
+            await modules_col.delete_many({"course_id": course_id})
+            
+            # Clean up associated quizzes (including module quizzes and final assessments)
+            await quizzes_col.delete_many({"course_id": course_id})
+            
+            # Clean up other associated collections if they use course_id
+            await theories_col.delete_many({"course_id": course_id})
+            await videos_col.delete_many({"course_id": course_id})
+            await projects_col.delete_many({"course_id": course_id})
+            
+            return {"status": "deleted", "id": course_id}
+        else:
+            return {"status": "not_found", "message": "Course not found"}
+            
+    except Exception as e:
+        print(f"Error deleting course {course_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 
 @app.get("/api/admin/hiring", dependencies=[Depends(admin_required)])
 async def get_admin_hiring():
@@ -2843,10 +2986,18 @@ async def get_admin_quizzes():
 
 @app.get("/api/admin/submissions", dependencies=[Depends(admin_required)])
 async def get_project_submissions():
-    """Fetch all pending project submissions"""
+    """Fetch all pending project submissions and final track completions"""
     submissions = []
+    # Projects
     async for prog in progress_col.find({"project_status": "submitted", "review_status": {"$nin": ["approved", "rejected"]}}).sort("_id", -1):
         submissions.append(fix_id(prog))
+        
+    # Final Track Completions
+    async for prog in progress_col.find({"final_assessment_passed": True, "review_status": {"$nin": ["approved", "rejected"]}}).sort("_id", -1):
+        # Avoid duplicates
+        if not any(s["_id"] == str(prog["_id"]) for s in submissions):
+            submissions.append(fix_id(prog))
+            
     return submissions
 
 @app.get("/api/admin/evaluations-history", dependencies=[Depends(admin_required)])
@@ -2888,6 +3039,7 @@ async def review_submission(data: dict):
             "course_id": course_id,
             "certificate_id": cert_id,
             "template_id": template_id,
+            "certificate_url": data.get("certificate_url"), # Store manual upload URL if provided
             "issue_date": datetime.utcnow().isoformat()
         }
         await certificates_col.insert_one(cert)

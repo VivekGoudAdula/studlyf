@@ -11,7 +11,11 @@ import {
     Edit2,
     Eye,
     ArrowUpRight,
-    Upload
+    Upload,
+    Camera,
+    Image,
+    ImageIcon,
+    Link
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -40,6 +44,8 @@ const CourseManagement: React.FC = () => {
     const [courseImage, setCourseImage] = useState("");
     const [courseSkills, setCourseSkills] = useState("");
     const [courseDuration, setCourseDuration] = useState("10 Weeks");
+    const [capstoneProblem, setCapstoneProblem] = useState("");
+    const [capstoneCriteria, setCapstoneCriteria] = useState("");
     const [customId, setCustomId] = useState("");
     const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
 
@@ -57,6 +63,8 @@ const CourseManagement: React.FC = () => {
         setCourseImage("");
         setCourseSkills("");
         setCourseDuration("10 Weeks");
+        setCapstoneProblem("");
+        setCapstoneCriteria("");
         setCustomId("");
         setModules([{ id: 1, title: 'Introduction to Course', lessons: [{ type: 'video', title: 'Setting up Environment' }] }]);
         setQuestions([{ question: 'What is the primary role of this technology?', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answers: [0], explanation: '' }]);
@@ -74,6 +82,8 @@ const CourseManagement: React.FC = () => {
         setCourseImage(course.image || "");
         setCourseSkills(Array.isArray(course.skills) ? course.skills.join(", ") : "");
         setCourseDuration(course.duration || "10 Weeks");
+        setCapstoneProblem(course.capstone_problem || "");
+        setCapstoneCriteria(course.capstone_criteria || "");
         setCustomId(course._id || "");
         setModules(course.modules || []);
         setQuestions(course.questions || []);
@@ -122,14 +132,144 @@ const CourseManagement: React.FC = () => {
         }));
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            const url = await uploadImageFile(file);
+            if (url) {
+                setCourseImage(url);
+            }
+        }
+    };
+
+    const handleThumbnailDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const url = await uploadImageFile(file);
+            if (url) {
+                setCourseImage(url);
+            }
+        } else {
+            // Check for dropped URL
+            const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+            if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+                 setCourseImage(url);
+            }
+        }
+    };
+
+    const handleThumbnailPaste = async (e: React.ClipboardEvent) => {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    const url = await uploadImageFile(blob);
+                    if (url) {
+                        setCourseImage(url);
+                    }
+                }
+            }
+        }
+    };
+
+    const uploadImageFile = async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/upload-image`, {
+                method: 'POST',
+                headers: { 'X-Admin-Email': user?.email || '' }, 
+                body: formData
+            });
+            const data = await res.json();
+            return data.url;
+        } catch (err) {
+            console.error("Upload failed", err);
+            return null;
+        }
+    };
+
+    const handleLessonImageUpload = async (moduleId: any, lessonIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const url = await uploadImageFile(file);
+            if (url) updateLesson(moduleId, lessonIdx, { image_url: url });
+        }
+    };
+
+    const handleLessonVideoUpload = (moduleId: any, lessonIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Note: For large videos, Base64 is not recommended, but keeping app pattern
             const reader = new FileReader();
             reader.onloadend = () => {
-                setCourseImage(reader.result as string);
+                updateLesson(moduleId, lessonIdx, { video_url: reader.result as string });
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handlePaste = async (moduleId: any, lessonIdx: number, e: React.ClipboardEvent<any>) => {
+        const items = e.clipboardData.items;
+        const textarea = e.currentTarget as HTMLTextAreaElement;
+        const start = textarea.selectionStart || 0;
+        const end = textarea.selectionEnd || 0;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    const url = await uploadImageFile(file);
+                    if (url) {
+                        const mod = modules.find(m => m._id === moduleId || (m.id && m.id === moduleId));
+                        const lesson = mod?.lessons[lessonIdx];
+                        if (lesson?.type === 'text' || lesson?.type === 'code') {
+                            const content = lesson.content || '';
+                            const newContent = content.substring(0, start) + `\n![image](${url})\n` + content.substring(end);
+                            updateLesson(moduleId, lessonIdx, { content: newContent });
+                        } else {
+                            updateLesson(moduleId, lessonIdx, { image_url: url });
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    const handleDrop = async (moduleId: any, lessonIdx: number, e: React.DragEvent<any>) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files?.[0];
+        const textarea = e.currentTarget as HTMLTextAreaElement;
+        const start = textarea.selectionStart || 0;
+        const end = textarea.selectionEnd || 0;
+        const mod = modules.find(m => m._id === moduleId || (m.id && m.id === moduleId));
+        const lesson = mod?.lessons[lessonIdx];
+
+        if (file && file.type.startsWith('image/')) {
+            const url = await uploadImageFile(file);
+            if (url) {
+                if (lesson?.type === 'text' || lesson?.type === 'code') {
+                    const content = lesson.content || '';
+                    const newContent = content.substring(0, start) + `\n![image](${url})\n` + content.substring(end);
+                    updateLesson(moduleId, lessonIdx, { content: newContent });
+                } else {
+                    updateLesson(moduleId, lessonIdx, { image_url: url });
+                }
+            }
+        } else {
+            const url = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/uri-list');
+            if (url && (url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || url.startsWith('http'))) {
+                const cleanedUrl = url.trim();
+                if (lesson?.type === 'text' || lesson?.type === 'code') {
+                    const content = lesson.content || '';
+                    const newContent = content.substring(0, start) + `\n![image](${cleanedUrl})\n` + content.substring(end);
+                    updateLesson(moduleId, lessonIdx, { content: newContent });
+                } else {
+                    updateLesson(moduleId, lessonIdx, { image_url: cleanedUrl });
+                }
+            }
         }
     };
 
@@ -138,6 +278,50 @@ const CourseManagement: React.FC = () => {
         if (field === 'question') updated[index].question = value;
         if (field === 'explanation') updated[index].explanation = value;
         setQuestions(updated);
+    };
+
+    const handleLessonQuestionChange = (modId: any, lessonIdx: number, qIdx: number, field: string, value: any) => {
+        setModules(modules.map(m => {
+            if (m._id === modId || (m.id && m.id === modId)) {
+                const updatedLessons = [...m.lessons];
+                const currentQuiz = updatedLessons[lessonIdx];
+                if (!currentQuiz.questions) currentQuiz.questions = [];
+                const updatedQs = [...currentQuiz.questions];
+                updatedQs[qIdx] = { ...updatedQs[qIdx], [field]: value };
+                updatedLessons[lessonIdx] = { ...currentQuiz, questions: updatedQs };
+                return { ...m, lessons: updatedLessons };
+            }
+            return m;
+        }));
+    };
+
+    const addLessonQuestion = (modId: any, lessonIdx: number) => {
+        setModules(modules.map(m => {
+            if (m._id === modId || (m.id && m.id === modId)) {
+                const updatedLessons = [...m.lessons];
+                const currentQuiz = updatedLessons[lessonIdx];
+                if (!currentQuiz.questions) currentQuiz.questions = [];
+                currentQuiz.questions = [...currentQuiz.questions, { question: '', options: ['', '', '', ''], correct_answers: [0], explanation: '' }];
+                updatedLessons[lessonIdx] = { ...currentQuiz };
+                return { ...m, lessons: updatedLessons };
+            }
+            return m;
+        }));
+    };
+
+    const deleteLessonQuestion = (modId: any, lessonIdx: number, qIdx: number) => {
+        setModules(modules.map(m => {
+            if (m._id === modId || (m.id && m.id === modId)) {
+                const updatedLessons = [...m.lessons];
+                const currentQuiz = updatedLessons[lessonIdx];
+                if (currentQuiz.questions) {
+                    currentQuiz.questions = currentQuiz.questions.filter((_: any, i: number) => i !== qIdx);
+                }
+                updatedLessons[lessonIdx] = { ...currentQuiz };
+                return { ...m, lessons: updatedLessons };
+            }
+            return m;
+        }));
     };
 
     const handleOptionChange = (qIndex: number, oIndex: number, value: string) => {
@@ -229,6 +413,8 @@ const CourseManagement: React.FC = () => {
                 image: courseImage || 'https://miro.medium.com/max/938/0*lbtSAeYRtmUMAWeY.png',
                 skills: courseSkills.split(",").map(s => s.trim()).filter(s => s !== ""),
                 duration: courseDuration,
+                capstone_problem: capstoneProblem,
+                capstone_criteria: capstoneCriteria,
                 modules: modules,
                 questions: questions
             };
@@ -415,28 +601,253 @@ const CourseManagement: React.FC = () => {
                                                         value={mod.title}
                                                         onChange={(e) => updateModuleTitle(mod._id || mod.id, e.target.value)}
                                                     />
-                                                </div>
+                </div>
                                                 <button onClick={() => deleteModule(mod._id || mod.id)} className="p-1.5 text-white/30 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                             </div>
                                             <div className="ml-8 space-y-2">
                                                 {mod.lessons.map((les: any, lessonIndex: number) => (
-                                                    <div key={lessonIndex} className="flex items-center gap-3 p-2.5 bg-white/5 rounded-lg border border-white/5 hover:border-white/20 transition-all group/lesson">
-                                                        <select
-                                                            value={les.type}
-                                                            onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { type: e.target.value })}
-                                                            className="bg-transparent border-none p-0 text-blue-400 text-xs focus:ring-0 cursor-pointer"
-                                                        >
-                                                            <option value="video">Video</option>
-                                                            <option value="code">Code</option>
-                                                            <option value="text">Text</option>
-                                                            <option value="quiz">Quiz</option>
-                                                        </select>
-                                                        <input
-                                                            className="text-sm text-white/70 flex-grow bg-transparent border-none p-0 focus:ring-0"
-                                                            value={les.title}
-                                                            onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { title: e.target.value })}
-                                                        />
-                                                        <button onClick={() => deleteLesson(mod._id || mod.id, lessonIndex)} className="text-white/10 hover:text-red-500 transition-colors opacity-0 group-hover/lesson:opacity-100"><Trash2 size={14} /></button>
+                                                    <div key={lessonIndex} className="space-y-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:border-[#7C3AED]/20 hover:bg-[#7C3AED]/5 transition-all group/lesson shadow-sm">
+                                                        <div className="flex items-center gap-3">
+                                                            <select
+                                                                value={les.type}
+                                                                onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { type: e.target.value })}
+                                                                className="bg-transparent border-none p-0 text-[#7C3AED] text-[10px] font-black uppercase tracking-widest focus:ring-0 cursor-pointer"
+                                                            >
+                                                                <option className="bg-[#111]" value="video">Video</option>
+                                                                <option className="bg-[#111]" value="text">Text</option>
+                                                                <option className="bg-[#111]" value="image">Image</option>
+                                                                <option className="bg-[#111]" value="quiz">Quiz</option>
+                                                                <option className="bg-[#111]" value="code">Code</option>
+                                                            </select>
+                                                            <input
+                                                                className="text-sm text-white font-bold flex-grow bg-transparent border-none p-0 focus:ring-0 placeholder:text-white/20"
+                                                                placeholder="Enter Lesson Title..."
+                                                                value={les.title || ''}
+                                                                onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { title: e.target.value })}
+                                                            />
+                                                            <button onClick={() => deleteLesson(mod._id || mod.id, lessonIndex)} className="text-white/10 hover:text-red-500 transition-colors opacity-0 group-hover/lesson:opacity-100"><Trash2 size={16} /></button>
+                                                        </div>
+
+                                                        {/* Dynamic Editors */}
+                                                        {(les.type === 'text' || les.type === 'code') && (
+                                                            <div className="ml-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const url = prompt("Enter Image URL:");
+                                                                            if (url) {
+                                                                                const content = les.content || '';
+                                                                                const newContent = content + `\n![image](${url})\n`;
+                                                                                updateLesson(mod._id || mod.id, lessonIndex, { content: newContent });
+                                                                            }
+                                                                        }}
+                                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 hover:bg-[#7C3AED]/20 border border-white/10 rounded-lg text-[10px] text-white/50 hover:text-white transition-all">
+                                                                        <Image size={12} className="text-[#7C3AED]" />
+                                                                        Insert Image URL
+                                                                    </button>
+                                                                     <div className="relative">
+                                                                        <button 
+                                                                            type="button"
+                                                                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 hover:bg-green-500/20 border border-white/10 rounded-lg text-[10px] text-white/50 hover:text-white transition-all">
+                                                                            <Upload size={12} className="text-green-500" />
+                                                                            Upload Image
+                                                                        </button>
+                                                                        <input 
+                                                                            type="file" 
+                                                                            className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                                            accept="image/*"
+                                                                            onChange={async (e) => {
+                                                                                const file = e.target.files?.[0];
+                                                                                if (file) {
+                                                                                    const url = await uploadImageFile(file);
+                                                                                    if (url) {
+                                                                                        const content = les.content || '';
+                                                                                        const newContent = content + `\n![image](${url})\n`;
+                                                                                        updateLesson(mod._id || mod.id, lessonIndex, { content: newContent });
+                                                                                    }
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                     </div>
+
+                                                                     <button 
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const text = prompt("Enter Link Text:", "Click here");
+                                                                            const url = prompt("Enter Target URL (starting with http/https):");
+                                                                            if (text && url) {
+                                                                                const content = les.content || '';
+                                                                                const newContent = content + `\n[${text}](${url})\n`;
+                                                                                updateLesson(mod._id || mod.id, lessonIndex, { content: newContent });
+                                                                            }
+                                                                        }}
+                                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 hover:bg-blue-500/20 border border-white/10 rounded-lg text-[10px] text-white/50 hover:text-white transition-all">
+                                                                         <Link size={12} className="text-blue-400" />
+                                                                         Insert Link
+                                                                     </button>
+                                                                 </div>
+                                                                <textarea
+                                                                    className={`w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[11px] text-white/80 focus:ring-1 focus:ring-[#7C3AED]/50 resize-none ${les.type === 'code' ? 'font-mono' : 'font-sans'}`}
+                                                                    rows={les.type === 'code' ? 8 : 4}
+                                                                    placeholder={les.type === 'code' ? "// Enter your lab code or instructions here..." : "Enter your lesson text, markdown, or theory here..."}
+                                                                    value={les.content || ''}
+                                                                    onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { content: e.target.value })}
+                                                                    onPaste={(e) => handlePaste(mod._id || mod.id, lessonIndex, e)}
+                                                                    onDragOver={(e) => e.preventDefault()}
+                                                                    onDrop={(e) => handleDrop(mod._id || mod.id, lessonIndex, e)}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {les.type === 'video' && (
+                                                            <div className="ml-1 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+                                                                <div className="flex items-center gap-2 group/upload">
+                                                                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all cursor-pointer relative">
+                                                                        <Play size={12} className="text-blue-400" />
+                                                                        <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">
+                                                                            {les.video_url?.startsWith('data:video') ? 'Update Video' : 'Choose Video File'}
+                                                                        </span>
+                                                                        <input 
+                                                                            type="file" 
+                                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                                                                            accept="video/*"
+                                                                            onChange={(e) => handleLessonVideoUpload(mod._id || mod.id, lessonIndex, e)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="relative flex-grow">
+                                                                        <input
+                                                                            className="w-full text-[10px] text-blue-400/70 bg-black/20 border border-white/5 rounded-xl px-4 py-2 focus:ring-1 focus:ring-blue-500/30 font-mono placeholder:text-white/10"
+                                                                            placeholder="...or paste Stream URL (Youtube/Vimeo)"
+                                                                            value={les.video_url || ''}
+                                                                            onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { video_url: e.target.value })}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                {les.video_url?.startsWith('data:video') && (
+                                                                    <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[9px] text-blue-400 font-bold uppercase tracking-widest w-fit animate-pulse">
+                                                                        Internal Video Attached
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {les.type === 'image' && (
+                                                            <div className="ml-1 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+                                                                <div 
+                                                                    className="relative group/dropzone overflow-hidden rounded-2xl"
+                                                                    onPaste={(e) => handlePaste(mod._id || mod.id, lessonIndex, e)}
+                                                                    onDragOver={(e) => e.preventDefault()}
+                                                                    onDrop={(e) => handleDrop(mod._id || mod.id, lessonIndex, e)}
+                                                                >
+                                                                    <div className={`
+                                                                        flex flex-col items-center justify-center gap-3 py-6 px-4
+                                                                        bg-black/20 border-2 border-dashed border-white/10 rounded-2xl
+                                                                        hover:border-[#7C3AED]/40 hover:bg-[#7C3AED]/5 transition-all
+                                                                        ${les.image_url ? 'py-4' : 'py-8'}
+                                                                    `}>
+                                                                        {les.image_url ? (
+                                                                            <div className="flex items-center gap-5 w-full relative z-20">
+                                                                                <div className="w-16 h-16 rounded-xl border-2 border-white/10 overflow-hidden bg-black shadow-2xl flex items-center justify-center shrink-0">
+                                                                                    <img src={les.image_url?.startsWith('/') ? `${API_BASE_URL}${les.image_url}` : les.image_url} alt="preview" className="w-full h-full object-cover" />
+                                                                                </div>
+                                                                                <div className="flex-grow">
+                                                                                    <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest leading-none mb-1">Visual Asset Attached</p>
+                                                                                    <button 
+                                                                                        onClick={() => updateLesson(mod._id || mod.id, lessonIndex, { image_url: '' })}
+                                                                                        className="text-[9px] font-black uppercase text-red-500 hover:text-red-400 mt-1 transition-colors"
+                                                                                    >
+                                                                                        Remove Asset
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="flex flex-col items-center gap-2 opacity-50 group-hover/dropzone:opacity-100 transition-opacity">
+                                                                                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                                                                                    <ImageIcon size={20} className="text-white/40 group-hover/dropzone:text-[#7C3AED] transition-colors" />
+                                                                                </div>
+                                                                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Drop or Paste Image Asset</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    {!les.image_url && (
+                                                                        <input 
+                                                                            type="file" 
+                                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                                                                            accept="image/*"
+                                                                            onChange={(e) => handleLessonImageUpload(mod._id || mod.id, lessonIndex, e)}
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                <div className="relative">
+                                                                    <input
+                                                                        className="w-full text-[10px] text-[#7C3AED]/70 bg-black/20 border border-white/5 rounded-xl px-4 py-2 focus:ring-1 focus:ring-[#7C3AED]/30 font-mono placeholder:text-white/10"
+                                                                        placeholder="...or paste image URL"
+                                                                        value={les.image_url?.startsWith('data:') ? '' : (les.image_url || '')}
+                                                                        onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { image_url: e.target.value })}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {les.type === 'quiz' && (
+                                                            <div className="ml-1 space-y-4 bg-black/40 p-5 rounded-2xl border border-white/10 animate-in fade-in slide-in-from-top-1 duration-300">
+                                                                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                                                        <p className="text-[11px] font-black uppercase text-blue-400 tracking-wider">Lesson Quiz Builder</p>
+                                                                    </div>
+                                                                    <button 
+                                                                        onClick={() => addLessonQuestion(mod._id || mod.id, lessonIndex)}
+                                                                        className="px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-[10px] font-bold text-blue-400 rounded-lg transition-all flex items-center gap-1.5"
+                                                                    >
+                                                                        <Plus size={12} /> Add Question
+                                                                    </button>
+                                                                </div>
+                                                                {(les.questions || []).map((q: any, qIdx: number) => (
+                                                                    <div key={qIdx} className="space-y-3 pt-4 first:pt-0 border-t first:border-none border-white/5 group/q">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-mono text-white/30 border border-white/5">{qIdx + 1}</div>
+                                                                            <input
+                                                                                className="flex-grow bg-transparent border-none p-0 text-sm text-white/90 placeholder:text-white/20 focus:ring-0 font-medium"
+                                                                                placeholder="What question do you want to ask?"
+                                                                                value={q.question}
+                                                                                onChange={(e) => handleLessonQuestionChange(mod._id || mod.id, lessonIndex, qIdx, 'question', e.target.value)}
+                                                                            />
+                                                                            <button onClick={() => deleteLessonQuestion(mod._id || mod.id, lessonIndex, qIdx)} className="p-2 text-white/10 hover:text-red-500 opacity-0 group-hover/q:opacity-100 transition-all">
+                                                                                <Trash2 size={16} />
+                                                                            </button>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-9">
+                                                                            {q.options.map((opt: string, oIdx: number) => (
+                                                                                <div key={oIdx} className="relative group/opt">
+                                                                                    <input
+                                                                                        className={`w-full bg-white/[0.03] border rounded-xl px-4 py-2 text-xs transition-all ${q.correct_answers.includes(oIdx) ? 'border-blue-500/50 bg-blue-500/5 text-blue-400' : 'border-white/10 text-white/40'}`}
+                                                                                        placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
+                                                                                        value={opt}
+                                                                                        onChange={(e) => {
+                                                                                            const newOpts = [...q.options];
+                                                                                            newOpts[oIdx] = e.target.value;
+                                                                                            handleLessonQuestionChange(mod._id || mod.id, lessonIndex, qIdx, 'options', newOpts);
+                                                                                        }}
+                                                                                    />
+                                                                                    <button 
+                                                                                        onClick={() => handleLessonQuestionChange(mod._id || mod.id, lessonIndex, qIdx, 'correct_answers', [oIdx])}
+                                                                                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 transition-all ${q.correct_answers.includes(oIdx) ? 'border-blue-500 bg-blue-500' : 'border-white/10'}`}
+                                                                                        title="Mark as correct"
+                                                                                    />
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                {(les.questions || []).length === 0 && (
+                                                                    <div className="py-6 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                                                                        <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest">No questions added yet</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                                 <button onClick={() => addLesson(mod._id || mod.id)} className="w-full py-2 border border-dashed border-white/10 rounded-lg text-xs font-semibold text-white/40 hover:text-[#7C3AED] hover:border-[#7C3AED]/30 transition-all flex items-center justify-center gap-2">
@@ -463,7 +874,8 @@ const CourseManagement: React.FC = () => {
                                                         rows={2}
                                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:ring-1 focus:ring-[#7C3AED] resize-none"
                                                         placeholder="e.g. Build an AI Resume Analyzer..."
-                                                        defaultValue="Build an AI Resume Analyzer"
+                                                        value={capstoneProblem}
+                                                        onChange={(e) => setCapstoneProblem(e.target.value)}
                                                     />
                                                 </div>
                                                 <div>
@@ -472,7 +884,8 @@ const CourseManagement: React.FC = () => {
                                                         rows={3}
                                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:ring-1 focus:ring-[#7C3AED] resize-none"
                                                         placeholder="e.g. Must handle PDF parsing&#10;Must rate skills accurately"
-                                                        defaultValue="Must handle PDF parsing&#10;Must return accurate scoring schema&#10;Deploy on Vercel"
+                                                        value={capstoneCriteria}
+                                                        onChange={(e) => setCapstoneCriteria(e.target.value)}
                                                     />
                                                 </div>
                                             </div>
@@ -572,7 +985,12 @@ const CourseManagement: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Course Thumbnail</label>
-                                            <div className="w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center">
+                                            <div 
+                                                className="w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center cursor-pointer"
+                                                onDragOver={(e) => e.preventDefault()}
+                                                onDrop={handleThumbnailDrop}
+                                                onPaste={handleThumbnailPaste}
+                                            >
                                                 {courseImage ? (
                                                     <img src={courseImage} alt="Thumbnail preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
                                                 ) : null}

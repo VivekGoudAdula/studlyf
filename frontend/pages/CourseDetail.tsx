@@ -26,7 +26,7 @@ interface Course {
   title: string;
   description: string;
   role_tag: string;
-  difficulty: string;
+  difficulty?: string;
   skills?: string[];
   duration?: string;
   image?: string;
@@ -41,96 +41,13 @@ interface Course {
   instructor?: string;
   is_bestseller?: boolean;
   is_premium?: boolean;
+  school?: string;
   user_state?: 'NOT_PURCHASED' | 'IN_CART' | 'ENROLLED';
 }
 
 /* ─────────────────────────── mock fallback data ─────────────────────────── */
-const MOCK_COURSES: Course[] = [
-  {
-    _id: 'm1',
-    title: 'Transformer Architectures',
-    description: 'Deep dive into the architecture that powered the AI revolution. Build GPT-like models from scratch.',
-    role_tag: 'AI',
-    difficulty: 'Advanced',
-    skills: ['PyTorch', 'LLMs', 'Neural Networks'],
-    duration: '6 Weeks',
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
-    standard: 'AI_PROTOCOL_01',
-    price: 49.99,
-    rating: 4.9,
-    total_reviews: 1250,
-  },
-  {
-    _id: 'm2',
-    title: 'Distributed System Design',
-    description: 'Master the art of building systems that handle millions of requests. CAP theorem, consensus, and sharding.',
-    role_tag: 'Software Engineering',
-    difficulty: 'Advanced',
-    skills: ['Microservices', 'System Design', 'Redis'],
-    duration: '8 Weeks',
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
-    standard: 'SWE_PROTOCOL_04',
-    price: 59.99,
-    rating: 4.8,
-    total_reviews: 850,
-  },
-  {
-    _id: 'm3',
-    title: 'Data Engineering Pipelines',
-    description: 'Build production-grade ETL pipelines using Spark, Airflow, and Snowflake.',
-    role_tag: 'Data',
-    difficulty: 'Intermediate',
-    skills: ['Spark', 'Airflow', 'SQL'],
-    duration: '5 Weeks',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
-    standard: 'DATA_PROTOCOL_02',
-    price: 39.99,
-    rating: 4.7,
-    total_reviews: 620,
-  },
-  {
-    _id: 'm4',
-    title: 'Product Discovery Protocols',
-    description: 'Learn to find product-market fit using data-driven discovery techniques and user research.',
-    role_tag: 'PM',
-    difficulty: 'Beginner',
-    skills: ['Discovery', 'Strategy', 'Analytics'],
-    duration: '4 Weeks',
-    image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
-    standard: 'PM_PROTOCOL_01',
-    price: 29.99,
-    rating: 4.9,
-    total_reviews: 430,
-  },
-  {
-    _id: 'm5',
-    title: 'Offensive Security Ops',
-    description: 'Become a certified defender by mastering offensive tactics, penetration testing, and vulnerability research.',
-    role_tag: 'Cyber',
-    difficulty: 'Advanced',
-    skills: ['Pentesting', 'Metasploit', 'Linux'],
-    duration: '10 Weeks',
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
-    standard: 'CYBER_PROTOCOL_09',
-    price: 69.99,
-    rating: 4.9,
-    total_reviews: 890,
-  },
-  {
-    _id: 'm6',
-    title: 'React Performance Mastery',
-    description: 'Go beyond basic hooks. Master fiber architectue, concurrent rendering, and high-entropy UI optimization.',
-    role_tag: 'Frontend',
-    difficulty: 'Intermediate',
-    skills: ['React', 'Performance', 'WASM'],
-    duration: '4 Weeks',
-    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop',
-    standard: 'FE_PROTOCOL_03',
-    price: 34.99,
-    rating: 4.8,
-    total_reviews: 740,
-  }
-];
+const MOCK_COURSES: Course[] = [];
+
 
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
