@@ -9,7 +9,7 @@ import { ShoppingCart } from 'lucide-react';
 
 
 
-const StudlyfLogo = ({ className = "h-6 sm:h-8" }: { className?: string }) => (
+const StudlyfLogo = ({ className = "h-8 sm:h-10" }: { className?: string }) => (
   <div className={`flex items-center ${className}`}>
     <img
       src="/images/studlyf.png"
