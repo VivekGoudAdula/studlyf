@@ -94,7 +94,29 @@ const AssessmentManagement: React.FC = () => {
         } catch (err) { console.error(err); }
     };
 
-    const reviewSubmission = async (userId: string, moduleId: string, status: string, templateId: string = 'standard') => {
+    const handleManualCertUpload = async (file: File, userId: string, moduleId: string, courseId: string) => {
+        if (!user?.email) return;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const uploadRes = await fetch(`${API_BASE_URL}/api/admin/upload-certificate`, {
+                method: 'POST',
+                headers: { 'X-Admin-Email': user.email },
+                body: formData
+            });
+
+            if (uploadRes.ok) {
+                const { url } = await uploadRes.json();
+                // Now approve with this URL
+                await reviewSubmission(userId, moduleId || 'final', 'approved', 'manual', url);
+            } else {
+                alert('Upload failed');
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    const reviewSubmission = async (userId: string, moduleId: string, status: string, templateId: string = 'standard', certUrl?: string) => {
         if (!user?.email) return;
         const itemKey = `${userId}-${moduleId}`;
         const adminComment = comments[itemKey] || '';
@@ -105,7 +127,14 @@ const AssessmentManagement: React.FC = () => {
                     'Content-Type': 'application/json',
                     'X-Admin-Email': user.email
                 },
-                body: JSON.stringify({ user_id: userId, module_id: moduleId, status, template_id: templateId, comment: adminComment })
+                body: JSON.stringify({
+                    user_id: userId,
+                    module_id: moduleId,
+                    status,
+                    template_id: templateId,
+                    comment: adminComment,
+                    certificate_url: certUrl
+                })
             });
             if (res.ok) {
                 alert(`Assessment ${status} successfully!`);
@@ -163,12 +192,12 @@ const AssessmentManagement: React.FC = () => {
                         🏅 Cert Templates
                     </button>
                     {view === 'assessments' ? (
-                        <button onClick={() => { setView('submissions'); fetchSubmissions(); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-colors">
+                        <button onClick={() => { setView('submissions'); fetchSubmissions(); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-colors text-white">
                             <CheckCircle size={18} />
                             Evaluate Candidates
                         </button>
                     ) : (
-                        <button onClick={() => setView('assessments')} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-colors">
+                        <button onClick={() => setView('assessments')} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-colors text-white">
                             Back to Assessments
                         </button>
                     )}
@@ -221,7 +250,7 @@ const AssessmentManagement: React.FC = () => {
                             </div>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left">
+                            <table className="w-full text-left font-sans">
                                 <thead>
                                     <tr className="bg-white/[0.02] text-xs font-semibold text-white/30 uppercase tracking-widest border-b border-white/10">
                                         <th className="px-6 py-4">Assessment Name</th>
@@ -283,51 +312,81 @@ const AssessmentManagement: React.FC = () => {
             )}
 
             {view === 'submissions' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden p-6"
-                >
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden p-6 font-sans">
                     <h3 className="text-xl font-bold text-white mb-6">Pending Student Evaluations</h3>
                     <div className="space-y-4">
-                        {submissions.length === 0 && <p className="text-white/40">No pending assessments to review.</p>}
+                        {submissions.length === 0 && <p className="text-white/40">No pending assessments or track completions to review.</p>}
                         {submissions.map((sub, idx) => {
-                            const itemKey = `${sub.user_id}-${sub.module_id}`;
+                            const isFinalTrack = sub.final_assessment_passed === true;
+                            const itemKey = `${sub.user_id}-${sub.module_id || 'final'}`;
                             return (
-                                <div key={idx} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
-                                    <div>
-                                        <div className="text-sm font-bold text-white mb-1">User Entity: {sub.user_id}</div>
-                                        <div className="text-xs text-white/50 mb-3">Module ID: {sub.module_id} • AI Confidence: <span className="text-green-400">92%</span> • Status: <span className="text-yellow-500">{sub.review_status || 'pending_review'}</span></div>
-                                        <div className="flex gap-4">
-                                            {sub.deployed_link && <a href={sub.deployed_link} target="_blank" className="text-xs text-[#7C3AED] hover:underline flex items-center gap-1"><ArrowUpRight size={12} /> Live Link</a>}
-                                            {sub.github_link && <a href={sub.github_link} target="_blank" className="text-xs text-blue-400 hover:underline flex items-center gap-1"><ArrowUpRight size={12} /> Codebase</a>}
-                                            {sub.file_url && <a href={`${API_BASE_URL}${sub.file_url}`} target="_blank" className="text-xs text-green-400 hover:underline flex items-center gap-1"><ArrowUpRight size={12} /> Download Work</a>}
+                                <div key={idx} className="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-start md:items-center justify-between border-l-4 border-l-[#7C3AED]">
+                                    <div className="flex-grow">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="text-sm font-bold text-white">{sub.user_id}</div>
+                                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${isFinalTrack ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-[#7C3AED]/20 text-[#7C3AED] border border-[#7C3AED]/30'}`}>
+                                                {isFinalTrack ? '🏆 Final Track Completed' : '📂 Capstone Submissions'}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-white/50 mb-4">
+                                            Course: <span className="text-white/80">{sub.course_id}</span>
+                                            {!isFinalTrack && <> • Module: <span className="text-white/80">{sub.module_id}</span></>}
+                                            {isFinalTrack && <> • Final Score: <span className="text-green-400 font-bold">{sub.final_assessment_score}%</span></>}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-4">
+                                            {sub.deployed_link && <a href={sub.deployed_link} target="_blank" className="text-xs text-[#7C3AED] hover:underline flex items-center gap-1"><ExternalLink size={12} /> Live App</a>}
+                                            {sub.github_link && <a href={sub.github_link} target="_blank" className="text-xs text-blue-400 hover:underline flex items-center gap-1"><ExternalLink size={12} /> Repository</a>}
+                                            {sub.file_url && <a href={`${API_BASE_URL}${sub.file_url}`} target="_blank" className="text-xs text-green-400 hover:underline flex items-center gap-1"><ArrowUpRight size={12} /> Submission File</a>}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-2 min-w-[250px]">
+
+                                    <div className="flex flex-col gap-3 min-w-[280px]">
                                         <textarea
-                                            placeholder="Leave feedback comment..."
+                                            placeholder="Leave professional feedback..."
                                             rows={2}
-                                            className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:ring-1 focus:ring-[#7C3AED] resize-none mb-1"
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-[#7C3AED] resize-none"
                                             value={comments[itemKey] || ''}
                                             onChange={(e) => setComments({ ...comments, [itemKey]: e.target.value })}
                                         />
-                                        <div>
-                                            <label className="text-[10px] text-white/50 font-bold uppercase mb-1 block">🏅 Certificate Template</label>
-                                            <select
-                                                className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:ring-1 focus:ring-[#7C3AED] mb-2"
-                                                value={selectedTemplatePerId[itemKey] || 'standard'}
-                                                onChange={(e) => setSelectedTemplatePerId({ ...selectedTemplatePerId, [itemKey]: e.target.value })}
-                                            >
-                                                {certTemplates.map((tmpl: any) => (
-                                                    <option key={tmpl.template_id} value={tmpl.template_id}>
-                                                        {tmpl.name}{tmpl.is_builtin ? ' ✓' : ''}
-                                                    </option>
-                                                ))}
-                                            </select>
+
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="flex-grow bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-[#7C3AED]"
+                                                    value={selectedTemplatePerId[itemKey] || 'standard'}
+                                                    onChange={(e) => setSelectedTemplatePerId({ ...selectedTemplatePerId, [itemKey]: e.target.value })}
+                                                >
+                                                    <optgroup label="System Templates">
+                                                        {certTemplates.map((tmpl: any) => (
+                                                            <option key={tmpl.template_id} value={tmpl.template_id}>{tmpl.name}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                </select>
+                                                <button onClick={() => reviewSubmission(sub.user_id, sub.module_id || 'final', 'approved', selectedTemplatePerId[itemKey] || 'standard')} className="px-4 py-2 bg-green-500/20 text-green-400 text-[10px] font-bold uppercase rounded-xl border border-green-500/30 hover:bg-green-500/30 whitespace-nowrap">Auto Issue</button>
+                                            </div>
+
+                                            <div className="relative">
+                                                <input
+                                                    type="file"
+                                                    id={`manual-cert-${idx}`}
+                                                    className="hidden"
+                                                    accept=".pdf,.png,.jpg,.jpeg"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleManualCertUpload(file, sub.user_id, sub.module_id || 'final', sub.course_id);
+                                                    }}
+                                                />
+                                                <label
+                                                    htmlFor={`manual-cert-${idx}`}
+                                                    className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-[#7C3AED]/20 text-[#7C3AED] text-[10px] font-bold uppercase rounded-xl border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 cursor-pointer transition-all"
+                                                >
+                                                    <ExternalLink size={12} /> Upload Manual Certificate
+                                                </label>
+                                            </div>
+
+                                            <button onClick={() => reviewSubmission(sub.user_id, sub.module_id || 'final', 'rejected')} className="w-full px-4 py-1.5 text-[10px] font-bold text-red-500/60 hover:text-red-500 uppercase">Need Revision</button>
                                         </div>
-                                        <button onClick={() => reviewSubmission(sub.user_id, sub.module_id, 'approved', selectedTemplatePerId[itemKey] || 'standard')} className="w-full flex justify-center items-center px-4 py-1.5 bg-green-500/20 text-green-400 text-xs font-bold rounded-lg hover:bg-green-500/30">Grant Certificate</button>
-                                        <button onClick={() => reviewSubmission(sub.user_id, sub.module_id, 'rejected')} className="w-full flex justify-center items-center px-4 py-1.5 bg-red-500/20 text-red-400 text-xs font-bold rounded-lg hover:bg-red-500/30">Demand Revision</button>
                                     </div>
                                 </div>
                             );

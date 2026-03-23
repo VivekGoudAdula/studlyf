@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../apiConfig';
 
 interface WebImageProps {
   src: string;
@@ -10,6 +11,8 @@ interface WebImageProps {
 }
 
 const WebImage: React.FC<WebImageProps> = ({ src, alt, className = "", aspectRatio = "aspect-video" }) => {
+  const fullSrc = src?.startsWith('/') ? `${API_BASE_URL}${src}` : src;
+  
   return (
     <div className={`relative overflow-hidden group ${aspectRatio} ${className}`}>
       <motion.div
@@ -19,7 +22,7 @@ const WebImage: React.FC<WebImageProps> = ({ src, alt, className = "", aspectRat
         className="w-full h-full"
       >
         <img
-          src={src}
+          src={fullSrc}
           alt={alt}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
