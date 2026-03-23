@@ -398,13 +398,34 @@ const DashboardHome: React.FC = () => {
 
       {/* SECTION 4: REST OF CONTENT */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 relative z-10 pb-20">
-        {/* Scroll Velocity (Studlyf text) above AI Era Integration */}
-        <div className="mb-24 relative flex w-full flex-col items-center justify-center overflow-hidden py-10 border-b border-black/5">
-          <ScrollVelocityContainer className="text-3xl font-black tracking-[-0.05em] md:text-6xl md:leading-[4rem] text-black uppercase italic">
-            <ScrollVelocityRow baseVelocity={-2}>
-              Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf
-            </ScrollVelocityRow>
-          </ScrollVelocityContainer>
+        {/* Infinite Scrolling Logo (Left to Right) */}
+        <div className="mb-24 relative flex w-full flex-col items-center justify-center overflow-hidden py-10 border-b border-black/5 bg-white">
+          <style>
+            {`
+              @keyframes slideRight {
+                from { transform: translateX(-50%); }
+                to { transform: translateX(0); }
+              }
+              .animate-slide-right {
+                animation: slideRight 30s linear infinite;
+              }
+            `}
+          </style>
+          
+          <div className="flex w-max animate-slide-right">
+            {/* First half */}
+            <div className="flex items-center gap-16 md:gap-32 pr-16 md:pr-32">
+               {[...Array(5)].map((_, i) => (
+                 <img key={i} src="/images/studlyf.png" alt="Studlyf" className="h-24 sm:h-28 md:h-40 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+               ))}
+            </div>
+            {/* Second half (Duplicate for seamless loop) */}
+            <div className="flex items-center gap-16 md:gap-32 pr-16 md:pr-32">
+               {[...Array(5)].map((_, i) => (
+                 <img key={i} src="/images/studlyf.png" alt="Studlyf" className="h-24 sm:h-28 md:h-40 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+               ))}
+            </div>
+          </div>
         </div>
 
         {/* AI Era Integration (Career Synergy) */}

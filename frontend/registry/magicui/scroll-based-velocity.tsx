@@ -28,7 +28,7 @@ export function ScrollVelocityContainer({
 }
 
 interface ScrollVelocityRowProps {
-    children: string;
+    children: React.ReactNode;
     baseVelocity: number;
     direction?: number;
 }
