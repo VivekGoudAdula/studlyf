@@ -1,18 +1,22 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, FileText, Video, Play, Lightbulb } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const ResourceCenter: React.FC = () => {
+    const navigate = useNavigate();
+
     const resources = [
         {
             type: 'CASE STUDY',
-            title: 'Elm Partners with Udacity to Build a Graduate Development Program',
+            title: 'Elm Partners with Studlyf to Build a Graduate Development Program',
             desc: 'Elm is recognized for fostering a creative work environment that encourages...',
             image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800',
             icon: <BookOpen size={14} />,
             height: 'h-[380px]',
             cardBg: 'bg-gradient-to-br from-[#1E40AF] to-[#3B82F6]',
-            glowColor: 'border-sky-400/50 hover:shadow-sky-400/20 text-sky-400 bg-sky-500/10'
+            glowColor: 'border-sky-400/50 hover:shadow-sky-400/20 text-sky-400 bg-sky-500/10',
+            link: '/resource/elm-partners'
         },
         {
             type: 'REPORT',
@@ -22,17 +26,19 @@ const ResourceCenter: React.FC = () => {
             icon: <FileText size={14} />,
             height: 'h-[300px]',
             cardBg: 'bg-[#1A0F0A]',
-            glowColor: 'border-emerald-400/50 hover:shadow-emerald-400/20 text-emerald-400 bg-emerald-500/10'
+            glowColor: 'border-emerald-400/50 hover:shadow-emerald-400/20 text-emerald-400 bg-emerald-500/10',
+            link: '/resource/generative-ai'
         },
         {
             type: 'CASE STUDY',
-            title: "Udacity's Data Empowerment Initiative at Siemens",
-            desc: 'Siemens SI has partnered with Udacity to launch the Data Empowerment...',
+            title: "Studlyf's Data Empowerment Initiative at Siemens",
+            desc: 'Siemens SI has partnered with Studlyf to launch the Data Empowerment...',
             image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800',
             icon: <BookOpen size={14} />,
             height: 'h-[400px]',
             cardBg: 'bg-[#4C1D95]',
-            glowColor: 'border-amber-400/50 hover:shadow-amber-400/20 text-amber-400 bg-amber-500/10'
+            glowColor: 'border-amber-400/50 hover:shadow-amber-400/20 text-amber-400 bg-amber-500/10',
+            link: '/resource/siemens-data'
         },
         {
             type: 'WEBINAR',
@@ -42,7 +48,8 @@ const ResourceCenter: React.FC = () => {
             icon: <Video size={14} />,
             height: 'h-[310px]',
             cardBg: 'bg-[#051937]',
-            glowColor: 'border-indigo-400/50 hover:shadow-indigo-400/20 text-indigo-400 bg-indigo-500/10'
+            glowColor: 'border-indigo-400/50 hover:shadow-indigo-400/20 text-indigo-400 bg-indigo-500/10',
+            link: '/resource/ai-agents'
         },
         {
             type: 'CASE STUDY',
@@ -52,7 +59,8 @@ const ResourceCenter: React.FC = () => {
             icon: <BookOpen size={14} />,
             height: 'h-[380px]',
             cardBg: 'bg-[#004DFF]',
-            glowColor: 'border-rose-400/50 hover:shadow-rose-400/20 text-rose-400 bg-rose-500/10'
+            glowColor: 'border-rose-400/50 hover:shadow-rose-400/20 text-rose-400 bg-rose-500/10',
+            link: '/resource/agentic-ai'
         },
         {
             type: 'MEDIA',
@@ -62,7 +70,8 @@ const ResourceCenter: React.FC = () => {
             icon: <FileText size={14} />,
             height: 'h-[280px]',
             cardBg: 'bg-[#C084FC]',
-            glowColor: 'border-teal-400/50 hover:shadow-teal-400/20 text-teal-400 bg-teal-500/10'
+            glowColor: 'border-teal-400/50 hover:shadow-teal-400/20 text-teal-400 bg-teal-500/10',
+            link: '/resource/ai-work-report'
         }
     ];
 
@@ -161,7 +170,8 @@ const ResourceCenter: React.FC = () => {
                                 key={idx}
                                 variants={itemVariants}
                                 whileHover={{ y: -12, transition: { duration: 0.4, ease: "easeOut" } }}
-                                className={`break-inside-avoid group relative ${res.cardBg} rounded-[3rem] overflow-hidden transition-all duration-500 shadow-2xl flex flex-col border-x border-b ${res.glowColor.split(' ')[0]} ${res.height}`}
+                                onClick={() => navigate(res.link)}
+                                className={`break-inside-avoid group relative ${res.cardBg} rounded-[3rem] overflow-hidden transition-all duration-500 shadow-2xl flex flex-col border-x border-b cursor-pointer ${res.glowColor.split(' ')[0]} ${res.height}`}
                             >
                                 {/* Permanent Background Glow Layer */}
                                 <div className="absolute inset-0 z-0 opacity-40">
@@ -210,6 +220,7 @@ const ResourceCenter: React.FC = () => {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
+                            onClick={() => navigate('/resources')}
                             className="relative group p-[2px] rounded-full overflow-hidden bg-[#2563EB]/20 shadow-xl transition-all duration-500 border border-white/10"
                         >
                             {/* ✨ Rotating Border Shine */}

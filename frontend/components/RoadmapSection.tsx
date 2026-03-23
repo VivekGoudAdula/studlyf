@@ -249,11 +249,6 @@ const RoadmapSection: React.FC = () => {
                                         transition={{ delay: 2.2 + index * 0.2, type: "spring", damping: 15 }}
                                         className={`absolute w-52 p-6 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-[32px] z-50 ${pt.cardDir === 'up' ? '-top-[230px]' : 'top-24'} group-hover:-translate-y-3 transition-all duration-500 border border-white/10`}
                                     >
-                                        {index === 0 && (
-                                            <div className="absolute -top-16 -left-10 pointer-events-none z-[60]">
-                                                <InteractiveCreature className="scale-[0.8] h-32 w-32" />
-                                            </div>
-                                        )}
                                         <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br from-[#6C3BFF]/20 to-[#8B5CF6]/20 text-[#6C3BFF] shadow-inner">
                                             {step.icon}
                                         </div>

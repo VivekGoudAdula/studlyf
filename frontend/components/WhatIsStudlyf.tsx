@@ -91,9 +91,9 @@ const WhatIsStudlyf: React.FC = () => {
                                 duration: 0.6,
                                 delay: 0.4
                             }}
-                            className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] uppercase"
+                            className="inline-block align-middle"
                         >
-                            STUDLYF?
+                            <img src="/images/studlyf.png" alt="STUDLYF" className="h-[60px] md:h-[100px] lg:h-[120px] w-auto inline-block drop-shadow-[0_0_20px_rgba(108,77,255,0.4)] mb-4" />
                         </motion.span>
                     </motion.h3>
                 </div>
