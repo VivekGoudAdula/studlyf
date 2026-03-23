@@ -16,7 +16,7 @@ const ResourceCenter: React.FC = () => {
             height: 'h-[380px]',
             cardBg: 'bg-gradient-to-br from-[#1E40AF] to-[#3B82F6]',
             glowColor: 'border-sky-400/50 hover:shadow-sky-400/20 text-sky-400 bg-sky-500/10',
-            link: '/resource/elm-partners'
+            link: 'https://example.com/case-study/elm-partners'
         },
         {
             type: 'REPORT',
@@ -27,7 +27,7 @@ const ResourceCenter: React.FC = () => {
             height: 'h-[300px]',
             cardBg: 'bg-[#1A0F0A]',
             glowColor: 'border-emerald-400/50 hover:shadow-emerald-400/20 text-emerald-400 bg-emerald-500/10',
-            link: '/resource/generative-ai'
+            link: 'https://example.com/report/generative-ai'
         },
         {
             type: 'CASE STUDY',
@@ -38,7 +38,7 @@ const ResourceCenter: React.FC = () => {
             height: 'h-[400px]',
             cardBg: 'bg-[#4C1D95]',
             glowColor: 'border-amber-400/50 hover:shadow-amber-400/20 text-amber-400 bg-amber-500/10',
-            link: '/resource/siemens-data'
+            link: 'https://example.com/case-study/siemens-data'
         },
         {
             type: 'WEBINAR',
@@ -49,7 +49,7 @@ const ResourceCenter: React.FC = () => {
             height: 'h-[310px]',
             cardBg: 'bg-[#051937]',
             glowColor: 'border-indigo-400/50 hover:shadow-indigo-400/20 text-indigo-400 bg-indigo-500/10',
-            link: '/resource/ai-agents'
+            link: 'https://example.com/webinar/ai-agents'
         },
         {
             type: 'CASE STUDY',
@@ -60,7 +60,7 @@ const ResourceCenter: React.FC = () => {
             height: 'h-[380px]',
             cardBg: 'bg-[#004DFF]',
             glowColor: 'border-rose-400/50 hover:shadow-rose-400/20 text-rose-400 bg-rose-500/10',
-            link: '/resource/agentic-ai'
+            link: 'https://example.com/case-study/agentic-ai'
         },
         {
             type: 'MEDIA',
@@ -71,7 +71,7 @@ const ResourceCenter: React.FC = () => {
             height: 'h-[280px]',
             cardBg: 'bg-[#C084FC]',
             glowColor: 'border-teal-400/50 hover:shadow-teal-400/20 text-teal-400 bg-teal-500/10',
-            link: '/resource/ai-work-report'
+            link: 'https://example.com/media/ai-work-report'
         }
     ];
 
@@ -170,7 +170,7 @@ const ResourceCenter: React.FC = () => {
                                 key={idx}
                                 variants={itemVariants}
                                 whileHover={{ y: -12, transition: { duration: 0.4, ease: "easeOut" } }}
-                                onClick={() => navigate(res.link)}
+                                onClick={() => window.open(res.link, '_blank')}
                                 className={`break-inside-avoid group relative ${res.cardBg} rounded-[3rem] overflow-hidden transition-all duration-500 shadow-2xl flex flex-col border-x border-b cursor-pointer ${res.glowColor.split(' ')[0]} ${res.height}`}
                             >
                                 {/* Permanent Background Glow Layer */}
@@ -220,7 +220,7 @@ const ResourceCenter: React.FC = () => {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => navigate('/resources')}
+                            onClick={() => window.open('https://example.com/case-studies', '_blank')}
                             className="relative group p-[2px] rounded-full overflow-hidden bg-[#2563EB]/20 shadow-xl transition-all duration-500 border border-white/10"
                         >
                             {/* ✨ Rotating Border Shine */}
