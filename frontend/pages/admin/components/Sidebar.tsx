@@ -45,7 +45,9 @@ const navItems = [
     { name: 'Payments', icon: CreditCard, path: '/admin/payments' },
     { name: 'Advertisements', icon: Megaphone, path: '/admin/ads' },
     { name: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
-    { name: 'Content CMS', icon: PenTool, path: '/admin/content' },
+];
+
+const contentItems = [
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
     { name: 'Audit Logs', icon: History, path: '/admin/audit-logs' },
 ];

@@ -85,6 +85,16 @@ function MediaDropper({ preview, mediaType, onFile, onClear }:
     );
 }
 
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div style={{ marginBottom: 16 }}>
+        <label style={{
+            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
+            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
+        }}>{label}</label>
+        {children}
+    </div>
+);
+
 /* ── Form panel ── */
 function AdForm({ initial, onSave, onCancel, saving }:
     {
@@ -145,19 +155,12 @@ function AdForm({ initial, onSave, onCancel, saving }:
         fd.append('promo_stats', JSON.stringify(form.promo_stats || []));
         fd.append('order', str(form.order));
         fd.append('active', String(form.active !== false));
+        fd.append('show_cta', String(form.show_cta !== false));
         if (file) fd.append('media_file', file);
         onSave(fd, form);
     };
 
-    const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-        <div style={{ marginBottom: 16 }}>
-            <label style={{
-                display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-            }}>{label}</label>
-            {children}
-        </div>
-    );
+
 
     const input = (k: keyof AdItem, ph = '', type = 'text') => (
         <input type={type} placeholder={ph} value={String(form[k] ?? '')}
@@ -259,7 +262,21 @@ function AdForm({ initial, onSave, onCancel, saving }:
 
                 {form.card_type !== 'promo' && (
                     <>
-                        <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll →')}</F>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                            <div
+                                onClick={() => set('show_cta', form.show_cta === false ? true : false)}
+                                style={{
+                                    width: 36, height: 20, borderRadius: 20, background: form.show_cta !== false ? '#6366f1' : '#e5e7eb',
+                                    position: 'relative', cursor: 'pointer', transition: 'all 0.2s'
+                                }}>
+                                <div style={{
+                                    width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                                    position: 'absolute', top: 2, left: form.show_cta !== false ? 18 : 2, transition: 'all 0.2s'
+                                }} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>Show CTA Button</span>
+                        </div>
+                        {form.show_cta !== false && <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll →')}</F>}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                             <div>
                                 <label style={{

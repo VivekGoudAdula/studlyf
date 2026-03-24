@@ -213,6 +213,7 @@ async def create_ad(
     promo_stats:  str  = Form(""),          # JSON array string
     order:        int  = Form(0),
     active:       bool = Form(True),
+    show_cta:     str  = Form("true"),
     media_file: Optional[UploadFile] = File(None),
 ):
     media_url = ""
@@ -252,6 +253,7 @@ async def create_ad(
         "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
+        "show_cta":     show_cta.lower() == "true",
         "created_at":   datetime.now(timezone.utc).isoformat(),
     }
     result = await ads_col.insert_one(doc)
@@ -280,6 +282,7 @@ async def update_ad(
     promo_stats:  str  = Form(""),
     order:        int  = Form(0),
     active:       bool = Form(True),
+    show_cta:     str  = Form("true"),
     media_file: Optional[UploadFile] = File(None),
 ):
     import json as _json
@@ -318,6 +321,7 @@ async def update_ad(
         "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
+        "show_cta":     show_cta.lower() == "true",
         "updated_at":   datetime.now(timezone.utc).isoformat(),
     }
     await ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": update})

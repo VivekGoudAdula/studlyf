@@ -1,3 +1,4 @@
+import Example, { ExampleColorContext } from "../components/Example";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -134,17 +135,19 @@ const DashboardHome: React.FC = () => {
     return `${slug}--${id}`;
   };
 
-  const briefDetails: Record<string, { title: string; desc: React.ReactNode; image: string; video?: string; gradient: string; accent: string; icon: string }> = {
+  const briefDetails: Record<string, { title: string; headline: string; desc: React.ReactNode; image: string; video?: string; gradient: string; accent: string; icon: string }> = {
     'Cognition': {
       title: 'Cognition',
+      headline: 'Deep AI-Driven Talent Matching',
       desc: 'Studlyf understands people beyond resumes. Our AI analyzes skills, experience, learning patterns, and career intent to create meaningful connections between talent and opportunity. It delivers intelligent career guidance while helping recruiters discover true potential, not just keywords.',
-      image: '/images/producrbriefCONG.png',
+      image: '/images/impact/mainpagrimages/image.png',
       gradient: '#301040',
       accent: '#E03070',
       icon: '🧠',
     },
     'Protocol': {
       title: 'Protocol',
+      headline: 'Structured & Fair AI Workflows',
       desc: 'Every interaction follows a structured AI workflow — from resume analysis to hiring decisions. Automated protocols ensure fairness, transparency, and consistency across recruitment, skill evaluation, and personalized learning recommendations.',
       image: '/images/protocol.png',
       gradient: '#301050',
@@ -153,8 +156,9 @@ const DashboardHome: React.FC = () => {
     },
     'Verification': {
       title: 'Verification',
+      headline: 'Certified Trust & Validation',
       desc: 'Trust is built through verification. Studlyf validates skills, certifications, and professional experience using intelligent document parsing and contextual analysis. Recruiters receive confidence-based insights to make accurate hiring decisions.',
-      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
+      image: '/images/impact/mainpagrimages/image copy.png',
       video: '/videos/verification.mp4',
       gradient: '#201040',
       accent: '#E02040',
@@ -162,24 +166,27 @@ const DashboardHome: React.FC = () => {
     },
     'Blueprint': {
       title: 'Blueprint',
+      headline: 'Actionable Career Growth Paths',
       desc: 'Studlyf transforms insights into action. Candidates receive personalized learning paths and growth plans, while recruiters gain structured hiring blueprints aligned with real job requirements and organizational goals.',
-      image: '/images/blueprint.png',
+      image: '/images/impact/mainpagrimages/image copy 2.png',
       gradient: '#201050',
       accent: '#e2e8f0',
       icon: '📐',
     },
     'Clinical': {
       title: 'Clinical',
+      headline: 'Precision Analytics & Trends',
       desc: 'Precision matters. Advanced analytics evaluate performance trends, interview outcomes, and behavioral signals to provide measurable improvement strategies for both candidates and hiring teams.',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800',
+      image: '/images/impact/mainpagrimages/image copy 2.png',
       gradient: '#E03040',
       accent: '#f8fafc',
       icon: '📊',
     },
     'Evidence': {
       title: 'Evidence',
+      headline: 'Data-Backed Decision Making',
       desc: 'Every recommendation is explainable and data-backed. Matching scores, learning suggestions, and hiring insights are supported by transparent reasoning and industry benchmarks, ensuring trust at every step.',
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
+      image: '/images/impact/mainpagrimages/image copy 3.png',
       gradient: '#E03070',
       accent: '#f8fafc',
       icon: '🔬',
@@ -574,71 +581,18 @@ const DashboardHome: React.FC = () => {
                       }}
                     >
 
-                      <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 lg:gap-12 w-full">
-                        <div className="flex-1 text-left order-2 lg:order-1">
-                          {/* Accent label */}
-                          <span className="text-xs font-black uppercase tracking-[0.4em] mb-4 block" style={{ color: briefDetails[activeBrief].accent }}>
-                            {briefDetails[activeBrief].icon} {activeBrief} Module
-                          </span>
-                          <motion.p
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.3 }}
-                            className="text-white/90 text-base sm:text-lg leading-relaxed tracking-tight"
-                            style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}
-                          >
-                            {briefDetails[activeBrief].desc}
-                          </motion.p>
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.3 }}
-                            className="mt-8"
-                          >
-                            <Button
-                              className="bg-black text-white font-bold px-8 py-3.5 rounded-full text-xs shadow-xl hover:bg-black/80 hover:scale-105 transition-all"
-                            >
-                              Start Journey
-                            </Button>
-                          </motion.div>
+                        <div className="relative z-10 flex flex-col items-center justify-center w-full">
+                          {/* Replacing Product Brief content with Example phone UI */}
+                          <ExampleColorContext.Provider value={{
+                            gradient: briefDetails[activeBrief].gradient,
+                            accent: briefDetails[activeBrief].accent,
+                            headline: briefDetails[activeBrief].headline,
+                            text: briefDetails[activeBrief].desc as string,
+                            image: briefDetails[activeBrief].image,
+                          }}>
+                            <Example />
+                          </ExampleColorContext.Provider>
                         </div>
-
-                        {(briefDetails[activeBrief].image || briefDetails[activeBrief].video) && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.1, duration: 0.4 }}
-                            className="lg:w-[280px] w-full flex-shrink-0 relative group order-1 lg:order-2 flex items-center justify-center"
-                          >
-                            {briefDetails[activeBrief].video ? (
-                              <div className="relative w-full aspect-square flex items-center justify-center">
-                                <video
-                                  src={briefDetails[activeBrief].video}
-                                  autoPlay
-                                  loop
-                                  muted={isMuted}
-                                  playsInline
-                                  className="w-full h-full object-contain relative z-10"
-                                />
-                                <button
-                                  onClick={() => setIsMuted(!isMuted)}
-                                  className="absolute bottom-4 right-4 p-3 bg-black/30 backdrop-blur-xl rounded-full text-white hover:bg-black/50 border border-white/20 transition-all z-20 shadow-xl"
-                                >
-                                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="relative w-full aspect-square flex items-center justify-center">
-                                <img
-                                  src={briefDetails[activeBrief].image}
-                                  alt={briefDetails[activeBrief].title}
-                                  className="w-full h-full object-contain relative z-10 transform group-hover:scale-105 transition-transform duration-1000"
-                                />
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

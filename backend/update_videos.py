@@ -13,7 +13,7 @@ async def fix_urls():
         match = re.search(r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)', url)
         if match:
             embed_url = f"https://www.youtube-nocookie.com/embed/{match.group(1)}"
-            await db.videos.update_one(
+          await db.videos.update_one(
                 {"_id": v["_id"]},
                 {"$set": {"video_url": embed_url}}
             )

@@ -42,6 +42,7 @@ const CourseManagement: React.FC = () => {
     const [courseDuration, setCourseDuration] = useState("10 Weeks");
     const [customId, setCustomId] = useState("");
     const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string>("");
 
     const [modules, setModules] = useState<any[]>([
         { id: 1, title: 'Introduction to Course', lessons: [{ type: 'video', title: 'Setting up Environment' }] }
@@ -122,14 +123,45 @@ const CourseManagement: React.FC = () => {
         }));
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    // Drag-and-drop and file input for image upload
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+        let file: File | undefined;
+        if (e instanceof File) {
+            file = e;
+        } else {
+            file = e.target.files?.[0];
+        }
         if (file) {
+            if (file.size > 1024 * 1024) { // 1MB limit
+                setErrorMsg("Image size should be less than 1MB.");
+                return;
+            }
+            setErrorMsg("");
             const reader = new FileReader();
             reader.onloadend = () => {
                 setCourseImage(reader.result as string);
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    // Drag state for UI feedback
+    const [dragActive, setDragActive] = useState(false);
+    const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleImageUpload(e.dataTransfer.files[0]);
         }
     };
 
@@ -213,16 +245,26 @@ const CourseManagement: React.FC = () => {
     };
 
     const handlePublish = async () => {
+        setErrorMsg("");
         if (!user?.email) {
-            alert('Error: No user email found. Please login.');
+            setErrorMsg('Error: No user email found. Please login.');
             return;
         }
-        alert('Starting Publish/Update...');
+        // Validate price
+        const priceNum = Number(coursePrice.toString().replace(/,/g, ''));
+        if (isNaN(priceNum) || priceNum < 0) {
+            setErrorMsg("Price must be a positive number.");
+            return;
+        }
+        if (!courseTitle.trim()) {
+            setErrorMsg("Course title is required.");
+            return;
+        }
         try {
             const coursePayload = {
                 title: courseTitle,
                 description: courseDescription,
-                price: Number(coursePrice.toString().replace(/,/g, '')),
+                price: priceNum,
                 difficulty: courseDifficulty,
                 role_tag: courseRoleTag,
                 school: courseSchool,
@@ -266,11 +308,11 @@ const CourseManagement: React.FC = () => {
                 fetchCourses();
             } else {
                 const errData = await res.json();
-                alert(`Server Error: ${errData.detail || 'Unknown error'}`);
+                setErrorMsg(`Server Error: ${errData.detail || 'Unknown error'}`);
             }
         } catch (error: any) {
             console.error("Error publishing course", error);
-            alert(`Network or Script Error: ${error.message}`);
+            setErrorMsg(`Network or Script Error: ${error.message}`);
         }
     };
 
@@ -572,7 +614,13 @@ const CourseManagement: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Course Thumbnail</label>
-                                            <div className="w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center">
+                                            <div
+                                                className={`w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center ${dragActive ? 'border-[#7C3AED]/80 bg-[#7C3AED]/10' : ''}`}
+                                                onDragEnter={handleDrag}
+                                                onDragOver={handleDrag}
+                                                onDragLeave={handleDrag}
+                                                onDrop={handleDrop}
+                                            >
                                                 {courseImage ? (
                                                     <img src={courseImage} alt="Thumbnail preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
                                                 ) : null}
@@ -626,7 +674,6 @@ const CourseManagement: React.FC = () => {
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
                                                 value={customId}
                                                 onChange={(e) => setCustomId(e.target.value)}
-                                                disabled={!!editingCourseId}
                                                 placeholder="ai-01"
                                             />
                                         </div>
@@ -675,6 +722,9 @@ const CourseManagement: React.FC = () => {
                                     </div>
                                 </div>
 
+                                {errorMsg && (
+                                    <div className="w-full mb-2 text-red-400 text-xs font-bold text-center">{errorMsg}</div>
+                                )}
                                 <button
                                     onClick={handlePublish}
                                     className="w-full py-3 bg-[#7C3AED] hover:bg-[#6D28D9] text-white rounded-xl text-sm font-bold transition-all shadow-xl shadow-purple-500/20 active:scale-95">
