@@ -225,50 +225,47 @@ function VideoCard({ ad }: { ad: AdItem }) {
 function ImageCard({ ad }: { ad: AdItem }) {
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 500px', height: 380,
-            borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateColumns: '40% 60%',
+            flex: '0 0 350px', height: 350,
+            borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column',
             background: '#fff', border: '1px solid #E5E7EB'
         }}>
-            <div style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', overflow: 'hidden', height: '180px', flexShrink: 0 }}>
                 {ad.media_url ? (
                     <img src={ad.media_url} alt={ad.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
                     <div style={{
-                        ...bgStyle(ad.bg_color), height: '100%', minHeight: 230,
+                        ...bgStyle(ad.bg_color), height: '100%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.3rem'
                     }}>🎨</div>
                 )}
                 {ad.badge && <div style={{
-                    position: 'absolute', top: 20, right: 20, background: '#fff',
+                    position: 'absolute', top: 12, right: 12, background: '#fff',
                     color: '#1A1410', fontSize: '.65rem', fontWeight: 500, letterSpacing: '.12em',
                     textTransform: 'uppercase', padding: '5px 11px', borderRadius: 20,
                     border: '1px solid #E5E7EB'
                 }}>{ad.badge}</div>}
             </div>
             <div style={{
-                padding: '18px 20px 20px', background: '#fff', color: '#1A1410',
-                display: 'flex', flexDirection: 'column', gap: 10
+                padding: '20px', background: '#fff', color: '#1A1410',
+                display: 'flex', flexDirection: 'column', gap: 10, flex: 1
             }}>
                 <div style={{
                     fontSize: '.65rem', letterSpacing: '.14em', textTransform: 'uppercase',
-                    color: '#4A6741', fontWeight: 500
+                    color: '#888', fontWeight: 500
                 }}>{ad.eyebrow}</div>
                 <h3 style={{
-                    fontFamily: "'Playfair Display',serif", fontSize: '1.05rem', fontWeight: 700,
-                    lineHeight: 1.3, letterSpacing: '-.01em', margin: 0
+                    fontFamily: "'Playfair Display',serif", fontSize: '1.25rem', fontWeight: 700,
+                    lineHeight: 1.3, letterSpacing: '-.01em', margin: 0,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                 }}>{ad.title}</h3>
-                <p style={{ fontSize: '.75rem', lineHeight: 1.6, color: '#666', fontWeight: 300, margin: 0 }}>
+                <p style={{ 
+                    fontSize: '.8rem', lineHeight: 1.5, color: '#666', fontWeight: 300, margin: 0,
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                 }}>
                     {ad.description}</p>
-                <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                        {ad.pills?.map(p => <span key={p} style={{
-                            fontSize: '.65rem', letterSpacing: '.08em',
-                            textTransform: 'uppercase', padding: '4px 9px', borderRadius: 2, fontWeight: 500,
-                            border: '1px solid #ccc', color: '#555'
-                        }}>{p}</span>)}
-                    </div>
-                    {ad.show_cta !== false && <CtaBtn text={ad.cta_text} style={ad.cta_style} />}
+                <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    {ad.show_cta !== false && <CtaBtn text={ad.cta_text + (ad.cta_text.includes('→') || ad.cta_text.includes('->') ? '' : ' →')} style={ad.cta_style} />}
                 </div>
             </div>
         </div>
@@ -375,13 +372,7 @@ function PromoCard({ ad }: { ad: AdItem }) {
 }
 
 function renderCard(ad: AdItem, idx: number) {
-    switch (ad.card_type) {
-        case 'video': return <VideoCard key={idx} ad={ad} />;
-        case 'image': return <ImageCard key={idx} ad={ad} />;
-        case 'wide': return <WideCard key={idx} ad={ad} />;
-        case 'promo': return <PromoCard key={idx} ad={ad} />;
-        default: return <ImageCard key={idx} ad={ad} />;
-    }
+    return <ImageCard key={idx} ad={ad} />;
 }
 
 /* ─── easeOutQuint ──────────────────────────────── */
