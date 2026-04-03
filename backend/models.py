@@ -22,7 +22,9 @@ class Course(BaseModel):
     level: Optional[str] = None  # Beginner / Intermediate / Advanced
     key_topics: Optional[List[str]] = None
     last_updated: Optional[str] = None
-    instructor: Optional[str] = None
+    instructor_name: Optional[str] = None
+    instructor_image: Optional[str] = None
+    instructor_description: Optional[str] = None
     is_bestseller: bool = False
     is_premium: bool = False
 

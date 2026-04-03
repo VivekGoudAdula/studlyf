@@ -40,6 +40,9 @@ const CourseManagement: React.FC = () => {
     const [courseImage, setCourseImage] = useState("");
     const [courseSkills, setCourseSkills] = useState("");
     const [courseDuration, setCourseDuration] = useState("10 Weeks");
+    const [instructorName, setInstructorName] = useState("Eshwar G");
+    const [instructorImage, setInstructorImage] = useState("/images/Eshwar.jpg");
+    const [instructorDescription, setInstructorDescription] = useState("Expert Engineering Mentor");
     const [customId, setCustomId] = useState("");
     const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string>("");
@@ -58,6 +61,9 @@ const CourseManagement: React.FC = () => {
         setCourseImage("");
         setCourseSkills("");
         setCourseDuration("10 Weeks");
+        setInstructorName("Eshwar G");
+        setInstructorImage("/images/Eshwar.jpg");
+        setInstructorDescription("Expert Engineering Mentor");
         setCustomId("");
         setModules([{ id: 1, title: 'Introduction to Course', lessons: [{ type: 'video', title: 'Setting up Environment' }] }]);
         setQuestions([{ question: 'What is the primary role of this technology?', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answers: [0], explanation: '' }]);
@@ -75,6 +81,9 @@ const CourseManagement: React.FC = () => {
         setCourseImage(course.image || "");
         setCourseSkills(Array.isArray(course.skills) ? course.skills.join(", ") : "");
         setCourseDuration(course.duration || "10 Weeks");
+        setInstructorName(course.instructor_name || "Eshwar G");
+        setInstructorImage(course.instructor_image || "/images/Eshwar.jpg");
+        setInstructorDescription(course.instructor_description || "Expert Engineering Mentor");
         setCustomId(course._id || "");
         setModules(course.modules || []);
         setQuestions(course.questions || []);
@@ -145,8 +154,8 @@ const CourseManagement: React.FC = () => {
         }
     };
 
-    // Drag state for UI feedback
     const [dragActive, setDragActive] = useState(false);
+    const [instructorDragActive, setInstructorDragActive] = useState(false);
     const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -154,6 +163,40 @@ const CourseManagement: React.FC = () => {
             setDragActive(true);
         } else if (e.type === "dragleave") {
             setDragActive(false);
+        }
+    };
+    const handleInstructorDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setInstructorDragActive(true);
+        } else if (e.type === "dragleave") {
+            setInstructorDragActive(false);
+        }
+    };
+    const handleInstructorDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setInstructorDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleInstructorImageUpload(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleInstructorImageUpload = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+        let file: File | undefined;
+        if (e instanceof File) {
+            file = e;
+        } else {
+            file = e.target.files?.[0];
+        }
+        if (file) {
+            setErrorMsg("");
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setInstructorImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
         }
     };
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -271,6 +314,9 @@ const CourseManagement: React.FC = () => {
                 image: courseImage || 'https://miro.medium.com/max/938/0*lbtSAeYRtmUMAWeY.png',
                 skills: courseSkills.split(",").map(s => s.trim()).filter(s => s !== ""),
                 duration: courseDuration,
+                instructor_name: instructorName,
+                instructor_image: instructorImage,
+                instructor_description: instructorDescription,
                 modules: modules,
                 questions: questions
             };
@@ -684,6 +730,44 @@ const CourseManagement: React.FC = () => {
                                                 value={courseSkills}
                                                 onChange={(e) => setCourseSkills(e.target.value)}
                                                 placeholder="LLMs, GPT, Transformers"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Name</label>
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
+                                                value={instructorName}
+                                                onChange={(e) => setInstructorName(e.target.value)}
+                                                placeholder="e.g. Eshwar G"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Avatar</label>
+                                            <div
+                                                className={`w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-28 flex flex-col items-center justify-center ${instructorDragActive ? 'border-[#7C3AED]/80 bg-[#7C3AED]/10' : ''}`}
+                                                onDragEnter={handleInstructorDrag}
+                                                onDragOver={handleInstructorDrag}
+                                                onDragLeave={handleInstructorDrag}
+                                                onDrop={handleInstructorDrop}
+                                            >
+                                                {instructorImage ? (
+                                                    <img src={instructorImage} alt="Avatar preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                                                ) : null}
+                                                <div className="relative z-10 flex flex-col items-center pointer-events-none">
+                                                    <Upload size={16} className="mx-auto text-white/80 mb-1 group-hover:text-white transition-colors" />
+                                                    <span className="text-[10px] text-white font-bold block bg-black/50 px-2 py-0.5 rounded uppercase tracking-widest">Choose / Drop Avatar</span>
+                                                </div>
+                                                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onChange={handleInstructorImageUpload} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Bio</label>
+                                            <textarea
+                                                rows={2}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:ring-1 focus:ring-[#7C3AED] resize-none"
+                                                value={instructorDescription}
+                                                onChange={(e) => setInstructorDescription(e.target.value)}
+                                                placeholder="Expert Software Architect"
                                             />
                                         </div>
                                         <div>

@@ -82,6 +82,16 @@ class InterviewInteractionRequest(BaseModel):
     user_response: str
     round_index: int
 
+class CareerIdentityRequest(BaseModel):
+    subject: str = ""
+    skills: List[str] = []
+    interests: List[str] = []
+
+class CareerRoadmapRequest(BaseModel):
+    career_path: str
+    subject: str = ""
+    skills: List[str] = []
+
 def fix_id(doc):
     if doc and "_id" in doc:
         doc["_id"] = str(doc["_id"])
@@ -214,9 +224,9 @@ async def create_ad(
     order:        int  = Form(0),
     active:       bool = Form(True),
     show_cta:     str  = Form("true"),
+    media_url:    str  = Form(""),
     media_file: Optional[UploadFile] = File(None),
 ):
-    media_url = ""
     upload_media_type = media_type
 
     if media_file and media_file.filename:
@@ -230,6 +240,13 @@ async def create_ad(
         if ext in [".mp4", ".webm", ".mov", ".ogg"]:
             upload_media_type = "video"
         elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
+            upload_media_type = "image"
+    elif media_url and not upload_media_type:
+        # try to auto-detect from extension if link pasted
+        _url_lower = media_url.lower()
+        if any(ext in _url_lower for ext in [".mp4", ".webm", ".mov", ".ogg"]):
+            upload_media_type = "video"
+        elif any(ext in _url_lower for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]):
             upload_media_type = "image"
 
     import json as _json
@@ -268,7 +285,6 @@ async def update_ad(
     title:        str  = Form(...),
     description:  str  = Form(""),
     media_type:   str  = Form(""),
-    media_url_existing: str = Form(""),
     tag:          str  = Form(""),
     badge:        str  = Form(""),
     cta_text:     str  = Form("Enroll →"),
@@ -283,10 +299,10 @@ async def update_ad(
     order:        int  = Form(0),
     active:       bool = Form(True),
     show_cta:     str  = Form("true"),
+    media_url:    str  = Form(""),
     media_file: Optional[UploadFile] = File(None),
 ):
     import json as _json
-    media_url = media_url_existing
     upload_media_type = media_type
 
     if media_file and media_file.filename:
@@ -299,6 +315,12 @@ async def update_ad(
         if ext in [".mp4", ".webm", ".mov", ".ogg"]:
             upload_media_type = "video"
         elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
+            upload_media_type = "image"
+    elif media_url and not upload_media_type:
+        _url_lower = media_url.lower()
+        if any(ext in _url_lower for ext in [".mp4", ".webm", ".mov", ".ogg"]):
+            upload_media_type = "video"
+        elif any(ext in _url_lower for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]):
             upload_media_type = "image"
 
     update = {
@@ -1865,6 +1887,106 @@ def grok_chat(messages: List[Dict[str, str]], temperature: float = 0.4, max_toke
 def grok_json(messages: List[Dict[str, str]], temperature: float = 0.3, max_tokens: int = 900) -> Dict[str, Any]:
     return extract_json_object(grok_chat(messages, temperature=temperature, max_tokens=max_tokens))
 
+# ─── Career Onboarding AI API ──────────────────────────────────────────────
+
+@app.post("/api/career/identity")
+async def generate_career_identity(req: CareerIdentityRequest):
+    prompt = f"""
+    Create a professional 'Career Identity Statement' (max 3 sentences) for a student with the following profile:
+    Subject: {req.subject}
+    Skills: {', '.join(req.skills)}
+    Interests: {', '.join(req.interests)}
+    
+    The tone should be ambitious, modern, and high-impact. 
+    Focus on how their skills translate into value.
+    
+    Return JSON only:
+    {{
+        "identity_statement": "The generated statement"
+    }}
+    """
+    try:
+        return grok_json([{"role": "user", "content": prompt}])
+    except Exception as e:
+        print(f"Error generating identity: {e}")
+        return {"identity_statement": f"I am a {req.subject} specialist. Skilled in {', '.join(req.skills[:3])}."}
+
+@app.post("/api/career/explore-paths")
+async def explore_career_paths(req: CareerIdentityRequest):
+    prompt = f"""
+    Based on the following profile, suggest 12 diverse and exciting career paths.
+    Subject: {req.subject}
+    Skills: {', '.join(req.skills)}
+    Interests: {', '.join(req.interests)}
+    
+    For each path, provide:
+    1. A short name (e.g., 'AI Ethics Architect')
+    2. A category group (e.g., 'AI', 'Ethics', 'Architecture')
+    3. A brief 3-line description of what they do and salary potential.
+    4. Suggested X/Y coordinates for a visual map (between -500 and 500).
+    
+    Return JSON only:
+    {{
+        "paths": [
+            {{ "name": "...", "group": "...", "description": "...", "pos": {{ "x": 0, "y": 0 }} }}
+        ]
+    }}
+    """
+    try:
+        data = grok_json([{"role": "user", "content": prompt}])
+        if data and "paths" in data and len(data["paths"]) > 0:
+            return data
+        raise ValueError("Empty AI path response")
+    except Exception as e:
+        print(f"Error exploring paths: {e}")
+        subj = req.subject or "Technology"
+        fallback = [
+            { "name": f"{subj} Lead Specialist", "group": "Industrial", "description": f"Design and implement cutting-edge {subj} solutions. $120k+", "pos": { "x": -250, "y": -150 } },
+            { "name": f"{subj} Systems Architect", "group": "Architecture", "description": f"Define large-scale {subj} frameworks and infrastructure. $140k+", "pos": { "x": 100, "y": 300 } },
+            { "name": f"{subj} Optimization Pro", "group": "Efficiency", "description": f"Refine and scale existing {subj} workflows for global impact. $110k+", "pos": { "x": 300, "y": -200 } },
+            { "name": f"{subj} Research Pioneer", "group": "Innovation", "description": f"Directly invent the next generation of {subj} breakthroughs. $160k+", "pos": { "x": -400, "y": 100 } },
+            { "name": f"{subj} Product Strategist", "group": "Business", "description": f"Merge the technical power of {subj} with market needs. $135k+", "pos": { "x": 0, "y": 450 } },
+            { "name": f"{subj} Quality Engineer", "group": "Assurance", "description": f"Ensure safety and robust scalability for all {subj} assets. $105k+", "pos": { "x": 200, "y": -400 } }
+        ]
+        return { "paths": fallback }
+
+@app.post("/api/career/roadmap")
+async def generate_career_roadmap(req: CareerRoadmapRequest):
+    prompt = f"""
+    Generate a highly tactical, month-by-month roadmap (6 months) to become a {req.career_path}.
+    The candidate currently knows: {', '.join(req.skills)} and studied {req.subject}.
+    
+    For each month (1-6), provide:
+    1. Focus Title
+    2. 3 Specific Actionable Tasks
+    3. One 'Boss Level' project to complete that month.
+    
+    Return JSON only:
+    {{
+        "career_path": "{req.career_path}",
+        "roadmap": [
+            {{ "month": 1, "title": "...", "tasks": ["...", "...", "..."], "project": "..." }}
+        ]
+    }}
+    """
+    try:
+        data = grok_json([{"role": "user", "content": prompt}])
+        if data and "roadmap" in data and len(data["roadmap"]) > 0:
+            return data
+        raise ValueError("Invalid roadmap format from AI")
+    except Exception as e:
+        print(f"Error generating roadmap: {e}")
+        # Robust Fallback Roadmap
+        fallback = [
+            { "month": 1, "title": "Fundamentals & Environment", "tasks": [f"Audit current {req.subject} knowledge", "Set up professional dev environment", "Deep dive into core prerequisites"], "project": "Environment Alpha" },
+            { "month": 2, "title": "Core Technical Mastery", "tasks": ["Master advanced concepts", "Build 5 mini-modules", "Shadow industry experts"], "project": "Prototype Beta" },
+            { "month": 3, "title": "Project Lifecycle", "tasks": ["Implement robust architecture", "Add testing & documentation", "Optimize performance"], "project": "Core Engine V1" },
+            { "month": 4, "title": "Advanced Integration", "tasks": ["Connect external services", "Implement scale protocols", "Refactor for maintainability"], "project": "Integrator Pro" },
+            { "month": 5, "title": "Portfolio Refinement", "tasks": ["Polished Case Studies", "Open Source contributions", "Interview prep"], "project": "Showcase Matrix" },
+            { "month": 6, "title": "Market Launch", "tasks": ["Target high-impact roles", "Technical blogging", "Final project deployment"], "project": "Grand Finale Deployment" }
+        ]
+        return { "career_path": req.career_path, "roadmap": fallback }
+
 
 def build_round_topics(role: str, round_type: str) -> str:
     role_name = (role or "software engineer").strip()
@@ -2038,13 +2160,20 @@ def generate_next_interview_message(
     question_count: int,
     recent_analysis: Optional[Dict[str, Any]],
     is_round_start: bool,
+    is_skip: bool = False,
 ) -> Dict[str, Any]:
     round_type = current_round.get("round_type", "technical")
     persona = current_round.get("persona", fallback_persona(session["company"], round_type))
     round_limit = ROUND_LIMITS.get(round_type, 5)
     history_text = format_round_history(round_history, round_index)
     analysis_text = json.dumps(recent_analysis, ensure_ascii=True) if recent_analysis else "None yet."
-    start_instruction = "Ask the opening question for this round." if is_round_start else "Ask the next best question based on the last answer and its gaps."
+    
+    if is_round_start:
+        start_instruction = "Ask the opening question for this round."
+    elif is_skip:
+        start_instruction = "The candidate explicitly skipped the last question or said they don't know. Move IMMEDIATELY to a brand new question on a different topic. Do not repeat the previous question and do not try to explain it."
+    else:
+        start_instruction = "Ask the next best question based on the last answer and its gaps."
 
     prompt = f"""
     You are an interviewer conducting the {ROUND_DISPLAY_NAMES.get(round_type, round_type)} for a candidate at {session['company']}.
@@ -2230,6 +2359,10 @@ async def interview_chat(req: InterviewInteractionRequest):
             "answer_analysis": recent_analysis,
         }
 
+     # Check for skip keywords
+    skip_keywords = ["skip", "idont know", "next question", "i don't know"]
+    is_skip = any(k in req.user_response.lower() for k in skip_keywords) if req.user_response else False
+
     try:
         data = generate_next_interview_message(
             session,
@@ -2239,6 +2372,7 @@ async def interview_chat(req: InterviewInteractionRequest):
             question_count,
             recent_analysis,
             not bool(req.user_response),
+            is_skip=is_skip
         )
 
         interviewer_text = data.get("interviewer_text", "Could you tell me more about that?")
@@ -2324,8 +2458,14 @@ async def voice_analysis(req: InterviewInteractionRequest):
     if req.user_response:
         messages.append({"role": "user", "content": req.user_response})
 
+    # Check for skip keywords
+    skip_keywords = ["skip", "idont know", "next question", "i don't know"]
+    is_skip = any(k in req.user_response.lower() for k in skip_keywords) if req.user_response else False
+
     prompt_instruction = f"\n\nInterview Progress: Question {question_count + 1} of {round_limit}. "
-    if question_count >= round_limit:
+    if is_skip:
+        prompt_instruction += "\nSTRICT RULE: The candidate skipped this question. DO NOT REPEAT IT. Transition immediately to a NOVEL question on a fresh HR topic."
+    elif question_count >= round_limit:
         prompt_instruction += "\nSTRICT RULE: Thank the candidate and end the interview politely. Set is_call_over to true."
     else:
         prompt_instruction += "\nProvide the next HR question. Set is_call_over to false."

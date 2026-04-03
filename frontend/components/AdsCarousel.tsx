@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { API_BASE_URL } from '../apiConfig';
 
 /* ─── Google Font injection ─────────────────────── */
-function useFont() {
+export function useFont() {
     useEffect(() => {
         const id = 'ads-google-fonts';
         if (document.getElementById(id)) return;
@@ -68,7 +69,7 @@ const ADS_CSS = `
   color:rgba(255,255,255,.07); line-height:1; }
 `;
 
-function useCSS() {
+export function useCSS() {
     useEffect(() => {
         const id = 'ads-carousel-css';
         if (document.getElementById(id)) return;
@@ -137,8 +138,15 @@ const CTA_STYLES: Record<string, React.CSSProperties> = {
     white: { background: '#FFFFFF', color: '#C84B2F', fontWeight: 600 },
 };
 function CtaBtn({ text, style: s = 'primary', fullWidth = false }: { text: string; style?: string; fullWidth?: boolean }) {
+    const handleClick = () => {
+        const el = document.getElementById('contact-us');
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     return (
-        <button style={{
+        <button onClick={handleClick} style={{
             fontFamily: "'DM Sans',sans-serif", fontSize: '.75rem', fontWeight: 500,
             letterSpacing: '.08em', textTransform: 'uppercase', padding: '9px 18px', borderRadius: 2,
             border: 'none', cursor: 'pointer', marginTop: 'auto', width: fullWidth ? '100%' : 'fit-content',
@@ -149,19 +157,43 @@ function CtaBtn({ text, style: s = 'primary', fullWidth = false }: { text: strin
     );
 }
 
+/* ─── YouTube Helper ───────────────────────────── */
+function getYoutubeEmbed(url?: string) {
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=1&mute=1&loop=1&playlist=${match[1]}&controls=0&modestbranding=1` : null;
+}
+
 /* ─── Card components ──────────────────────────── */
 function VideoCard({ ad }: { ad: AdItem }) {
-    const isVideo = ad.media_type === 'video';
+    const isVideo = ad.media_type === 'video' || !!getYoutubeEmbed(ad.media_url) || !!ad.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
     return (
         <div className="ads-card-hover" style={{
             flex: '0 0 500px', height: 380,
-            borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateColumns: '40% 60%',
+            borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr',
             background: '#1A1410'
         }}>
             <div style={{ position: 'relative', overflow: 'hidden' }}>
                 {isVideo ? (
-                    <video src={ad.media_url} autoPlay loop muted playsInline
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    getYoutubeEmbed(ad.media_url) ? (
+                        <iframe
+                            src={getYoutubeEmbed(ad.media_url)!}
+                            style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover' }}
+                            allow="autoplay; encrypted-media"
+                            title={ad.title}
+                        />
+                    ) : (
+                        <video
+                            key={ad.media_url}
+                            src={ad.media_url}
+                            autoPlay={true}
+                            loop={true}
+                            muted={true}
+                            playsInline={true}
+                            onEnded={e => (e.target as HTMLVideoElement).play()}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                    )
                 ) : (
                     <div style={{
                         ...bgStyle(ad.bg_color), height: '100%', minHeight: 280, display: 'flex',
@@ -223,6 +255,7 @@ function VideoCard({ ad }: { ad: AdItem }) {
 }
 
 function ImageCard({ ad }: { ad: AdItem }) {
+    const isVideo = ad.media_type === 'video' || !!getYoutubeEmbed(ad.media_url) || !!ad.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
     return (
         <div className="ads-card-hover" style={{
             flex: '0 0 350px', height: 350,
@@ -230,7 +263,27 @@ function ImageCard({ ad }: { ad: AdItem }) {
             background: '#fff', border: '1px solid #E5E7EB'
         }}>
             <div style={{ position: 'relative', overflow: 'hidden', height: '180px', flexShrink: 0 }}>
-                {ad.media_url ? (
+                {isVideo ? (
+                    getYoutubeEmbed(ad.media_url) ? (
+                        <iframe
+                            src={getYoutubeEmbed(ad.media_url)!}
+                            style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover' }}
+                            allow="autoplay; encrypted-media"
+                            title={ad.title}
+                        />
+                    ) : (
+                        <video
+                            key={ad.media_url}
+                            src={ad.media_url}
+                            autoPlay={true}
+                            loop={true}
+                            muted={true}
+                            playsInline={true}
+                            onEnded={e => (e.target as HTMLVideoElement).play()}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                    )
+                ) : ad.media_url ? (
                     <img src={ad.media_url} alt={ad.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
@@ -274,7 +327,7 @@ function ImageCard({ ad }: { ad: AdItem }) {
 
 function WideCard({ ad }: { ad: AdItem }) {
     const isDark = ad.wide_side !== 'light';
-    const isVideo = ad.media_type === 'video';
+    const isVideo = ad.media_type === 'video' || !!getYoutubeEmbed(ad.media_url) || !!ad.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
     return (
         <div className="ads-card-hover" style={{
             flex: '0 0 480px', height: 380,
@@ -282,8 +335,25 @@ function WideCard({ ad }: { ad: AdItem }) {
         }}>
             <div style={{ position: 'relative', overflow: 'hidden' }}>
                 {isVideo ? (
-                    <video src={ad.media_url} autoPlay loop muted playsInline
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    getYoutubeEmbed(ad.media_url) ? (
+                        <iframe
+                            src={getYoutubeEmbed(ad.media_url)!}
+                            style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover' }}
+                            allow="autoplay; encrypted-media"
+                            title={ad.title}
+                        />
+                    ) : (
+                        <video
+                            key={ad.media_url}
+                            src={ad.media_url}
+                            autoPlay={true}
+                            loop={true}
+                            muted={true}
+                            playsInline={true}
+                            onEnded={e => (e.target as HTMLVideoElement).play()}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                    )
                 ) : ad.media_url ? (
                     <img src={ad.media_url} alt={ad.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -371,19 +441,69 @@ function PromoCard({ ad }: { ad: AdItem }) {
     );
 }
 
-function renderCard(ad: AdItem, idx: number) {
-    return <ImageCard key={idx} ad={ad} />;
+export function renderCard(ad: AdItem, idx: number) {
+    switch (ad.card_type) {
+        case 'video': return <VideoCard key={idx} ad={ad} />;
+        case 'wide':  return <WideCard key={idx} ad={ad} />;
+        case 'promo': return <PromoCard key={idx} ad={ad} />;
+        default:      return <ImageCard key={idx} ad={ad} />;
+    }
 }
 
 /* ─── easeOutQuint ──────────────────────────────── */
 function easeOutQuint(t: number) { return 1 - Math.pow(1 - t, 5); }
+
+const DEFAULT_ADS: AdItem[] = [
+    {
+        title: "Mastering Real-Time Systems",
+        eyebrow: "Featured Pathway",
+        description: "Dive deep into low-latency architecture and high-frequency data streams.",
+        card_type: "video",
+        media_url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800",
+        media_type: "video",
+        cta_text: "Start Path",
+        cta_style: "primary",
+        color_scheme: "dark",
+        bg_color: "blue",
+        tag: "High Demand",
+        duration: "02:45",
+        order: 1
+    },
+    {
+        title: "Elite Network Access",
+        eyebrow: "Community",
+        description: "Connect with architects from top-tier engineering organizations globally.",
+        card_type: "promo",
+        promo_tag: "Global Network",
+        promo_stats: [{num: "500+", label: "Architects"}, {num: "12", label: "Countries"}],
+        cta_text: "Explore Hub",
+        cta_style: "white",
+        color_scheme: "dark",
+        bg_color: "rose",
+        order: 2
+    },
+    {
+        title: "The Physics of UI",
+        eyebrow: "Deep Dive",
+        description: "Understanding interpolation, fluid dynamics, and motion in modern interfaces.",
+        card_type: "wide",
+        media_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800",
+        media_type: "image",
+        cta_text: "View Tutorial",
+        cta_style: "gold",
+        color_scheme: "light",
+        bg_color: "amber",
+        tag: "Interactive",
+        order: 3
+    }
+];
 
 /* ─── Main carousel ─────────────────────────────── */
 export default function AdsCarousel() {
     useFont();
     useCSS();
 
-    const [ads, setAds] = useState<AdItem[]>([]);
+    const [ads, setAds] = useState<AdItem[]>(DEFAULT_ADS);
     const [current, setCurrent] = useState(0);
     const trackRef = useRef<HTMLDivElement>(null);
     const autoRef = useRef<number>(0);
@@ -394,10 +514,14 @@ export default function AdsCarousel() {
 
     /* fetch live data */
     useEffect(() => {
-        fetch('http://localhost:8000/api/ads')
+        fetch(`${API_BASE_URL}/api/ads`)
             .then(r => r.json())
-            .then(data => { if (Array.isArray(data)) setAds(data.sort((a, b) => a.order - b.order)); })
-            .catch(() => {/* use dummy */ });
+            .then(data => { 
+                if (Array.isArray(data) && data.length > 0) {
+                    setAds(data.sort((a, b) => a.order - b.order)); 
+                }
+            })
+            .catch(() => {/* fallback to DEFAULT_ADS */ });
     }, []);
 
     /* collect card refs after render */

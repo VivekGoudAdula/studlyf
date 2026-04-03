@@ -26,78 +26,8 @@ import { DevHeroSection } from '../components/DevHeroSection';
 import FeaturedColleges from '../components/FeaturedColleges';
 // import { NeonBackground } from '../components/NeonBackground';
 
-const DUMMY_COURSES = [
-  {
-    _id: 'se-01',
-    title: 'Fullstack Systems Architect',
-    role_tag: 'Engineering',
-    school: 'Software Systems',
-    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'ai-01',
-    title: 'Generative AI Specialist',
-    role_tag: 'Intelligence',
-    school: 'AI & Data',
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'pm-01',
-    title: 'Product Strategy Elite',
-    role_tag: 'Management',
-    school: 'Business & Design',
-    image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'ds-01',
-    title: 'Data Science & MLOps',
-    role_tag: 'Data Science',
-    school: 'Data Engineering',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'cs-01',
-    title: 'Cyber Security Operations',
-    role_tag: 'Security',
-    school: 'Cyber Defense',
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'cloud-01',
-    title: 'Cloud Native Developer',
-    role_tag: 'DevOps',
-    school: 'Infrastructure',
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'blockchain-01',
-    title: 'Web3 & Blockchain Architect',
-    role_tag: 'Web3',
-    school: 'Distributed Systems',
-    image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'game-01',
-    title: 'Unity Engine & XR Reality',
-    role_tag: 'Game Dev',
-    school: 'Creative Media',
-    image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'uiux-01',
-    title: 'Product Design & HCI',
-    role_tag: 'Design',
-    school: 'Creative Arts',
-    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&auto=format&fit=crop',
-  },
-  {
-    _id: 'fintech-01',
-    title: 'Fintech Systems Engineer',
-    role_tag: 'Finance',
-    school: 'Economics & Systems',
-    image: 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800&auto=format&fit=crop',
-  }
-];
+ // Removed DUMMY_COURSES to only show database content.
+
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
@@ -105,21 +35,19 @@ const DashboardHome: React.FC = () => {
   const [activeBrief, setActiveBrief] = useState<string>('Cognition');
   const [isMuted, setIsMuted] = useState(true);
 
-  const [courses, setCourses] = useState<any[]>(DUMMY_COURSES);
+   const [courses, setCourses] = useState<any[]>([]);
+
   const carouselRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/courses`);
         const data = await res.json();
-        if (data && data.length > 0) {
+         if (data && data.length > 0) {
           setCourses(data);
-        } else {
-          setCourses(DUMMY_COURSES);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
-        setCourses(DUMMY_COURSES);
       }
     };
     fetchCourses();
@@ -471,6 +399,11 @@ const DashboardHome: React.FC = () => {
             </div>
           </section>
         </div>
+
+        {/* Advertisements Section */}
+        <div className="relative z-20 mb-20 px-4 sm:px-12">
+            <AdsCarousel />
+        </div>
       </div>
 
 
@@ -609,9 +542,6 @@ const DashboardHome: React.FC = () => {
         <GetHiredSection />
       </div>
 
-      <div className="relative z-20">
-        <AdsCarousel />
-      </div>
       <FeaturedColleges />
       <WhyUsSection />
       <FAQCarousel />
