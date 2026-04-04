@@ -227,6 +227,7 @@ async def create_ad(
     media_url:    str  = Form(""),
     media_file: Optional[UploadFile] = File(None),
 ):
+    media_url = ""
     upload_media_type = media_type
 
     if media_file and media_file.filename:
@@ -285,6 +286,7 @@ async def update_ad(
     title:        str  = Form(...),
     description:  str  = Form(""),
     media_type:   str  = Form(""),
+    media_url_existing: str = Form(""),
     tag:          str  = Form(""),
     badge:        str  = Form(""),
     cta_text:     str  = Form("Enroll →"),
@@ -303,6 +305,7 @@ async def update_ad(
     media_file: Optional[UploadFile] = File(None),
 ):
     import json as _json
+    media_url = media_url_existing
     upload_media_type = media_type
 
     if media_file and media_file.filename:
@@ -3966,4 +3969,4 @@ async def get_ai_tools():
     except Exception as e:
         print(f"ERROR fetching AI tools: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch AI tools")
-# ─── End AI Tools API ────────────────────────────────────────────────────────
+# ─── End AI Tools API ────────────────────────────────────────────────────────
