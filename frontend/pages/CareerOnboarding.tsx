@@ -40,25 +40,44 @@ import {
     Flag,
     Loader2,
     Info,
-    PlayCircle
+    PlayCircle,
+    Code,
+    Terminal,
+    ChevronRight
 } from 'lucide-react';
 
 import { API_BASE_URL as API_BASE } from '../apiConfig';
 
 const DEFAULT_PATHS = [
-    { name: "AI Research Scientist", group: "AI", description: "Develop cutting edge models. $150k+", pos: { x: -280, y: -120 } },
-    { name: "Robotics Engineer", group: "Robotics", description: "Design hardware/software systems. $120k+", pos: { x: -380, y: 80 } },
-    { name: "Product Manager", group: "Business", description: "Lead product vision and roadmap. $130k+", pos: { x: 50, y: 350 } },
-    { name: "Data Scientist", group: "Maths", description: "Extract insights from complex data. $110k+", pos: { x: 300, y: -180 } }
+    { name: "Cloud Solutions Architect", group: "Cloud", pos: { x: -350, y: -220 }, color: "#0EA5E9", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=300&fit=crop" },
+    { name: "Mobile App Developer", group: "App", pos: { x: -400, y: -80 }, color: "#3B82F6", image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=300&h=300&fit=crop" },
+    { name: "Cyber Security Lead", group: "Security", pos: { x: -320, y: 150 }, color: "#EF4444", image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=300&h=300&fit=crop" },
+    { name: "AI Research Scientist", group: "AI", pos: { x: -180, y: -320 }, color: "#6366F1", image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=300&h=300&fit=crop" },
+    { name: "Data Science Manager", group: "Maths", pos: { x: 320, y: -260 }, color: "#10B981", image: "https://images.unsplash.com/photo-1551288049-bbda38a10ad1?w=300&h=300&fit=crop" },
+    { name: "Product Development", group: "Business", pos: { x: 420, y: -120 }, color: "#F59E0B", image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=300&h=300&fit=crop" },
+    { name: "UX Design Architect", group: "Design", pos: { x: 360, y: 180 }, color: "#EC4899", image: "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?w=300&h=300&fit=crop" },
+    { name: "Full Stack Engineer", group: "Dev", pos: { x: 150, y: 320 }, color: "#F97316", image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&h=300&fit=crop" },
+    { name: "Robotics Lead Eng", group: "Robotics", pos: { x: -220, y: 360 }, color: "#06B6D4", image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=300&fit=crop" },
+    { name: "NLP Systems Specialist", group: "AI", pos: { x: 220, y: -380 }, color: "#8B5CF6", image: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=300&h=300&fit=crop" },
+    { name: "Blockchain Strategist", group: "Web3", pos: { x: -480, y: -320 }, color: "#F43F5E", image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=300&h=300&fit=crop" },
+    { name: "Digital Twin Expert", group: "Eng", pos: { x: -520, y: 120 }, color: "#D946EF", image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=300&fit=crop" },
+    { name: "Quantum Computing Dev", group: "Future", pos: { x: -120, y: 420 }, color: "#14B8A6", image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=300&h=300&fit=crop" },
+    { name: "Metaverse Architect", group: "Design", pos: { x: 520, y: 360 }, color: "#6366F1", image: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=300&h=300&fit=crop" },
+    { name: "Big Data Engineer", group: "Data", pos: { x: 550, y: -320 }, color: "#F59E0B", image: "https://images.unsplash.com/photo-1558494949-ef01091244ea?w=300&h=300&fit=crop" },
+    { name: "Systems Integrator", group: "Ops", pos: { x: 540, y: 120 }, color: "#10B981", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=300&fit=crop" },
+    { name: "IoT Platform Eng", group: "Tech", pos: { x: -550, y: 320 }, color: "#3B82F6", image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=300&h=300&fit=crop" },
+    { name: "DevOps Champion", group: "Ops", pos: { x: 0, y: -480 }, color: "#EF4444", image: "https://images.unsplash.com/photo-1618401471353-b98aade8103a?w=300&h=300&fit=crop" },
+    { name: "SaaS Product Owner", group: "Business", pos: { x: -250, y: -450 }, color: "#8B5CF6", image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&h=300&fit=crop" },
+    { name: "FinTech Consultant", group: "Finance", pos: { x: 350, y: 450 }, color: "#0EA5E9", image: "https://images.unsplash.com/photo-1611974714013-3c81048fd89b?w=300&h=300&fit=crop" },
 ];
 
 const FALLBACK_ROADMAP = [
-    { "month": 1, "title": "Foundation & Environment", "tasks": ["Audit prerequisite skills", "Set up professional workstation", "Establish daily learning routine"], "project": "Environment Alpha" },
-    { "month": 2, "title": "Core Technical Mastery", "tasks": ["Master core language/tools", "Build 5 mini-modules", "Join 3 relevant communities"], "project": "Prototype Beta" },
-    { "month": 3, "title": "Architecture & Scalability", "tasks": ["Implement robust data flow", "Optimize for user performance", "Conduct 3 deep refactors"], "project": "Core Engine V1" },
-    { "month": 4, "title": "Advanced Logic & Integration", "tasks": ["Connect external high-level APIs", "Implement secure protocols", "Add automated testing"], "project": "Integrator Pro" },
-    { "month": 5, "title": "Case Study & Polishing", "tasks": ["Record 5-min demo video", "Polished technical case study", "Polish LinkedIn & Resume"], "project": "Showcase Matrix" },
-    { "month": 6, "title": "Market Impact", "tasks": ["Target 10 specific companies", "Attend 2 industry meetups", "Final project deployment"], "project": "Grand Finale" }
+    { "month": 1, "title": "Starting Out", "tasks": ["Learn basic tools", "Set up your screen"], "project": "Initial Draft", "stack": ["VS Code", "Terminal"], "concepts": ["File Systems", "Basic Syntax"], "extras": "Watch YouTube Intros" },
+    { "month": 2, "title": "Building Core Skills", "tasks": ["Try 5 small tasks", "Post your work"], "project": "Prototype One", "stack": ["Python", "Git"], "concepts": ["Loops", "Functions"], "extras": "Join Discord Labs" },
+    { "month": 3, "title": "Designing Layouts", "tasks": ["Make it look good", "Fix obvious bugs"], "project": "Beta Version", "stack": ["HTML/CSS", "Figma"], "concepts": ["Typography", "Grid Systems"], "extras": "Read Design Blogs" },
+    { "month": 4, "title": "Connecting Systems", "tasks": ["Save user data", "Add login screen"], "project": "Version 1.0", "stack": ["Node.js", "SQL"], "concepts": ["API Routing", "Databases"], "extras": "Try Cloud Hosting" },
+    { "month": 5, "title": "Testing & Polish", "tasks": ["Check for errors", "Make video tour"], "project": "Final Polish", "stack": ["Jest", "Postman"], "concepts": ["Unit Testing", "Debugging"], "extras": "Optimize Performance" },
+    { "month": 6, "title": "Job Search", "tasks": ["Send applications", "Practice talking"], "project": "Career Start", "stack": ["LinkedIn", "GitHub"], "concepts": ["Interview Prep", "Networking"], "extras": "Mock Interviews" }
 ];
 
 // --- ROADMAP DETAIL MODAL ---
@@ -68,60 +87,109 @@ const RoadmapDetailModal: React.FC<{ month: any; onClose: () => void }> = ({ mon
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-8 bg-[#111]/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-10 bg-slate-900/40 backdrop-blur-md"
         >
             <motion.div 
-                initial={{ scale: 0.95, y: 10 }}
+                initial={{ scale: 0.95, y: 30 }}
                 animate={{ scale: 1, y: 0 }}
-                className="bg-white w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-[2rem] shadow-2xl relative p-8 sm:p-10"
+                className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-[0_32px_120px_rgba(0,0,0,0.15)] relative"
             >
-                <button onClick={onClose} className="absolute top-6 right-6 p-2.5 bg-gray-50 rounded-full hover:bg-gray-100 transition-all border border-gray-100">
-                    <X className="w-5 h-5 text-gray-400" />
-                </button>
+                {/* MODAL HEADER STRIP */}
+                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-600 via-cyan-400 to-emerald-400" />
+                
+                <div className="p-8 sm:p-14">
+                    <button onClick={onClose} className="absolute top-10 right-10 p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all border border-slate-100 shadow-sm active:scale-95">
+                        <X className="w-5 h-5 text-slate-400" />
+                    </button>
 
-                <div className="space-y-10">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-blue-600">
-                            <Rocket className="w-5 h-5" />
-                            <span className="font-black uppercase tracking-widest text-[10px]">Phase {month.month} Briefing</span>
-                        </div>
-                        <h2 className="text-3xl sm:text-4xl font-black text-[#111] tracking-tight">{month.title}</h2>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-10">
+                    <div className="space-y-12">
                         <div className="space-y-6">
-                            <h3 className="text-sm font-black flex items-center gap-2 text-gray-400 uppercase tracking-widest"><Brain className="w-4 h-4" /> Core Focus</h3>
-                            <div className="space-y-3">
-                                {month.tasks.map((task: string, i: number) => (
-                                    <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-4 group hover:bg-white hover:border-blue-200 hover:shadow-md transition-all">
-                                        <div className="w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-[10px] group-hover:bg-blue-600 group-hover:text-white transition-all">{i+1}</div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-xs text-[#111] leading-tight">{task}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="flex items-center gap-3">
+                                <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-2xl text-white font-black text-xl shadow-lg ring-4 ring-blue-50">
+                                    {month.month}
+                                </span>
+                                <div>
+                                    <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{month.title}</h2>
+                                    <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.25em]">Phase {month.month} Briefing Protocol</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <h3 className="text-sm font-black flex items-center gap-2 text-gray-400 uppercase tracking-widest"><Flag className="w-4 h-4" /> Milestone</h3>
-                            <div className="p-6 bg-[#111] rounded-2xl text-white space-y-4 shadow-xl">
-                                <h4 className="text-lg font-black">{month.project}</h4>
-                                <p className="text-gray-400 text-xs leading-relaxed">Industrial validation project for Phase {month.month}. Focus on efficiency and logic modularity.</p>
-                                <div className="space-y-2 pt-2">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-blue-400">
-                                        <CheckCircle2 className="w-3.3 h-3.3" /> Scalable Core
+                        <div className="grid lg:grid-cols-[1fr_0.8fr] gap-16">
+                            <div className="space-y-10">
+                                <div className="space-y-6">
+                                    <h3 className="text-[12px] font-black text-slate-300 uppercase tracking-[0.3em] flex items-center gap-3"><Brain className="w-4 h-4" /> Strategic Core Focus</h3>
+                                    <div className="grid gap-4">
+                                        {(month.tasks || []).map((task: string, i: number) => (
+                                            <div key={i} className="group p-5 bg-slate-50 rounded-2xl border border-slate-100/50 flex items-start gap-4 hover:bg-white hover:border-blue-200 hover:shadow-xl transition-all">
+                                                <div className="w-1.5 h-6 rounded-full bg-blue-500/20 group-hover:bg-blue-600 transition-colors" />
+                                                <div>
+                                                    <p className="font-bold text-[14px] text-slate-700 leading-tight mb-2 uppercase">{task}</p>
+                                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Requirement {i + 1}</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-blue-400">
-                                        <CheckCircle2 className="w-3.3 h-3.3" /> Prod Readiness
+                                </div>
+
+                                <div className="p-8 bg-slate-900 rounded-3xl text-white space-y-6 overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full blur-3xl" />
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-2"><Target className="w-4 h-4" /> Technical Blueprint</h4>
+                                        <div className="px-3 py-1 bg-white/10 rounded-lg text-[9px] font-black uppercase">Standard {month.month}.0</div>
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-8">
+                                        <div className="space-y-3">
+                                            <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">Primary Stack</div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(month.stack || []).map((s: string) => (
+                                                    <span key={s} className="px-2.5 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tight shadow-sm border border-blue-500/50">#{s}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">Core Mastery</div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(month.concepts || []).map((c: string) => (
+                                                    <span key={c} className="px-2.5 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg text-[10px] font-black uppercase tracking-tight border border-emerald-500/20">{c}</span>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="p-6 bg-blue-50 rounded-2xl space-y-3 border border-blue-100/50 shadow-inner">
-                                <h4 className="font-bold text-xs text-blue-900 flex items-center gap-2"><PlayCircle className="w-4 h-4" /> StudLyf Integrated Course</h4>
-                                <p className="text-blue-600/80 text-[11px]">Recommended modules for this phase.</p>
-                                <button className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all">Enroll →</button>
+
+                            <div className="space-y-10">
+                                <div className="space-y-6">
+                                    <h3 className="text-[12px] font-black text-slate-300 uppercase tracking-[0.3em] flex items-center gap-3"><Flag className="w-4 h-4" /> Industrial Milestone</h3>
+                                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-6 relative group overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/50 rounded-full blur-2xl group-hover:bg-blue-100transition-all" />
+                                        <h4 className="text-2xl font-black text-slate-900 uppercase leading-tight relative z-10">{month.project}</h4>
+                                        <p className="text-slate-500 text-sm leading-relaxed font-medium relative z-10">Deliver a production-ready implementation focused on architectural scalability and real-world performance for Phase {month.month}.</p>
+                                        <div className="space-y-3 pt-2 relative z-10">
+                                            <div className="flex items-center gap-3 text-[11px] font-black text-slate-900 border-b border-slate-50 pb-3">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> SCALABLE MODULES
+                                            </div>
+                                            <div className="flex items-center gap-3 text-[11px] font-black text-slate-900">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> QUALITY ASSURANCE
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-8 bg-blue-50 rounded-3xl border border-blue-100/50 space-y-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                            <PlayCircle className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-[12px] text-blue-900 uppercase tracking-tight">Curated Module</h4>
+                                            <p className="text-blue-600/70 text-[10px] uppercase font-bold tracking-widest">Recommended Training</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-blue-900/60 text-[13px] font-medium leading-relaxed">Directly align your phase with the StudLyf Accelerator curriculum for this specialization.</p>
+                                    <button className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-lg active:scale-95">Enroll in Protocol →</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -132,88 +200,82 @@ const RoadmapDetailModal: React.FC<{ month: any; onClose: () => void }> = ({ mon
 };
 
 // --- ROADMAP CARD COMPONENT ---
-const RoadmapCard: React.FC<{ month: any; idx: number; onDetails: (m: any) => void }> = ({ month, idx, onDetails }) => {
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-
-    const mouseXSpring = useSpring(x);
-    const mouseYSpring = useSpring(y);
-
-    const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["5deg", "-5deg"]);
-    const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-5deg", "5deg"]);
-
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        const xPct = mouseX / width - 0.5;
-        const yPct = mouseY / height - 0.5;
-
-        x.set(xPct);
-        y.set(yPct);
-    };
-
-    const handleMouseLeave = () => {
-        x.set(0);
-        y.set(0);
-    };
-
+const RoadmapCard: React.FC<{ month: any; idx: number; isLast: boolean; onDetails: (m: any) => void }> = ({ month, idx, isLast, onDetails }) => {
     return (
         <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.08, duration: 0.5 }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            style={{ rotateX, rotateY, perspective: 1000, transformStyle: "preserve-3d" }}
-            className="relative md:pl-24 group mb-12"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative pl-12 sm:pl-32 py-6 group"
         >
-            <div className="absolute left-0 top-0 w-14 h-14 rounded-2xl bg-white border border-gray-100 shadow-lg flex items-center justify-center z-20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 hidden md:flex border-b-4 border-gray-100 group-hover:border-blue-700">
-                <span className="font-black text-lg">{month.month}</span>
+            {/* Timeline Line & Node */}
+            {!isLast && <div className="absolute left-[16px] sm:left-[56px] top-14 bottom-[-24px] w-[2px] bg-slate-100" />}
+            
+            <motion.div 
+                initial={{ scale: 0, borderColor: "#e2e8f0" }}
+                whileInView={{ scale: 1, borderColor: "#3b82f6", backgroundColor: "#eff6ff" }}
+                viewport={{ once: true, margin: "-150px" }}
+                transition={{ duration: 0.4 }}
+                className="absolute left-[11px] sm:left-[51px] top-12 w-3 h-3 bg-white border-2 border-slate-300 rounded-full z-10 shadow-[0_0_0_4px_white]" 
+            />
+
+            <div className="absolute left-0 sm:left-0 top-11 w-8 sm:w-24 text-right pr-4 hidden sm:block">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Month {month.month}</span>
             </div>
-            <div className="absolute left-7 top-14 bottom-0 w-0.5 bg-gray-100 hidden md:block group-last:hidden" />
 
-            <div className="bg-white rounded-[2rem] p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-gray-50 flex flex-col lg:flex-row gap-8 group-hover:border-blue-100 transition-all relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-50/40 rounded-full blur-3xl group-hover:bg-blue-100/50 transition-all" />
+            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 hover:shadow-md hover:border-blue-200 transition-all duration-300 relative overflow-hidden">
+                <motion.div 
+                    initial={{ width: 0 }}
+                    whileInView={{ width: "4px" }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="absolute left-0 top-0 bottom-0 bg-blue-500"
+                />
                 
-                <div className="flex-1 space-y-6 relative z-10" style={{ transform: "translateZ(30px)" }}>
-                    <div className="space-y-2">
-                        <span className="text-blue-500 font-black text-[9px] uppercase tracking-[0.2em] opacity-60">Phase {month.month}</span>
-                        <h3 className="text-2xl sm:text-3xl font-black text-[#111] tracking-tight lowercase leading-tight group-hover:text-blue-900 transition-colors">{month.title}</h3>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-1.5">
+                            <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{month.title}</h3>
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase tracking-wider border border-blue-100/50">Phase {month.month}</span>
+                        </div>
+                        <p className="text-sm text-slate-500 font-medium">{month.details}</p>
                     </div>
-                    
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        {(month.tasks || []).map((task: string, tIdx: number) => (
-                            <div key={tIdx} className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-xl group-hover:bg-white/50 transition-all border border-transparent group-hover:border-gray-50">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                                <p className="text-gray-600 font-bold text-[11px] uppercase tracking-tight">{task}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="lg:w-72 bg-gray-50/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-100/50 space-y-5 relative z-10 shadow-inner group-hover:bg-white transition-all" style={{ transform: "translateZ(20px)" }}>
-                    <div className="flex items-center gap-2">
-                        <Flag className="w-4 h-4 text-orange-500" />
-                        <span className="font-black text-[9px] uppercase tracking-widest text-gray-400">Milestone</span>
-                    </div>
-                    <h4 className="text-lg font-black text-[#111] leading-tight uppercase tracking-tight">{month.project}</h4>
                     <button 
                         onClick={() => onDetails(month)}
-                        className="w-full py-3.5 bg-[#111] text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                        className="shrink-0 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors flex items-center gap-2 shadow-sm"
                     >
-                        Blueprint <ArrowRight className="w-3.5 h-3.5" />
+                        View Specifications <ArrowRight className="w-3.5 h-3.5" />
                     </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/80 rounded-lg p-5 border border-slate-100">
+                    <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <Terminal className="w-3.5 h-3.5 text-slate-400" /> Technical Requirements
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                            {(Array.isArray(month.stack) ? month.stack : (month.stack || '').split(',')).map((s: any, i: number) => (
+                                <span key={i} className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 text-[11px] font-medium rounded shadow-sm hover:border-blue-200 hover:bg-blue-50 transition-colors">{s.toString().trim()}</span>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <TrendingUp className="w-3.5 h-3.5 text-slate-400" /> Core Competencies
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                            {(Array.isArray(month.concepts) ? month.concepts : (month.concepts || '').split(',')).map((c: any, i: number) => (
+                                <span key={i} className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 text-[11px] font-medium rounded shadow-sm hover:border-blue-200 hover:bg-blue-50 transition-colors">{c.toString().trim()}</span>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </motion.div>
     );
 };
 
-// --- ROADMAP SECTION COMPONENT ---
 const RoadmapSection: React.FC<{ 
     roadmapData: any; 
     selectedPath: any; 
@@ -222,60 +284,86 @@ const RoadmapSection: React.FC<{
     onDetails: (m: any) => void;
     navigate: any;
 }> = ({ roadmapData, selectedPath, isGeneratingRoadmap, handlePathClick, onDetails, navigate }) => {
-    const roadmapRef = useRef<HTMLDivElement>(null);
-    const { scrollYProgress } = useScroll({
-        target: roadmapRef,
-        offset: ["start end", "end end"]
-    });
-    const timelineScaleY = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
-
     return (
-        <div ref={roadmapRef} className="max-w-6xl mx-auto px-6 py-20 sm:py-32 space-y-24 relative mt-12 border-t border-gray-100">
-            {/* Animated Timeline Line */}
-            {roadmapData && roadmapData.length > 0 && (
-                <div className="absolute left-7 md:left-[118px] top-64 bottom-48 w-0.5 bg-gray-100 rounded-full hidden md:block overflow-hidden">
-                    <motion.div 
-                        className="w-full bg-blue-600 rounded-full origin-top"
-                        style={{ scaleY: timelineScaleY, height: "100%" }}
-                    />
+        <section className="w-full max-w-5xl mx-auto py-16 px-6 relative bg-white">
+            <div className="mb-12 border-b border-slate-200 pb-8">
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="w-2 h-2 bg-blue-600 rounded-sm" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Enterprise Architecture Protocol</span>
                 </div>
-            )}
-
-            {isGeneratingRoadmap ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-6">
-                    <div className="w-12 h-12 border-4 border-blue-50 border-t-blue-500 rounded-full animate-spin" />
-                    <h3 className="text-xl font-black text-[#111] uppercase tracking-tight">Architecting Roadmap...</h3>
-                    <p className="text-gray-400 font-bold uppercase text-[9px] tracking-widest animate-pulse italic">Consulting Synthesis Protocol</p>
-                </div>
-            ) : roadmapData && roadmapData.length > 0 ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-16">
-                    <div className="text-center space-y-4">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
-                            <TrendingUp className="w-3.5 h-3.5" /> Strategy Architecture
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-4xl sm:text-5xl font-black text-[#111] tracking-tighter uppercase leading-none">Roadmap</h2>
-                            <h3 className="text-xl sm:text-2xl font-light text-blue-600 tracking-tight lowercase italic">
-                                {selectedPath?.name} <span className="text-gray-300 mx-2 text-xs font-light">in</span> <span className="font-bold text-gray-500 uppercase tracking-widest text-[10px]">{selectedPath?.group || 'Specialization'}</span>
-                            </h3>
-                        </div>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Career Architecture Blueprint</h2>
+                        <p className="text-slate-500 mt-2 text-sm max-w-2xl font-medium leading-relaxed">Structured 6-month progression roadmap aligned with industry-standard technical requirements and professional competencies.</p>
                     </div>
+                    {selectedPath && (
+                        <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4 max-w-sm w-full md:w-auto shadow-sm">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white shrink-0 border border-slate-200">
+                                {selectedPath.image ? <img src={selectedPath.image} alt="path" className="w-full h-full object-cover grayscale opacity-90" /> : null}
+                            </div>
+                            <div>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Target Discipline</p>
+                                <p className="text-sm font-semibold text-slate-900 leading-tight mt-0.5">{selectedPath.name}</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
 
-                    <div className="space-y-8">
+            <div className="relative">
+                {isGeneratingRoadmap ? (
+                    <div className="py-32 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-4" />
+                        <h3 className="text-sm font-bold text-slate-900">Compiling Blueprint Architecture...</h3>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">Analyzing industry standards and technical prerequisites.</p>
+                    </div>
+                ) : roadmapData && roadmapData.length > 0 ? (
+                    <div className="space-y-0">
                         {roadmapData.map((month: any, idx: number) => (
-                            <RoadmapCard key={idx} month={month} idx={idx} onDetails={onDetails} />
+                            <RoadmapCard 
+                                key={idx} 
+                                month={month} 
+                                idx={idx} 
+                                isLast={idx === roadmapData.length - 1}
+                                onDetails={onDetails} 
+                            />
                         ))}
                     </div>
-                </motion.div>
-            ) : selectedPath ? (
-                <div className="text-center py-20 bg-white rounded-[3rem] border border-gray-100 shadow-sm px-10 border-dashed">
-                    <Sparkles className="w-10 h-10 text-gray-200 mx-auto mb-6" />
-                    <h3 className="text-xl font-black text-[#111] tracking-tight uppercase">Roadmap Strategy Ready</h3>
-                    <p className="text-gray-400 max-w-md mx-auto mt-2 text-sm">Grok has synthesized a tactical path for {selectedPath.name}.</p>
-                    <button onClick={() => handlePathClick(selectedPath)} className="mt-8 px-10 py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95">Generate Blueprint →</button>
+                ) : selectedPath ? (
+                    <div className="py-24 text-center bg-white border border-slate-200 rounded-2xl shadow-sm">
+                        <Cpu className="w-8 h-8 text-slate-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Initialize Architecture Protocol</h3>
+                        <p className="text-sm text-slate-500 max-w-md mx-auto mb-8 font-medium">Execution of this protocol will synthesize a validated technical roadmap for {selectedPath.name}.</p>
+                        <button onClick={() => handlePathClick(selectedPath)} className="px-6 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2 mx-auto">
+                            Generate Architecture Blueprint <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="py-24 text-center bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
+                        <Network className="w-8 h-8 text-slate-300 mx-auto mb-4" />
+                        <h3 className="text-sm font-semibold text-slate-400">Select a discipline from the network vector above to review its technical blueprint.</h3>
+                    </div>
+                )}
+            </div>
+
+            {/* FINAL CTA */}
+            {roadmapData && !isGeneratingRoadmap && (
+                <div className="mt-20 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 bg-slate-50 p-6 md:p-8 rounded-2xl border mb-32">
+                    <div>
+                        <h3 className="text-base font-bold text-slate-900">Ready to initiate training?</h3>
+                        <p className="text-sm text-slate-500 font-medium mt-1">Access specialized modules aligned with your technical roadmap.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                        <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors shadow-sm uppercase tracking-wider">
+                            Export System PDF
+                        </button>
+                        <button onClick={() => navigate('/courses')} className="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm uppercase tracking-wider flex items-center gap-2">
+                            View Course Catalog <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
                 </div>
-            ) : null}
-        </div>
+            )}
+        </section>
     );
 };
 
@@ -595,44 +683,63 @@ const CareerOnboarding: React.FC = () => {
         if (activeTab === 'Paths') {
             return (
                 <div className="w-full min-h-screen bg-[#F8F9FA] pt-24 sm:pt-28">
-                    <div className="h-[70vh] sm:h-[75vh] w-full relative flex items-center justify-center overflow-hidden border-b border-gray-100">
+                    <div className="h-[80vh] w-full relative flex items-center justify-center overflow-hidden border-b border-gray-100 bg-white">
+                        {/* ENTERPRISE DOT GRID BACKGROUND */}
+                        <div className="absolute inset-0 opacity-[0.3]" style={{ backgroundImage: 'radial-gradient(#d1d5db 1.2px, transparent 0)', backgroundSize: '40px 40px' }} />
+                        
                         {isGeneratingPaths && (
-                           <div className="absolute top-10 z-[100] flex items-center gap-2 px-4 py-2 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-blue-50 text-blue-600 font-black text-[10px] uppercase tracking-widest">
-                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                               <span>Engaging Map Synthesis...</span>
+                           <div className="absolute top-10 z-[100] flex items-center gap-2 px-5 py-2.5 bg-white/95 backdrop-blur-md rounded-full shadow-2xl border border-blue-100 text-blue-600 font-black text-[11px] uppercase tracking-widest">
+                               <Loader2 className="w-4 h-4 animate-spin" />
+                               <span>Synthesizing Enterprise Network...</span>
                            </div>
                         )}
-                        <div className="relative z-20 w-56 h-56 sm:w-64 sm:h-64 rounded-full flex flex-col items-center justify-center bg-white shadow-[0_0_80px_rgba(52,168,83,0.1)] border border-gray-100 text-center p-6 group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#4285F4]/5 via-[#34A853]/5 to-[#FBBC05]/5 rounded-full blur-xl animate-pulse" />
-                            <span className="text-gray-300 text-[10px] font-black relative z-10 leading-relaxed uppercase tracking-widest">Explore <br /> Vector Hub</span>
-                            <div className="flex gap-2 relative z-10 mt-3"><GraduationCap className="w-4 h-4 text-gray-300" /><Target className="w-4 h-4 text-gray-300" /></div>
-                            <ChevronDown className="w-4 h-4 text-gray-200 animate-bounce relative z-10 mt-4" />
+
+                        {/* ENTERPRISE CENTRAL HUB WITH NEON GLOW */}
+                        <div className="relative z-20">
+                            {/* MULTI-COLOR NEON GLOW EFFECT */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full opacity-35 blur-[100px] bg-gradient-to-br from-green-300 via-cyan-400 to-blue-500 animate-pulse" />
+                            <div className="relative w-80 h-80 rounded-full bg-white shadow-[0_0_120px_rgba(34,197,94,0.15)] border border-gray-50 flex flex-col items-center justify-center text-center p-10 z-10">
+                                <div className="text-gray-400 text-[14px] font-medium leading-relaxed mb-4">Explore paths<br/><span className="text-gray-300">based on your goals</span></div>
+                                <div className="flex items-center gap-6 text-3xl mb-4 grayscale opacity-80">
+                                    <GraduationCap className="w-8 h-8 text-blue-500" />
+                                    <Dumbbell className="w-8 h-8 text-green-500" />
+                                </div>
+                                <ChevronDown className="w-6 h-6 text-gray-200 animate-bounce mt-4" />
+                            </div>
                         </div>
                         <div className="absolute inset-0">
                             {(generatedPaths.length > 0 ? generatedPaths : DEFAULT_PATHS).map((node, i) => (
                                 <motion.div
                                     key={i}
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
                                     onMouseEnter={() => setHoveredPath(node)}
                                     onMouseLeave={() => setHoveredPath(null)}
                                     onClick={() => handlePathClick(node)}
-                                    className="absolute flex items-center gap-2 cursor-pointer group z-30"
-                                    style={{ left: `calc(50% + ${node.pos?.x || 0}px)`, top: `calc(50% + ${node.pos?.y || 0}px)` }}
+                                    className="absolute flex items-center gap-3 cursor-pointer group z-30"
+                                    style={{ 
+                                        left: `calc(50% + ${node.pos?.x || 0}px)`, 
+                                        top: `calc(50% + ${node.pos?.y || 0}px)`,
+                                        transform: 'translate(-50%, -50%)' 
+                                    }}
                                 >
-                                    <div className={`w-2.5 h-2.5 rounded-full transition-all group-hover:scale-150 shadow-sm ${selectedPath?.name === node.name ? 'ring-4 ring-blue-500/20 scale-150' : ''} ${i % 3 === 0 ? 'bg-blue-400' : i % 3 === 1 ? 'bg-green-400' : 'bg-red-400'}`} />
-                                    <span className={`text-[11px] font-black transition-all whitespace-nowrap uppercase tracking-tighter ${selectedPath?.name === node.name ? 'text-[#111] scale-105' : 'text-gray-400 group-hover:text-[#111]'}`}>{node.name}</span>
-                                    <AnimatePresence>
-                                        {hoveredPath?.name === node.name && (
-                                            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute bottom-full left-0 mb-3 w-56 bg-white p-4 rounded-2xl shadow-xl border border-gray-50 z-[200] pointer-events-none">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                                    <span className="text-[9px] font-black uppercase text-gray-300 tracking-widest">{node.group}</span>
-                                                </div>
-                                                <p className="text-[10px] text-gray-500 leading-relaxed font-bold uppercase">{node.description}</p>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                    <motion.div 
+                                        whileHover={{ scale: 1.5, y: -8, boxShadow: `0 0 20px ${node.color || '#3B82F6'}55` }}
+                                        className="relative w-10 h-10 rounded-full shadow-xl border-2 border-white overflow-hidden transition-all bg-gray-100"
+                                    >
+                                        <img 
+                                            src={node.image || "https://images.unsplash.com/photo-1484417894907-623942c8ee29?w=200&h=200&fit=crop"} 
+                                            alt={node.name} 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = "https://images.unsplash.com/photo-1484417894907-623942c8ee29?w=200&h=200&fit=crop";
+                                            }}
+                                        />
+                                        <div className="absolute inset-0 opacity-20 border-[3px] rounded-full pointer-events-none" style={{ borderColor: node.color }} />
+                                    </motion.div>
+                                    <span className="text-[12px] font-black text-[#111] transition-all group-hover:text-blue-600 whitespace-nowrap bg-white/70 backdrop-blur-[4px] px-2.5 py-1 rounded-lg border border-white/40 shadow-sm uppercase tracking-wide">
+                                        {node.name}
+                                    </span>
                                 </motion.div>
                             ))}
                         </div>

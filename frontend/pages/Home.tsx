@@ -11,8 +11,6 @@ import FeaturedInstitutions from '../components/FeaturedInstitutions';
 import OurPartners from '../components/OurPartners';
 import LandingNavbar from '../components/LandingNavbar';
 import PurpleNavbar from '../components/PurpleNavbar';
-import WhyUsSection from '../components/WhyUsSection';
-import AdsCarousel from '../components/AdsCarousel';
 
 
 
@@ -29,8 +27,6 @@ const Home: React.FC = () => {
       <WhatIsStudlyf />
       <VoicesThatInspire />
       <OldVsNewSection />
-      <WhyUsSection />
-      <AdsCarousel />
       <MentorCredibility />
       <WhoWeServe />
       <RoadmapSection />

@@ -26,7 +26,7 @@ import { DevHeroSection } from '../components/DevHeroSection';
 import FeaturedColleges from '../components/FeaturedColleges';
 // import { NeonBackground } from '../components/NeonBackground';
 
- // Removed DUMMY_COURSES to only show database content.
+// Removed DUMMY_COURSES to only show database content.
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
@@ -34,7 +34,7 @@ const DashboardHome: React.FC = () => {
   const [activeBrief, setActiveBrief] = useState<string>('Cognition');
   const [isMuted, setIsMuted] = useState(true);
 
-   const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
 
   const carouselRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -42,13 +42,15 @@ const DashboardHome: React.FC = () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/courses`);
         const data = await res.json();
-         if (data && data.length > 0) {
+        if (data && data.length > 0) {
           setCourses(data);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
-
-
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const createSlug = (title: string, id: string) => {
     if (!title || !id) return '';
@@ -62,56 +64,56 @@ const DashboardHome: React.FC = () => {
     'Cognition': {
       title: 'Cognition',
       headline: 'Deep AI-Driven Talent Matching',
-      desc: 'Studlyf understands people beyond resumes. Our AI analyzes skills, experience, learning patterns, and career intent to create meaningful connections between talent and opportunity. It delivers intelligent career guidance while helping recruiters discover true potential, not just keywords.',
+      desc: 'Studlyf understands people beyond resumes. Our AI analyzes skills, experience, learning patterns, and career intent to create meaningful connections between talent and opportunity.',
       image: '/images/impact/mainpagrimages/image.png',
-      gradient: '#301040',
-      accent: '#E03070',
+      gradient: 'linear-gradient(135deg, #0891B2 0%, #155E75 100%)',
+      accent: '#06B6D4',
       icon: '🧠',
     },
     'Protocol': {
       title: 'Protocol',
       headline: 'Structured & Fair AI Workflows',
-      desc: 'Every interaction follows a structured AI workflow — from resume analysis to hiring decisions. Automated protocols ensure fairness, transparency, and consistency across recruitment, skill evaluation, and personalized learning recommendations.',
+      desc: 'Every interaction follows a structured AI workflow — from resume analysis to hiring decisions. Automated protocols ensure fairness and consistency across skills.',
       image: '/images/protocol.png',
-      gradient: '#301050',
-      accent: '#E03040',
+      gradient: 'linear-gradient(135deg, #059669 0%, #064E3B 100%)',
+      accent: '#10B981',
       icon: '⚙️',
     },
     'Verification': {
       title: 'Verification',
       headline: 'Certified Trust & Validation',
-      desc: 'Trust is built through verification. Studlyf validates skills, certifications, and professional experience using intelligent document parsing and contextual analysis. Recruiters receive confidence-based insights to make accurate hiring decisions.',
+      desc: 'Trust is built through verification. Studlyf validates skills, certifications, and professional experience using intelligent document parsing and contextual analysis.',
       image: '/images/impact/mainpagrimages/image copy.png',
       video: '/videos/verification.mp4',
-      gradient: '#201040',
-      accent: '#E02040',
+      gradient: 'linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%)',
+      accent: '#8B5CF6',
       icon: '✅',
     },
     'Blueprint': {
       title: 'Blueprint',
       headline: 'Actionable Career Growth Paths',
-      desc: 'Studlyf transforms insights into action. Candidates receive personalized learning paths and growth plans, while recruiters gain structured hiring blueprints aligned with real job requirements and organizational goals.',
+      desc: 'Studlyf transforms insights into action. Candidates receive personalized learning paths and growth plans aligned with real job requirements and organizational goals.',
       image: '/images/impact/mainpagrimages/image copy 2.png',
-      gradient: '#201050',
-      accent: '#e2e8f0',
+      gradient: 'linear-gradient(135deg, #D97706 0%, #78350F 100%)',
+      accent: '#F59E0B',
       icon: '📐',
     },
     'Clinical': {
       title: 'Clinical',
       headline: 'Precision Analytics & Trends',
-      desc: 'Precision matters. Advanced analytics evaluate performance trends, interview outcomes, and behavioral signals to provide measurable improvement strategies for both candidates and hiring teams.',
+      desc: 'Precision matters. Advanced analytics evaluate performance trends, interview outcomes, and behavioral signals to provide measurable improvement strategies.',
       image: '/images/impact/mainpagrimages/image copy 2.png',
-      gradient: '#E03040',
-      accent: '#f8fafc',
+      gradient: 'linear-gradient(135deg, #E11D48 0%, #881337 100%)',
+      accent: '#F43F5E',
       icon: '📊',
     },
     'Evidence': {
       title: 'Evidence',
       headline: 'Data-Backed Decision Making',
-      desc: 'Every recommendation is explainable and data-backed. Matching scores, learning suggestions, and hiring insights are supported by transparent reasoning and industry benchmarks, ensuring trust at every step.',
+      desc: 'Every recommendation is explainable and data-backed. Matching scores, learning suggestions, and hiring insights are supported by transparent reasoning.',
       image: '/images/impact/mainpagrimages/image copy 3.png',
-      gradient: '#E03070',
-      accent: '#f8fafc',
+      gradient: 'linear-gradient(135deg, #4F46E5 0%, #1E1B4B 100%)',
+      accent: '#6366F1',
       icon: '🔬',
     }
   };
@@ -323,13 +325,12 @@ const DashboardHome: React.FC = () => {
                     onClick={() => navigate(`/learn/courses/${createSlug(course.title, course._id)}`)}
                     className="min-w-[220px] sm:min-w-[260px] lg:min-w-[290px] h-[400px] lg:h-[440px] relative rounded-[2rem] overflow-hidden group hover:scale-[1.02] transition-all duration-700 cursor-pointer shadow-lg border border-black/[0.03]"
                   >
-                    {/* Background Image */}
                     <img
                       src={course.image || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop'}
                       alt={course.title}
-                      className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      className="h-full w-full object-contain transition-transform duration-1000 group-hover:scale-110 p-4"
+                      style={{ background: '#F8F9FB' }}
                     />
-
                     {/* Bottom Information Block */}
                     <div className="absolute bottom-4 left-4 right-4 bg-white rounded-[1.2rem] p-4 flex justify-between items-center shadow-xl shadow-black/5">
                       <div className="flex flex-col">
@@ -398,7 +399,7 @@ const DashboardHome: React.FC = () => {
 
         {/* Advertisements Section */}
         <div className="relative z-20 mb-20 px-4 sm:px-12">
-            <AdsCarousel />
+          <AdsCarousel />
         </div>
       </div>
 
@@ -419,19 +420,19 @@ const DashboardHome: React.FC = () => {
               }
             `}
           </style>
-          
+
           <div className="flex w-max animate-slide-right flex-nowrap">
             {/* First half */}
             <div className="flex items-center gap-10 md:gap-20 pr-10 md:pr-20 flex-shrink-0">
-               {[...Array(10)].map((_, i) => (
-                 <img key={`first-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
-               ))}
+              {[...Array(10)].map((_, i) => (
+                <img key={`first-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+              ))}
             </div>
             {/* Second half (Duplicate for seamless loop) */}
             <div className="flex items-center gap-10 md:gap-20 pr-10 md:pr-20 flex-shrink-0">
-               {[...Array(10)].map((_, i) => (
-                 <img key={`second-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
-               ))}
+              {[...Array(10)].map((_, i) => (
+                <img key={`second-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+              ))}
             </div>
           </div>
         </div>
@@ -475,8 +476,15 @@ const DashboardHome: React.FC = () => {
 
 
         {/* Product Brief Section */}
-        < section className="mb-16 mt-12 px-4 sm:px-0" >
-          <div className="flex flex-col items-center text-center">
+        <section className="mb-16 mt-12 px-4 sm:px-0 relative overflow-hidden py-16 bg-[#FAFAFA] rounded-[3rem] border border-black/5" >
+          {/* Vibrant Ambient Glows from User Palette */}
+          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] bg-[#0891B2]/12 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-[0%] right-[-15%] w-[45%] h-[55%] bg-[#059669]/12 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-[10%] right-[10%] w-[40%] h-[50%] bg-[#7C3AED]/15 rounded-full blur-[130px] pointer-events-none" />
+          <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[60%] bg-[#D97706]/08 rounded-full blur-[150px] pointer-events-none" />
+          <div className="absolute top-[40%] left-[40%] w-[35%] h-[45%] bg-[#E11D48]/10 rounded-full blur-[110px] pointer-events-none" />
+          
+          <div className="flex flex-col items-center text-center relative z-10">
             {/* Product Brief Header */}
             <div className="flex flex-col items-center gap-3 mb-8">
               <h2 className="text-2xl sm:text-4xl font-black text-black uppercase tracking-tighter inline-block relative w-fit">
@@ -514,7 +522,7 @@ const DashboardHome: React.FC = () => {
 
             {/* Dynamic Content Display with Background */}
             <div
-              className="max-w-[1400px] w-full mx-auto min-h-[600px] relative rounded-[3rem] overflow-hidden flex items-center justify-center transition-all duration-700 py-8 px-4 sm:px-10 -mt-2"
+              className="max-w-[1300px] w-full mx-auto min-h-[480px] relative rounded-[2.5rem] overflow-hidden flex items-center justify-center transition-all duration-700 py-6 px-4 sm:px-8 -mt-2"
             >
               <div className="relative z-10 w-full h-full max-w-7xl flex items-center justify-center">
                 <AnimatePresence mode="wait">
@@ -525,24 +533,24 @@ const DashboardHome: React.FC = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 1.02 }}
                       transition={{ duration: 0.5, ease: "easeOut" }}
-                      className="relative w-full min-h-[500px] rounded-[2.5rem] overflow-hidden flex items-center justify-center p-6 sm:p-10"
+                      className="relative w-full min-h-[420px] rounded-[2rem] overflow-hidden flex items-center justify-center p-4 sm:p-8"
                       style={{
                         background: briefDetails[activeBrief].gradient,
                       }}
                     >
 
-                        <div className="relative z-10 flex flex-col items-center justify-center w-full">
-                          {/* Replacing Product Brief content with Example phone UI */}
-                          <ExampleColorContext.Provider value={{
-                            gradient: briefDetails[activeBrief].gradient,
-                            accent: briefDetails[activeBrief].accent,
-                            headline: briefDetails[activeBrief].headline,
-                            text: briefDetails[activeBrief].desc as string,
-                            image: briefDetails[activeBrief].image,
-                          }}>
-                            <Example />
-                          </ExampleColorContext.Provider>
-                        </div>
+                      <div className="relative z-10 flex flex-col items-center justify-center w-full">
+                        {/* Replacing Product Brief content with Example phone UI */}
+                        <ExampleColorContext.Provider value={{
+                          gradient: briefDetails[activeBrief].gradient,
+                          accent: briefDetails[activeBrief].accent,
+                          headline: briefDetails[activeBrief].headline,
+                          text: briefDetails[activeBrief].desc as string,
+                          image: briefDetails[activeBrief].image,
+                        }}>
+                          <Example />
+                        </ExampleColorContext.Provider>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

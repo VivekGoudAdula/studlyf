@@ -244,60 +244,15 @@ const CourseManagement: React.FC = () => {
         }
     };
 
-<<<<<<< HEAD
-    const [dragActive, setDragActive] = useState(false);
-    const [instructorDragActive, setInstructorDragActive] = useState(false);
-    const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setDragActive(true);
-        } else if (e.type === "dragleave") {
-            setDragActive(false);
-        }
-    };
-    const handleInstructorDrag = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setInstructorDragActive(true);
-        } else if (e.type === "dragleave") {
-            setInstructorDragActive(false);
-        }
-    };
-    const handleInstructorDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setInstructorDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleInstructorImageUpload(e.dataTransfer.files[0]);
-        }
+    const uploadImageFile = (file: File): Promise<string> => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+        });
     };
 
-    const handleInstructorImageUpload = (e: React.ChangeEvent<HTMLInputElement> | File) => {
-        let file: File | undefined;
-        if (e instanceof File) {
-            file = e;
-        } else {
-            file = e.target.files?.[0];
-        }
-        if (file) {
-            setErrorMsg("");
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setInstructorImage(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleImageUpload(e.dataTransfer.files[0]);
-=======
-    const handlePaste = async (moduleId: any, lessonIdx: number, e: React.ClipboardEvent<any>) => {
+    const handleLessonPaste = async (moduleId: any, lessonIdx: number, e: React.ClipboardEvent<any>) => {
         const items = e.clipboardData.items;
         const textarea = e.currentTarget as HTMLTextAreaElement;
         const start = textarea.selectionStart || 0;
@@ -324,7 +279,7 @@ const CourseManagement: React.FC = () => {
         }
     };
 
-    const handleDrop = async (moduleId: any, lessonIdx: number, e: React.DragEvent<any>) => {
+    const handleLessonDrop = async (moduleId: any, lessonIdx: number, e: React.DragEvent<any>) => {
         e.preventDefault();
         const file = e.dataTransfer.files?.[0];
         const textarea = e.currentTarget as HTMLTextAreaElement;
@@ -356,9 +311,9 @@ const CourseManagement: React.FC = () => {
                     updateLesson(moduleId, lessonIdx, { image_url: cleanedUrl });
                 }
             }
->>>>>>> 8755770e90df93ecb3499fc093ee4cc4ce71586e
         }
     };
+
 
     const handleQuestionChange = (index: number, field: string, value: any) => {
         const updated = [...questions];
@@ -793,9 +748,9 @@ const CourseManagement: React.FC = () => {
                                                                     placeholder={les.type === 'code' ? "// Enter your lab code or instructions here..." : "Enter your lesson text, markdown, or theory here..."}
                                                                     value={les.content || ''}
                                                                     onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { content: e.target.value })}
-                                                                    onPaste={(e) => handlePaste(mod._id || mod.id, lessonIndex, e)}
+                                                                    onPaste={(e) => handleLessonPaste(mod._id || mod.id, lessonIndex, e)}
                                                                     onDragOver={(e) => e.preventDefault()}
-                                                                    onDrop={(e) => handleDrop(mod._id || mod.id, lessonIndex, e)}
+                                                                    onDrop={(e) => handleLessonDrop(mod._id || mod.id, lessonIndex, e)}
                                                                 />
                                                             </div>
                                                         )}
@@ -836,9 +791,9 @@ const CourseManagement: React.FC = () => {
                                                             <div className="ml-1 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
                                                                 <div 
                                                                     className="relative group/dropzone overflow-hidden rounded-2xl"
-                                                                    onPaste={(e) => handlePaste(mod._id || mod.id, lessonIndex, e)}
+                                                                    onPaste={(e) => handleLessonPaste(mod._id || mod.id, lessonIndex, e)}
                                                                     onDragOver={(e) => e.preventDefault()}
-                                                                    onDrop={(e) => handleDrop(mod._id || mod.id, lessonIndex, e)}
+                                                                    onDrop={(e) => handleLessonDrop(mod._id || mod.id, lessonIndex, e)}
                                                                 >
                                                                     <div className={`
                                                                         flex flex-col items-center justify-center gap-3 py-6 px-4
@@ -1085,7 +1040,6 @@ const CourseManagement: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Course Thumbnail</label>
-<<<<<<< HEAD
                                             <div
                                                 className={`w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center ${dragActive ? 'border-[#7C3AED]/80 bg-[#7C3AED]/10' : ''}`}
                                                 onDragEnter={handleDrag}
