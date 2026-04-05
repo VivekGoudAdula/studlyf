@@ -1,6 +1,5 @@
 import React from 'react';
 import { Search } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 interface SearchFilterProps {
     onSearch: (query: string) => void;
@@ -8,9 +7,7 @@ interface SearchFilterProps {
     selectedCategory: string;
 }
 
-const CATEGORIES = ['All', 'Coding', 'Writing', 'Productivity', 'Design', 'Marketing', 'Research', 'Automation'];
-
-const AIToolSearch: React.FC<SearchFilterProps> = ({ onSearch, onCategoryChange, selectedCategory }) => {
+const AIToolSearch: React.FC<SearchFilterProps> = ({ onSearch }) => {
     return (
         <div className="flex flex-col gap-6 w-full mb-10">
             <div className="relative group max-w-4xl mx-auto w-full">
@@ -23,23 +20,6 @@ const AIToolSearch: React.FC<SearchFilterProps> = ({ onSearch, onCategoryChange,
                     placeholder="Search tools by name, category or description..."
                     className="w-full bg-[#F9FAFB] border-2 border-gray-100 rounded-[2.5rem] py-4 pl-16 pr-8 text-[#111827] text-base placeholder-gray-400 focus:outline-none focus:border-[#7C3AED]/20 focus:bg-white transition-all shadow-sm focus:shadow-xl focus:shadow-[#7C3AED]/5"
                 />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-3">
-                {CATEGORIES.map((cat) => (
-                    <motion.button
-                        key={cat}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => onCategoryChange(cat)}
-                        className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all border ${selectedCategory === cat
-                            ? 'bg-[#111827] text-white border-transparent shadow-xl shadow-black/10'
-                            : 'bg-white text-[#6B7280] border-gray-100 hover:border-[#7C3AED]/30 hover:text-[#111827]'
-                            }`}
-                    >
-                        {cat}
-                    </motion.button>
-                ))}
             </div>
         </div>
     );

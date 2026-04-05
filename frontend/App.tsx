@@ -127,7 +127,7 @@ const App: React.FC = () => {
             <Route path="/learn/courses-overview" element={<ProtectedRoute><CoursesOverview /></ProtectedRoute>} />
             <Route path="/learn/track/:trackId" element={<ProtectedRoute><TrackDetail /></ProtectedRoute>} />
             <Route path="/learn/enroll/:trackId" element={<ProtectedRoute><EnrollmentFlow /></ProtectedRoute>} />
-            <Route path="/learn/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+            <Route path="/learn/courses" element={<Navigate to="/learn/courses-overview" replace />} />
             <Route path="/learn/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
             <Route path="/learn/course-player/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
             <Route path="/learn/career-fit" element={<ProtectedRoute><CareerFit /></ProtectedRoute>} />

@@ -33,7 +33,6 @@ interface Course {
 /* ─────────────────────────── mock fallback data ─────────────────────────── */
  // Removed MOCK_COURSES to only show database content.
 
-
 const CourseCard = ({
   _id,
   title,

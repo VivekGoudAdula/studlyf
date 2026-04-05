@@ -27,11 +27,11 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
         <div className="min-h-screen relative flex items-center justify-center bg-[radial-gradient(circle_at_center,_#1e1b4b_0%,_#09090b_100%)] overflow-hidden py-12 px-4 sm:px-6">
             {/* Top Logo */}
             <Link to="/" className="absolute top-8 left-8 z-50 group transition-transform active:scale-95">
-                <div className="flex items-center">
+                <div className="flex items-center bg-white border border-white/20 px-3 py-1.5 rounded-2xl shadow-lg backdrop-blur-md">
                     <img
                         src="/images/studlyf.png"
                         alt="STUDLYF Logo"
-                        className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] group-hover:opacity-80 transition-opacity"
+                        className="h-8 sm:h-10 w-auto object-contain drop-shadow-sm group-hover:opacity-80 transition-opacity"
                     />
                 </div>
             </Link>

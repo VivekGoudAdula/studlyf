@@ -28,7 +28,6 @@ import FeaturedColleges from '../components/FeaturedColleges';
 
  // Removed DUMMY_COURSES to only show database content.
 
-
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -48,10 +47,6 @@ const DashboardHome: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
-      }
-    };
-    fetchCourses();
-  }, []);
 
 
 
@@ -304,15 +299,16 @@ const DashboardHome: React.FC = () => {
             <div className="max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 lg:gap-16 items-center">
               {/* LEFT SIDE TYPOGRAPHY */}
               <div className="flex flex-col text-center lg:text-left">
+                <span className="text-[#7C3AED] font-bold uppercase tracking-[0.5em] text-[10px] mb-4 block">Protocols for mastery</span>
                 <h1 className="text-4xl sm:text-6xl font-extrabold leading-[0.9] mb-8 sm:mb-12 text-black uppercase tracking-tighter">
                   COURSES <br />
                   FOR <br />
                   EVERY <br />
                   <span className="italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] lowercase leading-tight block mt-2">ambition</span>
                 </h1>
-                <p className="text-[10px] sm:text-xs tracking-[0.3em] uppercase text-blue-900 mb-6 font-bold leading-loose">
-                  GLOBAL TRAINING <br /> FOR ROLE-READY EXCELLENCE.
-                </p>
+                {courses.length === 0 && (
+                  <p className="text-gray-400 font-bold uppercase tracking-[0.3em] text-[10px]">Courses to be launched soon!</p>
+                )}
               </div>
 
               {/* RIGHT SIDE COURSE CARDS */}
@@ -410,13 +406,34 @@ const DashboardHome: React.FC = () => {
 
       {/* SECTION 4: REST OF CONTENT */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 relative z-10 pb-20">
-        {/* Scroll Velocity (Studlyf text) above AI Era Integration */}
-        <div className="mb-24 relative flex w-full flex-col items-center justify-center overflow-hidden py-10 border-b border-black/5">
-          <ScrollVelocityContainer className="text-3xl font-black tracking-[-0.05em] md:text-6xl md:leading-[4rem] text-black uppercase italic">
-            <ScrollVelocityRow baseVelocity={-2}>
-              Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf &nbsp;&nbsp;&nbsp; Studlyf
-            </ScrollVelocityRow>
-          </ScrollVelocityContainer>
+        {/* Infinite Scrolling Logo (Left to Right) */}
+        <div className="mb-24 relative flex w-full flex-col items-center justify-center overflow-hidden py-10 border-b border-black/5 bg-white">
+          <style>
+            {`
+              @keyframes slideRight {
+                from { transform: translateX(-50%); }
+                to { transform: translateX(0); }
+              }
+              .animate-slide-right {
+                animation: slideRight 30s linear infinite;
+              }
+            `}
+          </style>
+          
+          <div className="flex w-max animate-slide-right flex-nowrap">
+            {/* First half */}
+            <div className="flex items-center gap-10 md:gap-20 pr-10 md:pr-20 flex-shrink-0">
+               {[...Array(10)].map((_, i) => (
+                 <img key={`first-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+               ))}
+            </div>
+            {/* Second half (Duplicate for seamless loop) */}
+            <div className="flex items-center gap-10 md:gap-20 pr-10 md:pr-20 flex-shrink-0">
+               {[...Array(10)].map((_, i) => (
+                 <img key={`second-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+               ))}
+            </div>
+          </div>
         </div>
 
         {/* AI Era Integration (Career Synergy) */}

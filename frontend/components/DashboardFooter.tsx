@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import {
     Mail,
     MessageCircle,
@@ -31,7 +32,9 @@ const DashboardFooter: React.FC = () => {
     ];
 
     return (
-        <section className="w-full bg-[#111827] pt-0 pb-10">
+        <section className="w-full relative pt-0 pb-10">
+            {/* Split Purple Background */}
+            <div className="absolute inset-x-0 bottom-0 top-32 md:top-40 bg-[#7C3AED] -z-10"></div>
 
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -93,7 +96,7 @@ const DashboardFooter: React.FC = () => {
                                             transition: { type: "spring", stiffness: 400, damping: 10 }
                                         }}
                                         whileTap={{ scale: 0.95 }}
-                                        href="mailto:support@studlyf.com"
+                                        href="mailto: saieshwarerelli10@gmail.com"
                                         className="flex flex-col items-center gap-2 group"
                                     >
                                         <div className="w-14 h-14 rounded-full bg-white border-2 border-gray-100 shadow-xl flex items-center justify-center text-[#7C3AED] group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED] transition-all duration-300">
@@ -114,7 +117,7 @@ const DashboardFooter: React.FC = () => {
                                             transition: { type: "spring", stiffness: 400, damping: 10 }
                                         }}
                                         whileTap={{ scale: 0.95 }}
-                                        href="https://wa.me/916361158952"
+                                        href="https://whatsapp.com/channel/0029VbCHsjAHVvTRqLfOau24/113"
                                         className="flex flex-col items-center gap-2 group"
                                     >
                                         <div className="w-14 h-14 rounded-full bg-white border-2 border-gray-100 shadow-xl flex items-center justify-center text-[#25D366] group-hover:bg-[#25D366] group-hover:text-white group-hover:border-[#25D366] transition-all duration-300">
@@ -135,7 +138,7 @@ const DashboardFooter: React.FC = () => {
                                             transition: { type: "spring", stiffness: 400, damping: 10 }
                                         }}
                                         whileTap={{ scale: 0.95 }}
-                                        href="https://instagram.com/studlyf"
+                                        href="https://www.instagram.com/stuudent.lyf?igsh=bDIwYzIxaDFyeWd3"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex flex-col items-center gap-2 group"
@@ -155,64 +158,64 @@ const DashboardFooter: React.FC = () => {
                     </div>
                 </motion.div>
 
-                {/* RESOURCES SECTION */}
+                {/* 5-COLUMN FOOTER LINKS SECTION */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24 pt-12"
+                    className="grid grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pt-6 mt-6 border-t border-black/10"
                 >
-                    <div className="lg:col-span-4 space-y-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-12 h-12 bg-[#7C3AED] rounded-lg flex items-center justify-center shadow-lg transform -rotate-3">
-                                <Sparkles className="text-white w-7 h-7" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-black text-white uppercase">
-                                    STUDLYF
-                                </h3>
-                                <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">
-                                    Empowering Engineers
-                                </p>
-                            </div>
-                        </div>
-
-                        <h2 className="text-4xl font-black text-white leading-none mb-6">
-                            <span className="bg-[#fbbf24] text-black px-2 mr-2">New</span>
-                            Coding Resources
-                        </h2>
-
-                        <p className="text-white/70 text-lg">
-                            8 free coding resources for kids and teens.
+                    {/* Column 1: Logo & Slogan */}
+                    <div className="col-span-2 lg:col-span-1 flex flex-col items-start space-y-5">
+                        <img 
+                            src="/images/studlyf.png" 
+                            alt="Studlyf" 
+                            className="h-12 md:h-16 w-auto object-contain"
+                        />
+                        <p className="text-black text-[12px] md:text-[13px] font-poppins leading-relaxed tracking-wider font-semibold opacity-80">
+                            Empowering the next generation of engineers with AI-driven career tools and resources.
                         </p>
                     </div>
 
-                    <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-4">
-                        {resources.map((item, index) => {
-                            const Icon = item.icon;
+                    {/* Column 2 */}
+                    <div className="flex flex-col space-y-5 lg:ml-8">
+                        {['Courses', 'Company Modules', 'Blogs'].map((item) => (
+                            <Link key={item} to="#" className="text-black hover:text-black/70 transition-all duration-200 uppercase tracking-wider text-[12px] md:text-[13px] font-bold font-poppins hover:translate-x-1 w-fit">
+                                {item}
+                            </Link>
+                        ))}
+                    </div>
 
-                            return (
-                                <motion.a
-                                    key={index}
-                                    href="#"
-                                    whileHover={{ scale: 1.05 }}
-                                    className="flex flex-col items-center text-center group"
-                                >
-                                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 mb-4 group-hover:bg-[#7C3AED] group-hover:text-white transition-all duration-300">
-                                        <Icon size={24} />
-                                    </div>
+                    {/* Column 3 */}
+                    <div className="flex flex-col space-y-5">
+                        {['Portfolio', 'Resume', 'Skills Assignment', 'Interviews', 'Project'].map((item) => (
+                            <Link key={item} to="#" className="text-black hover:text-black/70 transition-all duration-200 uppercase tracking-wider text-[12px] md:text-[13px] font-bold font-poppins hover:translate-x-1 w-fit">
+                                {item}
+                            </Link>
+                        ))}
+                    </div>
 
-                                    <span className="text-sm font-bold text-white group-hover:text-[#7C3AED] transition-colors">
-                                        {item.label}
-                                    </span>
-                                </motion.a>
-                            );
-                        })}
+                    {/* Column 4 */}
+                    <div className="flex flex-col space-y-5">
+                        {['AI Tools'].map((item) => (
+                            <Link key={item} to="#" className="text-black hover:text-black/70 transition-all duration-200 uppercase tracking-wider text-[12px] md:text-[13px] font-bold font-poppins hover:translate-x-1 w-fit">
+                                {item}
+                            </Link>
+                        ))}
+                    </div>
+
+                    {/* Column 5 */}
+                    <div className="flex flex-col space-y-5">
+                        {['About Application', 'Contact Us', 'Resources'].map((item) => (
+                            <Link key={item} to="#" className="text-black hover:text-black/70 transition-all duration-200 uppercase tracking-wider text-[12px] md:text-[13px] font-bold font-poppins hover:translate-x-1 w-fit">
+                                {item}
+                            </Link>
+                        ))}
                     </div>
                 </motion.div>
 
                 <div className="text-center pt-10 pb-8">
-                    <p className="text-[10px] text-white font-bold uppercase tracking-[0.5em]">
+                    <p className="text-[11px] md:text-[12px] text-black font-poppins font-bold uppercase tracking-[0.3em] opacity-80">
                         &copy; {new Date().getFullYear()} Studlyf • All Rights Reserved
                     </p>
                 </div>

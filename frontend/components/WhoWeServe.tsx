@@ -112,7 +112,9 @@ const WhoWeServe: React.FC = () => {
                             transition={{ duration: 0.6, delay: 0.2 }}
                             className="text-3xl md:text-5xl font-['Poppins'] font-black uppercase leading-tight whitespace-nowrap lg:pl-6"
                         >
-                            <span className="block text-black">Studlyf</span>
+                            <span className="block mb-4">
+                                <img src="/images/studlyf.png" alt="Studlyf" className="h-12 md:h-20 w-auto inline-block drop-shadow-[0_0_15px_rgba(0,0,0,0.15)]" />
+                            </span>
                             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">For</span>
                         </motion.h3>
 
@@ -187,10 +189,10 @@ const WhoWeServe: React.FC = () => {
                                         whileHover={{ scale: 1.02, y: -2 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth' })}
-                                        className={`mt-8 w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border-2
+                                        className={`mt-8 w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border-2 text-white shadow-lg
                                             ${card.highlight
-                                                ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-600/20 hover:bg-purple-700'
-                                                : `bg-transparent ${card.theme.border} text-gray-800 hover:bg-white/50`}
+                                                ? 'bg-purple-600 border-purple-600 shadow-purple-600/20 hover:bg-purple-700'
+                                                : `${card.theme.header} border-transparent hover:opacity-90`}
                                         `}
                                     >
                                         Contact
@@ -199,7 +201,14 @@ const WhoWeServe: React.FC = () => {
                                 </div>
 
                                 {/* Bottom Accent Line */}
-                                <div className={`h-1.5 w-full bg-gradient-to-r ${card.highlight ? 'from-purple-600/60 to-indigo-600/60' : `from-${card.theme.primary}-400/60 to-${card.theme.primary}-200/60`} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                                <div className={`h-2 w-full bg-gradient-to-r transition-all duration-500 opacity-0 group-hover:opacity-100
+                                    ${card.highlight 
+                                        ? 'from-purple-600 to-indigo-600' 
+                                        : card.theme.primary === 'red'
+                                            ? 'from-red-500 to-rose-400'
+                                            : 'from-blue-500 to-sky-400'
+                                    }`} 
+                                />
                             </motion.div>
                         ))}
                     </div>

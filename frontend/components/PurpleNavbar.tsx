@@ -31,57 +31,79 @@ const BentoCard = ({ title, desc, children, className = "", to = "#", onClick }:
 );
 
 const LearnDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-w-[300px] md:min-w-[800px]">
-        <BentoCard onClick={onItemClick} to="/learn/courses-overview" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[160px] md:min-h-[220px]">
-            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600" className="absolute bottom-0 right-0 w-1/2 h-full object-cover opacity-100 transition-all duration-700" alt="Courses" />
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 min-w-[300px] md:min-w-[900px]">
+        <BentoCard onClick={onItemClick} to="/learn/courses-overview" title="Courses" desc="Role-focused tracks for elite engineering readiness." className="md:col-span-2 md:row-span-2 min-h-[180px] md:min-h-[260px] bg-white shadow-sm overflow-hidden">
+            <div className="absolute top-0 right-0 w-1/2 h-full overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Courses" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent"></div>
+            </div>
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/learn/company-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="md:col-span-2 h-[105px]">
-            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-100 transition-all" alt="Corporate" />
+        <BentoCard onClick={onItemClick} to="/learn/company-modules" title="Company Learning Modules" desc="Institutional training for corporate internal teams." className="md:col-span-2 h-[120px] bg-white shadow-sm">
+            <div className="absolute top-0 right-0 w-1/3 h-full overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=400" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Corporate" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent"></div>
+            </div>
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/blog" title="Blog" desc="Technical insights on system ownership." className="md:col-span-2 h-[105px]">
-            <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/3 h-full object-cover opacity-100 transition-all" alt="Blog" />
+        <BentoCard onClick={onItemClick} to="/blog" title="Blog" desc="Technical insights on system ownership." className="md:col-span-2 h-[120px] bg-white shadow-sm">
+            <div className="absolute top-0 right-0 w-1/3 h-full overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=400" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Blog" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent"></div>
+            </div>
         </BentoCard>
     </div>
 );
 
 const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[300px] md:min-w-[1000px]">
-        <BentoCard onClick={onItemClick} to="/job-prep/portfolio" title="Build Portfolio" desc="Showcase evidence." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[220px] bg-[#F8FAFC]">
-            <div className="mt-4 bg-[#0F172A] rounded-lg p-3 shadow-xl border border-white/10 group-hover:scale-[1.02] transition-transform h-24">
-                <div className="flex items-center gap-1 mb-1.5">
-                    <div className="w-1 h-1 rounded-full bg-red-400"></div>
-                    <div className="w-1 h-1 rounded-full bg-yellow-400"></div>
-                    <div className="w-1 h-1 rounded-full bg-green-400"></div>
+    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 min-w-[300px] md:min-w-[1000px]">
+        <BentoCard onClick={onItemClick} to="/job-prep/portfolio" title="Build Portfolio" desc="Showcase evidence of your engineering prowess." className="md:col-span-2 md:row-span-2 min-h-[180px] md:min-h-[260px] bg-[#F8FAFC]">
+            <div className="mt-4 bg-[#0F172A] rounded-xl p-4 shadow-2xl border border-white/10 group-hover:scale-[1.05] transition-transform duration-500 h-28 relative overflow-hidden">
+                <div className="flex items-center gap-1.5 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                    <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
                 </div>
-                <div className="space-y-1.5"><div className="h-2 w-2/3 bg-white/10 rounded"></div><div className="h-8 w-full bg-gradient-to-tr from-[#7C3AED]/30 to-transparent rounded border border-white/5"></div></div>
-            </div>
-        </BentoCard>
-        <BentoCard onClick={onItemClick} to="/job-prep/resume-builder" title="Resume Builder" desc="Create instant resumes." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[220px] bg-[#F8FAFC]">
-            <div className="mt-4 mx-auto w-full h-24 bg-white border border-gray-200 rounded-t-lg shadow-sm group-hover:shadow-md transition-all group-hover:scale-[1.02] group-hover:-translate-y-1 relative overflow-hidden p-2">
-                <div className="flex gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></div>
-                    <div className="space-y-1 w-full">
-                        <div className="h-1.5 w-2/3 bg-gray-800 rounded-full"></div>
-                        <div className="h-1 w-1/2 bg-gray-400 rounded-full"></div>
+                <div className="space-y-2">
+                    <div className="h-2 w-2/3 bg-white/10 rounded"></div>
+                    <div className="h-10 w-full bg-gradient-to-tr from-[#7C3AED]/40 to-transparent rounded-lg border border-white/5 flex items-center px-3">
+                        <div className="h-1.5 w-1/2 bg-white/20 rounded"></div>
                     </div>
                 </div>
-                <div className="space-y-1.5">
-                    <div className="h-0.5 w-full bg-gray-200"></div>
-                    <div className="flex gap-1">
-                        <div className="h-1 w-1/3 bg-gray-200 rounded"></div>
-                        <div className="h-1 w-2/3 bg-gray-100 rounded"></div>
+                {/* Decorative glow */}
+                <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-[#7C3AED]/20 blur-3xl rounded-full"></div>
+            </div>
+        </BentoCard>
+        <BentoCard onClick={onItemClick} to="/job-prep/resume-builder" title="Resume Builder" desc="Create instant, ATS-friendly resumes." className="md:col-span-2 md:row-span-2 min-h-[180px] md:min-h-[260px] bg-[#F8FAFC]">
+            <div className="mt-4 mx-auto w-full h-28 bg-white border border-gray-200 rounded-xl shadow-lg group-hover:shadow-xl transition-all group-hover:scale-[1.05] group-hover:-translate-y-1 relative overflow-hidden p-3 pt-4">
+                <div className="flex gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex-shrink-0 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-gray-200"></div>
+                    </div>
+                    <div className="space-y-1.5 w-full">
+                        <div className="h-2 w-3/4 bg-gray-800/80 rounded-full"></div>
+                        <div className="h-1.5 w-1/2 bg-gray-300 rounded-full"></div>
                     </div>
                 </div>
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-blue-500/10 rounded-tl-xl flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <div className="space-y-2">
+                    <div className="h-0.5 w-full bg-gray-100"></div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="h-1.5 bg-gray-100 rounded"></div>
+                        <div className="h-1.5 bg-gray-50 rounded"></div>
+                    </div>
+                    <div className="h-1.5 w-2/3 bg-gray-50 rounded"></div>
+                </div>
+                <div className="absolute bottom-0 right-0 w-10 h-10 bg-[#7C3AED]/10 rounded-tl-2xl flex items-center justify-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#7C3AED]"></div>
                 </div>
             </div>
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/learn/assessment-intro" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-3 h-[105px]">
-            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="absolute bottom-0 right-0 w-1/4 h-full object-cover opacity-80 group-hover:opacity-100 transition-all" alt="Assessment" />
+        <BentoCard onClick={onItemClick} to="/learn/assessment-intro" title="Skill Assessment" desc="Find your strengths with clinical scoring." className="md:col-span-2 h-[120px] bg-white overflow-hidden">
+            <div className="absolute top-0 right-0 w-1/3 h-full">
+                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700 group-hover:scale-110" alt="Assessment" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent"></div>
+            </div>
         </BentoCard>
-        <BentoCard onClick={onItemClick} to="/job-prep/mock-interview" title="Mock tests & interviews" desc="Practice clinical logic defense." className="md:col-span-1.5 h-[105px]" />
-        <BentoCard onClick={onItemClick} to="/job-prep/projects" title="Build A Project" desc="Build and scale industry-standard projects with elite engineering teams." className="md:col-span-1.5 h-[105px]" />
+        <BentoCard onClick={onItemClick} to="/job-prep/mock-interview" title="Mock tests & interviews" desc="Practice clinical logic defense." className="md:col-span-1 h-[120px] bg-white" />
+        <BentoCard onClick={onItemClick} to="/job-prep/projects" title="Build A Project" desc="Scale industry projects." className="md:col-span-1 h-[120px] bg-white" />
     </div>
 );
 
@@ -101,13 +123,23 @@ const PurpleNavbar: React.FC = () => {
         },
     ];
 
+    const toggleDropdown = (label: string) => {
+        setActiveDropdown(activeDropdown === label ? null : label);
+    };
+
     return (
         <div className="w-full px-0 sm:px-0 absolute bottom-0 left-0 right-0 z-50 pointer-events-none">
-            {/* Using pointer-events-none on wrapper so clicks pass through empty areas */}
+            {/* Click-away listener when dropdown is open */}
+            {activeDropdown && (
+                <div 
+                    className="fixed inset-0 z-0 pointer-events-auto" 
+                    onClick={() => setActiveDropdown(null)}
+                />
+            )}
 
             <div className="relative flex justify-center w-full items-end h-6">
                 {/* Interactive Creature - Z-Index 0 (Behind Navbar) */}
-                <div className="absolute inset-x-0 bottom-8 z-0 flex justify-center pointer-events-none">
+                <div className="absolute inset-x-0 bottom-16 z-0 flex justify-center pointer-events-none">
                     <InteractiveCreature />
                 </div>
 
@@ -115,6 +147,7 @@ const PurpleNavbar: React.FC = () => {
                 <motion.div
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
+                    onMouseLeave={() => setActiveDropdown(null)}
                     className="w-[95%] sm:w-full max-w-4xl bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED] rounded-t-[1rem] sm:rounded-t-[1.2rem] px-4 sm:px-10 py-1 sm:py-1.5 flex items-center justify-center shadow-[0_-10px_40px_-15px_rgba(124,58,237,0.5)] z-10 pointer-events-auto"
                 >
                     {/* Navigation Items - Centered */}
@@ -123,14 +156,18 @@ const PurpleNavbar: React.FC = () => {
                             <div
                                 key={item.label}
                                 className="relative py-2"
-                                onMouseEnter={() => setActiveDropdown(item.label)}
-                                onMouseLeave={() => setActiveDropdown(null)}
                             >
-                                <button className="flex items-center gap-1 sm:gap-2 text-white text-[11px] sm:text-xs font-bold uppercase tracking-widest hover:text-white/80 transition-colors py-1">
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDropdown(item.label);
+                                    }}
+                                    className="flex items-center gap-1 sm:gap-2 text-white text-[11px] sm:text-xs font-bold uppercase tracking-widest hover:text-white/80 transition-colors py-1"
+                                >
                                     {item.label}
                                     <ChevronUp
                                         size={14}
-                                        className={`transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''}`}
+                                        className={`transition-transform duration-300 ${activeDropdown === item.label ? 'rotate-180' : ''}`}
                                     />
                                 </button>
                             </div>
@@ -143,12 +180,16 @@ const PurpleNavbar: React.FC = () => {
                                     initial={{ opacity: 0, y: 10, scale: 0.98 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute bottom-full mb-4 left-[-10px] right-[-10px] sm:left-0 sm:right-0 bg-[#F5F3FF] border border-[#7C3AED]/10 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl z-[100] cursor-auto mx-2 sm:mx-8 overflow-y-auto max-h-[70vh] no-scrollbar"
-                                    onMouseEnter={() => setActiveDropdown(activeDropdown)}
-                                    onMouseLeave={() => setActiveDropdown(null)}
+                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="absolute bottom-full left-1/2 -translate-x-1/2 w-[92vw] sm:w-[95vw] max-w-6xl z-[100] cursor-auto pb-4"
                                 >
-                                    {navItems.find(i => i.label === activeDropdown)?.component}
+                                    {/* Bridge to prevent closing when moving mouse between bar and dropdown */}
+                                    <div className="bg-white/95 backdrop-blur-md border border-[#7C3AED]/10 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(124,58,237,0.25)] overflow-y-auto max-h-[80vh] no-scrollbar">
+                                        <div className="w-full flex justify-center">
+                                            {navItems.find(i => i.label === activeDropdown)?.component}
+                                        </div>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>

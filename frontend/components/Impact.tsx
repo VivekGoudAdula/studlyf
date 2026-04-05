@@ -74,11 +74,11 @@ const Impact = () => {
     ];
 
     const stats = [
-        { number: 25000, suffix: '+', label: 'Engineers Verified', delay: 0.1 },
-        { number: 7500, suffix: '+', label: 'Tracks Completed', delay: 0.2 },
-        { number: 15, suffix: '+', label: 'Colleges Partnered', delay: 0.3 },
-        { number: 80, suffix: '%', label: 'Hiring Success Rate', delay: 0.4 },
-        { number: 10, suffix: '+', label: 'Startup Hiring Partners', delay: 0.5 },
+        { number: 3500, suffix: '+', label: 'Engineers Verified', delay: 0.3 },
+        { number: 3000, suffix: '+', label: 'Tracks Completed', delay: 0.3 },
+        { number: 25, suffix: '+', label: 'Colleges Partnered', delay: 0.3 },
+        { number: 86, suffix: '%', label: 'Hiring Success Rate', delay: 0.4 },
+        { number: 15, suffix: '+', label: 'Startup Hiring Partners', delay: 0.5 },
     ];
 
     return (

@@ -20,6 +20,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime, timezone
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+import shutil
 import json
 
 # Load from root .env specifically
@@ -81,16 +82,6 @@ class InterviewInteractionRequest(BaseModel):
     session_id: str
     user_response: str
     round_index: int
-
-class CareerIdentityRequest(BaseModel):
-    subject: str = ""
-    skills: List[str] = []
-    interests: List[str] = []
-
-class CareerRoadmapRequest(BaseModel):
-    career_path: str
-    subject: str = ""
-    skills: List[str] = []
 
 def fix_id(doc):
     if doc and "_id" in doc:
@@ -223,8 +214,6 @@ async def create_ad(
     promo_stats:  str  = Form(""),          # JSON array string
     order:        int  = Form(0),
     active:       bool = Form(True),
-    show_cta:     str  = Form("true"),
-    media_url:    str  = Form(""),
     media_file: Optional[UploadFile] = File(None),
 ):
     media_url = ""
@@ -241,13 +230,6 @@ async def create_ad(
         if ext in [".mp4", ".webm", ".mov", ".ogg"]:
             upload_media_type = "video"
         elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
-            upload_media_type = "image"
-    elif media_url and not upload_media_type:
-        # try to auto-detect from extension if link pasted
-        _url_lower = media_url.lower()
-        if any(ext in _url_lower for ext in [".mp4", ".webm", ".mov", ".ogg"]):
-            upload_media_type = "video"
-        elif any(ext in _url_lower for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]):
             upload_media_type = "image"
 
     import json as _json
@@ -271,7 +253,6 @@ async def create_ad(
         "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
-        "show_cta":     show_cta.lower() == "true",
         "created_at":   datetime.now(timezone.utc).isoformat(),
     }
     result = await ads_col.insert_one(doc)
@@ -300,8 +281,6 @@ async def update_ad(
     promo_stats:  str  = Form(""),
     order:        int  = Form(0),
     active:       bool = Form(True),
-    show_cta:     str  = Form("true"),
-    media_url:    str  = Form(""),
     media_file: Optional[UploadFile] = File(None),
 ):
     import json as _json
@@ -318,12 +297,6 @@ async def update_ad(
         if ext in [".mp4", ".webm", ".mov", ".ogg"]:
             upload_media_type = "video"
         elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
-            upload_media_type = "image"
-    elif media_url and not upload_media_type:
-        _url_lower = media_url.lower()
-        if any(ext in _url_lower for ext in [".mp4", ".webm", ".mov", ".ogg"]):
-            upload_media_type = "video"
-        elif any(ext in _url_lower for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]):
             upload_media_type = "image"
 
     update = {
@@ -346,7 +319,6 @@ async def update_ad(
         "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
-        "show_cta":     show_cta.lower() == "true",
         "updated_at":   datetime.now(timezone.utc).isoformat(),
     }
     await ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": update})
@@ -665,6 +637,34 @@ async def get_course_modules(course_id: str, user_id: Optional[str] = None):
             default_status = "unlocked" if module["order_index"] == 1 else "locked"
             module["progress"] = fix_progress(prog, default_status)
         modules.append(module)
+        
+    # Append Final Assessment if it exists
+    final_quiz = await quizzes_col.find_one({"course_id": course_id, "module_id": "FINAL_ASSESSMENT"})
+    if final_quiz:
+        questions = final_quiz.get("questions", [])
+        if questions:
+            # Check if all previous modules are completed to unlock
+            all_completed = True
+            if user_id:
+                for m in modules:
+                    if m.get("progress", {}).get("status") != "completed":
+                        all_completed = False
+                        break
+            
+            modules.append({
+                "_id": "FINAL_ASSESSMENT",
+                "title": "Final Certificate Assessment",
+                "is_final": True,
+                "lessons": [{
+                    "type": "quiz",
+                    "title": "Final Course Assessment",
+                    "questions": questions
+                }],
+                "progress": {
+                    "status": "unlocked" if all_completed else "locked"
+                } if user_id else None
+            })
+            
     return modules
 
 async def generate_ai_quiz(module_id: str, theory_content: str):
@@ -730,34 +730,61 @@ async def update_progress(data: dict):
     user_id = data.get("user_id")
     module_id = data.get("module_id")
     course_id = data.get("course_id")
-    updates = data.get("updates", {}) # e.g. {"theory_completed": True}
+    updates = data.get("updates", {})
     
-    if not user_id or not module_id:
-        raise HTTPException(status_code=400, detail="Missing user_id or module_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id")
 
-    # Update current module progress
+    if not module_id:
+        # Course level update (e.g. final assessment)
+        if course_id:
+            await progress_col.update_one(
+                {"user_id": user_id, "course_id": course_id, "is_final_step": True},
+                {"$set": {**updates, "updated_at": datetime.utcnow().isoformat()}},
+                upsert=True
+            )
+            return {"status": "final_step_updated"}
+        raise HTTPException(status_code=400, detail="Missing module_id or course_id")
+
+    # 1. Update/Upsert module progress
     await progress_col.update_one(
         {"user_id": user_id, "module_id": module_id},
-        {"$set": {**updates, "course_id": course_id}},
+        {"$set": {**updates, "course_id": course_id, "updated_at": datetime.utcnow().isoformat()}},
         upsert=True
     )
     
-    # Check if module is now complete to unlock next one
+    # 2. Get current state & module definition to check requirements
     prog = await progress_col.find_one({"user_id": user_id, "module_id": module_id})
-    if (prog.get("theory_completed") and 
-        prog.get("video_completed") and 
-        prog.get("quiz_score", 0) >= 70):
-        
+    module_def = await modules_col.find_one({"_id": module_id})
+    
+    if not module_def:
+         return {"status": "updated", "info": "Module definition missing, progress saved"}
+
+    lessons = module_def.get("lessons", [])
+    has_video = any(l.get("type") == "video" for l in lessons)
+    has_theory = any(l.get("type") in ["text", "theory"] for l in lessons)
+    has_quiz = any(l.get("type") == "quiz" for l in lessons)
+
+    # If no lessons array, fallback to legacy check
+    if not lessons:
+        has_video = has_theory = has_quiz = True
+
+    # 3. Validation logic
+    video_ok = not has_video or prog.get("video_completed")
+    theory_ok = not has_theory or prog.get("theory_completed")
+    quiz_ok = not has_quiz or prog.get("quiz_score", 0) >= 60
+
+    if video_ok and theory_ok and quiz_ok:
         await progress_col.update_one(
             {"user_id": user_id, "module_id": module_id},
             {"$set": {"status": "completed"}}
         )
         
-        # Find and unlock next module
-        current_mod = await modules_col.find_one({"_id": module_id})
+        # 4. Find next module
+        order = module_def.get("order_index", 1)
         next_mod = await modules_col.find_one({
             "course_id": course_id, 
-            "order_index": current_mod["order_index"] + 1
+            "order_index": order + 1
         })
         
         if next_mod:
@@ -766,9 +793,11 @@ async def update_progress(data: dict):
                 {"$set": {"status": "unlocked", "course_id": course_id}},
                 upsert=True
             )
-            return {"status": "module_completed", "unlocked_next": True}
+            return {"status": "module_completed", "unlocked_next": True, "next_id": next_mod["_id"]}
         else:
-            return {"status": "course_completed"}
+            return {"status": "course_completed", "info": "All modules finished"}
+    
+    return {"status": "updated", "requirements_met": False}
 
     return {"status": "updated"}
 
@@ -1890,106 +1919,6 @@ def grok_chat(messages: List[Dict[str, str]], temperature: float = 0.4, max_toke
 def grok_json(messages: List[Dict[str, str]], temperature: float = 0.3, max_tokens: int = 900) -> Dict[str, Any]:
     return extract_json_object(grok_chat(messages, temperature=temperature, max_tokens=max_tokens))
 
-# ─── Career Onboarding AI API ──────────────────────────────────────────────
-
-@app.post("/api/career/identity")
-async def generate_career_identity(req: CareerIdentityRequest):
-    prompt = f"""
-    Create a professional 'Career Identity Statement' (max 3 sentences) for a student with the following profile:
-    Subject: {req.subject}
-    Skills: {', '.join(req.skills)}
-    Interests: {', '.join(req.interests)}
-    
-    The tone should be ambitious, modern, and high-impact. 
-    Focus on how their skills translate into value.
-    
-    Return JSON only:
-    {{
-        "identity_statement": "The generated statement"
-    }}
-    """
-    try:
-        return grok_json([{"role": "user", "content": prompt}])
-    except Exception as e:
-        print(f"Error generating identity: {e}")
-        return {"identity_statement": f"I am a {req.subject} specialist. Skilled in {', '.join(req.skills[:3])}."}
-
-@app.post("/api/career/explore-paths")
-async def explore_career_paths(req: CareerIdentityRequest):
-    prompt = f"""
-    Based on the following profile, suggest 12 diverse and exciting career paths.
-    Subject: {req.subject}
-    Skills: {', '.join(req.skills)}
-    Interests: {', '.join(req.interests)}
-    
-    For each path, provide:
-    1. A short name (e.g., 'AI Ethics Architect')
-    2. A category group (e.g., 'AI', 'Ethics', 'Architecture')
-    3. A brief 3-line description of what they do and salary potential.
-    4. Suggested X/Y coordinates for a visual map (between -500 and 500).
-    
-    Return JSON only:
-    {{
-        "paths": [
-            {{ "name": "...", "group": "...", "description": "...", "pos": {{ "x": 0, "y": 0 }} }}
-        ]
-    }}
-    """
-    try:
-        data = grok_json([{"role": "user", "content": prompt}])
-        if data and "paths" in data and len(data["paths"]) > 0:
-            return data
-        raise ValueError("Empty AI path response")
-    except Exception as e:
-        print(f"Error exploring paths: {e}")
-        subj = req.subject or "Technology"
-        fallback = [
-            { "name": f"{subj} Lead Specialist", "group": "Industrial", "description": f"Design and implement cutting-edge {subj} solutions. $120k+", "pos": { "x": -250, "y": -150 } },
-            { "name": f"{subj} Systems Architect", "group": "Architecture", "description": f"Define large-scale {subj} frameworks and infrastructure. $140k+", "pos": { "x": 100, "y": 300 } },
-            { "name": f"{subj} Optimization Pro", "group": "Efficiency", "description": f"Refine and scale existing {subj} workflows for global impact. $110k+", "pos": { "x": 300, "y": -200 } },
-            { "name": f"{subj} Research Pioneer", "group": "Innovation", "description": f"Directly invent the next generation of {subj} breakthroughs. $160k+", "pos": { "x": -400, "y": 100 } },
-            { "name": f"{subj} Product Strategist", "group": "Business", "description": f"Merge the technical power of {subj} with market needs. $135k+", "pos": { "x": 0, "y": 450 } },
-            { "name": f"{subj} Quality Engineer", "group": "Assurance", "description": f"Ensure safety and robust scalability for all {subj} assets. $105k+", "pos": { "x": 200, "y": -400 } }
-        ]
-        return { "paths": fallback }
-
-@app.post("/api/career/roadmap")
-async def generate_career_roadmap(req: CareerRoadmapRequest):
-    prompt = f"""
-    Generate a highly tactical, month-by-month roadmap (6 months) to become a {req.career_path}.
-    The candidate currently knows: {', '.join(req.skills)} and studied {req.subject}.
-    
-    For each month (1-6), provide:
-    1. Focus Title
-    2. 3 Specific Actionable Tasks
-    3. One 'Boss Level' project to complete that month.
-    
-    Return JSON only:
-    {{
-        "career_path": "{req.career_path}",
-        "roadmap": [
-            {{ "month": 1, "title": "...", "tasks": ["...", "...", "..."], "project": "..." }}
-        ]
-    }}
-    """
-    try:
-        data = grok_json([{"role": "user", "content": prompt}])
-        if data and "roadmap" in data and len(data["roadmap"]) > 0:
-            return data
-        raise ValueError("Invalid roadmap format from AI")
-    except Exception as e:
-        print(f"Error generating roadmap: {e}")
-        # Robust Fallback Roadmap
-        fallback = [
-            { "month": 1, "title": "Fundamentals & Environment", "tasks": [f"Audit current {req.subject} knowledge", "Set up professional dev environment", "Deep dive into core prerequisites"], "project": "Environment Alpha" },
-            { "month": 2, "title": "Core Technical Mastery", "tasks": ["Master advanced concepts", "Build 5 mini-modules", "Shadow industry experts"], "project": "Prototype Beta" },
-            { "month": 3, "title": "Project Lifecycle", "tasks": ["Implement robust architecture", "Add testing & documentation", "Optimize performance"], "project": "Core Engine V1" },
-            { "month": 4, "title": "Advanced Integration", "tasks": ["Connect external services", "Implement scale protocols", "Refactor for maintainability"], "project": "Integrator Pro" },
-            { "month": 5, "title": "Portfolio Refinement", "tasks": ["Polished Case Studies", "Open Source contributions", "Interview prep"], "project": "Showcase Matrix" },
-            { "month": 6, "title": "Market Launch", "tasks": ["Target high-impact roles", "Technical blogging", "Final project deployment"], "project": "Grand Finale Deployment" }
-        ]
-        return { "career_path": req.career_path, "roadmap": fallback }
-
 
 def build_round_topics(role: str, round_type: str) -> str:
     role_name = (role or "software engineer").strip()
@@ -2163,20 +2092,13 @@ def generate_next_interview_message(
     question_count: int,
     recent_analysis: Optional[Dict[str, Any]],
     is_round_start: bool,
-    is_skip: bool = False,
 ) -> Dict[str, Any]:
     round_type = current_round.get("round_type", "technical")
     persona = current_round.get("persona", fallback_persona(session["company"], round_type))
     round_limit = ROUND_LIMITS.get(round_type, 5)
     history_text = format_round_history(round_history, round_index)
     analysis_text = json.dumps(recent_analysis, ensure_ascii=True) if recent_analysis else "None yet."
-    
-    if is_round_start:
-        start_instruction = "Ask the opening question for this round."
-    elif is_skip:
-        start_instruction = "The candidate explicitly skipped the last question or said they don't know. Move IMMEDIATELY to a brand new question on a different topic. Do not repeat the previous question and do not try to explain it."
-    else:
-        start_instruction = "Ask the next best question based on the last answer and its gaps."
+    start_instruction = "Ask the opening question for this round." if is_round_start else "Ask the next best question based on the last answer and its gaps."
 
     prompt = f"""
     You are an interviewer conducting the {ROUND_DISPLAY_NAMES.get(round_type, round_type)} for a candidate at {session['company']}.
@@ -2362,10 +2284,6 @@ async def interview_chat(req: InterviewInteractionRequest):
             "answer_analysis": recent_analysis,
         }
 
-     # Check for skip keywords
-    skip_keywords = ["skip", "idont know", "next question", "i don't know"]
-    is_skip = any(k in req.user_response.lower() for k in skip_keywords) if req.user_response else False
-
     try:
         data = generate_next_interview_message(
             session,
@@ -2375,7 +2293,6 @@ async def interview_chat(req: InterviewInteractionRequest):
             question_count,
             recent_analysis,
             not bool(req.user_response),
-            is_skip=is_skip
         )
 
         interviewer_text = data.get("interviewer_text", "Could you tell me more about that?")
@@ -2461,14 +2378,8 @@ async def voice_analysis(req: InterviewInteractionRequest):
     if req.user_response:
         messages.append({"role": "user", "content": req.user_response})
 
-    # Check for skip keywords
-    skip_keywords = ["skip", "idont know", "next question", "i don't know"]
-    is_skip = any(k in req.user_response.lower() for k in skip_keywords) if req.user_response else False
-
     prompt_instruction = f"\n\nInterview Progress: Question {question_count + 1} of {round_limit}. "
-    if is_skip:
-        prompt_instruction += "\nSTRICT RULE: The candidate skipped this question. DO NOT REPEAT IT. Transition immediately to a NOVEL question on a fresh HR topic."
-    elif question_count >= round_limit:
+    if question_count >= round_limit:
         prompt_instruction += "\nSTRICT RULE: Thank the candidate and end the interview politely. Set is_call_over to true."
     else:
         prompt_instruction += "\nProvide the next HR question. Set is_call_over to false."
@@ -2626,10 +2537,11 @@ from fastapi import Header
 
 async def admin_required(x_admin_email: str = Header(None)):
     """Simple middleware to protect admin routes"""
-    if not x_admin_email or x_admin_email.lower() != "admin@studlyf.com":
+    allowed_admins = ["admin@studlyf.com", "saieshwarerelli10@gmail.com"]
+    if not x_admin_email or x_admin_email.lower() not in allowed_admins:
         raise HTTPException(
             status_code=403, 
-            detail="Forbidden: This endpoint requires super-admin privileges."
+            detail=f"Forbidden: {x_admin_email} does not have super-admin privileges."
         )
     return x_admin_email
 
@@ -2751,12 +2663,75 @@ async def get_admin_students():
         print(f"Error fetching students: {e}")
         return []
 
+# --- ADMIN RESOURCE UPLOADS ---
+from fastapi import File, UploadFile
+
+CERT_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "certificates")
+os.makedirs(CERT_UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/admin/upload-certificate", dependencies=[Depends(admin_required)])
+async def upload_admin_certificate(file: UploadFile = File(...)):
+    """Upload a custom certificate for a student"""
+    try:
+        ext = os.path.splitext(file.filename)[1] or ".pdf"
+        filename = f"{uuid.uuid4()}{ext}"
+        filepath = os.path.join(CERT_UPLOAD_DIR, filename)
+        
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return {
+            "status": "success",
+            "url": f"{BASE_URL}/uploads/certificates/{filename}"
+        }
+    except Exception as e:
+        print(f"Cert Upload Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload certificate")
+
+@app.post("/api/admin/upload-image", dependencies=[Depends(admin_required)])
+async def upload_admin_image(file: UploadFile = File(...)):
+    """Upload an image for a lesson and return its local URL to avoid long Base64 strings in Markdown"""
+    try:
+        # Generate a unique filename
+        ext = os.path.splitext(file.filename)[1] or ".png"
+        filename = f"{uuid.uuid4()}{ext}"
+        filepath = os.path.join(LESSONS_UPLOAD_DIR, filename)
+        
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return {
+            "status": "success",
+            "url": f"{BASE_URL}/uploads/lessons/{filename}"
+        }
+    except Exception as e:
+        print(f"Upload Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload image")
+
 @app.get("/api/admin/courses", dependencies=[Depends(admin_required)])
 async def get_admin_courses():
-    """Fetch all courses from MongoDB"""
+    """Fetch all courses with their full modules and assessment questions from MongoDB"""
     courses = []
     async for course in courses_col.find():
-        courses.append(fix_id(course))
+        course_data = fix_id(course)
+        course_id = course_data["_id"]
+        
+        # 1. Fetch and attach modules
+        modules = []
+        async for mod in modules_col.find({"course_id": course_id}):
+            modules.append(fix_id(mod))
+        # Sort by order_index
+        modules.sort(key=lambda x: x.get("order_index", 0))
+        course_data["modules"] = modules
+        
+        # 2. Fetch and attach final assessment questions
+        final_quiz = await quizzes_col.find_one({"course_id": course_id, "module_id": "FINAL_ASSESSMENT"})
+        if final_quiz:
+            course_data["questions"] = final_quiz.get("questions", [])
+        else:
+            course_data["questions"] = []
+            
+        courses.append(course_data)
     return courses
 
 
@@ -2896,9 +2871,30 @@ async def update_admin_course(course_id: str, data: dict):
 
 @app.delete("/api/admin/courses/{course_id}", dependencies=[Depends(admin_required)])
 async def delete_admin_course(course_id: str):
-    """Delete a course from MongoDB"""
-    result = await courses_col.delete_one({"_id": course_id})
-    return {"status": "deleted" if result.deleted_count > 0 else "not_found"}
+    """Delete a course and all its associated modules and quizzes from MongoDB"""
+    try:
+        # Delete the main course document
+        result = await courses_col.delete_one({"_id": course_id})
+        
+        if result.deleted_count > 0:
+            # Clean up associated modules
+            await modules_col.delete_many({"course_id": course_id})
+            
+            # Clean up associated quizzes (including module quizzes and final assessments)
+            await quizzes_col.delete_many({"course_id": course_id})
+            
+            # Clean up other associated collections if they use course_id
+            await theories_col.delete_many({"course_id": course_id})
+            await videos_col.delete_many({"course_id": course_id})
+            await projects_col.delete_many({"course_id": course_id})
+            
+            return {"status": "deleted", "id": course_id}
+        else:
+            return {"status": "not_found", "message": "Course not found"}
+            
+    except Exception as e:
+        print(f"Error deleting course {course_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 
 @app.get("/api/admin/hiring", dependencies=[Depends(admin_required)])
 async def get_admin_hiring():
@@ -2990,10 +2986,18 @@ async def get_admin_quizzes():
 
 @app.get("/api/admin/submissions", dependencies=[Depends(admin_required)])
 async def get_project_submissions():
-    """Fetch all pending project submissions"""
+    """Fetch all pending project submissions and final track completions"""
     submissions = []
+    # Projects
     async for prog in progress_col.find({"project_status": "submitted", "review_status": {"$nin": ["approved", "rejected"]}}).sort("_id", -1):
         submissions.append(fix_id(prog))
+        
+    # Final Track Completions
+    async for prog in progress_col.find({"final_assessment_passed": True, "review_status": {"$nin": ["approved", "rejected"]}}).sort("_id", -1):
+        # Avoid duplicates
+        if not any(s["_id"] == str(prog["_id"]) for s in submissions):
+            submissions.append(fix_id(prog))
+            
     return submissions
 
 @app.get("/api/admin/evaluations-history", dependencies=[Depends(admin_required)])
@@ -3035,6 +3039,7 @@ async def review_submission(data: dict):
             "course_id": course_id,
             "certificate_id": cert_id,
             "template_id": template_id,
+            "certificate_url": data.get("certificate_url"), # Store manual upload URL if provided
             "issue_date": datetime.utcnow().isoformat()
         }
         await certificates_col.insert_one(cert)
@@ -3969,4 +3974,4 @@ async def get_ai_tools():
     except Exception as e:
         print(f"ERROR fetching AI tools: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch AI tools")
-# ─── End AI Tools API ────────────────────────────────────────────────────────
+# ─── End AI Tools API ────────────────────────────────────────────────────────

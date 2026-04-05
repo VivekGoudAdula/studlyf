@@ -181,9 +181,20 @@ const RoadmapSection: React.FC = () => {
                             transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
                             style={{ offsetPath: `path("${pathD}")` }}
                         >
-                            {/* Trailing Particle Effect */}
-                            <div className="absolute inset-0 bg-white/50 rounded-full animate-ping scale-150" />
+                        {/* Traveling Pulse Trail / Particles could go here */}
                         </motion.div>
+
+                        {/* Extra Decorative Nodes on Path (Path Enrichment) */}
+                        {[20, 40, 60, 80].map((pos) => (
+                            <motion.div
+                                key={pos}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                                transition={{ delay: 3 + (pos/100), duration: 0.5 }}
+                                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-[0_0_15px_white] z-20"
+                                style={{ left: `${pos}%` }}
+                            />
+                        ))}
                     </div>
 
                     {steps.map((step, index) => {
@@ -192,20 +203,20 @@ const RoadmapSection: React.FC = () => {
                             <div key={step.id} className="absolute" style={{ left: pt.left, top: '50%', transform: 'translate(-50%, -50%)' }}>
                                 <div className="relative flex flex-col items-center group" onMouseEnter={() => setHoveredStep(index)} onMouseLeave={() => setHoveredStep(null)}>
 
-                                    {/* Thick White Dotted Connectors - BOTH SIDES */}
-                                    {/* Main Connector (to box) */}
+                                    {/* Full Vertical Dashed Line - BOTH SIDES (Symmetry) */}
+                                    {/* Upward Line */}
                                     <motion.div
                                         initial={{ scaleY: 0 }}
                                         animate={isInView ? { scaleY: 1 } : {}}
                                         transition={{ delay: 2 + index * 0.2, duration: 0.8 }}
-                                        className={`absolute w-0 border-l-[5px] border-dashed border-white origin-bottom transition-all duration-500 z-30 ${pt.cardDir === 'up' ? 'h-48 -top-48 rotate-180' : 'h-48 top-10'}`}
+                                        className="absolute w-0 border-l-[5px] border-dashed border-white origin-bottom transition-all duration-500 z-30 h-48 bottom-10"
                                     />
-                                    {/* Opposing Connector (visual symmetry) */}
+                                    {/* Downward Line */}
                                     <motion.div
                                         initial={{ scaleY: 0 }}
                                         animate={isInView ? { scaleY: 1 } : {}}
                                         transition={{ delay: 2.2 + index * 0.2, duration: 0.8 }}
-                                        className={`absolute w-0 border-l-[5px] border-dashed border-white/60 origin-top transition-all duration-500 z-30 ${pt.cardDir === 'up' ? 'h-48 top-10' : 'h-48 -top-48 rotate-180'}`}
+                                        className="absolute w-0 border-l-[5px] border-dashed border-white origin-top transition-all duration-500 z-30 h-48 top-10"
                                     />
 
                                     {/* Node with Radial Glow */}
