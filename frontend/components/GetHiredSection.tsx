@@ -34,19 +34,32 @@ const GetHiredSection: React.FC = () => {
                     >
                         GET STARTED
                     </motion.button>
+
                 </div>
 
                 {/* Fallback for mobile so the glass box stacks naturally instead of overlapping */}
                 <div className="block lg:hidden w-full mt-16 pt-0 relative z-20">
                     <GlassCard isMobile />
                 </div>
+
+                {/* Right Side: Comparison Glass Box (Floating absolutely per instructions) */}
+                <div className="hidden lg:block absolute right-[8%] top-1/2 -translate-y-1/2 w-[45%] max-w-[650px] z-20">
+                    <GlassCard />
+                </div>
             </div>
 
-            {/* Right Side: Comparison Glass Box (Floating absolutely per instructions) */}
-            <div className="hidden lg:block absolute right-[8%] top-1/2 -translate-y-1/2 w-[45%] max-w-[650px] z-20">
-                <GlassCard />
+            {/* Bottom bar for stipend, startup hirings, and success rate */}
+            <div className="hidden lg:grid w-full absolute left-1/2 -translate-x-1/2 bottom-12 z-30 pointer-events-none grid-cols-3 items-center max-w-[1400px] px-6 sm:px-12 lg:px-20">
+                <div className="text-white text-xl font-bold pointer-events-auto text-left tracking-wide" style={{fontFamily: 'Times New Roman, Times, serif'}}>
+                    Stipend starts at 10K+
+                </div>
+                <div className="text-white text-xl font-bold pointer-events-auto text-center tracking-wide" style={{fontFamily: 'Times New Roman, Times, serif'}}>
+                    Startup hirings 10+
+                </div>
+                <div className="text-white text-xl font-bold pointer-events-auto text-right tracking-wide" style={{fontFamily: 'Times New Roman, Times, serif'}}>
+                    80% success rate
+                </div>
             </div>
-
         </section>
     );
 };
@@ -62,7 +75,7 @@ const GlassCard: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             }}
         >
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr] gap-[40px] sm:gap-[0px]">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr] gap-[40px] sm:gap-[0px] relative">
 
                 {/* MNC Column */}
                 <div className="flex flex-col sm:pr-[40px]">

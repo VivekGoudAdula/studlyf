@@ -4,15 +4,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronRight, Clock, BarChart2, BadgeCheck, Briefcase, Users, ArrowRight, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from '../apiConfig';
 
+<<<<<<< HEAD
+ /* ─────────────────────────── track data ─────────────────────────── */
+ // Removed hardcoded tracks to only show database content.
+=======
 /* ─────────────────────────── track data ─────────────────────────── */
 const tracks: any[] = [];
 
+>>>>>>> 8755770e90df93ecb3499fc093ee4cc4ce71586e
 
 /* ─────────────────────────── component ─────────────────────────── */
 const CoursesOverview: React.FC = () => {
     const navigate = useNavigate();
-    const [hoveredTrack, setHoveredTrack] = useState<string | null>(null);
-    const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
     const [courses, setCourses] = useState<any[]>([]);
 
     useEffect(() => {
@@ -40,6 +43,8 @@ const CoursesOverview: React.FC = () => {
         return `${slug}--${id}`;
     };
 
+<<<<<<< HEAD
+=======
     const [searchParams] = useSearchParams();
     const initialCategory = searchParams.get('category') || 'All';
     const [activeCategory, setActiveCategory] = useState<string>(initialCategory);
@@ -62,6 +67,7 @@ const CoursesOverview: React.FC = () => {
 
     const activeTrack = tracks.find(t => t.id === (selectedTrack || hoveredTrack)) || null;
 
+>>>>>>> 8755770e90df93ecb3499fc093ee4cc4ce71586e
     return (
         <div className="min-h-screen bg-[#FAFAFA] overflow-x-hidden">
             {/* ── hero ── */}
@@ -87,7 +93,7 @@ const CoursesOverview: React.FC = () => {
                         <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em]">Learn → Courses</span>
                     </motion.div>
 
-                    <motion.h1
+                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
@@ -95,6 +101,80 @@ const CoursesOverview: React.FC = () => {
                     >
                         Master Your <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B]">
+<<<<<<< HEAD
+                            ADVANCED MODULES
+                        </span>
+                    </motion.h1>
+
+
+                </div>
+            </section>
+
+             {/* ── Dynamic courses from Database ── */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-8 pb-32">
+                <div className="mb-12">
+                    <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.5em] mb-4 block">Proprietary Elite Modules</span>
+                    <h2 className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tighter uppercase">Available <br /><span className="text-[#7C3AED]">Learning Modules</span>.</h2>
+                </div>
+                {courses.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {courses.map((course, i) => (
+                            <motion.div
+                                key={course._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                whileHover={{ y: -10 }}
+                                onClick={() => navigate(`/learn/courses/${createSlug(course.title, course._id)}`)}
+                                className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group"
+                            >
+                                <div className="h-56 relative overflow-hidden">
+                                    <img
+                                        src={course.image || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop'}
+                                        alt={course.title}
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    />
+                                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest border border-white/20">
+                                        {course.role_tag || 'Module'}
+                                    </div>
+                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black text-[#7C3AED] uppercase tracking-widest border border-[#7C3AED]/20">
+                                        {course.difficulty || 'Advanced'}
+                                    </div>
+                                </div>
+                                <div className="p-8">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Clock className="w-3 h-3 text-gray-400" />
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{course.duration || 'Flexible'}</span>
+                                    </div>
+                                    <h3 className="text-xl font-black text-gray-900 mb-3 tracking-tight uppercase leading-tight">{course.title}</h3>
+                                    <p className="text-gray-500 text-xs mb-6 line-clamp-2 leading-relaxed font-medium">{course.description}</p>
+                                    
+                                    {course.skills && course.skills.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mb-6">
+                                            {course.skills.slice(0, 3).map((skill: string) => (
+                                                <span key={skill} className="text-[7px] font-black px-2 py-1 bg-gray-50 text-gray-400 rounded-md uppercase tracking-wider border border-gray-100">{skill}</span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                                        <span className="text-[9px] font-black text-[#7C3AED] uppercase tracking-widest">School of {course.school || 'Engineering'}</span>
+                                        <div className="flex items-center gap-1 text-[#7C3AED] font-black text-[10px] uppercase tracking-widest">
+                                            Enter Module <ChevronRight className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-[2.5rem] p-20 text-center border border-dashed border-gray-200">
+                        <p className="text-gray-400 font-black uppercase tracking-[0.2em]">Synchronizing database content...</p>
+                    </div>
+                )}
+            </section>
+
+=======
                             ENGINEERING SKILLS
                         </span>
                     </motion.h1>
@@ -111,6 +191,7 @@ const CoursesOverview: React.FC = () => {
                 </div>
             </section>
 
+>>>>>>> 8755770e90df93ecb3499fc093ee4cc4ce71586e
             {/* ── bottom trust bar ── */}
             <section className="max-w-7xl mx-auto px-4 sm:px-8 pt-4 pb-24">
                 <motion.div
@@ -145,6 +226,10 @@ const CoursesOverview: React.FC = () => {
                 </motion.div>
             </section>
 
+<<<<<<< HEAD
+             {/* Removed duplicate Dynamic courses section as it was moved up */}
+
+=======
             {/* ── Dynamic courses from Admin ── */}
             {filteredCourses.length > 0 && (
                 <section id="elite-catalog" className="max-w-7xl mx-auto px-4 sm:px-8 pb-32 pt-20">
@@ -233,6 +318,7 @@ const CoursesOverview: React.FC = () => {
                     </div>
                 </section>
             )}
+>>>>>>> 8755770e90df93ecb3499fc093ee4cc4ce71586e
         </div>
     );
 };

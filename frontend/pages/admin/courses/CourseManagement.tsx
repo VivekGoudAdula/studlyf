@@ -44,10 +44,14 @@ const CourseManagement: React.FC = () => {
     const [courseImage, setCourseImage] = useState("");
     const [courseSkills, setCourseSkills] = useState("");
     const [courseDuration, setCourseDuration] = useState("10 Weeks");
+    const [instructorName, setInstructorName] = useState("Eshwar G");
+    const [instructorImage, setInstructorImage] = useState("/images/Eshwar.jpg");
+    const [instructorDescription, setInstructorDescription] = useState("Expert Engineering Mentor");
     const [capstoneProblem, setCapstoneProblem] = useState("");
     const [capstoneCriteria, setCapstoneCriteria] = useState("");
     const [customId, setCustomId] = useState("");
     const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string>("");
 
     const [modules, setModules] = useState<any[]>([
         { id: 1, title: 'Introduction to Course', lessons: [{ type: 'video', title: 'Setting up Environment' }] }
@@ -63,6 +67,9 @@ const CourseManagement: React.FC = () => {
         setCourseImage("");
         setCourseSkills("");
         setCourseDuration("10 Weeks");
+        setInstructorName("Eshwar G");
+        setInstructorImage("/images/Eshwar.jpg");
+        setInstructorDescription("Expert Engineering Mentor");
         setCapstoneProblem("");
         setCapstoneCriteria("");
         setCustomId("");
@@ -82,6 +89,9 @@ const CourseManagement: React.FC = () => {
         setCourseImage(course.image || "");
         setCourseSkills(Array.isArray(course.skills) ? course.skills.join(", ") : "");
         setCourseDuration(course.duration || "10 Weeks");
+        setInstructorName(course.instructor_name || "Eshwar G");
+        setInstructorImage(course.instructor_image || "/images/Eshwar.jpg");
+        setInstructorDescription(course.instructor_description || "Expert Engineering Mentor");
         setCapstoneProblem(course.capstone_problem || "");
         setCapstoneCriteria(course.capstone_criteria || "");
         setCustomId(course._id || "");
@@ -132,70 +142,93 @@ const CourseManagement: React.FC = () => {
         }));
     };
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const url = await uploadImageFile(file);
-            if (url) {
-                setCourseImage(url);
-            }
-        }
-    };
-
-    const handleThumbnailDrop = async (e: React.DragEvent) => {
-        e.preventDefault();
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const url = await uploadImageFile(file);
-            if (url) {
-                setCourseImage(url);
-            }
+    // Drag-and-drop and file input for image upload
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+        let file: File | undefined;
+        if (e instanceof File) {
+            file = e;
         } else {
-            // Check for dropped URL
-            const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
-            if (url && (url.startsWith('http') || url.startsWith('data:'))) {
-                 setCourseImage(url);
+            file = e.target.files?.[0];
+        }
+        if (file) {
+            if (file.size > 1024 * 1024) { // 1MB limit
+                setErrorMsg("Image size should be less than 1MB.");
+                return;
             }
+            setErrorMsg("");
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCourseImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
-    const handleThumbnailPaste = async (e: React.ClipboardEvent) => {
-        const items = e.clipboardData.items;
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') !== -1) {
-                const blob = items[i].getAsFile();
-                if (blob) {
-                    const url = await uploadImageFile(blob);
-                    if (url) {
-                        setCourseImage(url);
-                    }
-                }
-            }
+    const [dragActive, setDragActive] = useState(false);
+    const [instructorDragActive, setInstructorDragActive] = useState(false);
+    const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
         }
     };
 
-    const uploadImageFile = async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/upload-image`, {
-                method: 'POST',
-                headers: { 'X-Admin-Email': user?.email || '' }, 
-                body: formData
-            });
-            const data = await res.json();
-            return data.url;
-        } catch (err) {
-            console.error("Upload failed", err);
-            return null;
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleImageUpload(e.dataTransfer.files[0]);
         }
     };
 
-    const handleLessonImageUpload = async (moduleId: any, lessonIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInstructorDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setInstructorDragActive(true);
+        } else if (e.type === "dragleave") {
+            setInstructorDragActive(false);
+        }
+    };
+
+    const handleInstructorDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setInstructorDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleInstructorImageUpload(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleInstructorImageUpload = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+        let file: File | undefined;
+        if (e instanceof File) {
+            file = e;
+        } else {
+            file = e.target.files?.[0];
+        }
+        if (file) {
+            setErrorMsg("");
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setInstructorImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleLessonImageUpload = (moduleId: any, lessonIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const url = await uploadImageFile(file);
-            if (url) updateLesson(moduleId, lessonIdx, { image_url: url });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                updateLesson(moduleId, lessonIdx, { image_url: reader.result as string });
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -211,6 +244,59 @@ const CourseManagement: React.FC = () => {
         }
     };
 
+<<<<<<< HEAD
+    const [dragActive, setDragActive] = useState(false);
+    const [instructorDragActive, setInstructorDragActive] = useState(false);
+    const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+    const handleInstructorDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setInstructorDragActive(true);
+        } else if (e.type === "dragleave") {
+            setInstructorDragActive(false);
+        }
+    };
+    const handleInstructorDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setInstructorDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleInstructorImageUpload(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleInstructorImageUpload = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+        let file: File | undefined;
+        if (e instanceof File) {
+            file = e;
+        } else {
+            file = e.target.files?.[0];
+        }
+        if (file) {
+            setErrorMsg("");
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setInstructorImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleImageUpload(e.dataTransfer.files[0]);
+=======
     const handlePaste = async (moduleId: any, lessonIdx: number, e: React.ClipboardEvent<any>) => {
         const items = e.clipboardData.items;
         const textarea = e.currentTarget as HTMLTextAreaElement;
@@ -270,6 +356,7 @@ const CourseManagement: React.FC = () => {
                     updateLesson(moduleId, lessonIdx, { image_url: cleanedUrl });
                 }
             }
+>>>>>>> 8755770e90df93ecb3499fc093ee4cc4ce71586e
         }
     };
 
@@ -397,22 +484,35 @@ const CourseManagement: React.FC = () => {
     };
 
     const handlePublish = async () => {
+        setErrorMsg("");
         if (!user?.email) {
-            alert('Error: No user email found. Please login.');
+            setErrorMsg('Error: No user email found. Please login.');
             return;
         }
-        alert('Starting Publish/Update...');
+        // Validate price
+        const priceNum = Number(coursePrice.toString().replace(/,/g, ''));
+        if (isNaN(priceNum) || priceNum < 0) {
+            setErrorMsg("Price must be a positive number.");
+            return;
+        }
+        if (!courseTitle.trim()) {
+            setErrorMsg("Course title is required.");
+            return;
+        }
         try {
             const coursePayload = {
                 title: courseTitle,
                 description: courseDescription,
-                price: Number(coursePrice.toString().replace(/,/g, '')),
+                price: priceNum,
                 difficulty: courseDifficulty,
                 role_tag: courseRoleTag,
                 school: courseSchool,
                 image: courseImage || 'https://miro.medium.com/max/938/0*lbtSAeYRtmUMAWeY.png',
                 skills: courseSkills.split(",").map(s => s.trim()).filter(s => s !== ""),
                 duration: courseDuration,
+                instructor_name: instructorName,
+                instructor_image: instructorImage,
+                instructor_description: instructorDescription,
                 capstone_problem: capstoneProblem,
                 capstone_criteria: capstoneCriteria,
                 modules: modules,
@@ -452,11 +552,11 @@ const CourseManagement: React.FC = () => {
                 fetchCourses();
             } else {
                 const errData = await res.json();
-                alert(`Server Error: ${errData.detail || 'Unknown error'}`);
+                setErrorMsg(`Server Error: ${errData.detail || 'Unknown error'}`);
             }
         } catch (error: any) {
             console.error("Error publishing course", error);
-            alert(`Network or Script Error: ${error.message}`);
+            setErrorMsg(`Network or Script Error: ${error.message}`);
         }
     };
 
@@ -985,11 +1085,13 @@ const CourseManagement: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Course Thumbnail</label>
-                                            <div 
-                                                className="w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center cursor-pointer"
-                                                onDragOver={(e) => e.preventDefault()}
-                                                onDrop={handleThumbnailDrop}
-                                                onPaste={handleThumbnailPaste}
+<<<<<<< HEAD
+                                            <div
+                                                className={`w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center ${dragActive ? 'border-[#7C3AED]/80 bg-[#7C3AED]/10' : ''}`}
+                                                onDragEnter={handleDrag}
+                                                onDragOver={handleDrag}
+                                                onDragLeave={handleDrag}
+                                                onDrop={handleDrop}
                                             >
                                                 {courseImage ? (
                                                     <img src={courseImage} alt="Thumbnail preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
@@ -1044,7 +1146,6 @@ const CourseManagement: React.FC = () => {
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
                                                 value={customId}
                                                 onChange={(e) => setCustomId(e.target.value)}
-                                                disabled={!!editingCourseId}
                                                 placeholder="ai-01"
                                             />
                                         </div>
@@ -1055,6 +1156,44 @@ const CourseManagement: React.FC = () => {
                                                 value={courseSkills}
                                                 onChange={(e) => setCourseSkills(e.target.value)}
                                                 placeholder="LLMs, GPT, Transformers"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Name</label>
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
+                                                value={instructorName}
+                                                onChange={(e) => setInstructorName(e.target.value)}
+                                                placeholder="e.g. Eshwar G"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Avatar</label>
+                                            <div
+                                                className={`w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-28 flex flex-col items-center justify-center ${instructorDragActive ? 'border-[#7C3AED]/80 bg-[#7C3AED]/10' : ''}`}
+                                                onDragEnter={handleInstructorDrag}
+                                                onDragOver={handleInstructorDrag}
+                                                onDragLeave={handleInstructorDrag}
+                                                onDrop={handleInstructorDrop}
+                                            >
+                                                {instructorImage ? (
+                                                    <img src={instructorImage} alt="Avatar preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                                                ) : null}
+                                                <div className="relative z-10 flex flex-col items-center pointer-events-none">
+                                                    <Upload size={16} className="mx-auto text-white/80 mb-1 group-hover:text-white transition-colors" />
+                                                    <span className="text-[10px] text-white font-bold block bg-black/50 px-2 py-0.5 rounded uppercase tracking-widest">Choose / Drop Avatar</span>
+                                                </div>
+                                                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onChange={handleInstructorImageUpload} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Bio</label>
+                                            <textarea
+                                                rows={2}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:ring-1 focus:ring-[#7C3AED] resize-none"
+                                                value={instructorDescription}
+                                                onChange={(e) => setInstructorDescription(e.target.value)}
+                                                placeholder="Expert Software Architect"
                                             />
                                         </div>
                                         <div>
@@ -1093,6 +1232,9 @@ const CourseManagement: React.FC = () => {
                                     </div>
                                 </div>
 
+                                {errorMsg && (
+                                    <div className="w-full mb-2 text-red-400 text-xs font-bold text-center">{errorMsg}</div>
+                                )}
                                 <button
                                     onClick={handlePublish}
                                     className="w-full py-3 bg-[#7C3AED] hover:bg-[#6D28D9] text-white rounded-xl text-sm font-bold transition-all shadow-xl shadow-purple-500/20 active:scale-95">

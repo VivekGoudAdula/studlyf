@@ -175,11 +175,18 @@ export default function MockInterview() {
 
     const [isDummyMode, setIsDummyMode] = useState(false);
     const dummyQIdxRef = useRef(0);
-
     const [blink, setBlink] = useState(false);
     const [mouthOpen, setMouthOpen] = useState(false);
     const mouthIntervalRef = useRef<any>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
+
+    const [showHint, setShowHint] = useState(false);
+    const hintTimerRef = useRef<any>(null);
+
+    const checkSkip = (text: string) => {
+        const t = text.toLowerCase().trim();
+        return t === 'skip' || t === 'idont know' || t === 'next question';
+    };
 
     useEffect(() => { window.scrollTo(0, 0); }, [step]);
     useEffect(() => {
@@ -201,7 +208,7 @@ export default function MockInterview() {
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
+     useEffect(() => {
         if (isSpeaking) {
             mouthIntervalRef.current = setInterval(() => {
                 setMouthOpen(m => !m);
@@ -212,6 +219,26 @@ export default function MockInterview() {
         }
         return () => clearInterval(mouthIntervalRef.current);
     }, [isSpeaking]);
+
+    // Idle Hint Logic: Triggered if user hasn't typed for 2 seconds after being asked a question.
+    useEffect(() => {
+        if (step !== 'INTERVIEW' || isSending || isSpeaking || userInput.trim().length > 0 || hrCallOver) {
+            setShowHint(false);
+            if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+            return;
+        }
+
+        if (messages.length > 0 && messages[messages.length - 1].role === 'interviewer') {
+            if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+            hintTimerRef.current = setTimeout(() => {
+                setShowHint(true);
+            }, 2000);
+        }
+
+        return () => {
+            if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+        };
+    }, [userInput, step, isSending, isSpeaking, messages, hrCallOver]);
 
     // Speech Recognition
     useEffect(() => {
@@ -279,24 +306,27 @@ export default function MockInterview() {
         if (!userInput.trim() || isSending || isSpeaking) return;
         const turn = userInput;
         const lastQ = messages.filter(m => m.role === 'interviewer').slice(-1)[0]?.content || "";
+         setMessages(prev => [...prev, { role: 'user', content: turn, timestamp: new Date().toLocaleTimeString() }]);
 
-        setMessages(prev => [...prev, { role: 'user', content: turn, timestamp: new Date().toLocaleTimeString() }]);
+        const isSkip = checkSkip(turn);
+        // We use the EXACT keyword for skip to ensure the backend identifies it correctly
+        const actualResponse = isSkip ? turn : turn;
 
         // Track response metadata
         const newResponse: UserResponse = {
             round: roundIndex,
             question: lastQ,
-            answer: turn,
+            answer: actualResponse,
             wordCount: turn.split(' ').length,
             suggestion: roundIndex === 0 ? "Be more specific with technical terminology." : "Use the STAR method for better context.",
-            mistakes: roundIndex === 1 ? "Incomplete STAR methodology." : undefined
+            mistakes: isSkip ? "Skipped question." : (roundIndex === 1 ? "Incomplete STAR methodology." : undefined)
         };
         setAllResponses(prev => [...prev, newResponse]);
 
         setUserInput('');
         setIsSending(true);
         try {
-            if (isDummyMode) {
+             if (isDummyMode) {
                 setTimeout(() => {
                     dummyQIdxRef.current++;
                     if (dummyQIdxRef.current >= 5) advanceRound();
@@ -306,13 +336,13 @@ export default function MockInterview() {
                         speak(nextQ, roundIndex);
                     }
                     setIsSending(false);
-                }, 1000);
+                }, 400); // Reduced delay for "real-time" feel
                 return;
             }
-            const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
+             const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sessionId, user_response: turn, round_index: roundIndex })
+                body: JSON.stringify({ session_id: sessionId, user_response: actualResponse, round_index: roundIndex })
             });
             const data = await res.json();
             if (data.is_round_complete) {
@@ -420,13 +450,16 @@ export default function MockInterview() {
         setVoiceTranscript('');
         setMessages(prev => [...prev, { role: 'user', content: text, timestamp: new Date().toLocaleTimeString() }]);
 
+         const isSkip = checkSkip(text);
+        const actualText = isSkip ? "I don't know the answer to this, next question please." : text;
+
         const newResponse: UserResponse = {
             round: 2,
             question: lastQ,
-            answer: text,
+            answer: actualText,
             wordCount: text.split(' ').length,
             suggestion: "Expand your answers more to show confidence. Aim for 30+ words.",
-            mistakes: text.split(' ').length < 10 ? "Answer is too short." : undefined
+            mistakes: isSkip ? "Skipped question." : (text.split(' ').length < 10 ? "Answer is too short." : undefined)
         };
         setAllResponses(prev => [...prev, newResponse]);
 
@@ -447,10 +480,10 @@ export default function MockInterview() {
                 }, 1000);
                 return;
             }
-            const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
+             const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sessionId, user_response: text, round_index: 2 })
+                body: JSON.stringify({ session_id: sessionId, user_response: actualText, round_index: 2 })
             });
             const data = await res.json();
 
@@ -735,9 +768,67 @@ export default function MockInterview() {
                                             {(isSending || isSpeaking) && <div className="flex items-center gap-2 text-gray-400 italic text-[10px] ml-4"><div className="w-1.5 h-1.5 bg-[#7C3AED] rounded-full animate-bounce" /><span>Alex is thinking...</span></div>}
                                             <div ref={chatEndRef} />
                                         </div>
-                                        <div className="p-8 border-t border-gray-50 bg-gray-50/50 flex gap-4 items-center">
-                                            <textarea rows={1} className="flex-1 bg-white border border-gray-100 rounded-2xl px-8 py-4 text-sm font-medium focus:ring-0 resize-none shadow-sm" placeholder="Draft your response..." value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendChat())} />
-                                            <button onClick={handleSendChat} disabled={!userInput.trim() || isSending || isSpeaking} className="w-14 h-14 bg-black text-white rounded-2xl flex items-center justify-center hover:bg-[#7C3AED] transition-all"><Send className="w-5 h-5" /></button>
+                                         <div className="p-8 border-t border-gray-50 bg-gray-50/50 flex flex-col gap-4">
+                                            <AnimatePresence>
+                                                {showHint && (
+                                                    <motion.div 
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }} 
+                                                        className="flex flex-wrap gap-2 mb-2 p-3 bg-[#7C3AED]/5 rounded-2xl border border-[#7C3AED]/10 animate-pulse"
+                                                    >
+                                                        <span className="text-[9px] font-black text-[#7C3AED] uppercase tracking-widest mr-2 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" /> Quick Actions:
+                                                        </span>
+                                                        {['skip', 'idont know', 'next question'].map(hint => (
+                                                            <button 
+                                                                key={hint} 
+                                                                onClick={async () => { 
+                                                                    const targetInput = hint;
+                                                                    setUserInput('');
+                                                                    setMessages(prev => [...prev, { role: 'user', content: targetInput, timestamp: new Date().toLocaleTimeString() }]);
+                                                                    setIsSending(true);
+
+                                                                    try {
+                                                                        if (isDummyMode) {
+                                                                            setTimeout(() => {
+                                                                                dummyQIdxRef.current++;
+                                                                                if (dummyQIdxRef.current >= 5) advanceRound();
+                                                                                else {
+                                                                                    const nextQ = DUMMY_QUESTIONS[roundIndex][dummyQIdxRef.current];
+                                                                                    setMessages(prev => [...prev, { role: 'interviewer', content: nextQ, timestamp: new Date().toLocaleTimeString() }]);
+                                                                                    speak(nextQ, roundIndex);
+                                                                                }
+                                                                                setIsSending(false);
+                                                                            }, 400);
+                                                                            return;
+                                                                        }
+                                                                        const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ session_id: sessionId, user_response: targetInput, round_index: roundIndex })
+                                                                        });
+                                                                        const data = await res.json();
+                                                                        if (data.is_round_complete) {
+                                                                            advanceRound();
+                                                                        } else {
+                                                                            setMessages(prev => [...prev, { role: 'interviewer', content: data.interviewer_text, timestamp: new Date().toLocaleTimeString() }]);
+                                                                            speak(data.interviewer_text, roundIndex);
+                                                                        }
+                                                                    } catch (err) { console.error(err); } finally { setIsSending(false); }
+                                                                }} 
+                                                                className="px-3 py-1 bg-white border border-[#7C3AED]/20 rounded-full text-[9px] font-black text-[#7C3AED] hover:bg-[#7C3AED] hover:text-white transition-all uppercase tracking-widest shadow-sm"
+                                                            >
+                                                                {hint}
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                            <div className="flex gap-4 items-center">
+                                                <textarea rows={1} className="flex-1 bg-white border border-gray-100 rounded-2xl px-8 py-4 text-sm font-medium focus:ring-0 resize-none shadow-sm" placeholder="Draft your response..." value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendChat())} />
+                                                <button onClick={handleSendChat} disabled={!userInput.trim() || isSending || isSpeaking} className="w-14 h-14 bg-black text-white rounded-2xl flex items-center justify-center hover:bg-[#7C3AED] transition-all"><Send className="w-5 h-5" /></button>
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -768,12 +859,29 @@ export default function MockInterview() {
                                                     <p key={i} className="text-xl text-white font-medium italic leading-relaxed">"{m.content}"</p>
                                                 ))}
                                             </div>
-                                            {voiceTranscript && (
+                                             {voiceTranscript && (
                                                 <div className="bg-black/20 p-8 rounded-3xl border border-white/5 mb-8">
                                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">Transcription Engine:</p>
                                                     <p className="text-sm text-cyan-200/60 font-medium italic">"{voiceTranscript}"</p>
                                                 </div>
                                             )}
+                                            <AnimatePresence>
+                                                {showHint && (
+                                                    <motion.div 
+                                                        initial={{ opacity: 0, scale: 0.9 }} 
+                                                        animate={{ opacity: 1, scale: 1 }} 
+                                                        exit={{ opacity: 0, scale: 0.9 }}
+                                                        className="mb-8 p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md"
+                                                    >
+                                                        <p className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em] mb-4">Stuck? You can say:</p>
+                                                        <div className="flex flex-wrap justify-center gap-3">
+                                                            {['"Skip"', '"I don\'t know"', '"Next question"'].map(h => (
+                                                                <span key={h} className="px-4 py-2 bg-white/10 rounded-full text-[11px] font-bold text-white uppercase tracking-widest border border-white/10">{h}</span>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                             <div className="flex justify-center">
                                                 {!hrCallOver ? (
                                                     <button onClick={toggleMic} disabled={isSpeaking} className={`w-24 h-24 rounded-full flex items-center justify-center shadow-3xl transition-all ${isListening ? 'bg-red-500 scale-110' : 'bg-white text-black hover:scale-105'}`}>{isListening ? <MicOff size={32} /> : <Mic size={32} />}</button>

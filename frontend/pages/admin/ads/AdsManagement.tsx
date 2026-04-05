@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Plus, Trash2, Eye, EyeOff, Edit3, Upload, X, GripVertical, ImageIcon, Film, Check } from 'lucide-react';
-import type { AdItem, AdCardType } from '../../../components/AdsCarousel';
+import { AdItem, AdCardType, renderCard, useFont, useCSS } from '../../../components/AdsCarousel';
 
-const API = 'http://localhost:8000/api/ads';
+import { API_BASE_URL } from '../../../apiConfig';
+
+const API = `${API_BASE_URL}/api/ads`;
 
 const CARD_TYPES: { value: AdCardType; label: string; desc: string }[] = [
     { value: 'video', label: '🎬 Video Card', desc: 'Dark card with video/image + text below' },
@@ -22,6 +24,12 @@ const EMPTY: Partial<AdItem> = {
     promo_tag: '', promo_stats: [], order: 0, active: true,
 };
 
+function getYoutubeEmbed(url?: string | null) {
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=1&mute=1&loop=1&playlist=${match[1]}&controls=0` : null;
+}
+
 /* ── Media dropper ── */
 function MediaDropper({ preview, mediaType, onFile, onClear }:
     { preview: string | null; mediaType: string; onFile: (f: File) => void; onClear: () => void }) {
@@ -37,9 +45,19 @@ function MediaDropper({ preview, mediaType, onFile, onClear }:
                     position: 'relative', borderRadius: 6, overflow: 'hidden',
                     border: '2px solid #e5e7eb', height: 220
                 }}>
-                    {mediaType === 'video'
-                        ? <video src={preview} controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <img src={preview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    {(mediaType === 'video' || getYoutubeEmbed(preview) || preview?.match(/\.(mp4|webm|mov|ogg)$/i)) ? (
+                        getYoutubeEmbed(preview) ? (
+                            <iframe 
+                                src={getYoutubeEmbed(preview)!} 
+                                style={{ width: '100%', height: '100%', border: 'none' }} 
+                                allow="autoplay; encrypted-media" 
+                            />
+                        ) : (
+                            <video src={preview!} controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )
+                    ) : (
+                        <img src={preview!} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
                     <button onClick={onClear}
                         style={{
                             position: 'absolute', top: 8, right: 8, background: '#fff',
@@ -85,6 +103,16 @@ function MediaDropper({ preview, mediaType, onFile, onClear }:
     );
 }
 
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div style={{ marginBottom: 16 }}>
+        <label style={{
+            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
+            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
+        }}>{label}</label>
+        {children}
+    </div>
+);
+
 /* ── Form panel ── */
 function AdForm({ initial, onSave, onCancel, saving }:
     {
@@ -97,7 +125,15 @@ function AdForm({ initial, onSave, onCancel, saving }:
     const [pillInput, setPillInput] = useState('');
     const [statInput, setStatInput] = useState({ num: '', label: '' });
 
-    const set = (k: keyof AdItem, v: any) => setForm(f => ({ ...f, [k]: v }));
+    const set = (k: keyof AdItem, v: any) => setForm(f => {
+        const next = { ...f, [k]: v };
+        if (k === 'media_url' && v) {
+            const isVid = getYoutubeEmbed(v) || v.match(/\.(mp4|webm|mov|ogg)$/i);
+            if (isVid) next.media_type = 'video';
+            else next.media_type = 'image';
+        }
+        return next;
+    });
 
     const handleFile = (f: File) => {
         setFile(f);
@@ -131,7 +167,7 @@ function AdForm({ initial, onSave, onCancel, saving }:
         fd.append('title', str(form.title));
         fd.append('description', str(form.description));
         fd.append('media_type', str(form.media_type));
-        fd.append('media_url_existing', str(initial.media_url || ''));
+        fd.append('media_url', str(form.media_url || ''));
         fd.append('tag', str(form.tag));
         fd.append('badge', str(form.badge));
         fd.append('cta_text', str(form.cta_text));
@@ -145,19 +181,12 @@ function AdForm({ initial, onSave, onCancel, saving }:
         fd.append('promo_stats', JSON.stringify(form.promo_stats || []));
         fd.append('order', str(form.order));
         fd.append('active', String(form.active !== false));
+        fd.append('show_cta', String(form.show_cta !== false));
         if (file) fd.append('media_file', file);
         onSave(fd, form);
     };
 
-    const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-        <div style={{ marginBottom: 16 }}>
-            <label style={{
-                display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-            }}>{label}</label>
-            {children}
-        </div>
-    );
+
 
     const input = (k: keyof AdItem, ph = '', type = 'text') => (
         <input type={type} placeholder={ph} value={String(form[k] ?? '')}
@@ -183,16 +212,23 @@ function AdForm({ initial, onSave, onCancel, saving }:
             {/* LEFT: Media upload */}
             <div>
                 <h3 style={{ fontWeight: 700, marginBottom: 16, color: '#111' }}>Media Upload</h3>
-                <MediaDropper preview={preview} mediaType={form.media_type || 'image'}
+                <MediaDropper preview={preview || form.media_url} mediaType={form.media_type || 'image'}
                     onFile={handleFile} onClear={() => { setFile(null); setPreview(null); set('media_url', ''); }} />
 
-                {preview && (
+                <div style={{ marginTop: 16 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 4, display: 'block' }}>Or Paste Media Link (URL)</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {input('media_url', 'https://example.com/image.jpg')}
+                    </div>
+                </div>
+
+                {(preview || (form.media_url && !file)) && (
                     <div style={{
                         marginTop: 12, padding: '8px 12px', background: form.media_type === 'video' ? '#f0fdf4' : '#eff6ff',
                         borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12
                     }}>
                         {form.media_type === 'video' ? <Film size={14} color="#16a34a" /> : <ImageIcon size={14} color="#2563eb" />}
-                        <span>{form.media_type === 'video' ? 'Video detected' : 'Image detected'}</span>
+                        <span>{form.media_type === 'video' ? 'Video asset active' : 'Image asset active'}</span>
                     </div>
                 )}
 
@@ -248,6 +284,7 @@ function AdForm({ initial, onSave, onCancel, saving }:
 
                 <F label="Eyebrow / Category">{input('eyebrow', 'e.g. Data Science')}</F>
                 <F label="Title *">{input('title', 'e.g. Machine Learning A–Z')}</F>
+                <F label="Media Content Type">{select('media_type', ['image', 'video'])}</F>
                 <F label="Description">
                     <textarea value={String(form.description ?? '')} placeholder="Short description..."
                         onChange={e => set('description', e.target.value)} rows={3}
@@ -259,7 +296,21 @@ function AdForm({ initial, onSave, onCancel, saving }:
 
                 {form.card_type !== 'promo' && (
                     <>
-                        <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll →')}</F>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                            <div
+                                onClick={() => set('show_cta', form.show_cta === false ? true : false)}
+                                style={{
+                                    width: 36, height: 20, borderRadius: 20, background: form.show_cta !== false ? '#6366f1' : '#e5e7eb',
+                                    position: 'relative', cursor: 'pointer', transition: 'all 0.2s'
+                                }}>
+                                <div style={{
+                                    width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                                    position: 'absolute', top: 2, left: form.show_cta !== false ? 18 : 2, transition: 'all 0.2s'
+                                }} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>Show CTA Button</span>
+                        </div>
+                        {form.show_cta !== false && <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll →')}</F>}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                             <div>
                                 <label style={{
@@ -384,8 +435,8 @@ function AdForm({ initial, onSave, onCancel, saving }:
 }
 
 /* ── Ad row in table ── */
-function AdRow({ ad, onEdit, onDelete, onToggle }:
-    { ad: AdItem; onEdit: () => void; onDelete: () => void; onToggle: () => void }) {
+function AdRow({ ad, onEdit, onDelete, onToggle, onPreview }:
+    { ad: AdItem; onEdit: () => void; onDelete: () => void; onToggle: () => void; onPreview: () => void }) {
     const TYPE_COLORS: Record<AdCardType, string> = {
         video: '#fef3c7', image: '#dbeafe', wide: '#f3e8ff', promo: '#fce7f3',
     };
@@ -408,21 +459,27 @@ function AdRow({ ad, onEdit, onDelete, onToggle }:
                 <div style={{ fontWeight: 600, fontSize: 14, color: '#111', marginBottom: 2 }}>{ad.title}</div>
                 <div style={{ fontSize: 12, color: '#9ca3af' }}>{ad.eyebrow}</div>
             </div>
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: 4, fontSize: 12,
-                color: ad.active ? '#16a34a' : '#9ca3af', fontWeight: 500
-            }}>
-                {ad.active ? <Eye size={13} /> : <EyeOff size={13} />}
+            <button 
+                onClick={onToggle}
+                title="Click to toggle status"
+                style={{
+                    display: 'flex', alignItems: 'center', gap: 6, fontSize: 12,
+                    color: ad.active ? '#16a34a' : '#9ca3af', fontWeight: 600,
+                    background: ad.active ? '#d1fae5' : '#f3f4f6',
+                    border: 'none', padding: '4px 10px', borderRadius: 20, cursor: 'pointer',
+                    transition: 'all .2s'
+                }}>
+                {ad.active ? <Check size={13} /> : <EyeOff size={13} />}
                 {ad.active ? 'Live' : 'Hidden'}
-            </div>
+            </button>
             <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 500 }}>#{ad.order}</div>
             <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={onToggle} title="Toggle visibility"
+                <button onClick={onPreview} title="Instant Preview"
                     style={{
-                        padding: '5px 8px', background: '#f9fafb', border: '1px solid #e5e7eb',
-                        borderRadius: 6, cursor: 'pointer', color: '#6b7280'
+                        padding: '5px 8px', background: '#f5f3ff', border: '1px solid #ddd6fe',
+                        borderRadius: 6, cursor: 'pointer', color: '#6366f1'
                     }}>
-                    {ad.active ? <EyeOff size={13} /> : <Eye size={13} />}
+                    <Eye size={13} />
                 </button>
                 <button onClick={onEdit} title="Edit"
                     style={{
@@ -449,8 +506,12 @@ export default function AdsManagement() {
     const [loading, setLoading] = useState(true);
     const [panel, setPanel] = useState<'closed' | 'create' | 'edit'>('closed');
     const [editing, setEditing] = useState<AdItem | null>(null);
+    const [previewing, setPreviewing] = useState<AdItem | null>(null);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
+
+    useFont();
+    useCSS();
 
     const showToast = (msg: string) => {
         setToast(msg);
@@ -557,6 +618,44 @@ export default function AdsManagement() {
                 </div>
             )}
 
+            {/* Preview Modal */}
+            {previewing && (
+                <div 
+                    onClick={() => setPreviewing(null)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 9999, backdropFilter: 'blur(4px)'
+                    }}
+                >
+                    <div 
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#fff', borderRadius: 16, padding: '48px',
+                            boxShadow: '0 24px 64px rgba(0,0,0,.3)', position: 'relative'
+                        }}
+                    >
+                        <button 
+                            onClick={() => setPreviewing(null)}
+                            style={{
+                                position: 'absolute', top: 16, right: 16, border: 'none',
+                                background: 'none', cursor: 'pointer', color: '#9ca3af'
+                            }}
+                        >
+                            <X size={24} />
+                        </button>
+                        <div style={{ transform: 'scale(1.1)', transformOrigin: 'center' }}>
+                            {renderCard(previewing, 0)}
+                        </div>
+                        <div style={{ marginTop: 40, textAlign: 'center' }}>
+                            <p style={{ fontSize: 13, color: '#6b7280', fontWeight: 500, margin: 0 }}>
+                                High-Fidelity Ad Hub Preview
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Ads table */}
             <div style={{
                 margin: '0 32px 32px', background: '#fff', border: '1px solid #e5e7eb',
@@ -586,7 +685,8 @@ export default function AdsManagement() {
                         <AdRow key={ad._id} ad={ad}
                             onEdit={() => { setEditing(ad); setPanel('edit'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                             onDelete={() => handleDelete(ad._id!)}
-                            onToggle={() => handleToggle(ad._id!)} />
+                            onToggle={() => handleToggle(ad._id!)}
+                            onPreview={() => setPreviewing(ad)} />
                     ))
                 )}
             </div>

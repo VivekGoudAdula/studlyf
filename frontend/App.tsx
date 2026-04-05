@@ -69,6 +69,11 @@ import AdminMockInterviews from './pages/admin/interviews/MockInterviews';
 import AdminSDLManagement from './pages/admin/sdl/SDLManagement';
 import AdminProtectedRoute from './AdminProtectedRoute';
 import AdsManagement from './pages/admin/ads/AdsManagement';
+import AdminMentorManagement from './pages/admin/mentors/MentorManagement';
+import AdminCompanyManagement from './pages/admin/companies/CompanyManagement';
+import AdminPaymentManagement from './pages/admin/payments/PaymentManagement';
+import AdminResumeManagement from './pages/admin/resumes/ResumeManagement';
+import AdminAuditLogs from './pages/admin/audit/AuditLogs';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -93,6 +98,7 @@ const App: React.FC = () => {
   const isResume = pathname === '/job-prep/resume-builder';
   const isVisualizer = pathname.startsWith('/learn/visualizer') || 
                        ['/stack', '/queue', '/linked-list', '/bst', '/hash-table'].includes(pathname);
+  const isCareerOnboarding = pathname === '/learn/career-onboarding';
 
   // Admin Redirect Logic
   useEffect(() => {
@@ -106,7 +112,7 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
 
-      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer && !isCareerOnboarding) && <Navigation />}
 
       <main className="flex-grow">
         <Suspense fallback={
@@ -177,13 +183,13 @@ const App: React.FC = () => {
               <Route path="mock-interviews" element={<AdminMockInterviews />} />
               <Route path="sdl-projects" element={<AdminSDLManagement />} />
               <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="mentors" element={<div className="p-8"><h1>Mentor Management Coming Soon</h1></div>} />
-              <Route path="companies" element={<div className="p-8"><h1>Company Management Coming Soon</h1></div>} />
-              <Route path="payments" element={<div className="p-8"><h1>Payment Management Coming Soon</h1></div>} />
-              <Route path="content" element={<AdsManagement />} />
+              <Route path="mentors" element={<AdminMentorManagement />} />
+              <Route path="companies" element={<AdminCompanyManagement />} />
+              <Route path="payments" element={<AdminPaymentManagement />} />
+              <Route path="resumes" element={<AdminResumeManagement />} />
               <Route path="ads" element={<AdsManagement />} />
               <Route path="settings" element={<div className="p-8"><h1>System Settings Coming Soon</h1></div>} />
-              <Route path="audit-logs" element={<div className="p-8"><h1>Audit Logs Coming Soon</h1></div>} />
+              <Route path="audit-logs" element={<AdminAuditLogs />} />
             </Route>
 
           </Routes>
