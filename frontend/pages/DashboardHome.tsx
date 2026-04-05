@@ -10,6 +10,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
+import { FiBatteryCharging, FiWifi } from "react-icons/fi";
 
 import { ScrollVelocityContainer, ScrollVelocityRow } from '../registry/magicui/scroll-based-velocity';
 import { AuroraText } from '../registry/magicui/aurora-text';
@@ -97,6 +98,92 @@ const DUMMY_COURSES = [
     image: 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800&auto=format&fit=crop',
   }
 ];
+
+const FloatingPhone = ({ activeBrief, briefDetails, isMuted }: { activeBrief: string; briefDetails: any; isMuted: boolean }) => {
+  return (
+    <div
+      style={{
+        transformStyle: "preserve-3d",
+        transform: "rotateY(-30deg) rotateX(15deg)",
+      }}
+      className="rounded-[24px] bg-violet-500"
+    >
+      <motion.div
+        initial={{
+          transform: "translateZ(8px) translateY(-2px)",
+        }}
+        animate={{
+          transform: "translateZ(32px) translateY(-8px)",
+        }}
+        transition={{
+          repeat: Infinity,
+          repeatType: "mirror",
+          duration: 2,
+          ease: "easeInOut",
+        }}
+        className="relative h-96 w-56 rounded-[24px] border-2 border-b-4 border-r-4 border-white border-l-neutral-200 border-t-neutral-200 bg-neutral-900 p-1 pl-[3px] pt-[3px]"
+      >
+        <HeaderBar />
+        <Screen activeBrief={activeBrief} briefDetails={briefDetails} isMuted={isMuted} />
+      </motion.div>
+    </div>
+  );
+};
+
+const HeaderBar = () => {
+  return (
+    <>
+      <div className="absolute left-[50%] top-2.5 z-10 h-2 w-16 -translate-x-[50%] rounded-md bg-neutral-900"></div>
+      <div className="absolute right-3 top-2 z-10 flex gap-2">
+        <FiWifi className="text-neutral-600" />
+        <FiBatteryCharging className="text-neutral-600" />
+      </div>
+    </>
+  );
+};
+
+const Screen = ({ activeBrief, briefDetails, isMuted }: { activeBrief: string; briefDetails: any; isMuted: boolean }) => {
+  const currentBrief = briefDetails[activeBrief];
+
+  return (
+    <div className="relative z-0 h-full w-full overflow-hidden rounded-[20px] bg-white">
+      {currentBrief?.video ? (
+        <div className="relative w-full h-full flex items-center justify-center bg-black">
+          <video
+            src={currentBrief.video}
+            autoPlay
+            loop
+            muted={isMuted}
+            playsInline
+            controls={false}
+            className="w-full h-full object-contain max-w-full max-h-full"
+            style={{ borderRadius: '16px' }}
+          />
+        </div>
+      ) : currentBrief?.image ? (
+        <div className="relative w-full h-full flex items-center justify-center bg-white">
+          <img
+            src={currentBrief.image}
+            alt={currentBrief.title}
+            className="w-full h-full object-contain max-w-full max-h-full"
+            style={{ borderRadius: '16px' }}
+          />
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-full bg-white">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-violet-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">?</span>
+            </div>
+            <p className="text-gray-600 text-sm">No content available</p>
+          </div>
+        </div>
+      )}
+
+      <div className="absolute -bottom-72 left-[50%] h-96 w-96 -translate-x-[50%] rounded-full bg-violet-500" />
+    </div>
+  );
+};
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
@@ -589,18 +676,6 @@ const DashboardHome: React.FC = () => {
                           >
                             {briefDetails[activeBrief].desc}
                           </motion.p>
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.3 }}
-                            className="mt-8"
-                          >
-                            <Button
-                              className="bg-black text-white font-bold px-8 py-3.5 rounded-full text-xs shadow-xl hover:bg-black/80 hover:scale-105 transition-all"
-                            >
-                              Start Journey
-                            </Button>
-                          </motion.div>
                         </div>
 
                         {(briefDetails[activeBrief].image || briefDetails[activeBrief].video) && (
@@ -610,7 +685,11 @@ const DashboardHome: React.FC = () => {
                             transition={{ delay: 0.1, duration: 0.4 }}
                             className="lg:w-[280px] w-full flex-shrink-0 relative group order-1 lg:order-2 flex items-center justify-center"
                           >
-                            {briefDetails[activeBrief].video ? (
+                            {activeBrief === 'Verification' && briefDetails[activeBrief].video ? (
+                              <div className="relative w-full aspect-square flex items-center justify-center">
+                                <FloatingPhone activeBrief={activeBrief} briefDetails={briefDetails} isMuted={isMuted} />
+                              </div>
+                            ) : briefDetails[activeBrief].video ? (
                               <div className="relative w-full aspect-square flex items-center justify-center">
                                 <video
                                   src={briefDetails[activeBrief].video}
@@ -629,11 +708,7 @@ const DashboardHome: React.FC = () => {
                               </div>
                             ) : (
                               <div className="relative w-full aspect-square flex items-center justify-center">
-                                <img
-                                  src={briefDetails[activeBrief].image}
-                                  alt={briefDetails[activeBrief].title}
-                                  className="w-full h-full object-contain relative z-10 transform group-hover:scale-105 transition-transform duration-1000"
-                                />
+                                <FloatingPhone activeBrief={activeBrief} briefDetails={briefDetails} isMuted={isMuted} />
                               </div>
                             )}
                           </motion.div>

@@ -5,10 +5,8 @@ import type { AdItem, AdCardType } from '../../../components/AdsCarousel';
 const API = 'http://localhost:8000/api/ads';
 
 const CARD_TYPES: { value: AdCardType; label: string; desc: string }[] = [
-    { value: 'video', label: '🎬 Video Card', desc: 'Dark card with video/image + text below' },
-    { value: 'image', label: '🖼 Image Card', desc: 'Light card with image + text below' },
-    { value: 'wide', label: '⬛ Wide Card', desc: 'Double-width: media left + text right' },
-    { value: 'promo', label: '⚡ Promo Card', desc: 'Full coloured promo with stats' },
+    { value: 'image', label: '🖼 Image + Text', desc: 'Image with text content' },
+    { value: 'video', label: '🎬 Video + Text', desc: 'Video with text content' },
 ];
 
 const CTA_STYLES = ['primary', 'dark', 'gold', 'sage', 'outline-light', 'white'];
@@ -17,9 +15,8 @@ const COLOR_SCHEMES = ['dark', 'light'];
 
 const EMPTY: Partial<AdItem> = {
     card_type: 'image', eyebrow: '', title: '', description: '', media_type: 'image',
-    tag: '', badge: '', cta_text: 'Enroll →', cta_style: 'primary', pills: [],
-    color_scheme: 'dark', bg_color: 'blue', duration: '', wide_side: 'dark',
-    promo_tag: '', promo_stats: [], order: 0, active: true,
+    tag: '', badge: '', cta_text: 'Enroll →', cta_link: '', cta_style: 'primary', pills: [],
+    color_scheme: 'dark', bg_color: 'blue', duration: '', order: 0, active: true,
 };
 
 /* ── Media dropper ── */
@@ -95,7 +92,6 @@ function AdForm({ initial, onSave, onCancel, saving }:
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(initial.media_url || null);
     const [pillInput, setPillInput] = useState('');
-    const [statInput, setStatInput] = useState({ num: '', label: '' });
 
     const set = (k: keyof AdItem, v: any) => setForm(f => ({ ...f, [k]: v }));
 
@@ -114,15 +110,6 @@ function AdForm({ initial, onSave, onCancel, saving }:
 
     const removePill = (i: number) => set('pills', (form.pills || []).filter((_, idx) => idx !== i));
 
-    const addStat = () => {
-        if (!statInput.num || !statInput.label) return;
-        set('promo_stats', [...(form.promo_stats || []), { ...statInput }]);
-        setStatInput({ num: '', label: '' });
-    };
-
-    const removeStat = (i: number) =>
-        set('promo_stats', (form.promo_stats || []).filter((_, idx) => idx !== i));
-
     const handleSubmit = () => {
         const fd = new FormData();
         const str = (v: any) => (v === undefined || v === null) ? '' : String(v);
@@ -135,14 +122,12 @@ function AdForm({ initial, onSave, onCancel, saving }:
         fd.append('tag', str(form.tag));
         fd.append('badge', str(form.badge));
         fd.append('cta_text', str(form.cta_text));
+        fd.append('cta_link', str(form.cta_link));
         fd.append('cta_style', str(form.cta_style));
         fd.append('pills', JSON.stringify(form.pills || []));
         fd.append('color_scheme', str(form.color_scheme));
         fd.append('bg_color', str(form.bg_color));
         fd.append('duration', str(form.duration));
-        fd.append('wide_side', str(form.wide_side));
-        fd.append('promo_tag', str(form.promo_tag));
-        fd.append('promo_stats', JSON.stringify(form.promo_stats || []));
         fd.append('order', str(form.order));
         fd.append('active', String(form.active !== false));
         if (file) fd.append('media_file', file);
@@ -213,33 +198,6 @@ function AdForm({ initial, onSave, onCancel, saving }:
                         ))}
                     </div>
                 </div>
-
-                {form.card_type === 'promo' && (
-                    <div style={{ marginTop: 24 }}>
-                        <h3 style={{ fontWeight: 700, marginBottom: 12, color: '#111' }}>Stats</h3>
-                        {(form.promo_stats || []).map((s, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                <span style={{
-                                    flex: 1, padding: '6px 10px', background: '#f3f4f6',
-                                    borderRadius: 6, fontSize: 12
-                                }}>{s.num} — {s.label}</span>
-                                <button onClick={() => removeStat(i)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }}>
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        ))}
-                        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                            <input placeholder="99k+" value={statInput.num} onChange={e => setStatInput(s => ({ ...s, num: e.target.value }))}
-                                style={{ flex: 1, padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
-                            <input placeholder="Label" value={statInput.label} onChange={e => setStatInput(s => ({ ...s, label: e.target.value }))}
-                                style={{ flex: 2, padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
-                            <button onClick={addStat} style={{
-                                padding: '6px 12px', background: '#6366f1', color: '#fff',
-                                border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13
-                            }}>+</button>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* RIGHT: Form fields */}
@@ -257,84 +215,67 @@ function AdForm({ initial, onSave, onCancel, saving }:
                         }} />
                 </F>
 
-                {form.card_type !== 'promo' && (
-                    <>
-                        <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll →')}</F>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>CTA Style</label>
-                                {select('cta_style', CTA_STYLES)}
-                            </div>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>Color Scheme</label>
-                                {select('color_scheme', COLOR_SCHEMES)}
-                            </div>
-                        </div>
-                    </>
-                )}
+                <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll →')}</F>
+                <F label="CTA External Link">{input('cta_link', 'e.g. https://example.com')}</F>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                    <div>
+                        <label style={{
+                            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
+                            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
+                        }}>CTA Style</label>
+                        {select('cta_style', CTA_STYLES)}
+                    </div>
+                    <div>
+                        <label style={{
+                            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
+                            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
+                        }}>Color Scheme</label>
+                        {select('color_scheme', COLOR_SCHEMES)}
+                    </div>
+                </div>
 
-                {(form.card_type === 'video' || form.card_type === 'image') && (
-                    <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>Overlay Tag</label>
-                                {input('tag', 'e.g. 🎬 Video Course')}
-                            </div>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>Badge</label>
-                                {input('badge', 'e.g. New 2025')}
-                            </div>
-                        </div>
-                        <F label="Duration">{input('duration', 'e.g. 42 lectures · 18h')}</F>
-                        <F label="Background Color">{select('bg_color', BG_COLORS)}</F>
-                    </>
-                )}
-
-                {form.card_type === 'wide' && (
-                    <F label="Content Side">{select('wide_side', ['dark', 'light'])}</F>
-                )}
-
-                {form.card_type === 'promo' && (
-                    <F label="Promo Tag">{input('promo_tag', 'e.g. ⚡ Flash Sale — 48 hrs left')}</F>
-                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                    <div>
+                        <label style={{
+                            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
+                            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
+                        }}>Overlay Tag</label>
+                        {input('tag', 'e.g. 🎬 Video Course')}
+                    </div>
+                    <div>
+                        <label style={{
+                            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
+                            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
+                        }}>Badge</label>
+                        {input('badge', 'e.g. New 2025')}
+                    </div>
+                </div>
+                <F label="Duration">{input('duration', 'e.g. 42 lectures · 18h')}</F>
+                <F label="Background Color">{select('bg_color', BG_COLORS)}</F>
 
                 {/* Pills */}
-                {form.card_type !== 'promo' && (
-                    <F label="Pills / Tags">
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                            {(form.pills || []).map((p, i) => (
-                                <span key={i} style={{
-                                    display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px',
-                                    background: '#f3f4f6', borderRadius: 20, fontSize: 12
-                                }}>
-                                    {p}
-                                    <X size={10} style={{ cursor: 'pointer' }} onClick={() => removePill(i)} />
-                                </span>
-                            ))}
-                        </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                            <input placeholder="Add pill..." value={pillInput} onChange={e => setPillInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && addPill()}
-                                style={{ flex: 1, padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
-                            <button onClick={addPill} style={{
-                                padding: '6px 14px', background: '#374151', color: '#fff',
-                                border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13
-                            }}>+</button>
-                        </div>
-                    </F>
-                )}
+                <F label="Pills / Tags">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                        {(form.pills || []).map((p, i) => (
+                            <span key={i} style={{
+                                display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px',
+                                background: '#f3f4f6', borderRadius: 20, fontSize: 12
+                            }}>
+                                {p}
+                                <X size={10} style={{ cursor: 'pointer' }} onClick={() => removePill(i)} />
+                            </span>
+                        ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                        <input placeholder="Add pill..." value={pillInput} onChange={e => setPillInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && addPill()}
+                            style={{ flex: 1, padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
+                        <button onClick={addPill} style={{
+                            padding: '6px 14px', background: '#374151', color: '#fff',
+                            border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13
+                        }}>+</button>
+                    </div>
+                </F>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                     <div>
@@ -387,7 +328,7 @@ function AdForm({ initial, onSave, onCancel, saving }:
 function AdRow({ ad, onEdit, onDelete, onToggle }:
     { ad: AdItem; onEdit: () => void; onDelete: () => void; onToggle: () => void }) {
     const TYPE_COLORS: Record<AdCardType, string> = {
-        video: '#fef3c7', image: '#dbeafe', wide: '#f3e8ff', promo: '#fce7f3',
+        video: '#fef3c7', image: '#dbeafe',
     };
     return (
         <div style={{

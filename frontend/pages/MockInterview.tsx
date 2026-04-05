@@ -307,6 +307,7 @@ export default function MockInterview() {
                 }, 1000);
                 return;
             }
+            
             const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -321,7 +322,6 @@ export default function MockInterview() {
             }
         } catch (err) {
             console.error("Chat Error:", err);
-            // Optional: fallback to dummy if backend is down
         } finally { setIsSending(false); }
     };
 

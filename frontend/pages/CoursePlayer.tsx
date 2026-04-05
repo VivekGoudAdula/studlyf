@@ -18,6 +18,7 @@ interface Module {
   title: string;
   order_index: number;
   estimated_time: string;
+  lessons?: any[];
   progress?: {
     status: string;
     theory_completed: boolean;
@@ -30,12 +31,37 @@ interface Module {
 }
 
 type LessonType = 'video' | 'theory' | 'quiz';
+type CourseEndStep = 'modules' | 'capstone' | 'final_quiz' | 'project_submit';
 
 interface FlatLesson {
   moduleIndex: number;
   type: LessonType;
   label: string;
 }
+
+type QuizQuestion = {
+  question: string;
+  options: string[];
+  correct_answers: number[];
+  explanation?: string;
+};
+
+type FinalAssessment = {
+  questions: QuizQuestion[];
+  pass_mark?: number;
+  title?: string;
+};
+
+type CourseEndProgress = {
+  capstone_completed: boolean;
+  final_quiz_score?: number;
+  final_quiz_passed?: boolean;
+  final_quiz_answers?: number[][];
+  project_status?: string;
+  review_status?: string;
+  github_link?: string;
+  deployed_link?: string;
+};
 
 /* ═══════ Helpers ═══════ */
 const extractCourseId = (slug?: string) => {
@@ -45,13 +71,20 @@ const extractCourseId = (slug?: string) => {
 };
 
 const getModuleProgress = (mod: Module): number => {
+  const lessons = Array.isArray(mod.lessons) ? mod.lessons : [];
+  const hasConfiguredLessons = lessons.length > 0;
+  const hasVideo = hasConfiguredLessons ? lessons.some((l: any) => l?.type === 'video') : true;
+  const hasTheory = hasConfiguredLessons ? lessons.some((l: any) => l?.type === 'text' || l?.type === 'code') : true;
+  const hasQuiz = hasConfiguredLessons ? lessons.some((l: any) => l?.type === 'quiz') : true;
+  const total = [hasVideo, hasTheory, hasQuiz].filter(Boolean).length || 1;
+
   const p = mod.progress;
   if (!p) return 0;
   let done = 0;
-  if (p.video_completed) done++;
-  if (p.theory_completed) done++;
-  if (p.quiz_score >= 60 || p.status === 'completed') done++;
-  return Math.round((done / 3) * 100);
+  if (hasVideo && p.video_completed) done++;
+  if (hasTheory && p.theory_completed) done++;
+  if (hasQuiz && (p.quiz_score >= 60 || p.status === 'completed')) done++;
+  return Math.round((done / total) * 100);
 };
 
 const getLessonLabel = (type: LessonType): string => {
@@ -60,13 +93,66 @@ const getLessonLabel = (type: LessonType): string => {
   return 'Assessment Quiz';
 };
 
-const DUMMY_TRANSCRIPT = [
-  { time: '0:00', text: "Welcome back to this module. Today we'll explore the core concepts behind system architecture and design patterns." },
-  { time: '0:45', text: "Let's start by understanding the fundamental building blocks. Every scalable system relies on a few essential principles." },
-  { time: '1:30', text: "The first principle is separation of concerns. This ensures each component has a single, well-defined responsibility." },
-  { time: '2:15', text: "Next, we'll look at fault tolerance — how systems recover gracefully when individual components fail." },
-  { time: '3:00', text: "Finally, we'll discuss scalability vectors: horizontal vs vertical scaling and when to choose each approach." },
-];
+const normalizeYouTubeUrl = (url: string): string => {
+  if (!url) return '';
+  if (url.includes('youtube.com/embed/')) return url;
+  const watchMatch = url.match(/[?&]v=([^&]+)/);
+  if (watchMatch?.[1]) return `https://www.youtube.com/embed/${watchMatch[1]}`;
+  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+  if (shortMatch?.[1]) return `https://www.youtube.com/embed/${shortMatch[1]}`;
+  return url;
+};
+
+const normalizeExternalUrl = (url: string): string => {
+  const value = (url || '').trim();
+  if (!value) return '';
+  if (/^data:/i.test(value)) return value;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith('//')) return `https:${value}`;
+  if (/^www\./i.test(value)) return `https://${value}`;
+  return value;
+};
+
+const isLikelyImageSrc = (value: string): boolean => {
+  if (!value) return false;
+  return /^data:image\//i.test(value)
+    || /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(value)
+    || /images\.unsplash\.com|imgur\.com|cloudinary\.com/i.test(value);
+};
+
+const getLessonForStage = (module: Module | undefined, stage: LessonType) => {
+  const lessons = Array.isArray(module?.lessons) ? module!.lessons : [];
+  if (stage === 'video') {
+    return lessons.find((l: any) => l?.type === 'video') || null;
+  }
+  if (stage === 'theory') {
+    return lessons.find((l: any) => l?.type === 'text' || l?.type === 'code') || null;
+  }
+  return lessons.find((l: any) => l?.type === 'quiz') || null;
+};
+
+const getAvailableStagesForModule = (module: Module | undefined): LessonType[] => {
+  const lessons = Array.isArray(module?.lessons) ? module!.lessons : [];
+  if (lessons.length === 0) return [];
+
+  const stages: LessonType[] = [];
+  if (lessons.some((l: any) => l?.type === 'video')) stages.push('video');
+  if (lessons.some((l: any) => l?.type === 'text' || l?.type === 'code')) stages.push('theory');
+  if (lessons.some((l: any) => l?.type === 'quiz')) stages.push('quiz');
+  return stages;
+};
+
+const getQuizQuestionsFromLesson = (lesson: any): QuizQuestion[] => {
+  if (!lesson || lesson.type !== 'quiz') return [];
+  const options = Array.isArray(lesson.quiz_options) ? lesson.quiz_options.slice(0, 4) : [];
+  while (options.length < 4) options.push('');
+  return [{
+    question: lesson.quiz_question || 'Quiz question',
+    options,
+    correct_answers: [typeof lesson.quiz_correct_index === 'number' ? lesson.quiz_correct_index : 0],
+    explanation: lesson.quiz_explanation || ''
+  }];
+};
 
 /* ═══════ Component ═══════ */
 const CoursePlayer: React.FC = () => {
@@ -99,6 +185,17 @@ const CoursePlayer: React.FC = () => {
   const [deployedLink, setDeployedLink] = useState('');
   const [githubLink, setGithubLink] = useState('');
   const [projectFile, setProjectFile] = useState<File | null>(null);
+  const [projectSubmitState, setProjectSubmitState] = useState<'idle' | 'submitting' | 'submitted' | 'error'>('idle');
+  const [projectSubmitMessage, setProjectSubmitMessage] = useState('');
+
+  // Course-end flow
+  const [courseEndStep, setCourseEndStep] = useState<CourseEndStep>('modules');
+  const [capstoneAccepted, setCapstoneAccepted] = useState(false);
+  const [finalAssessment, setFinalAssessment] = useState<FinalAssessment>({ questions: [], pass_mark: 60 });
+  const [finalQuizAnswers, setFinalQuizAnswers] = useState<number[][]>([]);
+  const [finalQuizResult, setFinalQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
+  const [currentFinalQuizQ, setCurrentFinalQuizQ] = useState(0);
+  const [courseEndProgress, setCourseEndProgress] = useState<CourseEndProgress | null>(null);
 
   // Completion modal
   const [completionPrompt, setCompletionPrompt] = useState<{
@@ -111,10 +208,11 @@ const CoursePlayer: React.FC = () => {
   /* ── Build flat lesson list ── */
   const buildLessons = (mods: Module[]): FlatLesson[] => {
     const list: FlatLesson[] = [];
-    mods.forEach((_, i) => {
-      list.push({ moduleIndex: i, type: 'video', label: 'Video Lesson' });
-      list.push({ moduleIndex: i, type: 'theory', label: 'Reading Material' });
-      list.push({ moduleIndex: i, type: 'quiz', label: 'Assessment Quiz' });
+    mods.forEach((mod, i) => {
+      const stages = getAvailableStagesForModule(mod);
+      stages.forEach((type) => {
+        list.push({ moduleIndex: i, type, label: getLessonLabel(type) });
+      });
     });
     return list;
   };
@@ -129,19 +227,21 @@ const CoursePlayer: React.FC = () => {
     if (resolvedCourseId) fetchModules();
   }, [resolvedCourseId, user]);
 
+  useEffect(() => {
+    if (!resolvedCourseId) return;
+    fetchFinalAssessment();
+  }, [resolvedCourseId]);
+
+  useEffect(() => {
+    if (!resolvedCourseId || !user?.uid) return;
+    fetchCourseEndProgress();
+  }, [resolvedCourseId, user?.uid]);
+
   const fetchModules = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/courses/${resolvedCourseId}/modules?user_id=${user?.uid || ''}`);
       const data = await res.json();
-      let fetched = Array.isArray(data) ? data : [];
-      if (fetched.length === 0) {
-        fetched = [
-          { _id: 'dummy-mod-1', title: 'Foundations & Architectures', order_index: 1, estimated_time: '2h 30m', progress: { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' } },
-          { _id: 'dummy-mod-2', title: 'Advanced Implementations', order_index: 2, estimated_time: '3h 15m', progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' } },
-          { _id: 'dummy-mod-3', title: 'Production Deployment', order_index: 3, estimated_time: '2h 45m', progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' } },
-          { _id: 'dummy-mod-4', title: 'Testing & CI/CD Pipelines', order_index: 4, estimated_time: '1h 50m', progress: { status: 'locked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending' } },
-        ];
-      }
+      const fetched = Array.isArray(data) ? data : [];
       setModules(fetched);
       setLoading(false);
       return fetched;
@@ -152,42 +252,113 @@ const CoursePlayer: React.FC = () => {
     }
   };
 
+  const fetchFinalAssessment = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/courses/${resolvedCourseId}/final-assessment`);
+      if (!res.ok) {
+        setFinalAssessment({ questions: [], pass_mark: 60 });
+        return;
+      }
+      const data = await res.json();
+      const questions = Array.isArray(data?.questions) ? data.questions : [];
+      const passMark = typeof data?.pass_mark === 'number' ? data.pass_mark : 60;
+      setFinalAssessment({ questions, pass_mark: passMark, title: data?.title });
+      setFinalQuizAnswers(questions.map(() => []));
+      setFinalQuizResult(null);
+      setCurrentFinalQuizQ(0);
+    } catch {
+      setFinalAssessment({ questions: [], pass_mark: 60 });
+    }
+  };
+
+  const fetchCourseEndProgress = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/course-end/progress?course_id=${resolvedCourseId}&user_id=${user?.uid}`);
+      if (!res.ok) {
+        setCourseEndProgress(null);
+        return;
+      }
+      const data = await res.json();
+      setCourseEndProgress(data);
+      setCapstoneAccepted(!!data?.capstone_completed);
+      if (typeof data?.final_quiz_score === 'number') {
+        setFinalQuizResult({ score: data.final_quiz_score, passed: !!data?.final_quiz_passed });
+      }
+      if (Array.isArray(data?.final_quiz_answers)) {
+        setFinalQuizAnswers(data.final_quiz_answers);
+      }
+      if (typeof data?.github_link === 'string' && data.github_link) setGithubLink(data.github_link);
+      if (typeof data?.deployed_link === 'string' && data.deployed_link) setDeployedLink(data.deployed_link);
+      if (data?.project_status === 'submitted') {
+        setProjectSubmitState('submitted');
+        setProjectSubmitMessage('Project already submitted. Our team will review it.');
+      }
+    } catch {
+      setCourseEndProgress(null);
+    }
+  };
+
+  const saveCourseEndProgress = async (updates: Record<string, any>) => {
+    if (!user?.uid || !resolvedCourseId) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/course-end/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.uid, course_id: resolvedCourseId, updates })
+      });
+    } catch {
+      // best-effort persistence
+    }
+  };
+
   useEffect(() => {
     if (modules.length > 0) fetchModuleDetails(modules[activeModuleIndex]._id);
   }, [activeModuleIndex, modules]);
 
+  const allModulesCompleted = modules.length > 0 && modules.every((m) => getModuleProgress(m) >= 100);
+
+  useEffect(() => {
+    if (!allModulesCompleted) return;
+    if (courseEndStep === 'modules') {
+      if (courseEndProgress?.project_status === 'submitted') {
+        setCourseEndStep('project_submit');
+      } else if (courseEndProgress?.final_quiz_passed) {
+        setCourseEndStep('project_submit');
+      } else if (courseEndProgress?.capstone_completed) {
+        setCourseEndStep('final_quiz');
+      } else {
+        setCourseEndStep('capstone');
+      }
+    }
+  }, [allModulesCompleted, courseEndStep, courseEndProgress]);
+
   const fetchModuleDetails = async (moduleId: string) => {
     let data: any = {};
-    if (moduleId.startsWith('dummy-mod')) {
-      data = {
-        theory: {
-          markdown_content: "# System Architectures & Frameworks\n\nWelcome to the simulated track.\n\n## Subsystem Overview\n\n1. Component isolation\n2. Fault tolerance parameters\n3. Scalability vectors\n\n> **Note:** Understanding these metrics is critical for successful system initialization.\n\n## Design Patterns\n\n### Microservices\nBreak monoliths into independently deployable services.\n\n### Event-Driven Architecture\nUse message queues and event buses for loose coupling.\n\n| Pattern | Use Case | Complexity |\n|---------|----------|------------|\n| MVC | Web apps | Low |\n| CQRS | High-read systems | Medium |\n| Event Sourcing | Audit trails | High |\n\n```python\ndef initialize_system(config):\n    services = load_services(config)\n    for svc in services:\n        svc.start()\n    return SystemStatus.READY\n```\n\nUnderstand the metrics and variables for successful initialization.",
-          key_takeaways: ["Understand system boundaries", "Deploy fault-tolerant systems", "End-to-end telemetry mapping"]
-        },
-        video: { video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        quiz: {
-          questions: [
-            { question: "What primarily drives system latency here?", options: ["Bandwidth", "Distance", "Processing Overhead", "All of the above"], correct_answers: [3], explanation: "All elements heavily impact latency." },
-            { question: "Which protocol is connection-oriented?", options: ["UDP", "TCP", "ICMP", "IP"], correct_answers: [1], explanation: "TCP guarantees reliable delivery." },
-            { question: "What does CAP theorem state about distributed systems?", options: ["You can have all three guarantees", "You can only pick two of Consistency, Availability, Partition tolerance", "It only applies to databases", "It was disproven"], correct_answers: [1], explanation: "CAP theorem states you must choose two out of three." },
-          ]
-        },
-        project: { problem_statement: "Deploy a foundational analytics service proxy.", requirements: ["Implement basic rate limiting", "Route dynamic health-checks", "Ensure secure CORS headers"] }
-      };
-    } else {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/modules/${moduleId}`);
-        if (res.ok) data = await res.json();
-      } catch {}
-    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/modules/${moduleId}`);
+      if (res.ok) data = await res.json();
+    } catch {}
     setModuleDetails(data);
 
     const prog = modules[activeModuleIndex].progress;
-    if (!prog?.video_completed) setActiveStage('video');
-    else if (!prog?.theory_completed) setActiveStage('theory');
-    else setActiveStage('quiz');
+    const availableStages = getAvailableStagesForModule(modules[activeModuleIndex]);
+    if (availableStages.length === 0) {
+      setActiveStage('video');
+      setQuizAnswers([]);
+      setQuizResult(null);
+      setCurrentQuizQ(0);
+      return;
+    }
+    if (availableStages.includes('video') && !prog?.video_completed) setActiveStage('video');
+    else if (availableStages.includes('theory') && !prog?.theory_completed) setActiveStage('theory');
+    else if (availableStages.includes('quiz')) setActiveStage('quiz');
+    else setActiveStage(availableStages[0]);
+
+    const stageQuizLesson = getLessonForStage(modules[activeModuleIndex], 'quiz');
+    const lessonQuizQuestions = getQuizQuestionsFromLesson(stageQuizLesson);
 
     if (prog?.quiz_answers?.length) setQuizAnswers(prog.quiz_answers);
+    else if (lessonQuizQuestions.length) setQuizAnswers(lessonQuizQuestions.map(() => []));
     else setQuizAnswers(data.quiz?.questions.map(() => []) || []);
 
     if (prog?.quiz_score && prog.quiz_score > 0) {
@@ -200,21 +371,6 @@ const CoursePlayer: React.FC = () => {
 
   /* ── Progress Updates ── */
   const updateProgress = async (updates: any) => {
-    if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
-      const updated = [...modules];
-      const cur = updated[activeModuleIndex];
-      if (!cur.progress) cur.progress = { status: 'unlocked', theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [], project_status: 'pending', review_status: 'pending' };
-      Object.assign(cur.progress, updates);
-      if (updates.status === 'completed' || updates.project_status === 'submitted' || updates.quiz_score >= 60) {
-        cur.progress.status = 'completed';
-        if (activeModuleIndex + 1 < updated.length) {
-          if (!updated[activeModuleIndex + 1].progress) updated[activeModuleIndex + 1].progress = {} as any;
-          updated[activeModuleIndex + 1].progress!.status = 'unlocked';
-        }
-      }
-      setModules(updated);
-      return;
-    }
     await fetch(`${API_BASE_URL}/api/progress/update`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user?.uid, course_id: resolvedCourseId, module_id: modules[activeModuleIndex]._id, updates })
@@ -226,10 +382,14 @@ const CoursePlayer: React.FC = () => {
   const handleQuizSubmit = async () => {
     let score = 0;
     let data: any = {};
-    if (modules[activeModuleIndex]._id.startsWith('dummy-mod')) {
+
+    const stageQuizLesson = getLessonForStage(modules[activeModuleIndex], 'quiz');
+    const lessonQuizQuestions = getQuizQuestionsFromLesson(stageQuizLesson);
+
+    if (lessonQuizQuestions.length > 0) {
       let correct = 0;
-      const qs = moduleDetails?.quiz?.questions || [];
-      qs.forEach((q: any, i: number) => {
+      const qs = lessonQuizQuestions;
+      qs.forEach((q: QuizQuestion, i: number) => {
         const sel = quizAnswers[i] || [];
         const ans = q.correct_answers || [];
         if (sel.length === ans.length && sel.every((v: number) => ans.includes(v))) correct++;
@@ -244,8 +404,82 @@ const CoursePlayer: React.FC = () => {
       data = await res.json();
       score = data.score;
     }
+
     setQuizResult(data);
     setTimeout(() => updateProgress({ quiz_score: score, quiz_answers: quizAnswers }), 500);
+  };
+
+  const handleFinalQuizSubmit = () => {
+    const questions = finalAssessment.questions || [];
+    if (questions.length === 0) {
+      setFinalQuizResult({ score: 100, passed: true });
+      setCourseEndStep('project_submit');
+      return;
+    }
+
+    let correct = 0;
+    questions.forEach((q, i) => {
+      const selected = finalQuizAnswers[i] || [];
+      const answers = Array.isArray(q.correct_answers) ? q.correct_answers : [];
+      if (selected.length === answers.length && selected.every((v) => answers.includes(v))) {
+        correct++;
+      }
+    });
+
+    const score = Math.round((correct / questions.length) * 100);
+    const passMark = typeof finalAssessment.pass_mark === 'number' ? finalAssessment.pass_mark : 60;
+    const passed = score >= passMark;
+    setFinalQuizResult({ score, passed });
+    saveCourseEndProgress({
+      capstone_completed: true,
+      final_quiz_score: score,
+      final_quiz_passed: passed,
+      final_quiz_answers: finalQuizAnswers
+    });
+    if (passed) {
+      setCourseEndStep('project_submit');
+    }
+  };
+
+  const handleSubmitFinalProject = async () => {
+    if (!user?.uid) {
+      setProjectSubmitState('error');
+      setProjectSubmitMessage('Please login and try again.');
+      return;
+    }
+    if (!githubLink.trim() && !deployedLink.trim()) {
+      setProjectSubmitState('error');
+      setProjectSubmitMessage('Please paste your GitHub link or deployed project link.');
+      return;
+    }
+
+    try {
+      setProjectSubmitState('submitting');
+      setProjectSubmitMessage('Submitting your final project...');
+      const form = new FormData();
+      form.append('user_id', user.uid);
+      form.append('module_id', `FINAL_CAPSTONE_${resolvedCourseId}`);
+      form.append('deployed_link', deployedLink.trim());
+      form.append('github_link', githubLink.trim());
+      if (projectFile) form.append('file', projectFile);
+
+      const res = await fetch(`${API_BASE_URL}/api/project/submit`, {
+        method: 'POST',
+        body: form
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.detail || 'Failed to submit project');
+      }
+
+      setProjectSubmitState('submitted');
+      setProjectSubmitMessage('Project submitted successfully. Our team will review it.');
+      fetchCourseEndProgress();
+    } catch (err: any) {
+      setProjectSubmitState('error');
+      setProjectSubmitMessage(err?.message || 'Unable to submit project right now.');
+    }
   };
 
   /* ── Navigation ── */
@@ -306,6 +540,50 @@ const CoursePlayer: React.FC = () => {
 
   const isCurrentLessonComplete = isLessonComplete(activeModuleIndex, activeStage);
   const currentModule = modules[activeModuleIndex];
+  const currentModuleStages = getAvailableStagesForModule(currentModule);
+  const currentVideoLesson = getLessonForStage(currentModule, 'video');
+  const currentTheoryLesson = getLessonForStage(currentModule, 'theory');
+  const currentQuizLesson = getLessonForStage(currentModule, 'quiz');
+  const currentQuizQuestions = getQuizQuestionsFromLesson(currentQuizLesson);
+
+  const videoRawUrl = currentVideoLesson
+    ? (currentVideoLesson.video_source === 'file'
+      ? (currentVideoLesson.video_file_data || currentVideoLesson.video_url || '')
+      : (currentVideoLesson.video_url || currentVideoLesson.video_file_data || ''))
+    : (moduleDetails?.video?.video_url || '');
+  const videoEmbedUrl = normalizeYouTubeUrl(videoRawUrl);
+  const isYouTubeVideo = /youtube\.com|youtu\.be/.test(videoRawUrl || '');
+
+  const normalizedTextBlocks = currentTheoryLesson?.type === 'text' && Array.isArray(currentTheoryLesson.text_blocks)
+    ? currentTheoryLesson.text_blocks.map((block: any) => ({
+      kind: block?.kind || block?.type || block?.block_type || 'paragraph',
+      text: block?.text || block?.content || block?.paragraph || '',
+      imageSrc: normalizeExternalUrl(block?.image_file_data || block?.image_url || block?.url || block?.content || ''),
+      caption: block?.caption || '',
+      linkUrl: normalizeExternalUrl(block?.url || block?.link_url || block?.href || ''),
+      linkLabel: block?.label || block?.link_label || block?.text || block?.url || block?.link_url || 'Open resource'
+    }))
+    : [];
+
+  const builderResources = [
+    ...normalizedTextBlocks
+      .filter((b: any) => b.kind === 'link' && b.linkUrl)
+      .map((b: any) => ({ title: b.linkLabel, url: b.linkUrl, meta: 'External Link' })),
+    ...normalizedTextBlocks
+      .filter((b: any) => b.kind === 'image' && b.imageSrc)
+      .map((b: any, i: number) => ({ title: b.caption || `Lesson Image ${i + 1}`, url: b.imageSrc, meta: 'Image Resource' })),
+    ...(currentVideoLesson?.video_source === 'file' && videoRawUrl
+      ? [{ title: currentVideoLesson.video_file_name || 'Lesson Video File', url: videoRawUrl, meta: 'Video Resource' }]
+      : [])
+  ];
+
+  const legacyResources = Array.isArray(moduleDetails?.resources)
+    ? moduleDetails.resources
+      .filter((r: any) => r?.url)
+      .map((r: any) => ({ title: r.title || 'Resource', url: r.url, meta: r.type || r.size || 'Resource' }))
+    : [];
+
+  const activeResources = builderResources.length > 0 ? builderResources : legacyResources;
   
   // Calculate more granular overall progress by summing all individual module progress percentages
   const overallProgress = modules.length > 0 
@@ -316,25 +594,14 @@ const CoursePlayer: React.FC = () => {
     ? `${currentModule.title} — ${getLessonLabel(activeStage)}`
     : 'Loading...';
 
-  /* ═══════ Render ═══════ */
-  if (courseId && !courseId.toLowerCase().includes('generative-ai')) {
-    return (
-      <div className="cp-shell" style={{ alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div>
-          <div style={{ fontSize: 64, marginBottom: 20 }}>🚀</div>
-          <h1 style={{ fontSize: 40, fontWeight: 900, color: '#111827', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>Course to be launched soon!</h1>
-          <p style={{ color: '#6b7280', fontSize: 16, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>We are currently crafting high-quality visual and practical content for this track. It will be live very soon.</p>
-          <button 
-            onClick={() => navigate('/learn/courses')}
-            style={{ marginTop: 32, padding: '14px 32px', background: '#111827', color: '#fff', borderRadius: 99, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 13, border: 'none', cursor: 'pointer' }}
-          >
-            Return to Courses
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const isCourseEndFlow = allModulesCompleted && courseEndStep !== 'modules';
+  const workflowTitle = courseEndStep === 'capstone'
+    ? 'Capstone Project'
+    : courseEndStep === 'final_quiz'
+      ? 'Final Course Quiz'
+      : 'Project Submission';
 
+  /* ═══════ Render ═══════ */
   if (loading) return (
     <div className="cp-loading">
       <div className="cp-spinner" />
@@ -381,7 +648,7 @@ const CoursePlayer: React.FC = () => {
             const isLocked = false;
             const isCompleted = mod.progress?.status === 'completed';
             const modProgress = getModuleProgress(mod);
-            const lessons: LessonType[] = ['video', 'theory', 'quiz'];
+            const lessons: LessonType[] = getAvailableStagesForModule(mod);
 
             return (
               <div key={mod._id} className="cp-module-group" style={{ opacity: isLocked ? 0.45 : 1 }}>
@@ -393,7 +660,7 @@ const CoursePlayer: React.FC = () => {
                     <div className="cp-module-info">
                       <div className="cp-module-name">{mod.title}</div>
                       <div className="cp-module-meta">
-                        {`${mod.estimated_time} · 3 lessons`}
+                        {`${mod.estimated_time} · ${lessons.length} lesson${lessons.length === 1 ? '' : 's'}`}
                       </div>
                     </div>
                   </div>
@@ -444,10 +711,10 @@ const CoursePlayer: React.FC = () => {
             <button className="cp-collapse-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}>
               <Menu size={18} />
             </button>
-            <span className="cp-topbar-lesson-title">{currentLessonTitle}</span>
+            <span className="cp-topbar-lesson-title">{isCourseEndFlow ? workflowTitle : currentLessonTitle}</span>
           </div>
           <div className="cp-topbar-right">
-            {activeStage !== 'quiz' && (
+            {!isCourseEndFlow && activeStage !== 'quiz' && (
               <button
                 className={`cp-topbar-btn ${isCurrentLessonComplete ? 'completed-btn' : 'primary'}`}
                 onClick={handleMarkComplete}
@@ -464,19 +731,217 @@ const CoursePlayer: React.FC = () => {
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Main Content Area */}
           <div className="cp-content-area" ref={contentRef} style={{ flex: 1 }}>
+            {isCourseEndFlow ? (
+              <div style={{ maxWidth: 840, margin: '0 auto', padding: '28px 24px 40px' }}>
+                {courseEndStep === 'capstone' && (
+                  <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 24 }}>
+                    <h2 style={{ fontSize: 24, fontWeight: 800, color: '#111827', marginBottom: 10 }}>Final Capstone Project</h2>
+                    <p style={{ fontSize: 15, color: '#4b5563', lineHeight: 1.7, marginBottom: 18 }}>
+                      You completed all modules. Build your capstone project now to demonstrate full-stack ownership and problem-solving depth.
+                    </p>
+                    <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, marginBottom: 18 }}>
+                      <div style={{ fontWeight: 700, color: '#111827', marginBottom: 8 }}>Capstone Checklist</div>
+                      <ul style={{ margin: 0, paddingLeft: 18, color: '#374151', lineHeight: 1.8 }}>
+                        <li>Build and complete the final project for this track.</li>
+                        <li>Push your source code to a public/private GitHub repository.</li>
+                        <li>Keep a live deployed URL if available (optional but recommended).</li>
+                      </ul>
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={capstoneAccepted}
+                        onChange={(e) => setCapstoneAccepted(e.target.checked)}
+                      />
+                      I have completed my capstone and want to continue.
+                    </label>
+                    <button
+                      className="cp-bottom-nav-btn next"
+                      onClick={async () => {
+                        await saveCourseEndProgress({ capstone_completed: true });
+                        setCourseEndStep('final_quiz');
+                        setFinalQuizResult(null);
+                        setCurrentFinalQuizQ(0);
+                      }}
+                      disabled={!capstoneAccepted}
+                    >
+                      Start Final Quiz <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+
+                {courseEndStep === 'final_quiz' && (
+                  <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 24 }}>
+                    <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 8 }}>
+                      {finalAssessment.title || 'Final Course Quiz'}
+                    </h2>
+                    <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 16 }}>
+                      Pass mark: {finalAssessment.pass_mark ?? 60}%
+                    </p>
+
+                    {finalAssessment.questions.length === 0 ? (
+                      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, marginBottom: 16, color: '#374151' }}>
+                        Final quiz is not configured yet for this course. You can proceed to project submission.
+                      </div>
+                    ) : (
+                      <>
+                        {finalAssessment.questions.map((q, qIdx) => (
+                          <div key={qIdx} style={{ display: qIdx === currentFinalQuizQ ? 'block' : 'none' }}>
+                            <div className="cp-quiz-question-text" style={{ marginBottom: 12 }}>{q.question}</div>
+                            <div className="cp-quiz-options">
+                              {(q.options || []).map((opt, optIdx) => {
+                                const selected = finalQuizAnswers[qIdx]?.includes(optIdx);
+                                return (
+                                  <button
+                                    key={optIdx}
+                                    className={`cp-quiz-option ${selected ? 'selected' : ''}`}
+                                    onClick={() => {
+                                      const next = [...finalQuizAnswers];
+                                      next[qIdx] = [optIdx];
+                                      setFinalQuizAnswers(next);
+                                    }}
+                                  >
+                                    <div className="cp-quiz-radio">{selected && <div className="cp-quiz-radio-dot" />}</div>
+                                    {opt}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+
+                        {!finalQuizResult && finalAssessment.questions.length > 0 && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 18 }}>
+                            <button
+                              className="cp-bottom-nav-btn"
+                              onClick={() => setCurrentFinalQuizQ((q) => Math.max(0, q - 1))}
+                              disabled={currentFinalQuizQ === 0}
+                            >
+                              <ChevronLeft size={16} /> Previous
+                            </button>
+                            {currentFinalQuizQ < finalAssessment.questions.length - 1 ? (
+                              <button
+                                className="cp-bottom-nav-btn next"
+                                onClick={() => setCurrentFinalQuizQ((q) => q + 1)}
+                                disabled={!finalQuizAnswers[currentFinalQuizQ]?.length}
+                              >
+                                Next <ChevronRight size={16} />
+                              </button>
+                            ) : (
+                              <button
+                                className="cp-bottom-nav-btn next"
+                                onClick={handleFinalQuizSubmit}
+                                disabled={finalQuizAnswers.some((a) => !a?.length)}
+                              >
+                                Submit Final Quiz
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {(finalQuizResult || finalAssessment.questions.length === 0) && (
+                      <div style={{ marginTop: 18 }}>
+                        {finalQuizResult ? (
+                          <div className={`cp-quiz-result ${finalQuizResult.passed ? 'passed' : 'failed'}`}>
+                            <div className="cp-quiz-result-score">{Math.round(finalQuizResult.score)}%</div>
+                            <div style={{ fontSize: 16, fontWeight: 700 }}>
+                              {finalQuizResult.passed ? 'Final Quiz Passed' : 'Final Quiz Not Passed'}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {finalQuizResult?.passed || finalAssessment.questions.length === 0 ? (
+                          <button className="cp-bottom-nav-btn next" onClick={() => setCourseEndStep('project_submit')}>
+                            Continue to GitHub Submission <ChevronRight size={16} />
+                          </button>
+                        ) : (
+                          <button
+                            className="cp-bottom-nav-btn"
+                            onClick={() => {
+                              setFinalQuizResult(null);
+                              setCurrentFinalQuizQ(0);
+                              setFinalQuizAnswers(finalAssessment.questions.map(() => []));
+                            }}
+                          >
+                            Retry Final Quiz
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {courseEndStep === 'project_submit' && (
+                  <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 24 }}>
+                    <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 10 }}>Submit Final Project</h2>
+                    <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 16 }}>
+                      Paste your GitHub repository link after completing the capstone. You can also add a deployed URL and supporting file.
+                    </p>
+
+                    <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
+                      <input
+                        value={githubLink}
+                        onChange={(e) => setGithubLink(e.target.value)}
+                        placeholder="https://github.com/username/repository"
+                        className="cp-notes-area"
+                        style={{ minHeight: 44, height: 44 }}
+                      />
+                      <input
+                        value={deployedLink}
+                        onChange={(e) => setDeployedLink(e.target.value)}
+                        placeholder="https://your-deployed-app-url (optional)"
+                        className="cp-notes-area"
+                        style={{ minHeight: 44, height: 44 }}
+                      />
+                      <input
+                        type="file"
+                        onChange={(e) => setProjectFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+
+                    <button
+                      className="cp-bottom-nav-btn next"
+                      onClick={handleSubmitFinalProject}
+                      disabled={projectSubmitState === 'submitting'}
+                    >
+                      {projectSubmitState === 'submitting' ? 'Submitting...' : 'Submit Project'}
+                    </button>
+
+                    {projectSubmitMessage && (
+                      <div style={{ marginTop: 12, fontSize: 14, color: projectSubmitState === 'submitted' ? '#059669' : '#dc2626' }}>
+                        {projectSubmitMessage}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : currentModuleStages.length === 0 ? (
+              <div style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', padding: 48 }}>
+                No lessons configured for this module yet.
+              </div>
+            ) : (
             <AnimatePresence mode="wait">
               {/* ── VIDEO ── */}
               {activeStage === 'video' && (
                 <motion.div key="video" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <div className="cp-video-container">
-                    {moduleDetails?.video?.video_url ? (
-                      <iframe
-                        src={moduleDetails.video.video_url}
-                        title="Course Video"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerPolicy="strict-origin-when-cross-origin"
-                        allowFullScreen
-                      />
+                    {videoRawUrl ? (
+                      isYouTubeVideo ? (
+                        <iframe
+                          src={videoEmbedUrl}
+                          title="Course Video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video controls style={{ width: '100%', height: '100%', borderRadius: 0 }}>
+                          <source src={videoRawUrl} />
+                          Your browser does not support the video tag.
+                        </video>
+                      )
                     ) : (
                       <div className="cp-video-unavailable">
                         <span>Video content unavailable</span>
@@ -494,40 +959,117 @@ const CoursePlayer: React.FC = () => {
               {activeStage === 'theory' && (
                 <motion.div key="theory" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <div className="cp-text-lesson">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        h1: ({ children, ...props }) => <h1 {...props}>{children}</h1>,
-                        h2: ({ children, ...props }) => <h2 {...props}>{children}</h2>,
-                        h3: ({ children, ...props }) => <h3 {...props}>{children}</h3>,
-                        p: ({ children, ...props }) => <p {...props}>{children}</p>,
-                        blockquote: ({ children, ...props }) => <blockquote {...props}>{children}</blockquote>,
-                        pre: ({ children, ...props }) => <pre {...props}>{children}</pre>,
-                        code: ({ className, children, ...props }) => {
-                          const isInline = !className;
-                          if (isInline) return <code {...props}>{children}</code>;
-                          return <code className={className} {...props}>{children}</code>;
-                        },
-                        table: ({ children, ...props }) => <table {...props}>{children}</table>,
-                        thead: ({ children, ...props }) => <thead {...props}>{children}</thead>,
-                        tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
-                        th: ({ children, ...props }) => <th {...props}>{children}</th>,
-                        td: ({ children, ...props }) => <td {...props}>{children}</td>,
-                      }}
-                    >
-                      {moduleDetails?.theory?.markdown_content || ''}
-                    </ReactMarkdown>
-
-                    {moduleDetails?.theory?.key_takeaways?.length > 0 && (
-                      <div style={{ marginTop: 40, paddingTop: 28, borderTop: '1px solid #e8e8ed' }}>
-                        <h3 style={{ color: '#111827', fontWeight: 700, marginBottom: 16 }}>Key Takeaways</h3>
-                        {moduleDetails.theory.key_takeaways.map((t: string, i: number) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
-                            <CheckCircle2 size={16} style={{ color: '#10b981', marginTop: 2, flexShrink: 0 }} />
-                            <span style={{ fontSize: 15, color: '#374151' }}>{t}</span>
+                    {currentTheoryLesson?.type === 'text' && normalizedTextBlocks.length >= 0 ? (
+                      <div>
+                        {normalizedTextBlocks.length > 0 ? (
+                          normalizedTextBlocks.map((block: any, idx: number) => {
+                            if (block.kind === 'image') {
+                              const imageSrc = block.imageSrc || '';
+                              return imageSrc ? (
+                                <div key={idx} style={{ marginBottom: 18 }}>
+                                  <img
+                                    src={imageSrc}
+                                    alt={block.caption || `Lesson visual ${idx + 1}`}
+                                    style={{ width: '100%', borderRadius: 10, border: '1px solid #e5e7eb' }}
+                                  />
+                                  {block.caption && (
+                                    <div style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>{block.caption}</div>
+                                  )}
+                                </div>
+                              ) : null;
+                            }
+                            if (block.kind === 'link') {
+                              const href = block.linkUrl || '#';
+                              const text = block.linkLabel || block.linkUrl || 'Open resource';
+                              return (
+                                <div key={idx} style={{ marginBottom: 14 }}>
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
+                                  >
+                                    {text}
+                                  </a>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div key={idx} style={{ marginBottom: 14, lineHeight: 1.75, color: '#374151' }}>
+                                {(() => {
+                                  const plain = (block.text || '').trim();
+                                  const imageLike = normalizeExternalUrl(plain);
+                                  return isLikelyImageSrc(imageLike) ? (
+                                    <img
+                                      src={imageLike}
+                                      alt={`Lesson visual ${idx + 1}`}
+                                      style={{ width: '100%', borderRadius: 10, border: '1px solid #e5e7eb', marginBottom: 8 }}
+                                    />
+                                  ) : null;
+                                })()}
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {block.text || ''}
+                                </ReactMarkdown>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div style={{ fontSize: 14, color: '#9ca3af', textAlign: 'center', padding: 28 }}>
+                            No text content available.
                           </div>
-                        ))}
+                        )}
                       </div>
+                    ) : currentTheoryLesson?.type === 'code' ? (
+                      <div>
+                        {currentTheoryLesson.code_intro && (
+                          <p style={{ marginBottom: 16, lineHeight: 1.75, color: '#374151' }}>
+                            {currentTheoryLesson.code_intro}
+                          </p>
+                        )}
+                        <pre>
+                          <code className={`language-${currentTheoryLesson.code_language || 'text'}`}>
+                            {currentTheoryLesson.code_snippet || '// No code snippet provided'}
+                          </code>
+                        </pre>
+                      </div>
+                    ) : (
+                      <>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h1: ({ children, ...props }) => <h1 {...props}>{children}</h1>,
+                            h2: ({ children, ...props }) => <h2 {...props}>{children}</h2>,
+                            h3: ({ children, ...props }) => <h3 {...props}>{children}</h3>,
+                            p: ({ children, ...props }) => <p {...props}>{children}</p>,
+                            blockquote: ({ children, ...props }) => <blockquote {...props}>{children}</blockquote>,
+                            pre: ({ children, ...props }) => <pre {...props}>{children}</pre>,
+                            code: ({ className, children, ...props }) => {
+                              const isInline = !className;
+                              if (isInline) return <code {...props}>{children}</code>;
+                              return <code className={className} {...props}>{children}</code>;
+                            },
+                            table: ({ children, ...props }) => <table {...props}>{children}</table>,
+                            thead: ({ children, ...props }) => <thead {...props}>{children}</thead>,
+                            tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+                            th: ({ children, ...props }) => <th {...props}>{children}</th>,
+                            td: ({ children, ...props }) => <td {...props}>{children}</td>,
+                          }}
+                        >
+                          {moduleDetails?.theory?.markdown_content || ''}
+                        </ReactMarkdown>
+
+                        {moduleDetails?.theory?.key_takeaways?.length > 0 && (
+                          <div style={{ marginTop: 40, paddingTop: 28, borderTop: '1px solid #e8e8ed' }}>
+                            <h3 style={{ color: '#111827', fontWeight: 700, marginBottom: 16 }}>Key Takeaways</h3>
+                            {moduleDetails.theory.key_takeaways.map((t: string, i: number) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                                <CheckCircle2 size={16} style={{ color: '#10b981', marginTop: 2, flexShrink: 0 }} />
+                                <span style={{ fontSize: 15, color: '#374151' }}>{t}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </motion.div>
@@ -542,16 +1084,16 @@ const CoursePlayer: React.FC = () => {
                         <div className="cp-quiz-header">
                           <h2>Module Assessment</h2>
                           <div className="cp-quiz-progress-text">
-                            Question {currentQuizQ + 1} of {moduleDetails?.quiz?.questions?.length || 0}
+                            Question {currentQuizQ + 1} of {(currentQuizQuestions.length || moduleDetails?.quiz?.questions?.length || 0)}
                           </div>
                           <div className="cp-quiz-progress-bar">
                             <div className="cp-quiz-progress-fill" style={{
-                              width: `${((currentQuizQ + 1) / (moduleDetails?.quiz?.questions?.length || 1)) * 100}%`
+                              width: `${((currentQuizQ + 1) / ((currentQuizQuestions.length || moduleDetails?.quiz?.questions?.length || 1))) * 100}%`
                             }} />
                           </div>
                         </div>
 
-                        {moduleDetails?.quiz?.questions?.map((q: any, qIdx: number) => (
+                        {(currentQuizQuestions.length ? currentQuizQuestions : (moduleDetails?.quiz?.questions || [])).map((q: any, qIdx: number) => (
                           <div key={qIdx} style={{ display: qIdx === currentQuizQ ? 'block' : 'none' }}>
                             <div className="cp-quiz-question">
                               <div className="cp-quiz-question-text">{q.question}</div>
@@ -586,7 +1128,7 @@ const CoursePlayer: React.FC = () => {
                               >
                                 <ChevronLeft size={16} /> Previous
                               </button>
-                              {currentQuizQ < (moduleDetails?.quiz?.questions?.length || 1) - 1 ? (
+                              {currentQuizQ < ((currentQuizQuestions.length || moduleDetails?.quiz?.questions?.length || 1) - 1) ? (
                                 <button
                                   className="cp-bottom-nav-btn next"
                                   onClick={() => setCurrentQuizQ(currentQuizQ + 1)}
@@ -624,7 +1166,7 @@ const CoursePlayer: React.FC = () => {
 
                         {/* Show answers with feedback */}
                         <div style={{ marginTop: 32 }}>
-                          {moduleDetails?.quiz?.questions?.map((q: any, qIdx: number) => {
+                          {(currentQuizQuestions.length ? currentQuizQuestions : (moduleDetails?.quiz?.questions || [])).map((q: any, qIdx: number) => {
                             const selected = quizAnswers[qIdx] || [];
                             return (
                               <div key={qIdx} style={{ marginBottom: 28 }}>
@@ -633,7 +1175,7 @@ const CoursePlayer: React.FC = () => {
                                 </div>
                                 {q.options.map((opt: string, optIdx: number) => {
                                   const isSel = selected.includes(optIdx);
-                                  const isCorrect = q.correct_answers.includes(optIdx);
+                                  const isCorrect = Array.isArray(q.correct_answers) && q.correct_answers.includes(optIdx);
                                   let cls = 'cp-quiz-option';
                                   if (isSel && isCorrect) cls += ' correct';
                                   else if (isSel && !isCorrect) cls += ' incorrect';
@@ -674,7 +1216,7 @@ const CoursePlayer: React.FC = () => {
                               className="cp-bottom-nav-btn"
                               onClick={() => {
                                 setQuizResult(null);
-                                setQuizAnswers(moduleDetails?.quiz?.questions.map(() => []) || []);
+                                setQuizAnswers((currentQuizQuestions.length ? currentQuizQuestions : (moduleDetails?.quiz?.questions || [])).map(() => []));
                                 setCurrentQuizQ(0);
                                 setActiveStage('video');
                                 updateProgress({ theory_completed: false, video_completed: false, quiz_score: 0, quiz_answers: [] });
@@ -690,6 +1232,7 @@ const CoursePlayer: React.FC = () => {
                 </motion.div>
               )}
             </AnimatePresence>
+            )}
           </div>
 
           {/* ══════ RIGHT SIDEBAR ══════ */}
@@ -741,12 +1284,18 @@ const CoursePlayer: React.FC = () => {
               {activeToolTab === 'transcript' && (
                 <div className="cp-transcript-block">
                   {activeStage === 'video' ? (
-                    DUMMY_TRANSCRIPT.map((seg, i) => (
-                      <div key={i} style={{ marginBottom: 16 }}>
-                        <span className="cp-transcript-timestamp">{seg.time}</span>
-                        {seg.text}
+                    Array.isArray(moduleDetails?.video?.transcript_segments) && moduleDetails.video.transcript_segments.length > 0 ? (
+                      moduleDetails.video.transcript_segments.map((seg: any, i: number) => (
+                        <div key={i} style={{ marginBottom: 16 }}>
+                          <span className="cp-transcript-timestamp">{seg.time || ''}</span>
+                          {seg.text || ''}
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: 14, color: '#9ca3af', textAlign: 'center', padding: 40 }}>
+                        Transcript not available for this video.
                       </div>
-                    ))
+                    )
                   ) : (
                     <div style={{ fontSize: 14, color: '#9ca3af', textAlign: 'center', padding: 40 }}>
                       Transcript is only available for video lessons.
@@ -758,29 +1307,30 @@ const CoursePlayer: React.FC = () => {
               {activeToolTab === 'resources' && (
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#6b7280', marginBottom: 12 }}>
-                    Downloadable Materials
+                    Lesson Resources
                   </div>
-                  <a href="#" className="cp-resource-item" style={{ textDecoration: 'none' }}>
-                    <Download size={16} style={{ color: '#7C3AED' }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Lecture Slides</div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>PDF · 2.4 MB</div>
+                  {activeResources.length > 0 ? (
+                    activeResources.map((resource: any, idx: number) => (
+                      <a
+                        key={`${resource.url}-${idx}`}
+                        href={resource.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="cp-resource-item"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <Download size={16} style={{ color: '#7C3AED' }} />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>{resource.title}</div>
+                          <div style={{ fontSize: 12, color: '#9ca3af' }}>{resource.meta}</div>
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <div style={{ fontSize: 14, color: '#9ca3af', textAlign: 'center', padding: 40 }}>
+                      No resources were added for this lesson.
                     </div>
-                  </a>
-                  <a href="#" className="cp-resource-item" style={{ textDecoration: 'none' }}>
-                    <Download size={16} style={{ color: '#7C3AED' }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Code Starter Kit</div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>ZIP · 890 KB</div>
-                    </div>
-                  </a>
-                  <a href="#" className="cp-resource-item" style={{ textDecoration: 'none' }}>
-                    <Download size={16} style={{ color: '#7C3AED' }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Cheat Sheet</div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>PDF · 420 KB</div>
-                    </div>
-                  </a>
+                  )}
                   <button className="cp-ask-btn">
                     <MessageCircle size={18} />
                     Ask a question about this lesson

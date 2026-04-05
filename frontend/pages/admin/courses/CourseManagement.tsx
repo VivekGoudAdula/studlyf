@@ -18,6 +18,88 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../../apiConfig';
 import { useAuth } from '../../../AuthContext';
 
+const createLessonByType = (type: string, title = 'New Lesson') => {
+    if (type === 'text') {
+        return {
+            type: 'text',
+            title,
+            text_blocks: [{ kind: 'paragraph', text: '' }]
+        };
+    }
+    if (type === 'code') {
+        return {
+            type: 'code',
+            title,
+            code_intro: '',
+            code_snippet: '',
+            code_language: 'javascript'
+        };
+    }
+    if (type === 'quiz') {
+        return {
+            type: 'quiz',
+            title,
+            quiz_question: '',
+            quiz_options: ['', '', '', ''],
+            quiz_correct_index: 0,
+            quiz_explanation: ''
+        };
+    }
+    return {
+        type: 'video',
+        title,
+        video_source: 'url',
+        video_url: '',
+        video_file_name: '',
+        video_file_data: ''
+    };
+};
+
+const normalizeLesson = (lesson: any) => {
+    const safeType = lesson?.type || 'video';
+    const base = createLessonByType(safeType, lesson?.title || 'New Lesson');
+    const merged = { ...base, ...(lesson || {}) };
+
+    if (safeType === 'quiz') {
+        const options = Array.isArray(merged.quiz_options) ? merged.quiz_options.slice(0, 4) : [];
+        while (options.length < 4) options.push('');
+        merged.quiz_options = options;
+        if (typeof merged.quiz_correct_index !== 'number') merged.quiz_correct_index = 0;
+    }
+
+    if (safeType === 'text') {
+        if (!Array.isArray(merged.text_blocks) || merged.text_blocks.length === 0) {
+            merged.text_blocks = [{ kind: 'paragraph', text: '' }];
+        }
+    }
+
+    return merged;
+};
+
+const normalizeModules = (incoming: any[]) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) {
+        return [{ id: 1, title: 'Introduction to Course', lessons: [createLessonByType('video', 'Setting up Environment')] }];
+    }
+    return incoming.map((m: any, idx: number) => ({
+        ...m,
+        id: m.id || m._id || Date.now() + idx,
+        title: m.title || `Module ${idx + 1}`,
+        lessons: Array.isArray(m.lessons) ? m.lessons.map(normalizeLesson) : []
+    }));
+};
+
+const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?.*)?$/i;
+
+const isProbablyImageFile = (file?: File | null): file is File => {
+    if (!file) return false;
+    if (file.type?.startsWith('image/')) return true;
+    return IMAGE_EXT_RE.test(file.name || '');
+};
+
+const normalizeDroppedUrl = (value: string): string => {
+    return (value || '').trim();
+};
+
 const CourseManagement: React.FC = () => {
     const { user } = useAuth();
     const [courses, setCourses] = useState<any[]>([]);
@@ -37,6 +119,9 @@ const CourseManagement: React.FC = () => {
     const [courseDifficulty, setCourseDifficulty] = useState("Intermediate");
     const [courseRoleTag, setCourseRoleTag] = useState("AI");
     const [courseSchool, setCourseSchool] = useState("Elite Systems");
+    const [courseInstructorName, setCourseInstructorName] = useState("Studlyf Mentor");
+    const [courseInstructorBio, setCourseInstructorBio] = useState("Industry practitioner helping you become role-ready with practical workflows.");
+    const [courseInstructorImage, setCourseInstructorImage] = useState("");
     const [courseImage, setCourseImage] = useState("");
     const [courseSkills, setCourseSkills] = useState("");
     const [courseDuration, setCourseDuration] = useState("10 Weeks");
@@ -44,7 +129,7 @@ const CourseManagement: React.FC = () => {
     const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
 
     const [modules, setModules] = useState<any[]>([
-        { id: 1, title: 'Introduction to Course', lessons: [{ type: 'video', title: 'Setting up Environment' }] }
+        { id: 1, title: 'Introduction to Course', lessons: [createLessonByType('video', 'Setting up Environment')] }
     ]);
 
     const resetForm = () => {
@@ -54,16 +139,19 @@ const CourseManagement: React.FC = () => {
         setCourseDifficulty("Intermediate");
         setCourseRoleTag("AI");
         setCourseSchool("Elite Systems");
+        setCourseInstructorName("Studlyf Mentor");
+        setCourseInstructorBio("Industry practitioner helping you become role-ready with practical workflows.");
+        setCourseInstructorImage("");
         setCourseImage("");
         setCourseSkills("");
         setCourseDuration("10 Weeks");
         setCustomId("");
-        setModules([{ id: 1, title: 'Introduction to Course', lessons: [{ type: 'video', title: 'Setting up Environment' }] }]);
+        setModules([{ id: 1, title: 'Introduction to Course', lessons: [createLessonByType('video', 'Setting up Environment')] }]);
         setQuestions([{ question: 'What is the primary role of this technology?', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answers: [0], explanation: '' }]);
         setEditingCourseId(null);
     };
 
-    const handleEditCourse = (course: any) => {
+    const handleEditCourse = async (course: any) => {
         setEditingCourseId(course._id);
         setCourseTitle(course.title || "");
         setCourseDescription(course.description || "");
@@ -71,11 +159,28 @@ const CourseManagement: React.FC = () => {
         setCourseDifficulty(course.difficulty || "Intermediate");
         setCourseRoleTag(course.role_tag || "AI");
         setCourseSchool(course.school || "Elite Systems");
+        setCourseInstructorName(course.instructor_name || course.instructor || "Studlyf Mentor");
+        setCourseInstructorBio(course.instructor_bio || "");
+        setCourseInstructorImage(course.instructor_image || "");
         setCourseImage(course.image || "");
         setCourseSkills(Array.isArray(course.skills) ? course.skills.join(", ") : "");
         setCourseDuration(course.duration || "10 Weeks");
         setCustomId(course._id || "");
-        setModules(course.modules || []);
+
+        let modulesFromCourse = Array.isArray(course.modules) ? course.modules : [];
+        if (modulesFromCourse.length === 0 && course._id) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/courses/${course._id}/modules`);
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    modulesFromCourse = data;
+                }
+            } catch (err) {
+                console.error('Failed to load modules for edit:', err);
+            }
+        }
+
+        setModules(normalizeModules(modulesFromCourse));
         setQuestions(course.questions || []);
         setView('create');
     };
@@ -95,10 +200,114 @@ const CourseManagement: React.FC = () => {
     const addLesson = (moduleId: any) => {
         setModules(modules.map(m => {
             if (m.id === moduleId || m._id === moduleId) {
-                return { ...m, lessons: [...m.lessons, { type: 'video', title: 'New Lesson' }] };
+                return { ...m, lessons: [...m.lessons, createLessonByType('video', 'New Lesson')] };
             }
             return m;
         }));
+    };
+
+    const handleVideoFileUpload = (moduleId: any, lessonIndex: number, file?: File) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            updateLesson(moduleId, lessonIndex, {
+                video_source: 'file',
+                video_file_name: file.name,
+                video_file_data: reader.result as string
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleVideoDrop = (e: React.DragEvent<HTMLDivElement>, moduleId: any, lessonIndex: number) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleVideoFileUpload(moduleId, lessonIndex, file);
+    };
+
+    const addTextBlock = (moduleId: any, lessonIndex: number, kind: 'paragraph' | 'image' | 'link') => {
+        const module = modules.find(m => m.id === moduleId || m._id === moduleId);
+        if (!module) return;
+        const lesson = module.lessons[lessonIndex] || {};
+        const blocks = Array.isArray(lesson.text_blocks) ? [...lesson.text_blocks] : [];
+        if (kind === 'paragraph') blocks.push({ kind: 'paragraph', text: '' });
+        if (kind === 'image') blocks.push({ kind: 'image', image_url: '', image_file_name: '', image_file_data: '' });
+        if (kind === 'link') blocks.push({ kind: 'link', label: '', url: '' });
+        updateLesson(moduleId, lessonIndex, { text_blocks: blocks });
+    };
+
+    const updateTextBlock = (moduleId: any, lessonIndex: number, blockIndex: number, updates: any) => {
+        const module = modules.find(m => m.id === moduleId || m._id === moduleId);
+        if (!module) return;
+        const lesson = module.lessons[lessonIndex] || {};
+        const blocks = Array.isArray(lesson.text_blocks) ? [...lesson.text_blocks] : [];
+        blocks[blockIndex] = { ...blocks[blockIndex], ...updates };
+        updateLesson(moduleId, lessonIndex, { text_blocks: blocks });
+    };
+
+    const moveTextBlock = (moduleId: any, lessonIndex: number, blockIndex: number, direction: -1 | 1) => {
+        const module = modules.find(m => m.id === moduleId || m._id === moduleId);
+        if (!module) return;
+        const lesson = module.lessons[lessonIndex] || {};
+        const blocks = Array.isArray(lesson.text_blocks) ? [...lesson.text_blocks] : [];
+        const newIndex = blockIndex + direction;
+        if (newIndex < 0 || newIndex >= blocks.length) return;
+        const temp = blocks[blockIndex];
+        blocks[blockIndex] = blocks[newIndex];
+        blocks[newIndex] = temp;
+        updateLesson(moduleId, lessonIndex, { text_blocks: blocks });
+    };
+
+    const removeTextBlock = (moduleId: any, lessonIndex: number, blockIndex: number) => {
+        const module = modules.find(m => m.id === moduleId || m._id === moduleId);
+        if (!module) return;
+        const lesson = module.lessons[lessonIndex] || {};
+        const blocks = Array.isArray(lesson.text_blocks) ? [...lesson.text_blocks] : [];
+        const nextBlocks = blocks.filter((_: any, i: number) => i !== blockIndex);
+        updateLesson(moduleId, lessonIndex, { text_blocks: nextBlocks.length ? nextBlocks : [{ kind: 'paragraph', text: '' }] });
+    };
+
+    const handleTextImageFileUpload = (moduleId: any, lessonIndex: number, blockIndex: number, file?: File) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            updateTextBlock(moduleId, lessonIndex, blockIndex, {
+                image_file_name: file.name,
+                image_file_data: reader.result as string
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleTextImageDrop = (
+        e: React.DragEvent<HTMLDivElement>,
+        moduleId: any,
+        lessonIndex: number,
+        blockIndex: number
+    ) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const itemFiles = Array.from(e.dataTransfer.items || [])
+            .filter((item) => item.kind === 'file')
+            .map((item) => item.getAsFile())
+            .filter((file): file is File => isProbablyImageFile(file));
+
+        const fallbackFiles = Array.from(e.dataTransfer.files || []).filter(isProbablyImageFile);
+        const file = itemFiles[0] || fallbackFiles[0];
+
+        if (file) {
+            handleTextImageFileUpload(moduleId, lessonIndex, blockIndex, file);
+            return;
+        }
+
+        const droppedUrl = normalizeDroppedUrl(
+            e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || ''
+        );
+
+        if (droppedUrl) {
+            updateTextBlock(moduleId, lessonIndex, blockIndex, { image_url: droppedUrl });
+        }
     };
 
     const updateLesson = (moduleId: any, lessonIndex: number, updates: any) => {
@@ -123,14 +332,41 @@ const CourseManagement: React.FC = () => {
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setCourseImage(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
+        handleCourseImageFile(e.target.files?.[0]);
+    };
+
+    const handleCourseImageFile = (file?: File) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCourseImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCourseImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCourseImageFile(e.dataTransfer.files?.[0]);
+    };
+
+    const handleInstructorImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        handleInstructorImageFile(e.target.files?.[0]);
+    };
+
+    const handleInstructorImageFile = (file?: File) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCourseInstructorImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleInstructorImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleInstructorImageFile(e.dataTransfer.files?.[0]);
     };
 
     const handleQuestionChange = (index: number, field: string, value: any) => {
@@ -226,6 +462,9 @@ const CourseManagement: React.FC = () => {
                 difficulty: courseDifficulty,
                 role_tag: courseRoleTag,
                 school: courseSchool,
+                instructor_name: courseInstructorName,
+                instructor_bio: courseInstructorBio,
+                instructor_image: courseInstructorImage,
                 image: courseImage || 'https://miro.medium.com/max/938/0*lbtSAeYRtmUMAWeY.png',
                 skills: courseSkills.split(",").map(s => s.trim()).filter(s => s !== ""),
                 duration: courseDuration,
@@ -261,6 +500,7 @@ const CourseManagement: React.FC = () => {
             });
             if (res.ok) {
                 alert(editingCourseId ? "Course successfully updated!" : "Course & Assessment successfully generated!");
+                window.dispatchEvent(new Event('courses-updated'));
                 setView('list');
                 resetForm();
                 fetchCourses();
@@ -420,23 +660,239 @@ const CourseManagement: React.FC = () => {
                                             </div>
                                             <div className="ml-8 space-y-2">
                                                 {mod.lessons.map((les: any, lessonIndex: number) => (
-                                                    <div key={lessonIndex} className="flex items-center gap-3 p-2.5 bg-white/5 rounded-lg border border-white/5 hover:border-white/20 transition-all group/lesson">
-                                                        <select
-                                                            value={les.type}
-                                                            onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { type: e.target.value })}
-                                                            className="bg-transparent border-none p-0 text-blue-400 text-xs focus:ring-0 cursor-pointer"
-                                                        >
-                                                            <option value="video">Video</option>
-                                                            <option value="code">Code</option>
-                                                            <option value="text">Text</option>
-                                                            <option value="quiz">Quiz</option>
-                                                        </select>
-                                                        <input
-                                                            className="text-sm text-white/70 flex-grow bg-transparent border-none p-0 focus:ring-0"
-                                                            value={les.title}
-                                                            onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { title: e.target.value })}
-                                                        />
-                                                        <button onClick={() => deleteLesson(mod._id || mod.id, lessonIndex)} className="text-white/10 hover:text-red-500 transition-colors opacity-0 group-hover/lesson:opacity-100"><Trash2 size={14} /></button>
+                                                    <div key={lessonIndex} className="p-2.5 bg-white/5 rounded-lg border border-white/5 hover:border-white/20 transition-all group/lesson space-y-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <select
+                                                                value={les.type}
+                                                                onChange={(e) => {
+                                                                    const nextType = e.target.value;
+                                                                    updateLesson(mod._id || mod.id, lessonIndex, createLessonByType(nextType, les.title || 'New Lesson'));
+                                                                }}
+                                                                className="bg-transparent border-none p-0 text-blue-400 text-xs focus:ring-0 cursor-pointer"
+                                                            >
+                                                                <option value="video">Video</option>
+                                                                <option value="code">Code</option>
+                                                                <option value="text">Text</option>
+                                                                <option value="quiz">Quiz</option>
+                                                            </select>
+                                                            <input
+                                                                className="text-sm text-white/70 flex-grow bg-transparent border-none p-0 focus:ring-0"
+                                                                value={les.title}
+                                                                onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { title: e.target.value })}
+                                                            />
+                                                            <button onClick={() => deleteLesson(mod._id || mod.id, lessonIndex)} className="text-white/10 hover:text-red-500 transition-colors opacity-0 group-hover/lesson:opacity-100"><Trash2 size={14} /></button>
+                                                        </div>
+
+                                                        {les.type === 'video' && (
+                                                            <div className="space-y-2">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                    <select
+                                                                        value={les.video_source || 'url'}
+                                                                        onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { video_source: e.target.value })}
+                                                                        className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                    >
+                                                                        <option className="bg-gray-900" value="url">Video by URL</option>
+                                                                        <option className="bg-gray-900" value="file">Upload / Drag & Drop</option>
+                                                                    </select>
+                                                                    {(les.video_source || 'url') === 'url' ? (
+                                                                        <input
+                                                                            placeholder="https://..."
+                                                                            value={les.video_url || ''}
+                                                                            onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { video_url: e.target.value })}
+                                                                            className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                        />
+                                                                    ) : (
+                                                                        <input
+                                                                            type="file"
+                                                                            accept="video/*"
+                                                                            onChange={(e) => handleVideoFileUpload(mod._id || mod.id, lessonIndex, e.target.files?.[0])}
+                                                                            className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-xs"
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                {(les.video_source || 'url') === 'file' && (
+                                                                    <div
+                                                                        onDragOver={(e) => e.preventDefault()}
+                                                                        onDrop={(e) => handleVideoDrop(e, mod._id || mod.id, lessonIndex)}
+                                                                        className="w-full border border-dashed border-white/20 rounded-lg p-3 text-center text-xs text-white/60"
+                                                                    >
+                                                                        Drag & drop video file here or choose from file input above
+                                                                        {les.video_file_name ? <div className="mt-1 text-green-400 font-semibold">Selected: {les.video_file_name}</div> : null}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {les.type === 'text' && (
+                                                            <div className="space-y-2">
+                                                                {(les.text_blocks || []).map((block: any, blockIndex: number) => (
+                                                                    <div key={blockIndex} className="bg-black/30 border border-white/10 rounded-lg p-3 space-y-2">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{block.kind || 'paragraph'} block</span>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <button type="button" onClick={() => moveTextBlock(mod._id || mod.id, lessonIndex, blockIndex, -1)} className="px-2 py-1 text-xs bg-white/10 rounded text-white/70">↑</button>
+                                                                                <button type="button" onClick={() => moveTextBlock(mod._id || mod.id, lessonIndex, blockIndex, 1)} className="px-2 py-1 text-xs bg-white/10 rounded text-white/70">↓</button>
+                                                                                <button type="button" onClick={() => removeTextBlock(mod._id || mod.id, lessonIndex, blockIndex)} className="px-2 py-1 text-xs bg-red-500/20 rounded text-red-300">Remove</button>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {block.kind === 'paragraph' && (
+                                                                            <textarea
+                                                                                rows={3}
+                                                                                value={block.text || ''}
+                                                                                onChange={(e) => updateTextBlock(mod._id || mod.id, lessonIndex, blockIndex, { text: e.target.value })}
+                                                                                placeholder="Write paragraph text..."
+                                                                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                            />
+                                                                        )}
+
+                                                                        {block.kind === 'image' && (
+                                                                            <div className="space-y-2">
+                                                                                <input
+                                                                                    placeholder="Image URL (optional)"
+                                                                                    value={block.image_url || ''}
+                                                                                    onChange={(e) => updateTextBlock(mod._id || mod.id, lessonIndex, blockIndex, { image_url: e.target.value })}
+                                                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                                />
+                                                                                <div
+                                                                                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                                                    onDrop={(e) => handleTextImageDrop(e, mod._id || mod.id, lessonIndex, blockIndex)}
+                                                                                    className="w-full border border-dashed border-white/20 rounded-lg p-3 text-center text-[11px] text-white/60"
+                                                                                >
+                                                                                    Drag image file or image link here
+                                                                                </div>
+                                                                                <input
+                                                                                    type="file"
+                                                                                    accept="image/*"
+                                                                                    onChange={(e) => handleTextImageFileUpload(mod._id || mod.id, lessonIndex, blockIndex, e.target.files?.[0])}
+                                                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs"
+                                                                                />
+                                                                                {(block.image_file_name || block.image_url) && (
+                                                                                    <div className="text-[11px] text-green-400">Image set: {block.image_file_name || 'via URL'}</div>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {block.kind === 'link' && (
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                                <input
+                                                                                    placeholder="Resource label"
+                                                                                    value={block.label || ''}
+                                                                                    onChange={(e) => updateTextBlock(mod._id || mod.id, lessonIndex, blockIndex, { label: e.target.value })}
+                                                                                    className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                                />
+                                                                                <input
+                                                                                    placeholder="https://resource-link"
+                                                                                    value={block.url || ''}
+                                                                                    onChange={(e) => updateTextBlock(mod._id || mod.id, lessonIndex, blockIndex, { url: e.target.value })}
+                                                                                    className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    <button type="button" onClick={() => addTextBlock(mod._id || mod.id, lessonIndex, 'paragraph')} className="px-3 py-1.5 text-xs bg-white/10 rounded-lg text-white/80">+ Paragraph</button>
+                                                                    <button type="button" onClick={() => addTextBlock(mod._id || mod.id, lessonIndex, 'image')} className="px-3 py-1.5 text-xs bg-white/10 rounded-lg text-white/80">+ Image</button>
+                                                                    <button type="button" onClick={() => addTextBlock(mod._id || mod.id, lessonIndex, 'link')} className="px-3 py-1.5 text-xs bg-white/10 rounded-lg text-white/80">+ Resource Link</button>
+                                                                </div>
+
+                                                                <div className="mt-3 border border-white/10 rounded-lg bg-black/20 p-3">
+                                                                    <div className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-2">Learner Preview</div>
+                                                                    <div className="space-y-3 text-sm text-white/85">
+                                                                        {(les.text_blocks || []).map((block: any, previewIndex: number) => (
+                                                                            <div key={`preview-${previewIndex}`}>
+                                                                                {block.kind === 'paragraph' && block.text ? (
+                                                                                    <p className="leading-relaxed whitespace-pre-wrap">{block.text}</p>
+                                                                                ) : null}
+                                                                                {block.kind === 'image' && (block.image_file_data || block.image_url) ? (
+                                                                                    <img
+                                                                                        src={block.image_file_data || block.image_url}
+                                                                                        alt="Lesson visual"
+                                                                                        className="w-full max-h-56 object-cover rounded-lg border border-white/10"
+                                                                                    />
+                                                                                ) : null}
+                                                                                {block.kind === 'link' && block.url ? (
+                                                                                    <a
+                                                                                        href={block.url}
+                                                                                        target="_blank"
+                                                                                        rel="noreferrer"
+                                                                                        className="text-blue-300 underline break-all"
+                                                                                    >
+                                                                                        {block.label || block.url}
+                                                                                    </a>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {les.type === 'code' && (
+                                                            <div className="space-y-2">
+                                                                <textarea
+                                                                    rows={2}
+                                                                    value={les.code_intro || ''}
+                                                                    onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { code_intro: e.target.value })}
+                                                                    placeholder="Explain what this code lesson covers..."
+                                                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                />
+                                                                <select
+                                                                    value={les.code_language || 'javascript'}
+                                                                    onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { code_language: e.target.value })}
+                                                                    className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                >
+                                                                    <option className="bg-gray-900" value="javascript">JavaScript</option>
+                                                                    <option className="bg-gray-900" value="typescript">TypeScript</option>
+                                                                    <option className="bg-gray-900" value="python">Python</option>
+                                                                    <option className="bg-gray-900" value="java">Java</option>
+                                                                    <option className="bg-gray-900" value="cpp">C++</option>
+                                                                </select>
+                                                                <textarea
+                                                                    rows={6}
+                                                                    value={les.code_snippet || ''}
+                                                                    onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { code_snippet: e.target.value })}
+                                                                    placeholder="Paste your code snippet here..."
+                                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs font-mono focus:ring-1 focus:ring-blue-500"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {les.type === 'quiz' && (
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    value={les.quiz_question || ''}
+                                                                    onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { quiz_question: e.target.value })}
+                                                                    placeholder="Quiz question"
+                                                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:ring-1 focus:ring-blue-500"
+                                                                />
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                    {(les.quiz_options || ['', '', '', '']).slice(0, 4).map((opt: string, optIdx: number) => (
+                                                                        <div key={optIdx} className="flex items-center gap-2 bg-black/30 border border-white/10 rounded-lg px-2 py-1.5">
+                                                                            <input
+                                                                                type="radio"
+                                                                                checked={(les.quiz_correct_index ?? 0) === optIdx}
+                                                                                onChange={() => updateLesson(mod._id || mod.id, lessonIndex, { quiz_correct_index: optIdx })}
+                                                                            />
+                                                                            <input
+                                                                                value={opt}
+                                                                                onChange={(e) => {
+                                                                                    const nextOptions = [...(les.quiz_options || ['', '', '', ''])];
+                                                                                    while (nextOptions.length < 4) nextOptions.push('');
+                                                                                    nextOptions[optIdx] = e.target.value;
+                                                                                    updateLesson(mod._id || mod.id, lessonIndex, { quiz_options: nextOptions });
+                                                                                }}
+                                                                                placeholder={`Option ${optIdx + 1}`}
+                                                                                className="flex-grow bg-transparent border-none p-0 text-white text-xs focus:ring-0"
+                                                                            />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                                 <button onClick={() => addLesson(mod._id || mod.id)} className="w-full py-2 border border-dashed border-white/10 rounded-lg text-xs font-semibold text-white/40 hover:text-[#7C3AED] hover:border-[#7C3AED]/30 transition-all flex items-center justify-center gap-2">
@@ -572,7 +1028,11 @@ const CourseManagement: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Course Thumbnail</label>
-                                            <div className="w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center">
+                                            <div
+                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                onDrop={handleCourseImageDrop}
+                                                className="w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center"
+                                            >
                                                 {courseImage ? (
                                                     <img src={courseImage} alt="Thumbnail preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
                                                 ) : null}
@@ -580,7 +1040,14 @@ const CourseManagement: React.FC = () => {
                                                     <Upload size={20} className="mx-auto text-white/80 mb-2 group-hover:text-white transition-colors drop-shadow-md" />
                                                     <span className="text-xs text-white drop-shadow-md font-bold block bg-black/50 px-2 py-1 rounded">Drag & drop or Click to browse</span>
                                                 </div>
-                                                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onChange={handleImageUpload} />
+                                                <input
+                                                    type="file"
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleCourseImageFile(e.dataTransfer.files?.[0]); }}
+                                                />
                                             </div>
                                         </div>
                                         <div>
@@ -656,6 +1123,42 @@ const CourseManagement: React.FC = () => {
                                                 onChange={(e) => setCourseSchool(e.target.value)}
                                                 placeholder="e.g. School of AI"
                                             />
+                                        </div>
+                                        <div className="pt-2 border-t border-white/10">
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Name</label>
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-1 focus:ring-[#7C3AED]"
+                                                value={courseInstructorName}
+                                                onChange={(e) => setCourseInstructorName(e.target.value)}
+                                                placeholder="e.g. Neha Sharma"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Description</label>
+                                            <textarea
+                                                rows={3}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:ring-1 focus:ring-[#7C3AED] resize-none"
+                                                value={courseInstructorBio}
+                                                onChange={(e) => setCourseInstructorBio(e.target.value)}
+                                                placeholder="Share the instructor's expertise and background"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Instructor Image</label>
+                                            <div
+                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                onDrop={handleInstructorImageDrop}
+                                                className="w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-3 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-24 flex flex-col items-center justify-center"
+                                            >
+                                                {courseInstructorImage ? (
+                                                    <img src={courseInstructorImage} alt="Instructor preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                                                ) : null}
+                                                <div className="relative z-10 flex flex-col items-center pointer-events-none">
+                                                    <Upload size={16} className="mx-auto text-white/80 mb-1" />
+                                                    <span className="text-[11px] text-white drop-shadow-md font-bold block bg-black/50 px-2 py-0.5 rounded">Upload Instructor Photo</span>
+                                                </div>
+                                                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onChange={handleInstructorImageUpload} />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

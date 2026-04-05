@@ -15,61 +15,21 @@ interface Course {
   difficulty?: string;
   enrolled_count?: number;
   price?: number;
+  created_at?: string;
+  updated_at?: string;
 }
-
-/* ─────────────────────── fallback data ─────────────────────── */
-const FALLBACK_COURSES: Course[] = [
-  {
-    _id: 'fb-1',
-    title: 'Software Engineering',
-    school: 'Engineering',
-    role_tag: 'SWE',
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
-    difficulty: 'Advanced',
-    enrolled_count: 1240,
-  },
-  {
-    _id: 'fb-2',
-    title: 'Artificial Intelligence',
-    school: 'Intelligence',
-    role_tag: 'AI',
-    image: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&auto=format&fit=crop',
-    difficulty: 'Intermediate',
-    enrolled_count: 980,
-  },
-  {
-    _id: 'fb-3',
-    title: 'Product Management',
-    school: 'Management',
-    role_tag: 'PM',
-    image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
-    difficulty: 'Intermediate',
-    enrolled_count: 760,
-  },
-  {
-    _id: 'fb-4',
-    title: 'Data Engineering',
-    school: 'Engineering',
-    role_tag: 'DATA',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
-    difficulty: 'Advanced',
-    enrolled_count: 640,
-  },
-  {
-    _id: 'fb-5',
-    title: 'Cyber Security',
-    school: 'Security',
-    role_tag: 'CYBER',
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
-    difficulty: 'Advanced',
-    enrolled_count: 520,
-  },
-];
 
 /* ─────────────────────── helpers ─────────────────────── */
 const createSlug = (title: string, id: string) => {
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   return `${slug}--${id}`;
+};
+
+const getCourseSortTime = (course: Course): number => {
+  const raw = course.updated_at || course.created_at;
+  if (!raw) return 0;
+  const t = Date.parse(raw);
+  return Number.isNaN(t) ? 0 : t;
 };
 
 /* stable enrolled seed so cards don't flicker on re-render */
@@ -85,18 +45,40 @@ const CoursesForEveryAmbition: React.FC = () => {
   const animating = useRef(false);
 
   useEffect(() => {
-    (async () => {
+    const fetchCourses = async (silent = false) => {
+      if (!silent) setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/courses`);
+        const res = await fetch(`${API_BASE_URL}/api/courses?ts=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error();
         const data: Course[] = await res.json();
-        setCourses(data.length > 0 ? data : FALLBACK_COURSES);
+        const items = Array.isArray(data) ? data : [];
+        setCourses(items.sort((a, b) => getCourseSortTime(b) - getCourseSortTime(a)));
       } catch {
-        setCourses(FALLBACK_COURSES);
+        setCourses([]);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
-    })();
+    };
+
+    fetchCourses();
+
+    const onFocus = () => fetchCourses(true);
+    const onCoursesUpdated = () => fetchCourses(true);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchCourses(true);
+    };
+    const intervalId = window.setInterval(() => fetchCourses(true), 30000);
+
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('courses-updated', onCoursesUpdated as EventListener);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('courses-updated', onCoursesUpdated as EventListener);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   const [visibleCount, setVisibleCount] = useState(3);
@@ -114,6 +96,10 @@ const CoursesForEveryAmbition: React.FC = () => {
 
   const total = courses.length;
   const maxIdx = Math.max(0, total - visibleCount);
+
+  useEffect(() => {
+    setIdx(i => Math.min(i, maxIdx));
+  }, [maxIdx]);
 
   const step = (d: 1 | -1) => {
     if (animating.current) return;
@@ -173,6 +159,10 @@ const CoursesForEveryAmbition: React.FC = () => {
                   <div key={n} className="h-[380px] rounded-[1.5rem] bg-gray-100 animate-pulse" />
                 ))}
               </div>
+            ) : total === 0 ? (
+              <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-gray-500 font-semibold">
+                No courses published yet. Create courses in admin and they will appear here automatically.
+              </div>
             ) : (
               <motion.div
                 key={idx}
@@ -193,24 +183,26 @@ const CoursesForEveryAmbition: React.FC = () => {
             )}
 
             {/* ── arrows: centered below cards ── */}
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => step(-1)}
-                disabled={idx === 0}
-                aria-label="Previous"
-                className="w-10 h-10 rounded-full border border-gray-300 bg-white flex items-center justify-center hover:border-gray-500 hover:shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <ChevronLeft className="w-4 h-4 text-gray-700" />
-              </button>
-              <button
-                onClick={() => step(1)}
-                disabled={idx >= maxIdx}
-                aria-label="Next"
-                className="w-10 h-10 rounded-full border border-gray-300 bg-white flex items-center justify-center hover:border-gray-500 hover:shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <ChevronRight className="w-4 h-4 text-gray-700" />
-              </button>
-            </div>
+            {total > visibleCount && (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => step(-1)}
+                  disabled={idx === 0}
+                  aria-label="Previous"
+                  className="w-10 h-10 rounded-full border border-gray-300 bg-white flex items-center justify-center hover:border-gray-500 hover:shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-700" />
+                </button>
+                <button
+                  onClick={() => step(1)}
+                  disabled={idx >= maxIdx}
+                  aria-label="Next"
+                  className="w-10 h-10 rounded-full border border-gray-300 bg-white flex items-center justify-center hover:border-gray-500 hover:shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-700" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -244,7 +236,7 @@ const CourseCard: React.FC<CardProps> = ({ course, enrolledSeed, onClick }) => {
         <img
           src={image}
           alt={course.title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className="w-full h-full object-cover"
         />
       </div>
 

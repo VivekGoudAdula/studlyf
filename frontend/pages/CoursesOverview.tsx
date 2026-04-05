@@ -4,135 +4,129 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Clock, BarChart2, BadgeCheck, Briefcase, Users, ArrowRight, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from '../apiConfig';
 
-/* ─────────────────────────── track data ─────────────────────────── */
-const tracks = [
-    {
-        id: 'ai',
-        label: 'AI',
-        fullName: 'Artificial Intelligence',
-        emoji: '🤖',
-        accent: '#7C3AED',
-        accentLight: '#F5F3FF',
-        gradient: 'from-violet-600 via-purple-500 to-indigo-500',
-        duration: '16 Weeks',
-        level: 'Intermediate',
-        skills: ['LLMs', 'Deep Learning', 'MLOps', 'PyTorch', 'RAG'],
-        hiringTag: 'Top 3 Fastest Growing Role ↑',
-        alumni: [
-            { name: 'Google', logo: '/images/google.png' },
-            { name: 'Nvidia', logo: '/images/nvidia.png' },
-            { name: 'Meta', logo: '/images/meta.png' },
-        ],
-        description:
-            'Master modern AI — from transformer architectures to production-grade MLOps. Build real LLM applications and get hired as an AI engineer.',
-        image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'swe',
-        label: 'Software Eng',
-        fullName: 'Software Engineering',
-        emoji: '⚙️',
-        accent: '#1D74F2',
-        accentLight: '#EFF6FF',
-        gradient: 'from-blue-600 via-cyan-500 to-teal-500',
-        duration: '14 Weeks',
-        level: 'Beginner → Advanced',
-        skills: ['System Design', 'DSA', 'React', 'Node.js', 'Microservices'],
-        hiringTag: '#1 Hired Track at Studlyf',
-        alumni: [
-            { name: 'Amazon', logo: '/images/amazon.png' },
-            { name: 'Microsoft', logo: '/images/microsoft.png' },
-            { name: 'Apple', logo: '/images/apple.png' },
-        ],
-        description:
-            'Full-stack engineering readiness — crack FAANG interviews, build scalable systems, and ship products that matter.',
-        image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'data',
-        label: 'Data',
-        fullName: 'Data & Analytics',
-        emoji: '📊',
-        accent: '#059669',
-        accentLight: '#ECFDF5',
-        gradient: 'from-emerald-600 via-green-500 to-teal-400',
-        duration: '12 Weeks',
-        level: 'Intermediate',
-        skills: ['SQL', 'Python', 'Spark', 'Tableau', 'dbt'],
-        hiringTag: '2.3× Salary Boost on Average',
-        alumni: [
-            { name: 'Netflix', logo: '/images/netflix.png' },
-            { name: 'Amazon', logo: '/images/amazon.png' },
-            { name: 'IBM', logo: '/images/ibm.png' },
-        ],
-        description:
-            'Turn raw data into business intelligence. Master the full analytics stack from SQL to distributed data pipelines.',
-        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'pm',
-        label: 'PM',
-        fullName: 'Product Management',
-        emoji: '🚀',
-        accent: '#F59E0B',
-        accentLight: '#FFFBEB',
-        gradient: 'from-amber-500 via-orange-500 to-rose-500',
-        duration: '10 Weeks',
-        level: 'All Levels',
-        skills: ['Roadmapping', 'PRD', 'A/B Testing', 'Agile', 'OKRs'],
-        hiringTag: 'Avg CTC 18 LPA for Graduates',
-        alumni: [
-            { name: 'Google', logo: '/images/google.png' },
-            { name: 'Microsoft', logo: '/images/microsoft.png' },
-            { name: 'Meta', logo: '/images/meta.png' },
-        ],
-        description:
-            'Lead product from zero to one. Learn to define vision, prioritise ruthlessly, and ship with data-driven confidence.',
-        image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
-    },
-    {
-        id: 'cyber',
-        label: 'Cyber',
-        fullName: 'Cyber Security',
-        emoji: '🛡️',
-        accent: '#DC2626',
-        accentLight: '#FEF2F2',
-        gradient: 'from-red-600 via-rose-500 to-pink-500',
-        duration: '18 Weeks',
-        level: 'Advanced',
-        skills: ['Pen Testing', 'SIEM', 'Zero Trust', 'Cloud Security', 'SOC'],
-        hiringTag: 'Govt. & Defence Hiring Aligned',
-        alumni: [
-            { name: 'IBM', logo: '/images/ibm.png' },
-            { name: 'Microsoft', logo: '/images/microsoft.png' },
-            { name: 'Amazon', logo: '/images/amazon.png' },
-        ],
-        description:
-            'Become a certified defender. Master offensive and defensive security, incident response, and enterprise threat modelling.',
-        image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
-    },
+type Course = {
+    _id: string;
+    title: string;
+    description?: string;
+    image?: string;
+    role_tag?: string;
+    difficulty?: string;
+    duration?: string;
+    school?: string;
+    skills?: string[];
+    created_at?: string;
+    updated_at?: string;
+};
+
+const getCourseSortTime = (course: Course): number => {
+    const raw = course.updated_at || course.created_at;
+    if (!raw) return 0;
+    const t = Date.parse(raw);
+    return Number.isNaN(t) ? 0 : t;
+};
+
+type TrackCard = {
+    id: string;
+    courseId: string;
+    fullName: string;
+    emoji: string;
+    accent: string;
+    accentLight: string;
+    duration: string;
+    level: string;
+    skills: string[];
+    hiringTag: string;
+    alumni: { name: string; logo: string }[];
+    description: string;
+    image: string;
+};
+
+const TRACK_STYLES = [
+    { accent: '#7C3AED', accentLight: '#F5F3FF', emoji: '🤖' },
+    { accent: '#1D74F2', accentLight: '#EFF6FF', emoji: '⚙️' },
+    { accent: '#059669', accentLight: '#ECFDF5', emoji: '📊' },
+    { accent: '#F59E0B', accentLight: '#FFFBEB', emoji: '🚀' },
+    { accent: '#DC2626', accentLight: '#FEF2F2', emoji: '🛡️' },
 ];
+
+const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop';
+
+const normalizeSkillList = (course: Course): string[] => {
+    if (Array.isArray(course.skills) && course.skills.length > 0) {
+        return course.skills.slice(0, 5);
+    }
+    if (course.role_tag) {
+        return course.role_tag
+            .split(/[,/|]+/)
+            .map(s => s.trim())
+            .filter(Boolean)
+            .slice(0, 5);
+    }
+    return ['Core Skills'];
+};
+
+const mapCourseToTrack = (course: Course, index: number): TrackCard => {
+    const style = TRACK_STYLES[index % TRACK_STYLES.length];
+    const skills = normalizeSkillList(course);
+    return {
+        id: course._id,
+        courseId: course._id,
+        fullName: course.title,
+        emoji: style.emoji,
+        accent: style.accent,
+        accentLight: style.accentLight,
+        duration: course.duration || 'Self-paced',
+        level: course.difficulty || 'All Levels',
+        skills,
+        hiringTag: 'Live from MongoDB catalog',
+        alumni: [],
+        description: course.description || 'Explore this course track and start learning with structured modules.',
+        image: course.image || DEFAULT_COURSE_IMAGE,
+    };
+};
 
 /* ─────────────────────────── component ─────────────────────────── */
 const CoursesOverview: React.FC = () => {
     const navigate = useNavigate();
-    const [hoveredTrack, setHoveredTrack] = useState<string | null>(null);
     const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
-    const [courses, setCourses] = useState<any[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loadingCourses, setLoadingCourses] = useState(true);
 
     useEffect(() => {
-        const fetchCourses = async () => {
+        const fetchCourses = async (silent = false) => {
+            if (!silent) setLoadingCourses(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/courses`);
+                const res = await fetch(`${API_BASE_URL}/api/courses?ts=${Date.now()}`, { cache: 'no-store' });
                 const data = await res.json();
-                if (data && data.length > 0) {
-                    setCourses(data);
-                }
+                const items = Array.isArray(data) ? data : [];
+                setCourses(items.sort((a: Course, b: Course) => getCourseSortTime(b) - getCourseSortTime(a)));
             } catch (err) {
                 console.error("Error fetching courses:", err);
+                setCourses([]);
+            } finally {
+                if (!silent) setLoadingCourses(false);
             }
         };
+
         fetchCourses();
+
+        const onFocus = () => fetchCourses(true);
+        const onCoursesUpdated = () => fetchCourses(true);
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') fetchCourses(true);
+        };
+        const intervalId = window.setInterval(() => fetchCourses(true), 30000);
+
+        window.addEventListener('focus', onFocus);
+        window.addEventListener('courses-updated', onCoursesUpdated as EventListener);
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return () => {
+            window.removeEventListener('focus', onFocus);
+            window.removeEventListener('courses-updated', onCoursesUpdated as EventListener);
+            document.removeEventListener('visibilitychange', onVisibility);
+            window.clearInterval(intervalId);
+        };
     }, []);
 
     const createSlug = (title: string, id: string) => {
@@ -143,7 +137,8 @@ const CoursesOverview: React.FC = () => {
         return `${slug}--${id}`;
     };
 
-    const activeTrack = tracks.find(t => t.id === (selectedTrack || hoveredTrack)) || null;
+    const tracks = courses.map((course, index) => mapCourseToTrack(course, index));
+    const activeTrack = tracks.find(t => t.id === selectedTrack) || null;
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] overflow-x-hidden">
@@ -188,32 +183,40 @@ const CoursesOverview: React.FC = () => {
                         transition={{ delay: 0.2 }}
                         className="text-gray-500 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed"
                     >
-                        Five elite tracks. Real hiring partners. Verified skills that matter.
-                        <br />Pick your path and start building clinical evidence today.
+                        Live courses from your MongoDB catalog.
+                        <br />Create or update in admin and this page refreshes automatically.
                     </motion.p>
                 </div>
             </section>
 
             {/* ── track cards ── */}
             <section className="max-w-7xl mx-auto px-4 sm:px-8 pb-8">
+                {loadingCourses && (
+                    <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-gray-500 font-semibold mb-4">
+                        Loading latest courses...
+                    </div>
+                )}
+                {tracks.length === 0 && (
+                    <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-gray-500 font-semibold">
+                        No courses found in MongoDB yet. Add courses from admin, then refresh this page.
+                    </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     {tracks.map((track, i) => {
-                        const isActive = hoveredTrack === track.id || selectedTrack === track.id;
+                        const isActive = selectedTrack === track.id;
                         return (
                             <motion.div
                                 key={track.id}
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.07 }}
-                                onMouseEnter={() => setHoveredTrack(track.id)}
-                                onMouseLeave={() => setHoveredTrack(null)}
                                 onClick={() => setSelectedTrack(prev => prev === track.id ? null : track.id)}
                                 className="relative rounded-[2rem] overflow-hidden cursor-pointer group select-none"
                                 style={{
                                     boxShadow: isActive
                                         ? `0 20px 50px -10px ${track.accent}55`
                                         : '0 4px 24px -4px rgba(0,0,0,0.08)',
-                                    transform: isActive ? 'translateY(-8px) scale(1.02)' : 'none',
+                                    transform: isActive ? 'translateY(-6px)' : 'none',
                                     transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
                                 }}
                             >
@@ -222,7 +225,7 @@ const CoursesOverview: React.FC = () => {
                                     <img
                                         src={track.image}
                                         alt={track.fullName}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        className="w-full h-full object-cover"
                                     />
                                     {/* gradient overlay */}
                                     <div
@@ -294,14 +297,16 @@ const CoursesOverview: React.FC = () => {
                                     </div>
 
                                     {/* alumni logos */}
-                                    <div className="flex items-center gap-3 border-t border-gray-100 pt-3">
-                                        <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest flex-shrink-0">Alumni at</span>
-                                        <div className="flex items-center gap-2">
-                                            {track.alumni.slice(0, 3).map(a => (
-                                                <img key={a.name} src={a.logo} alt={a.name} className="h-4 object-contain opacity-70 hover:opacity-100 transition-opacity" />
-                                            ))}
+                                    {track.alumni.length > 0 && (
+                                        <div className="flex items-center gap-3 border-t border-gray-100 pt-3">
+                                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest flex-shrink-0">Alumni at</span>
+                                            <div className="flex items-center gap-2">
+                                                {track.alumni.slice(0, 3).map(a => (
+                                                    <img key={a.name} src={a.logo} alt={a.name} className="h-4 object-contain opacity-70 hover:opacity-100 transition-opacity" />
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* CTA button */}
                                     <motion.button
@@ -309,7 +314,7 @@ const CoursesOverview: React.FC = () => {
                                         whileTap={{ scale: 0.98 }}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            navigate(`/learn/track/${track.id}`);
+                                            navigate(`/learn/courses/${createSlug(track.fullName, track.courseId)}`);
                                         }}
                                         className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 font-black text-[11px] uppercase tracking-[0.2em] text-white transition-all mt-1"
                                         style={{ background: `linear-gradient(135deg, ${track.accent}, ${track.accent}CC)`, boxShadow: `0 8px 24px -4px ${track.accent}55` }}
@@ -409,7 +414,7 @@ const CoursesOverview: React.FC = () => {
                                         <motion.button
                                             whileHover={{ scale: 1.03 }}
                                             whileTap={{ scale: 0.97 }}
-                                            onClick={() => navigate(`/learn/track/${activeTrack.id}`)}
+                                            onClick={() => navigate(`/learn/courses/${createSlug(activeTrack.fullName, activeTrack.courseId)}`)}
                                             className="flex items-center gap-3 px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] text-white shadow-xl transition-all"
                                             style={{ background: `linear-gradient(135deg, ${activeTrack.accent}, ${activeTrack.accent}BB)`, boxShadow: `0 12px 32px -8px ${activeTrack.accent}55` }}
                                         >
@@ -486,45 +491,6 @@ const CoursesOverview: React.FC = () => {
                     </div>
                 </motion.div>
             </section>
-
-            {/* ── Dynamic courses from Admin ── */}
-            {courses.length > 0 && (
-                <section className="max-w-7xl mx-auto px-4 sm:px-8 pb-32">
-                    <div className="mb-12">
-                        <span className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.5em] mb-4 block">Proprietary Elite Modules</span>
-                        <h2 className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tighter uppercase">Recently Added <br /><span className="text-[#7C3AED]">Elite Knowledge</span>.</h2>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {courses.map((course) => (
-                            <motion.div
-                                key={course._id}
-                                whileHover={{ y: -10 }}
-                                onClick={() => navigate(`/learn/courses/${createSlug(course.title, course._id)}`)}
-                                className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group"
-                            >
-                                <div className="h-56 relative overflow-hidden">
-                                    <img
-                                        src={course.image || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop'}
-                                        alt={course.title}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                    />
-                                    <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest border border-white/20">
-                                        {course.role_tag || 'Module'}
-                                    </div>
-                                </div>
-                                <div className="p-8">
-                                    <h3 className="text-xl font-black text-gray-900 mb-3 tracking-tight uppercase leading-tight">{course.title}</h3>
-                                    <p className="text-gray-500 text-xs mb-6 line-clamp-2 leading-relaxed">{course.description}</p>
-                                    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">School of {course.school || 'Engineering'}</span>
-                                        <ChevronRight className="w-4 h-4 text-[#7C3AED]" />
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </section>
-            )}
         </div>
     );
 };

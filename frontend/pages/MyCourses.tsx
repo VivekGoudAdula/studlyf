@@ -292,7 +292,9 @@ const MyCourses: React.FC = () => {
                             {/* Price Badge */}
                             {course.price && course.price > 0 && (
                               <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md rounded-lg px-3 py-2">
-                                <p className="text-xl font-black text-[#7C3AED]">${course.price.toFixed(2)}</p>
+                                <p className="text-xl font-black text-[#7C3AED]">
+                                  ₹{Number(course.price).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                </p>
                               </div>
                             )}
                           </div>

@@ -26,6 +26,7 @@ interface Course {
   title: string;
   description: string;
   role_tag: string;
+  school?: string;
   difficulty: string;
   skills?: string[];
   duration?: string;
@@ -39,98 +40,13 @@ interface Course {
   key_topics?: string[];
   last_updated?: string;
   instructor?: string;
+  instructor_name?: string;
+  instructor_bio?: string;
+  instructor_image?: string;
   is_bestseller?: boolean;
   is_premium?: boolean;
   user_state?: 'NOT_PURCHASED' | 'IN_CART' | 'ENROLLED';
 }
-
-/* ─────────────────────────── mock fallback data ─────────────────────────── */
-const MOCK_COURSES: Course[] = [
-  {
-    _id: 'm1',
-    title: 'Transformer Architectures',
-    description: 'Deep dive into the architecture that powered the AI revolution. Build GPT-like models from scratch.',
-    role_tag: 'AI',
-    difficulty: 'Advanced',
-    skills: ['PyTorch', 'LLMs', 'Neural Networks'],
-    duration: '6 Weeks',
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
-    standard: 'AI_PROTOCOL_01',
-    price: 49.99,
-    rating: 4.9,
-    total_reviews: 1250,
-  },
-  {
-    _id: 'm2',
-    title: 'Distributed System Design',
-    description: 'Master the art of building systems that handle millions of requests. CAP theorem, consensus, and sharding.',
-    role_tag: 'Software Engineering',
-    difficulty: 'Advanced',
-    skills: ['Microservices', 'System Design', 'Redis'],
-    duration: '8 Weeks',
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
-    standard: 'SWE_PROTOCOL_04',
-    price: 59.99,
-    rating: 4.8,
-    total_reviews: 850,
-  },
-  {
-    _id: 'm3',
-    title: 'Data Engineering Pipelines',
-    description: 'Build production-grade ETL pipelines using Spark, Airflow, and Snowflake.',
-    role_tag: 'Data',
-    difficulty: 'Intermediate',
-    skills: ['Spark', 'Airflow', 'SQL'],
-    duration: '5 Weeks',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
-    standard: 'DATA_PROTOCOL_02',
-    price: 39.99,
-    rating: 4.7,
-    total_reviews: 620,
-  },
-  {
-    _id: 'm4',
-    title: 'Product Discovery Protocols',
-    description: 'Learn to find product-market fit using data-driven discovery techniques and user research.',
-    role_tag: 'PM',
-    difficulty: 'Beginner',
-    skills: ['Discovery', 'Strategy', 'Analytics'],
-    duration: '4 Weeks',
-    image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
-    standard: 'PM_PROTOCOL_01',
-    price: 29.99,
-    rating: 4.9,
-    total_reviews: 430,
-  },
-  {
-    _id: 'm5',
-    title: 'Offensive Security Ops',
-    description: 'Become a certified defender by mastering offensive tactics, penetration testing, and vulnerability research.',
-    role_tag: 'Cyber',
-    difficulty: 'Advanced',
-    skills: ['Pentesting', 'Metasploit', 'Linux'],
-    duration: '10 Weeks',
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
-    standard: 'CYBER_PROTOCOL_09',
-    price: 69.99,
-    rating: 4.9,
-    total_reviews: 890,
-  },
-  {
-    _id: 'm6',
-    title: 'React Performance Mastery',
-    description: 'Go beyond basic hooks. Master fiber architectue, concurrent rendering, and high-entropy UI optimization.',
-    role_tag: 'Frontend',
-    difficulty: 'Intermediate',
-    skills: ['React', 'Performance', 'WASM'],
-    duration: '4 Weeks',
-    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop',
-    standard: 'FE_PROTOCOL_03',
-    price: 34.99,
-    rating: 4.8,
-    total_reviews: 740,
-  }
-];
 
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -163,8 +79,7 @@ const CourseDetail: React.FC = () => {
         const courseRes = await fetch(`${API_BASE_URL}/api/courses`);
         const coursesDataFromApi = await courseRes.json();
 
-        // Merge API data with MOCK data for fallback
-        const allCourses = [...MOCK_COURSES, ...(coursesDataFromApi || [])];
+        const allCourses = Array.isArray(coursesDataFromApi) ? coursesDataFromApi : [];
 
         // Extract ID from slug and find matching course
         const courseIdFromSlug = extractCourseId(courseId);
@@ -200,10 +115,6 @@ const CourseDetail: React.FC = () => {
         }
       } catch (err) {
         console.error('Error fetching course:', err);
-        // Direct fallback if fetch fails
-        const courseIdFromSlug = extractCourseId(courseId);
-        const fallbackCourse = MOCK_COURSES.find(c => c._id === courseIdFromSlug);
-        if (fallbackCourse) setCourse(fallbackCourse);
       } finally {
         setLoading(false);
       }
@@ -265,11 +176,17 @@ const CourseDetail: React.FC = () => {
 
   const rating = Number(course.rating) || 4.5;
   const reviews = Number(course.total_reviews) || 1250;
-  const price = Number(course.price) || 49.99;
+  const price = Number(course.price);
+  const formattedPrice = Number.isFinite(price)
+    ? price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+    : '0';
   const totalHours = course.total_hours || course.duration || '12 weeks';
   const level = course.level || course.difficulty || 'Intermediate';
   const topics = course.key_topics || course.skills || ['System Design', 'Architecture', 'Performance'];
-  const instructor = course.instructor || course.role_tag || 'Engineering Expert';
+  const instructor = course.instructor_name || course.instructor || course.role_tag || 'Engineering Expert';
+  const instructorBio = course.instructor_bio || `Expert ${course.role_tag} Engineer`;
+  const instructorImage = course.instructor_image || '';
+  const school = course.school || 'Elite Systems';
   const displayImage = course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=1200';
 
   return (
@@ -370,6 +287,11 @@ const CourseDetail: React.FC = () => {
                 <Calendar className="w-5 h-5" />
                 <span className="text-sm font-bold">{course.last_updated || 'Recently updated'}</span>
               </div>
+
+              <div className="flex items-center gap-2 text-gray-700">
+                <BookOpen className="w-5 h-5" />
+                <span className="text-sm font-bold">School: {school}</span>
+              </div>
             </motion.div>
 
             {/* What You'll Learn */}
@@ -419,26 +341,9 @@ const CourseDetail: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  [
-                    { title: 'Introduction & Setup', lessons: 5, duration: '45 min' },
-                    { title: 'Core Concepts', lessons: 12, duration: '2.5 hours' },
-                    { title: 'Advanced Techniques', lessons: 8, duration: '1.8 hours' },
-                    { title: 'Real-world Projects', lessons: 6, duration: '3 hours' },
-                    { title: 'Best Practices & Optimization', lessons: 7, duration: '1.5 hours' },
-                    { title: 'Final Capstone Project', lessons: 1, duration: 'Self-paced', isProject: true },
-                  ].map((section, idx) => (
-                    <div key={idx} className={`bg-white border rounded-xl p-6 transition-all ${section.isProject ? 'border-[#7C3AED] shadow-md shadow-[#7C3AED]/10' : 'border-gray-200 hover:border-[#7C3AED]/30'}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          {section.isProject ? <div className="w-5 h-5 rounded-full bg-[#7C3AED] flex-shrink-0" /> : <PlayCircle className="w-5 h-5 text-[#7C3AED]" />}
-                          <div>
-                            <h3 className={`font-bold ${section.isProject ? 'text-[#7C3AED]' : 'text-gray-900'}`}>{section.title}</h3>
-                            <p className="text-sm text-gray-600">{section.lessons} lesson{section.lessons > 1 ? 's' : ''} • {section.duration}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 text-sm text-gray-600">
+                    No modules are published for this course yet.
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -475,12 +380,16 @@ const CourseDetail: React.FC = () => {
             >
               <h2 className="text-2xl font-black text-[#111827] mb-6 uppercase tracking-tight">Instructor</h2>
               <div className="flex items-start gap-6">
-                <div className="w-20 h-20 rounded-full bg-[#7C3AED] flex items-center justify-center text-white text-2xl font-black flex-shrink-0">
-                  {instructor.charAt(0)}
-                </div>
+                {instructorImage ? (
+                  <img src={instructorImage} alt={instructor} className="w-20 h-20 rounded-full object-cover border-2 border-[#7C3AED]/30 flex-shrink-0" />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-[#7C3AED] flex items-center justify-center text-white text-2xl font-black flex-shrink-0">
+                    {instructor.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{instructor}</h3>
-                  <p className="text-gray-600 mb-4">Expert {course.role_tag} Engineer</p>
+                  <p className="text-gray-600 mb-4">{instructorBio}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-700">
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -523,9 +432,8 @@ const CourseDetail: React.FC = () => {
                   {/* Price */}
                   <div className="mb-6">
                     <div className="text-4xl font-black text-[#111827] mb-1">
-                      ${price.toFixed(2)}
+                      ₹{formattedPrice}
                     </div>
-                    <div className="text-sm text-gray-600 line-through">$199.99</div>
                   </div>
 
                   {/* Action Buttons */}

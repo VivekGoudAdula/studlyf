@@ -30,94 +30,6 @@ interface Course {
   user_state?: 'NOT_PURCHASED' | 'IN_CART' | 'ENROLLED';
 }
 
-/* ─────────────────────────── mock fallback data ─────────────────────────── */
-const MOCK_COURSES: Course[] = [
-  {
-    _id: 'm1',
-    title: 'Transformer Architectures',
-    description: 'Deep dive into the architecture that powered the AI revolution. Build GPT-like models from scratch.',
-    role_tag: 'AI',
-    difficulty: 'Advanced',
-    skills: ['PyTorch', 'LLMs', 'Neural Networks'],
-    duration: '6 Weeks',
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop',
-    standard: 'AI_PROTOCOL_01',
-    price: 49.99,
-    rating: 4.9,
-    total_reviews: 1250,
-  },
-  {
-    _id: 'm2',
-    title: 'Distributed System Design',
-    description: 'Master the art of building systems that handle millions of requests. CAP theorem, consensus, and sharding.',
-    role_tag: 'Software Engineering',
-    difficulty: 'Advanced',
-    skills: ['Microservices', 'System Design', 'Redis'],
-    duration: '8 Weeks',
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop',
-    standard: 'SWE_PROTOCOL_04',
-    price: 59.99,
-    rating: 4.8,
-    total_reviews: 850,
-  },
-  {
-    _id: 'm3',
-    title: 'Data Engineering Pipelines',
-    description: 'Build production-grade ETL pipelines using Spark, Airflow, and Snowflake.',
-    role_tag: 'Data',
-    difficulty: 'Intermediate',
-    skills: ['Spark', 'Airflow', 'SQL'],
-    duration: '5 Weeks',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop',
-    standard: 'DATA_PROTOCOL_02',
-    price: 39.99,
-    rating: 4.7,
-    total_reviews: 620,
-  },
-  {
-    _id: 'm4',
-    title: 'Product Discovery Protocols',
-    description: 'Learn to find product-market fit using data-driven discovery techniques and user research.',
-    role_tag: 'PM',
-    difficulty: 'Beginner',
-    skills: ['Discovery', 'Strategy', 'Analytics'],
-    duration: '4 Weeks',
-    image: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&auto=format&fit=crop',
-    standard: 'PM_PROTOCOL_01',
-    price: 29.99,
-    rating: 4.9,
-    total_reviews: 430,
-  },
-  {
-    _id: 'm5',
-    title: 'Offensive Security Ops',
-    description: 'Become a certified defender by mastering offensive tactics, penetration testing, and vulnerability research.',
-    role_tag: 'Cyber',
-    difficulty: 'Advanced',
-    skills: ['Pentesting', 'Metasploit', 'Linux'],
-    duration: '10 Weeks',
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop',
-    standard: 'CYBER_PROTOCOL_09',
-    price: 69.99,
-    rating: 4.9,
-    total_reviews: 890,
-  },
-  {
-    _id: 'm6',
-    title: 'React Performance Mastery',
-    description: 'Go beyond basic hooks. Master fiber architectue, concurrent rendering, and high-entropy UI optimization.',
-    role_tag: 'Frontend',
-    difficulty: 'Intermediate',
-    skills: ['React', 'Performance', 'WASM'],
-    duration: '4 Weeks',
-    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop',
-    standard: 'FE_PROTOCOL_03',
-    price: 34.99,
-    rating: 4.8,
-    total_reviews: 740,
-  }
-];
-
 const CourseCard = ({
   _id,
   title,
@@ -140,6 +52,7 @@ const CourseCard = ({
   const displayDuration = duration || "12 Weeks";
   const displayImage = image || "https://miro.medium.com/max/938/0*lbtSAeYRtmUMAWeY.png";
   const displayStandard = standard || "PROTOCOL_X";
+  const formattedPrice = Number(price || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
   const handleClick = () => {
     onCardClick({ _id, title, description, role_tag, difficulty, skills, duration, image, standard, rating, price, is_bestseller, is_premium, user_state } as Course);
@@ -207,7 +120,7 @@ const CourseCard = ({
         <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-100">
           <div>
             {price && price > 0 ? (
-              <div className="text-2xl font-black text-[#111827]">${price.toFixed(2)}</div>
+              <div className="text-2xl font-black text-[#111827]">₹{formattedPrice}</div>
             ) : (
               <div className="text-lg font-black text-[#7C3AED]">FREE</div>
             )}
@@ -258,7 +171,7 @@ const Courses: React.FC = () => {
         // Get all courses
         const coursesRes = await fetch(`${API_BASE_URL}/api/courses`);
         const coursesData = await coursesRes.json();
-        setCourses(coursesData && coursesData.length > 0 ? coursesData : MOCK_COURSES);
+        setCourses(Array.isArray(coursesData) ? coursesData : []);
 
         // Get user course states
         if (userId) {
@@ -266,13 +179,13 @@ const Courses: React.FC = () => {
           const stateData = await stateRes.json();
 
           const states: { [key: string]: string } = {};
-          stateData.enrolled.forEach((c: Course) => {
+          (stateData.enrolled || []).forEach((c: Course) => {
             states[c._id] = 'ENROLLED';
           });
-          stateData.in_cart.forEach((c: Course) => {
+          (stateData.in_cart || []).forEach((c: Course) => {
             states[c._id] = 'IN_CART';
           });
-          stateData.available.forEach((c: Course) => {
+          (stateData.available || []).forEach((c: Course) => {
             states[c._id] = 'NOT_PURCHASED';
           });
 
@@ -280,7 +193,7 @@ const Courses: React.FC = () => {
         }
       } catch (err) {
         console.error('Error fetching courses:', err);
-        setCourses(MOCK_COURSES);
+        setCourses([]);
       } finally {
         setLoading(false);
       }
@@ -370,6 +283,18 @@ const Courses: React.FC = () => {
             ))}
           </AnimatePresence>
         </motion.div>
+
+        {filteredCourses.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16 border border-dashed border-gray-300 rounded-2xl"
+          >
+            <div className="text-5xl mb-4">📚</div>
+            <h2 className="text-2xl font-black text-[#111827] mb-2">No Courses Published Yet</h2>
+            <p className="text-gray-600">Create and publish courses in admin, then refresh to see them here.</p>
+          </motion.div>
+        )}
       </div>
     </div>
   );

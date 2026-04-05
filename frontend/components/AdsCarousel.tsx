@@ -79,7 +79,7 @@ function useCSS() {
 }
 
 /* ─── Types ─────────────────────────────────────── */
-export type AdCardType = 'video' | 'image' | 'wide' | 'promo';
+export type AdCardType = 'image' | 'video';
 export interface AdItem {
     _id?: string;
     card_type: AdCardType;
@@ -91,14 +91,12 @@ export interface AdItem {
     tag?: string;
     badge?: string;
     cta_text: string;
+    cta_link?: string;
     cta_style: 'primary' | 'dark' | 'gold' | 'sage' | 'outline-light' | 'white';
     pills?: string[];
     color_scheme: 'dark' | 'light';
     bg_color?: string;
     duration?: string;
-    wide_side?: 'dark' | 'light';
-    promo_tag?: string;
-    promo_stats?: { num: string; label: string }[];
     order: number;
     active?: boolean;
 }
@@ -122,19 +120,20 @@ const DUMMY: AdItem[] = [
         color_scheme: 'light', bg_color: 'soft-blue', order: 1,
     },
     {
-        card_type: 'wide', eyebrow: 'Full-Stack Web Dev', title: 'React + Node.js: Build Real-World Apps',
+        card_type: 'video', eyebrow: 'Full-Stack Web Dev', title: 'React + Node.js: Build Real-World Apps',
         description: 'The complete fullstack bootcamp. Deploy live projects with auth, databases, and REST APIs.',
         media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
         media_type: 'video', tag: '🎓 Bestseller', duration: '6h preview free',
-        cta_text: 'Grab Deal →', cta_style: 'gold', color_scheme: 'dark', wide_side: 'dark',
+        cta_text: 'Grab Deal →', cta_style: 'gold', color_scheme: 'dark',
         bg_color: 'teal', order: 2,
     },
     {
-        card_type: 'promo', eyebrow: '', title: 'Unlock Every Course for ₹999/mo',
-        description: '', promo_tag: '⚡ Flash Sale — 48 hrs left',
-        promo_stats: [{ num: '5,200+', label: 'Courses' }, { num: '180+', label: 'Instructors' }, { num: '96%', label: 'Completion' }, { num: '∞', label: 'Access' }],
-        cta_text: 'Get All-Access →', cta_style: 'white',
-        color_scheme: 'dark', order: 3,
+        card_type: 'image', eyebrow: 'Special Offer', title: 'Unlock Every Course for ₹999/mo',
+        description: 'Get unlimited access to all courses with our special monthly subscription.',
+        media_url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&auto=format&fit=crop',
+        media_type: 'image', badge: '⚡ Flash Sale',
+        cta_text: 'Get All-Access →', cta_style: 'primary',
+        color_scheme: 'light', bg_color: 'soft-blue', order: 3,
     },
     {
         card_type: 'image', eyebrow: 'Science & Biology', title: 'Introduction to Genetics & Genomics',
@@ -153,11 +152,11 @@ const DUMMY: AdItem[] = [
         color_scheme: 'dark', bg_color: 'purple', order: 5,
     },
     {
-        card_type: 'wide', eyebrow: 'Arts & Music', title: 'Music Theory & Composition for Beginners',
+        card_type: 'image', eyebrow: 'Arts & Music', title: 'Music Theory & Composition for Beginners',
         description: 'From reading notes to composing your own pieces. No prior experience needed.',
         media_url: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800&auto=format&fit=crop',
-        media_type: 'image',
-        cta_text: 'Start Learning →', cta_style: 'primary', color_scheme: 'light', wide_side: 'light',
+        media_type: 'image', badge: '🎵 Beginner Friendly',
+        cta_text: 'Start Learning →', cta_style: 'primary', color_scheme: 'light',
         bg_color: 'soft-amber', order: 6,
     },
     {
@@ -177,18 +176,19 @@ const DUMMY: AdItem[] = [
         color_scheme: 'light', bg_color: 'soft-blue', order: 8,
     },
     {
-        card_type: 'promo', eyebrow: '', title: 'Land Your Dream Job in 90 Days',
-        description: '', promo_tag: '🎯 Career Guarantee Program',
-        promo_stats: [{ num: '94%', label: 'Placement' }, { num: '₹12L+', label: 'Avg. Package' }, { num: '200+', label: 'Hiring Partners' }, { num: '90', label: 'Day Track' }],
-        cta_text: 'Apply Now →', cta_style: 'white',
-        color_scheme: 'dark', order: 9,
+        card_type: 'image', eyebrow: 'Career Services', title: 'Land Your Dream Job in 90 Days',
+        description: 'Career guarantee program with placement assistance and interview preparation.',
+        media_url: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&auto=format&fit=crop',
+        media_type: 'image', badge: '🎯 Career Guarantee',
+        cta_text: 'Apply Now →', cta_style: 'primary',
+        color_scheme: 'light', bg_color: 'soft-green', order: 9,
     },
     {
-        card_type: 'wide', eyebrow: 'Product Management', title: 'Become a PM at FAANG: Zero to Offer',
+        card_type: 'image', eyebrow: 'Product Management', title: 'Become a PM at FAANG: Zero to Offer',
         description: 'From PRDs to product metrics, strategy to stakeholder management — get PM-ready with real case studies.',
         media_url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop',
         media_type: 'image', badge: 'Top Pick',
-        cta_text: 'Start Journey →', cta_style: 'primary', color_scheme: 'light', wide_side: 'light',
+        cta_text: 'Start Journey →', cta_style: 'primary', color_scheme: 'light',
         bg_color: 'soft-amber', order: 10,
     },
     {
@@ -209,11 +209,11 @@ const DUMMY: AdItem[] = [
         color_scheme: 'light', bg_color: 'soft-blue', order: 12,
     },
     {
-        card_type: 'wide', eyebrow: 'Adobe & Creative Suite', title: 'Photography Masterclass: From DSLR to Editorial',
+        card_type: 'image', eyebrow: 'Adobe & Creative Suite', title: 'Photography Masterclass: From DSLR to Editorial',
         description: 'Shoot, retouch, and sell professional photography. Covers composition, Lightroom, Photoshop, and client workflows.',
         media_url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop',
         media_type: 'image', badge: 'Staff Pick',
-        cta_text: 'Explore Course →', cta_style: 'dark', color_scheme: 'light', wide_side: 'light',
+        cta_text: 'Explore Course →', cta_style: 'dark', color_scheme: 'light',
         bg_color: 'soft-green', order: 13,
     },
     {
@@ -233,18 +233,19 @@ const DUMMY: AdItem[] = [
         color_scheme: 'light', bg_color: 'soft-amber', order: 15,
     },
     {
-        card_type: 'promo', eyebrow: '', title: 'Study Now. Pay When You Get Hired.',
-        description: '', promo_tag: '🎓 Income Share Agreement',
-        promo_stats: [{ num: '₹0', label: 'Upfront Cost' }, { num: '6mo', label: 'Payment Grace' }, { num: '10%', label: 'ISA Rate' }, { num: '3yr', label: 'Max Term' }],
-        cta_text: 'Check Eligibility →', cta_style: 'white',
-        color_scheme: 'dark', order: 16,
+        card_type: 'image', eyebrow: 'Financing Options', title: 'Study Now. Pay When You Get Hired.',
+        description: 'Income Share Agreement - No upfront costs, pay only after you get a job.',
+        media_url: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&auto=format&fit=crop',
+        media_type: 'image', badge: '🎓 ISA Available',
+        cta_text: 'Check Eligibility →', cta_style: 'primary',
+        color_scheme: 'light', bg_color: 'soft-blue', order: 16,
     },
     {
-        card_type: 'wide', eyebrow: 'Leadership & Soft Skills', title: 'Executive Communication: Speak Like a Leader',
+        card_type: 'video', eyebrow: 'Leadership & Soft Skills', title: 'Executive Communication: Speak Like a Leader',
         description: 'Public speaking, persuasion, conflict resolution, and C-suite storytelling — all in one power-packed programme.',
         media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
         media_type: 'video', tag: '🎙 Leadership', duration: '18 modules · 10h',
-        cta_text: 'Enroll Now →', cta_style: 'gold', color_scheme: 'dark', wide_side: 'dark',
+        cta_text: 'Enroll Now →', cta_style: 'gold', color_scheme: 'dark',
         bg_color: 'amber', order: 17,
     },
     {
@@ -272,11 +273,11 @@ const DUMMY: AdItem[] = [
         color_scheme: 'dark', bg_color: 'purple', order: 20,
     },
     {
-        card_type: 'wide', eyebrow: 'Placement Partner', title: 'Microsoft LEAP Program — Exclusive for Studlyf Alumni',
+        card_type: 'image', eyebrow: 'Placement Partner', title: 'Microsoft LEAP Program — Exclusive for Studlyf Alumni',
         description: 'Microsoft LEAP is a 16-week apprenticeship for non-traditional engineers. Studlyf has a dedicated pipeline with 100% interview invitation for qualified graduates.',
         media_url: 'https://images.unsplash.com/photo-1583752028088-91e3e9880b46?w=800&auto=format&fit=crop',
         media_type: 'image', badge: '🏆 Elite Partner',
-        cta_text: 'View Partnership →', cta_style: 'dark', color_scheme: 'light', wide_side: 'light',
+        cta_text: 'View Partnership →', cta_style: 'dark', color_scheme: 'light',
         bg_color: 'soft-blue', order: 21,
     },
 ];
@@ -310,14 +311,23 @@ const CTA_STYLES: Record<string, React.CSSProperties> = {
     'outline-light': { background: 'transparent', border: '1px solid rgba(255,255,255,.35)', color: 'rgba(255,255,255,.85)' },
     white: { background: '#FFFFFF', color: '#C84B2F', fontWeight: 600 },
 };
-function CtaBtn({ text, style: s = 'primary', fullWidth = false }: { text: string; style?: string; fullWidth?: boolean }) {
+function CtaBtn({ text, style: s = 'primary', fullWidth = false, link }: { text: string; style?: string; fullWidth?: boolean; link?: string }) {
+    const handleClick = () => {
+        if (link) {
+            window.open(link, '_blank', 'noopener,noreferrer');
+        }
+    };
+
     return (
-        <button style={{
-            fontFamily: "'DM Sans',sans-serif", fontSize: '.75rem', fontWeight: 500,
-            letterSpacing: '.08em', textTransform: 'uppercase', padding: '9px 18px', borderRadius: 2,
-            border: 'none', cursor: 'pointer', marginTop: 'auto', width: fullWidth ? '100%' : 'fit-content',
-            ...CTA_STYLES[s]
-        }}>
+        <button
+            onClick={handleClick}
+            style={{
+                fontFamily: "'DM Sans',sans-serif", fontSize: '.75rem', fontWeight: 500,
+                letterSpacing: '.08em', textTransform: 'uppercase', padding: '9px 18px', borderRadius: 2,
+                border: 'none', cursor: link ? 'pointer' : 'default', marginTop: 'auto', width: fullWidth ? '100%' : 'fit-content',
+                ...CTA_STYLES[s]
+            }}
+        >
             {text}
         </button>
     );
@@ -335,7 +345,7 @@ function VideoCard({ ad }: { ad: AdItem }) {
             <div style={{ position: 'relative', overflow: 'hidden' }}>
                 {isVideo ? (
                     <video src={ad.media_url} autoPlay loop muted playsInline
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
                 ) : (
                     <div style={{
                         ...bgStyle(ad.bg_color), height: '100%', minHeight: 280, display: 'flex',
@@ -389,7 +399,7 @@ function VideoCard({ ad }: { ad: AdItem }) {
                             border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.6)'
                         }}>{p}</span>)}
                     </div>
-                    <CtaBtn text={ad.cta_text} style={ad.cta_style} />
+                    <CtaBtn text={ad.cta_text} style={ad.cta_style} link={ad.cta_link} />
                 </div>
             </div>
         </div>
@@ -406,7 +416,7 @@ function ImageCard({ ad }: { ad: AdItem }) {
             <div style={{ position: 'relative', overflow: 'hidden' }}>
                 {ad.media_url ? (
                     <img src={ad.media_url} alt={ad.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
                 ) : (
                     <div style={{
                         ...bgStyle(ad.bg_color), height: '100%', minHeight: 230,
@@ -442,108 +452,9 @@ function ImageCard({ ad }: { ad: AdItem }) {
                             border: '1px solid #ccc', color: '#555'
                         }}>{p}</span>)}
                     </div>
-                    <CtaBtn text={ad.cta_text} style={ad.cta_style} />
+                    <CtaBtn text={ad.cta_text} style={ad.cta_style} link={ad.cta_link} />
                 </div>
             </div>
-        </div>
-    );
-}
-
-function WideCard({ ad }: { ad: AdItem }) {
-    const isDark = ad.wide_side !== 'light';
-    const isVideo = ad.media_type === 'video';
-    return (
-        <div className="ads-card-hover" style={{
-            flex: '0 0 480px', height: 380,
-            borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr'
-        }}>
-            <div style={{ position: 'relative', overflow: 'hidden' }}>
-                {isVideo ? (
-                    <video src={ad.media_url} autoPlay loop muted playsInline
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                ) : ad.media_url ? (
-                    <img src={ad.media_url} alt={ad.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                ) : (
-                    <div style={{
-                        ...bgStyle(ad.bg_color), height: '100%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'
-                    }}>
-                        <div className="ads-play-btn">
-                            <svg width={20} height={22} viewBox="0 0 20 22" fill="white"><path d="M1 1L19 11L1 21V1Z" /></svg>
-                        </div>
-                    </div>
-                )}
-                {ad.tag && <div style={{
-                    position: 'absolute', top: 20, left: 20, background: '#C84B2F',
-                    color: '#fff', fontSize: '.68rem', fontWeight: 500, letterSpacing: '.12em',
-                    textTransform: 'uppercase', padding: '5px 12px', borderRadius: 2
-                }}>{ad.tag}</div>}
-                {ad.duration && <div style={{
-                    position: 'absolute', bottom: 16, right: 16,
-                    background: 'rgba(0,0,0,.7)', color: '#fff', fontSize: '.72rem',
-                    padding: '3px 8px', borderRadius: 2
-                }}>{ad.duration}</div>}
-            </div>
-            <div style={{
-                padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 10,
-                background: isDark ? '#2C3E50' : '#fff', color: isDark ? '#FFFFFF' : '#1A1410'
-            }}>
-                <div style={{
-                    fontSize: '.68rem', letterSpacing: '.16em', textTransform: 'uppercase',
-                    fontWeight: 500, color: isDark ? '#D4A847' : '#C84B2F'
-                }}>{ad.eyebrow}</div>
-                <h3 style={{
-                    fontFamily: "'Playfair Display',serif", fontSize: '1.25rem', lineHeight: 1.25,
-                    fontWeight: 700, letterSpacing: '-.02em', margin: 0
-                }}>{ad.title}</h3>
-                <p style={{
-                    fontSize: '.78rem', lineHeight: 1.65, fontWeight: 300, margin: 0,
-                    color: isDark ? 'rgba(250,247,242,.6)' : '#666'
-                }}>{ad.description}</p>
-                <CtaBtn text={ad.cta_text} style={ad.cta_style} />
-            </div>
-        </div>
-    );
-}
-
-function PromoCard({ ad }: { ad: AdItem }) {
-    return (
-        <div className="ads-card-hover" style={{
-            flex: '0 0 290px', height: 380,
-            background: '#C84B2F', color: '#FFFFFF', padding: '24px 22px', display: 'flex',
-            flexDirection: 'column', justifyContent: 'space-between', borderRadius: 4,
-            position: 'relative', overflow: 'hidden'
-        }}>
-            <div>
-                {ad.promo_tag && <div style={{
-                    display: 'inline-block', background: 'rgba(255,255,255,.15)',
-                    fontSize: '.68rem', letterSpacing: '.12em', textTransform: 'uppercase',
-                    padding: '5px 12px', borderRadius: 2, marginBottom: 20
-                }}>{ad.promo_tag}</div>}
-                <h3 style={{
-                    fontFamily: "'Playfair Display',serif", fontSize: '1.7rem', fontWeight: 900,
-                    lineHeight: 1.1, letterSpacing: '-.03em', margin: 0
-                }}>{ad.title}</h3>
-                {ad.promo_stats && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
-                        {ad.promo_stats.map(s => (
-                            <div key={s.label}>
-                                <div style={{
-                                    fontFamily: "'Playfair Display',serif", fontSize: '2rem',
-                                    fontWeight: 700, lineHeight: 1
-                                }}>{s.num}</div>
-                                <div style={{
-                                    fontSize: '.72rem', letterSpacing: '.08em', textTransform: 'uppercase',
-                                    opacity: .7, marginTop: 3, fontWeight: 300
-                                }}>{s.label}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <CtaBtn text={ad.cta_text} style="white" fullWidth />
-            <div className="ads-promo-bg">∞</div>
         </div>
     );
 }
@@ -552,8 +463,6 @@ function renderCard(ad: AdItem, idx: number) {
     switch (ad.card_type) {
         case 'video': return <VideoCard key={idx} ad={ad} />;
         case 'image': return <ImageCard key={idx} ad={ad} />;
-        case 'wide': return <WideCard key={idx} ad={ad} />;
-        case 'promo': return <PromoCard key={idx} ad={ad} />;
         default: return <ImageCard key={idx} ad={ad} />;
     }
 }

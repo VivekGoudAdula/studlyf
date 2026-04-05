@@ -81,6 +81,9 @@ class InterviewInteractionRequest(BaseModel):
     session_id: str
     user_response: str
     round_index: int
+    role: Optional[str] = None
+    experience: Optional[str] = None
+    is_skip: Optional[bool] = False
 
 def fix_id(doc):
     if doc and "_id" in doc:
@@ -203,14 +206,12 @@ async def create_ad(
     tag:          str  = Form(""),
     badge:        str  = Form(""),
     cta_text:     str  = Form("Enroll →"),
+    cta_link:     str  = Form(""),
     cta_style:    str  = Form("primary"),
     pills:        str  = Form(""),          # JSON array string
     color_scheme: str  = Form("dark"),
     bg_color:     str  = Form("blue"),
     duration:     str  = Form(""),
-    wide_side:    str  = Form("dark"),
-    promo_tag:    str  = Form(""),
-    promo_stats:  str  = Form(""),          # JSON array string
     order:        int  = Form(0),
     active:       bool = Form(True),
     media_file: Optional[UploadFile] = File(None),
@@ -242,14 +243,12 @@ async def create_ad(
         "tag":          tag,
         "badge":        badge,
         "cta_text":     cta_text,
+        "cta_link":     cta_link,
         "cta_style":    cta_style,
         "pills":        _json.loads(pills) if pills else [],
         "color_scheme": color_scheme,
         "bg_color":     bg_color,
         "duration":     duration,
-        "wide_side":    wide_side,
-        "promo_tag":    promo_tag,
-        "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
         "created_at":   datetime.now(timezone.utc).isoformat(),
@@ -270,14 +269,12 @@ async def update_ad(
     tag:          str  = Form(""),
     badge:        str  = Form(""),
     cta_text:     str  = Form("Enroll →"),
+    cta_link:     str  = Form(""),
     cta_style:    str  = Form("primary"),
     pills:        str  = Form(""),
     color_scheme: str  = Form("dark"),
     bg_color:     str  = Form("blue"),
     duration:     str  = Form(""),
-    wide_side:    str  = Form("dark"),
-    promo_tag:    str  = Form(""),
-    promo_stats:  str  = Form(""),
     order:        int  = Form(0),
     active:       bool = Form(True),
     media_file: Optional[UploadFile] = File(None),
@@ -308,14 +305,12 @@ async def update_ad(
         "tag":          tag,
         "badge":        badge,
         "cta_text":     cta_text,
+        "cta_link":     cta_link,
         "cta_style":    cta_style,
         "pills":        _json.loads(pills) if pills else [],
         "color_scheme": color_scheme,
         "bg_color":     bg_color,
         "duration":     duration,
-        "wide_side":    wide_side,
-        "promo_tag":    promo_tag,
-        "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
         "updated_at":   datetime.now(timezone.utc).isoformat(),
@@ -621,7 +616,11 @@ async def analyze_github(request: GithubAnalysisRequest):
 @app.get("/api/courses")
 async def get_courses():
     courses = []
-    async for course in courses_col.find():
+    async for course in courses_col.find().sort([
+        ("updated_at", -1),
+        ("created_at", -1),
+        ("_id", -1)
+    ]):
         courses.append(fix_id(course))
     return courses
 
@@ -637,6 +636,17 @@ async def get_course_modules(course_id: str, user_id: Optional[str] = None):
             module["progress"] = fix_progress(prog, default_status)
         modules.append(module)
     return modules
+
+@app.get("/api/courses/{course_id}/final-assessment")
+async def get_course_final_assessment(course_id: str):
+    quiz = await quizzes_col.find_one({"course_id": course_id, "module_id": "FINAL_ASSESSMENT"})
+    if not quiz:
+        return {"questions": [], "pass_mark": 60}
+    quiz = fix_id(quiz)
+    if not isinstance(quiz.get("questions"), list):
+        quiz["questions"] = []
+    quiz["pass_mark"] = quiz.get("pass_mark", 60)
+    return quiz
 
 async def generate_ai_quiz(module_id: str, theory_content: str):
     prompt = f"""
@@ -777,12 +787,15 @@ async def submit_quiz(data: dict):
 async def submit_project(
     user_id: str = Form(...),
     module_id: str = Form(...),
-    deployed_link: str = Form(...),
+    deployed_link: Optional[str] = Form(None),
     github_link: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None)
 ):
-    if not deployed_link:
-        raise HTTPException(status_code=400, detail="Missing deployed link")
+    deployed_link = (deployed_link or "").strip()
+    github_link = (github_link or "").strip()
+
+    if not deployed_link and not github_link:
+        raise HTTPException(status_code=400, detail="Provide a deployed link or a GitHub repository link")
 
     # Validate GitHub link only if provided
     if github_link and "github.com" not in github_link:
@@ -790,9 +803,10 @@ async def submit_project(
 
     update_fields = {
         "project_status": "submitted",
-        "deployed_link": deployed_link,
         "review_status": "pending_review"
     }
+    if deployed_link:
+        update_fields["deployed_link"] = deployed_link
     if github_link:
         update_fields["github_link"] = github_link
 
@@ -811,6 +825,55 @@ async def submit_project(
         upsert=True
     )
     return {"status": "submitted", "review": "pending_review"}
+
+@app.get("/api/course-end/progress")
+async def get_course_end_progress(course_id: str, user_id: str):
+    final_quiz_module_id = f"FINAL_ASSESSMENT_{course_id}"
+    capstone_module_id = f"FINAL_CAPSTONE_{course_id}"
+
+    final_quiz_doc = await progress_col.find_one({"user_id": user_id, "module_id": final_quiz_module_id}) or {}
+    capstone_doc = await progress_col.find_one({"user_id": user_id, "module_id": capstone_module_id}) or {}
+
+    return {
+        "capstone_completed": bool(final_quiz_doc.get("capstone_completed", False)),
+        "final_quiz_score": final_quiz_doc.get("final_quiz_score"),
+        "final_quiz_passed": bool(final_quiz_doc.get("final_quiz_passed", False)),
+        "final_quiz_answers": final_quiz_doc.get("final_quiz_answers", []),
+        "project_status": capstone_doc.get("project_status", "not_started"),
+        "review_status": capstone_doc.get("review_status"),
+        "github_link": capstone_doc.get("github_link", ""),
+        "deployed_link": capstone_doc.get("deployed_link", "")
+    }
+
+@app.post("/api/course-end/progress")
+async def save_course_end_progress(data: dict):
+    user_id = data.get("user_id")
+    course_id = data.get("course_id")
+    updates = data.get("updates", {})
+
+    if not user_id or not course_id:
+        raise HTTPException(status_code=400, detail="Missing user_id or course_id")
+
+    final_quiz_module_id = f"FINAL_ASSESSMENT_{course_id}"
+
+    allowed_updates = {
+        "capstone_completed": bool(updates.get("capstone_completed", False)) if "capstone_completed" in updates else None,
+        "final_quiz_score": updates.get("final_quiz_score") if "final_quiz_score" in updates else None,
+        "final_quiz_passed": bool(updates.get("final_quiz_passed", False)) if "final_quiz_passed" in updates else None,
+        "final_quiz_answers": updates.get("final_quiz_answers") if "final_quiz_answers" in updates else None,
+    }
+
+    clean_updates = {k: v for k, v in allowed_updates.items() if v is not None}
+
+    if not clean_updates:
+        return {"status": "no_changes"}
+
+    await progress_col.update_one(
+        {"user_id": user_id, "module_id": final_quiz_module_id},
+        {"$set": {**clean_updates, "course_id": course_id}},
+        upsert=True
+    )
+    return {"status": "saved"}
 
 # (Moved to Admin Section)
 
@@ -2034,13 +2097,19 @@ def generate_next_interview_message(
     question_count: int,
     recent_analysis: Optional[Dict[str, Any]],
     is_round_start: bool,
+    is_skip: bool = False,
 ) -> Dict[str, Any]:
     round_type = current_round.get("round_type", "technical")
     persona = current_round.get("persona", fallback_persona(session["company"], round_type))
     round_limit = ROUND_LIMITS.get(round_type, 5)
     history_text = format_round_history(round_history, round_index)
     analysis_text = json.dumps(recent_analysis, ensure_ascii=True) if recent_analysis else "None yet."
-    start_instruction = "Ask the opening question for this round." if is_round_start else "Ask the next best question based on the last answer and its gaps."
+    
+    # If user skipped, acknowledge and move to a related but different topic area
+    if is_skip and not is_round_start:
+        start_instruction = "The candidate skipped the previous question by saying they don't know. Move to a RELATED but DIFFERENT area that might be easier or more relevant for them. Ask a question that helps them demonstrate knowledge in their areas of strength."
+    else:
+        start_instruction = "Ask the opening question for this round." if is_round_start else "Ask the next best question based on the last answer and its gaps."
 
     prompt = f"""
     You are an interviewer conducting the {ROUND_DISPLAY_NAMES.get(round_type, round_type)} for a candidate at {session['company']}.
@@ -2235,6 +2304,7 @@ async def interview_chat(req: InterviewInteractionRequest):
             question_count,
             recent_analysis,
             not bool(req.user_response),
+            is_skip=req.is_skip or False,
         )
 
         interviewer_text = data.get("interviewer_text", "Could you tell me more about that?")
@@ -2608,7 +2678,11 @@ async def get_admin_students():
 async def get_admin_courses():
     """Fetch all courses from MongoDB"""
     courses = []
-    async for course in courses_col.find():
+    async for course in courses_col.find().sort([
+        ("updated_at", -1),
+        ("created_at", -1),
+        ("_id", -1)
+    ]):
         courses.append(fix_id(course))
     return courses
 
@@ -2621,6 +2695,7 @@ async def create_admin_course(data: dict):
         course_id = data.get("_id") or data.get("id")
         is_update = False
         
+        existing = None
         if course_id:
             existing = await courses_col.find_one({"_id": course_id})
             if existing:
@@ -2631,6 +2706,22 @@ async def create_admin_course(data: dict):
         # Extract modules before saving course doc
         modules_data = data.pop("modules", []) if "modules" in data else []
         
+        # Normalize modules first so both course doc and modules collection stay in sync
+        normalized_modules = []
+        for idx, mod in enumerate(modules_data):
+            mod_id = mod.get("_id") or mod.get("id")
+            if not mod_id or str(mod_id).isdigit():
+                mod_id = str(uuid.uuid4())
+
+            normalized_modules.append({
+                "_id": mod_id,
+                "course_id": course_id,
+                "title": mod.get("title", "Untitled Module"),
+                "order_index": idx + 1,
+                "lessons": mod.get("lessons", []),
+                "estimated_time": mod.get("estimated_time", "1 hour")
+            })
+
         # Build course document
         course_doc = dict(data)
         course_doc["_id"] = course_id
@@ -2639,8 +2730,16 @@ async def create_admin_course(data: dict):
         course_doc.setdefault("price", 0)
         course_doc.setdefault("difficulty", "Beginner")
         course_doc.setdefault("image", "")
-        course_doc["modules_count"] = len(modules_data)
+        course_doc["modules_count"] = len(normalized_modules)
+        course_doc["modules"] = normalized_modules
         course_doc.setdefault("status", data.get("status", "published"))
+        now_iso = datetime.now(timezone.utc).isoformat()
+        if is_update:
+            course_doc["created_at"] = (existing or {}).get("created_at", now_iso)
+            course_doc["updated_at"] = now_iso
+        else:
+            course_doc["created_at"] = now_iso
+            course_doc["updated_at"] = now_iso
 
         if is_update:
             await courses_col.replace_one({"_id": course_id}, course_doc)
@@ -2653,19 +2752,7 @@ async def create_admin_course(data: dict):
             await modules_col.delete_many({"course_id": course_id})
 
         # 2. Insert new modules
-        for idx, mod in enumerate(modules_data):
-            mod_id = mod.get("_id") or mod.get("id")
-            if not mod_id or str(mod_id).isdigit(): # If it's a numeric temp ID from frontend
-                mod_id = str(uuid.uuid4())
-            
-            module_doc = {
-                "_id": mod_id,
-                "course_id": course_id,
-                "title": mod.get("title", "Untitled Module"),
-                "order_index": idx + 1,
-                "lessons": mod.get("lessons", []),
-                "estimated_time": mod.get("estimated_time", "1 hour")
-            }
+        for module_doc in normalized_modules:
             await modules_col.insert_one(module_doc)
 
         # Optional final assessment quiz
@@ -2703,29 +2790,37 @@ async def update_admin_course(course_id: str, data: dict):
     # Extract modules
     modules_data = data.pop("modules", []) if "modules" in data else []
 
-    # Build update document
-    update_doc = {**existing, **data}
-    update_doc["_id"] = course_id
-    update_doc["modules_count"] = len(modules_data)
-    
-    # Update the course
-    await courses_col.replace_one({"_id": course_id}, update_doc)
-
-    # Sync modules
-    await modules_col.delete_many({"course_id": course_id})
+    # Normalize modules first so both course doc and modules collection stay in sync
+    normalized_modules = []
     for idx, mod in enumerate(modules_data):
         mod_id = mod.get("_id") or mod.get("id")
         if not mod_id or str(mod_id).isdigit():
             mod_id = str(uuid.uuid4())
-        
-        module_doc = {
+
+        normalized_modules.append({
             "_id": mod_id,
             "course_id": course_id,
             "title": mod.get("title", "Untitled Module"),
             "order_index": idx + 1,
             "lessons": mod.get("lessons", []),
             "estimated_time": mod.get("estimated_time", "1 hour")
-        }
+        })
+
+    # Build update document
+    update_doc = {**existing, **data}
+    update_doc["_id"] = course_id
+    update_doc["modules_count"] = len(normalized_modules)
+    update_doc["modules"] = normalized_modules
+    now_iso = datetime.now(timezone.utc).isoformat()
+    update_doc["created_at"] = existing.get("created_at", now_iso)
+    update_doc["updated_at"] = now_iso
+    
+    # Update the course
+    await courses_col.replace_one({"_id": course_id}, update_doc)
+
+    # Sync modules
+    await modules_col.delete_many({"course_id": course_id})
+    for module_doc in normalized_modules:
         await modules_col.insert_one(module_doc)
 
     # Update final assessment quiz
@@ -3822,4 +3917,4 @@ async def get_ai_tools():
     except Exception as e:
         print(f"ERROR fetching AI tools: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch AI tools")
-# ─── End AI Tools API ────────────────────────────────────────────────────────
+# ─── End AI Tools API ────────────────────────────────────────────────────────

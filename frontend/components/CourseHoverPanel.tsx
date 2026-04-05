@@ -26,6 +26,7 @@ const CourseHoverPanel: React.FC<CourseHoverPanelProps> = ({
   const rating = course.rating || 4.5;
   const reviews = course.total_reviews || 0;
   const price = course.price || 0;
+  const formattedPrice = Number(price).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   const totalHours = course.total_hours || course.duration || '12 weeks';
   const level = course.level || course.difficulty || 'Intermediate';
   const topics = course.key_topics || course.skills || ['System Design', 'Architecture', 'Performance'];
@@ -108,7 +109,7 @@ const CourseHoverPanel: React.FC<CourseHoverPanelProps> = ({
                   <div className="text-right">
                     {price > 0 ? (
                       <>
-                        <div className="text-3xl font-black text-[#111827]">${price.toFixed(2)}</div>
+                        <div className="text-3xl font-black text-[#111827]">₹{formattedPrice}</div>
                       </>
                     ) : (
                       <div className="text-2xl font-black text-[#7C3AED]">FREE</div>

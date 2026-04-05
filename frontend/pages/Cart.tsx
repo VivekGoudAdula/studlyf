@@ -55,6 +55,7 @@ const Cart: React.FC = () => {
   };
 
   const totalPrice = cartItems.reduce((sum, item) => sum + item.course_price, 0);
+  const formattedTotalPrice = totalPrice.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
   const handleCheckout = async () => {
     setCheckoutLoading(true);
@@ -145,7 +146,7 @@ const Cart: React.FC = () => {
                     <div className="flex items-center gap-6">
                       <div className="text-right">
                         <div className="text-2xl font-black text-[#111827]">
-                          ${item.course_price.toFixed(2)}
+                          ₹{Number(item.course_price).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </div>
                       </div>
 
@@ -185,7 +186,7 @@ const Cart: React.FC = () => {
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[#6B7280]">Subtotal ({cartItems.length} items)</span>
-                  <span className="font-bold text-[#111827]">${totalPrice.toFixed(2)}</span>
+                  <span className="font-bold text-[#111827]">₹{formattedTotalPrice}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[#6B7280]">Shipping</span>
@@ -193,13 +194,13 @@ const Cart: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[#6B7280]">Tax</span>
-                  <span className="font-bold text-[#111827]">$0.00</span>
+                  <span className="font-bold text-[#111827]">₹0</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between mb-8 pb-8 border-b border-gray-200">
                 <span className="text-lg font-black text-[#111827]">Total</span>
-                <span className="text-3xl font-black text-[#7C3AED]">${totalPrice.toFixed(2)}</span>
+                <span className="text-3xl font-black text-[#7C3AED]">₹{formattedTotalPrice}</span>
               </div>
 
               <button

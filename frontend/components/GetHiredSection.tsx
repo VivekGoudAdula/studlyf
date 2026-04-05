@@ -16,10 +16,10 @@ const GetHiredSection: React.FC = () => {
             <div className="absolute inset-0 z-0 bg-black/20" />
 
             {/* Main Layout Container */}
-            <div className="max-w-[1400px] w-full mx-auto px-6 sm:px-12 lg:px-20 relative z-10 flex flex-col lg:flex-row items-center justify-between">
+            <div className="max-w-[1400px] w-full mx-auto px-6 sm:px-12 lg:px-20 relative z-10 flex flex-col lg:flex-row items-center justify-between min-h-[500px]">
 
                 {/* Left Side: Title and Button (55% width approx) */}
-                <div className="flex flex-col items-start w-full lg:w-[55%]">
+                <div className="flex flex-col items-start w-full lg:w-[45%] relative z-10">
                     <h2
                         className="text-white font-bold text-4xl sm:text-6xl lg:text-[4.5rem] leading-[1.1] mb-10 tracking-tight"
                         style={{ fontFamily: "'Playfair Display', 'Instrument Serif', Georgia, serif" }}
@@ -34,17 +34,40 @@ const GetHiredSection: React.FC = () => {
                     >
                         GET STARTED
                     </motion.button>
+
+                    {/* Left Side Stats */}
+                    <div className="mt-12 flex flex-col gap-6">
+                        <div className="flex items-center gap-2">
+                            <div className="text-white text-xl font-bold">success rate</div>
+                            <div className="text-[#2F6FD6] text-xl font-bold">99%</div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Fallback for mobile so the glass box stacks naturally instead of overlapping */}
                 <div className="block lg:hidden w-full mt-16 pt-0 relative z-20">
                     <GlassCard isMobile />
                 </div>
-            </div>
 
-            {/* Right Side: Comparison Glass Box (Floating absolutely per instructions) */}
-            <div className="hidden lg:block absolute right-[8%] top-1/2 -translate-y-1/2 w-[45%] max-w-[650px] z-20">
-                <GlassCard />
+                {/* Center and Right Section for Desktop */}
+                <div className="hidden lg:flex w-[55%] h-full relative items-end justify-end pb-20">
+                    {/* Center: Trusted by text */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none">
+                        <div className="text-white text-lg font-semibold">Stifund starting at 10k+</div>
+                    
+                    </div>
+
+                    {/* Right Side: Comparison Glass Box and Stats */}
+                    <div className="flex flex-col items-center z-20 mr-10">
+                        <GlassCard />
+                        
+                        {/* Right Side Stats - Below glass card */}
+                        <div className="mt-6 flex items-center gap-3 whitespace-nowrap">
+                            <div className="text-white text-2xl font-bold">10+</div>
+                            <div className="text-white text-lg font-medium">hiring Startup's</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </section>
