@@ -49,6 +49,18 @@ const EnquiryForm: React.FC = () => {
             return;
         }
         setIsSubmitted(true);
+        
+        // Reset form data
+        setFormData({
+            name: '',
+            email: '',
+            country: '',
+            phone: '',
+            description: '',
+            questions: ''
+        });
+        setIsVerified(false);
+
         setTimeout(() => setIsSubmitted(false), 5000);
     };
 
@@ -263,9 +275,17 @@ const EnquiryForm: React.FC = () => {
                                 exit={{ opacity: 0 }}
                                 className="absolute inset-0 z-50 flex items-center justify-center bg-[#7C3AED]/95 backdrop-blur-md rounded-[2.5rem]"
                             >
-                                <div className="text-center space-y-4 px-10 text-white">
+                                <div className="text-center space-y-6 px-10 text-white">
                                     <h3 className="text-3xl font-bold">Inquiry Sent!</h3>
                                     <p className="opacity-90">Thank you for reaching out.</p>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setIsSubmitted(false)}
+                                        className="px-8 py-2 bg-white text-[#7C3AED] rounded-xl font-bold text-sm shadow-lg"
+                                    >
+                                        Submit Another
+                                    </motion.button>
                                 </div>
                             </motion.div>
                         )}

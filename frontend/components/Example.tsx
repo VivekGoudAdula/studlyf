@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { motion } from "framer-motion";
-import { FiBatteryCharging, FiWifi } from "react-icons/fi";
+import { BatteryCharging as FiBatteryCharging, Wifi as FiWifi } from "lucide-react";
 
 // Context to receive color and text from parent (DashboardHome)
 export const ExampleColorContext = React.createContext({

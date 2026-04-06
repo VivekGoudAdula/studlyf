@@ -49,6 +49,7 @@ const DashboardHome: React.FC = () => {
         console.error('Error fetching courses:', error);
       }
     };
+
     fetchCourses();
   }, []);
 
@@ -483,7 +484,7 @@ const DashboardHome: React.FC = () => {
           <div className="absolute top-[10%] right-[10%] w-[40%] h-[50%] bg-[#7C3AED]/15 rounded-full blur-[130px] pointer-events-none" />
           <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[60%] bg-[#D97706]/08 rounded-full blur-[150px] pointer-events-none" />
           <div className="absolute top-[40%] left-[40%] w-[35%] h-[45%] bg-[#E11D48]/10 rounded-full blur-[110px] pointer-events-none" />
-          
+
           <div className="flex flex-col items-center text-center relative z-10">
             {/* Product Brief Header */}
             <div className="flex flex-col items-center gap-3 mb-8">
