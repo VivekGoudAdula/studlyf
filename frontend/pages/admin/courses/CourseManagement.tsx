@@ -647,7 +647,7 @@ const CourseManagement: React.FC = () => {
                                 <h3 className="text-lg font-semibold text-white">Curriculum Designer</h3>
                                 <div className="space-y-4 mt-6">
                                     {modules.map((mod, i) => (
-                                        <div key={mod.id} className="bg-[#1A1A1A] border border-white/10 rounded-xl p-4 group">
+                                        <div key={mod._id || mod.id || i} className="bg-[#1A1A1A] border border-white/10 rounded-xl p-4 group">
                                             <div className="flex items-center gap-3 mb-4">
                                                 <GripVertical size={20} className="text-white/20 cursor-grab" />
                                                 <div className="flex-grow">

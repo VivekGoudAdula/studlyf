@@ -36,8 +36,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
             } else {
                 navigate('/dashboard/learner');
             }
-        } catch (err) {
-            console.error("Error fetching user role:", err);
+        } catch (err: any) {
+            if (err?.code !== 'permission-denied' && err?.code !== 'firestore/permission-denied') {
+                console.error("Error fetching user role:", err);
+            }
             navigate('/dashboard/learner');
         }
     };
