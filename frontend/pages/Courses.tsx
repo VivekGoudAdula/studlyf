@@ -31,8 +31,7 @@ interface Course {
 }
 
 /* ─────────────────────────── mock fallback data ─────────────────────────── */
-const MOCK_COURSES: Course[] = [];
-
+ // Removed MOCK_COURSES to only show database content.
 
 const CourseCard = ({
   _id,
@@ -123,7 +122,7 @@ const CourseCard = ({
         <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-100">
           <div>
             {price && price > 0 ? (
-              <div className="text-2xl font-black text-[#111827]">${price.toFixed(2)}</div>
+              <div className="text-2xl font-black text-[#111827]">₹{Number(price).toLocaleString('en-IN')}</div>
             ) : (
               <div className="text-lg font-black text-[#7C3AED]">FREE</div>
             )}
@@ -174,7 +173,7 @@ const Courses: React.FC = () => {
         // Get all courses
         const coursesRes = await fetch(`${API_BASE_URL}/api/courses`);
         const coursesData = await coursesRes.json();
-        setCourses(coursesData && coursesData.length > 0 ? coursesData : MOCK_COURSES);
+        setCourses(coursesData && coursesData.length > 0 ? coursesData : []);
 
         // Get user course states
         if (userId) {
@@ -196,7 +195,7 @@ const Courses: React.FC = () => {
         }
       } catch (err) {
         console.error('Error fetching courses:', err);
-        setCourses(MOCK_COURSES);
+        setCourses([]);
       } finally {
         setLoading(false);
       }

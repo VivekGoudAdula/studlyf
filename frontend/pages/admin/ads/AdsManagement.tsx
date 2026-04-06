@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Plus, Trash2, Eye, EyeOff, Edit3, Upload, X, GripVertical, ImageIcon, Film, Check } from 'lucide-react';
-import type { AdItem, AdCardType } from '../../../components/AdsCarousel';
+import { AdItem, AdCardType, renderCard, useFont, useCSS } from '../../../components/AdsCarousel';
 
-const API = 'http://localhost:8000/api/ads';
+import { API_BASE_URL } from '../../../apiConfig';
+
+const API = `${API_BASE_URL}/api/ads`;
 
 const CARD_TYPES: { value: AdCardType; label: string; desc: string }[] = [
-    { value: 'video', label: '🎬 Video Card', desc: 'Dark card with video/image + text below' },
-    { value: 'image', label: '🖼 Image Card', desc: 'Light card with image + text below' },
-    { value: 'wide', label: '⬛ Wide Card', desc: 'Double-width: media left + text right' },
-    { value: 'promo', label: '⚡ Promo Card', desc: 'Full coloured promo with stats' },
+    { value: 'video', label: 'Video + Text', desc: 'Video file + Title & Description' },
+    { value: 'image', label: 'Image + Text', desc: 'Image file + Title & Description' },
+    { value: 'video_image', label: 'Video + Image', desc: 'Both Video and Image in one card' },
 ];
 
 const CTA_STYLES = ['primary', 'dark', 'gold', 'sage', 'outline-light', 'white'];
@@ -16,74 +17,87 @@ const BG_COLORS = ['blue', 'green', 'amber', 'purple', 'teal', 'rose', 'soft-blu
 const COLOR_SCHEMES = ['dark', 'light'];
 
 const EMPTY: Partial<AdItem> = {
-    card_type: 'image', eyebrow: '', title: '', description: '', media_type: 'image',
-    tag: '', badge: '', cta_text: 'Enroll →', cta_style: 'primary', pills: [],
+    card_type: 'image', eyebrow: '', title: '', description: '', 
+    media_url: '', media_type: 'image',
+    secondary_media_url: '', secondary_media_type: 'image',
+    tag: '', badge: '', cta_text: 'Enroll →', cta_link: '', cta_style: 'primary', pills: [],
     color_scheme: 'dark', bg_color: 'blue', duration: '', wide_side: 'dark',
     promo_tag: '', promo_stats: [], order: 0, active: true,
 };
 
-/* ── Media dropper ── */
-function MediaDropper({ preview, mediaType, onFile, onClear }:
-    { preview: string | null; mediaType: string; onFile: (f: File) => void; onClear: () => void }) {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [drag, setDrag] = useState(false);
+function getYoutubeEmbed(url: string) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
 
-    const handle = (f: File) => { onFile(f); };
+/* ─── Shared components ─────────────────────────── */
+function MediaDropper({ preview, mediaType, onFile, onClear }: 
+    { preview: string | null; mediaType: 'image' | 'video'; onFile: (f: File) => void; onClear: () => void }) {
+    const [dragging, setDragging] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handle = (f: File) => {
+        if (!f) return;
+        onFile(f);
+    };
 
     return (
-        <div style={{ width: '100%' }}>
+        <div 
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handle(f); }}
+            onClick={() => inputRef.current?.click()}
+            style={{
+                width: '100%', height: 200, border: `2px dashed ${dragging ? '#6366f1' : '#e5e7eb'}`,
+                borderRadius: 12, background: dragging ? '#f5f3ff' : '#f9fafb',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all .2s', overflow: 'hidden', position: 'relative'
+            }}>
             {preview ? (
-                <div style={{
-                    position: 'relative', borderRadius: 6, overflow: 'hidden',
-                    border: '2px solid #e5e7eb', height: 220
-                }}>
-                    {mediaType === 'video'
-                        ? <video src={preview} controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <img src={preview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    <button onClick={onClear}
+                <>
+                    {mediaType === 'video' ? (
+                        getYoutubeEmbed(preview) ? (
+                            <img src={`https://img.youtube.com/vi/${getYoutubeEmbed(preview)}/hqdefault.jpg`} className="w-full h-full object-cover" />
+                        ) : (
+                            <video src={preview} className="w-full h-full object-cover" />
+                        )
+                    ) : (
+                        <img src={preview} className="w-full h-full object-cover" />
+                    )}
+                    <button 
+                        onClick={e => { e.stopPropagation(); onClear(); }}
                         style={{
-                            position: 'absolute', top: 8, right: 8, background: '#fff',
-                            border: 'none', borderRadius: 999, width: 28, height: 28, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 1px 4px rgba(0,0,0,.2)'
+                            position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,.5)',
+                            color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                         }}>
                         <X size={14} />
                     </button>
-                </div>
+                </>
             ) : (
-                <div
-                    onClick={() => inputRef.current?.click()}
-                    onDragOver={e => { e.preventDefault(); setDrag(true); }}
-                    onDragLeave={() => setDrag(false)}
-                    onDrop={e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) handle(f); }}
-                    style={{
-                        border: `2px dashed ${drag ? '#6366f1' : '#d1d5db'}`,
-                        borderRadius: 8, height: 220, display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer',
-                        background: drag ? '#f5f3ff' : '#fafafa', transition: 'all .2s',
-                    }}>
-                    <Upload size={32} color={drag ? '#6366f1' : '#9ca3af'} />
-                    <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>
-                            Drop file here or click
-                        </p>
-                        <p style={{ fontSize: 12, color: '#9ca3af' }}>
-                            Images: JPG, PNG, GIF, WebP · Videos: MP4, WebM, MOV
-                        </p>
-                    </div>
-                    <button style={{
-                        background: '#6366f1', color: '#fff', border: 'none',
-                        borderRadius: 6, padding: '8px 20px', cursor: 'pointer', fontWeight: 500, fontSize: 13
-                    }}>
-                        Choose File
-                    </button>
-                </div>
+                <>
+                    <Upload size={32} color="#9ca3af" style={{ marginBottom: 12 }} />
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#4b5563' }}>Click or Drop Media</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>Image or Video</div>
+                </>
             )}
             <input ref={inputRef} type="file" accept="image/*,video/*" hidden
                 onChange={e => { const f = e.target.files?.[0]; if (f) handle(f); }} />
         </div>
     );
 }
+
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div style={{ marginBottom: 16 }}>
+        <label style={{
+            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
+            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
+        }}>{label}</label>
+        {children}
+    </div>
+);
 
 /* ── Form panel ── */
 function AdForm({ initial, onSave, onCancel, saving }:
@@ -92,18 +106,35 @@ function AdForm({ initial, onSave, onCancel, saving }:
         onCancel: () => void; saving: boolean
     }) {
     const [form, setForm] = useState<Partial<AdItem>>({ ...EMPTY, ...initial });
+    
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(initial.media_url || null);
-    const [pillInput, setPillInput] = useState('');
-    const [statInput, setStatInput] = useState({ num: '', label: '' });
+    
+    const [secFile, setSecFile] = useState<File | null>(null);
+    const [secPreview, setSecPreview] = useState<string | null>(initial.secondary_media_url || null);
 
-    const set = (k: keyof AdItem, v: any) => setForm(f => ({ ...f, [k]: v }));
+    const [pillInput, setPillInput] = useState('');
+
+    const set = (k: keyof AdItem, v: any) => setForm(f => {
+        const next = { ...f, [k]: v };
+        if (k === 'media_url' && v) {
+            const isVid = getYoutubeEmbed(v) || v.match(/\.(mp4|webm|mov|ogg)$/i);
+            if (isVid) next.media_type = 'video';
+            else next.media_type = 'image';
+        }
+        return next;
+    });
 
     const handleFile = (f: File) => {
         setFile(f);
-        const url = URL.createObjectURL(f);
-        setPreview(url);
+        setPreview(URL.createObjectURL(f));
         set('media_type', f.type.startsWith('video') ? 'video' : 'image');
+    };
+
+    const handleSecFile = (f: File) => {
+        setSecFile(f);
+        setSecPreview(URL.createObjectURL(f));
+        set('secondary_media_type', f.type.startsWith('video') ? 'video' : 'image');
     };
 
     const addPill = () => {
@@ -114,15 +145,6 @@ function AdForm({ initial, onSave, onCancel, saving }:
 
     const removePill = (i: number) => set('pills', (form.pills || []).filter((_, idx) => idx !== i));
 
-    const addStat = () => {
-        if (!statInput.num || !statInput.label) return;
-        set('promo_stats', [...(form.promo_stats || []), { ...statInput }]);
-        setStatInput({ num: '', label: '' });
-    };
-
-    const removeStat = (i: number) =>
-        set('promo_stats', (form.promo_stats || []).filter((_, idx) => idx !== i));
-
     const handleSubmit = () => {
         const fd = new FormData();
         const str = (v: any) => (v === undefined || v === null) ? '' : String(v);
@@ -131,33 +153,28 @@ function AdForm({ initial, onSave, onCancel, saving }:
         fd.append('title', str(form.title));
         fd.append('description', str(form.description));
         fd.append('media_type', str(form.media_type));
-        fd.append('media_url_existing', str(initial.media_url || ''));
+        fd.append('media_url', str(form.media_url || ''));
+        fd.append('secondary_media_type', str(form.secondary_media_type));
+        fd.append('secondary_media_url', str(form.secondary_media_url || ''));
         fd.append('tag', str(form.tag));
         fd.append('badge', str(form.badge));
         fd.append('cta_text', str(form.cta_text));
+        fd.append('cta_link', str(form.cta_link));
         fd.append('cta_style', str(form.cta_style));
         fd.append('pills', JSON.stringify(form.pills || []));
         fd.append('color_scheme', str(form.color_scheme));
         fd.append('bg_color', str(form.bg_color));
         fd.append('duration', str(form.duration));
         fd.append('wide_side', str(form.wide_side));
-        fd.append('promo_tag', str(form.promo_tag));
-        fd.append('promo_stats', JSON.stringify(form.promo_stats || []));
         fd.append('order', str(form.order));
         fd.append('active', String(form.active !== false));
+        fd.append('show_cta', String(form.show_cta !== false));
+        
         if (file) fd.append('media_file', file);
+        if (secFile) fd.append('secondary_media_file', secFile);
+        
         onSave(fd, form);
     };
-
-    const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-        <div style={{ marginBottom: 16 }}>
-            <label style={{
-                display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-            }}>{label}</label>
-            {children}
-        </div>
-    );
 
     const input = (k: keyof AdItem, ph = '', type = 'text') => (
         <input type={type} placeholder={ph} value={String(form[k] ?? '')}
@@ -182,74 +199,66 @@ function AdForm({ initial, onSave, onCancel, saving }:
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
             {/* LEFT: Media upload */}
             <div>
-                <h3 style={{ fontWeight: 700, marginBottom: 16, color: '#111' }}>Media Upload</h3>
-                <MediaDropper preview={preview} mediaType={form.media_type || 'image'}
-                    onFile={handleFile} onClear={() => { setFile(null); setPreview(null); set('media_url', ''); }} />
-
-                {preview && (
-                    <div style={{
-                        marginTop: 12, padding: '8px 12px', background: form.media_type === 'video' ? '#f0fdf4' : '#eff6ff',
-                        borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12
-                    }}>
-                        {form.media_type === 'video' ? <Film size={14} color="#16a34a" /> : <ImageIcon size={14} color="#2563eb" />}
-                        <span>{form.media_type === 'video' ? 'Video detected' : 'Image detected'}</span>
-                    </div>
-                )}
-
-                <div style={{ marginTop: 24 }}>
-                    <h3 style={{ fontWeight: 700, marginBottom: 16, color: '#111' }}>Card Type</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        {CARD_TYPES.map(ct => (
-                            <div key={ct.value}
-                                onClick={() => set('card_type', ct.value)}
-                                style={{
-                                    padding: '10px 14px', border: `2px solid ${form.card_type === ct.value ? '#6366f1' : '#e5e7eb'}`,
-                                    borderRadius: 8, cursor: 'pointer', background: form.card_type === ct.value ? '#f5f3ff' : '#fff',
-                                    transition: 'all .2s'
-                                }}>
-                                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{ct.label}</div>
-                                <div style={{ fontSize: 11, color: '#9ca3af' }}>{ct.desc}</div>
-                            </div>
-                        ))}
-                    </div>
+                <h3 style={{ fontWeight: 700, marginBottom: 16, color: '#111' }}>Media Assets</h3>
+                
+                <div style={{ marginBottom: 24 }}>
+                    <F label="Select Your Style">
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                            {CARD_TYPES.map(ct => (
+                                <button key={ct.value}
+                                    onClick={() => set('card_type', ct.value)}
+                                    style={{
+                                        padding: '8px 16px', background: form.card_type === ct.value ? '#6366f1' : '#fff',
+                                        color: form.card_type === ct.value ? '#fff' : '#111',
+                                        border: `1px solid ${form.card_type === ct.value ? '#6366f1' : '#d1d5db'}`,
+                                        borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .2s'
+                                    }}>
+                                    {ct.label}
+                                </button>
+                            ))}
+                        </div>
+                    </F>
                 </div>
 
-                {form.card_type === 'promo' && (
-                    <div style={{ marginTop: 24 }}>
-                        <h3 style={{ fontWeight: 700, marginBottom: 12, color: '#111' }}>Stats</h3>
-                        {(form.promo_stats || []).map((s, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                <span style={{
-                                    flex: 1, padding: '6px 10px', background: '#f3f4f6',
-                                    borderRadius: 6, fontSize: 12
-                                }}>{s.num} — {s.label}</span>
-                                <button onClick={() => removeStat(i)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }}>
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        ))}
-                        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                            <input placeholder="99k+" value={statInput.num} onChange={e => setStatInput(s => ({ ...s, num: e.target.value }))}
-                                style={{ flex: 1, padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
-                            <input placeholder="Label" value={statInput.label} onChange={e => setStatInput(s => ({ ...s, label: e.target.value }))}
-                                style={{ flex: 2, padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
-                            <button onClick={addStat} style={{
-                                padding: '6px 12px', background: '#6366f1', color: '#fff',
-                                border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13
-                            }}>+</button>
+                {/* Main Media Uploader */}
+                <div style={{ marginBottom: 24 }}>
+                    <F label={form.card_type === 'image' ? "Main Image" : "Main Video"}>
+                        <MediaDropper preview={preview || form.media_url} mediaType={form.card_type === 'video' ? 'video' : 'image'}
+                            onFile={handleFile} onClear={() => { setFile(null); setPreview(null); set('media_url', ''); }} />
+                        <div style={{ marginTop: 10 }}>
+                            <input placeholder="Or absolute URL (optional)..." value={String(form.media_url ?? '')} onChange={e => set('media_url', e.target.value)}
+                                style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
                         </div>
+                    </F>
+                </div>
+
+                {/* Secondary Media (only for Video + Image) */}
+                {form.card_type === 'video_image' && (
+                    <div style={{ marginBottom: 24 }}>
+                        <F label="Secondary Image">
+                            <MediaDropper preview={secPreview || form.secondary_media_url} mediaType="image"
+                                onFile={handleSecFile} onClear={() => { setSecFile(null); setSecPreview(null); set('secondary_media_url', ''); }} />
+                            <div style={{ marginTop: 10 }}>
+                                <input placeholder="Or secondary URL (optional)..." value={String(form.secondary_media_url ?? '')} onChange={e => set('secondary_media_url', e.target.value)}
+                                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
+                            </div>
+                        </F>
                     </div>
                 )}
             </div>
 
             {/* RIGHT: Form fields */}
             <div>
-                <h3 style={{ fontWeight: 700, marginBottom: 16, color: '#111' }}>Card Details</h3>
+                <h3 style={{ fontWeight: 700, marginBottom: 16, color: '#111' }}>Content Details</h3>
 
-                <F label="Eyebrow / Category">{input('eyebrow', 'e.g. Data Science')}</F>
-                <F label="Title *">{input('title', 'e.g. Machine Learning A–Z')}</F>
+                {form.card_type !== 'video_image' && (
+                    <F label="Category / Eyebrow">{input('eyebrow', 'e.g. DATA SCIENCE')}</F>
+                )}
+                
+                <F label="Title *">{input('title', 'e.g. Master Neural Networks')}</F>
+                
                 <F label="Description">
-                    <textarea value={String(form.description ?? '')} placeholder="Short description..."
+                    <textarea value={String(form.description ?? '')} placeholder="Compelling copy starts here..."
                         onChange={e => set('description', e.target.value)} rows={3}
                         style={{
                             width: '100%', padding: '8px 12px', border: '1px solid #d1d5db',
@@ -257,62 +266,37 @@ function AdForm({ initial, onSave, onCancel, saving }:
                         }} />
                 </F>
 
-                {form.card_type !== 'promo' && (
-                    <>
-                        <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll →')}</F>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>CTA Style</label>
-                                {select('cta_style', CTA_STYLES)}
-                            </div>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>Color Scheme</label>
-                                {select('color_scheme', COLOR_SCHEMES)}
-                            </div>
-                        </div>
-                    </>
-                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                    {form.card_type === 'image' && <F label="Overlay Badge">{input('badge', 'e.g. Best Seller')}</F>}
+                    {form.card_type === 'video' && <F label="Overlay Tag">{input('tag', 'e.g. 🎓 New')}</F>}
+                </div>
 
-                {(form.card_type === 'video' || form.card_type === 'image') && (
-                    <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>Overlay Tag</label>
-                                {input('tag', 'e.g. 🎬 Video Course')}
-                            </div>
-                            <div>
-                                <label style={{
-                                    display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                                    marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                                }}>Badge</label>
-                                {input('badge', 'e.g. New 2025')}
-                            </div>
-                        </div>
-                        <F label="Duration">{input('duration', 'e.g. 42 lectures · 18h')}</F>
-                        <F label="Background Color">{select('bg_color', BG_COLORS)}</F>
-                    </>
-                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12, marginBottom: 16 }}>
+                    <F label="CTA Button Text">{input('cta_text', 'e.g. Enroll Now →')}</F>
+                    <F label="CTA URL (Optional Redirect)">{input('cta_link', 'https://...')}</F>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                    <F label="CTA Style">{select('cta_style', CTA_STYLES)}</F>
+                    <F label="BG Color">{select('bg_color', BG_COLORS)}</F>
+                </div>
 
-                {form.card_type === 'wide' && (
-                    <F label="Content Side">{select('wide_side', ['dark', 'light'])}</F>
-                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                    <F label="Order">{input('order', '0', 'number')}</F>
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 16 }}>
+                        <button onClick={() => set('active', !form.active)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                                border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                                background: form.active ? '#d1fae5' : '#fee2e2', color: form.active ? '#065f46' : '#991b1b'
+                            }}>
+                            {form.active ? <><Check size={14} /> Live</> : <><EyeOff size={14} /> Hidden</>}
+                        </button>
+                    </div>
+                </div>
 
-                {form.card_type === 'promo' && (
-                    <F label="Promo Tag">{input('promo_tag', 'e.g. ⚡ Flash Sale — 48 hrs left')}</F>
-                )}
-
-                {/* Pills */}
-                {form.card_type !== 'promo' && (
-                    <F label="Pills / Tags">
+                {/* Pills (only for Video + Text) */}
+                {form.card_type === 'video' && (
+                    <F label="Keywords / Skills">
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                             {(form.pills || []).map((p, i) => (
                                 <span key={i} style={{
@@ -325,7 +309,7 @@ function AdForm({ initial, onSave, onCancel, saving }:
                             ))}
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
-                            <input placeholder="Add pill..." value={pillInput} onChange={e => setPillInput(e.target.value)}
+                            <input placeholder="Add skill tag..." value={pillInput} onChange={e => setPillInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && addPill()}
                                 style={{ flex: 1, padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
                             <button onClick={addPill} style={{
@@ -336,43 +320,18 @@ function AdForm({ initial, onSave, onCancel, saving }:
                     </F>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                    <div>
-                        <label style={{
-                            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                            marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em'
-                        }}>Display Order</label>
-                        {input('order', '0', 'number')}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 0 }}>
-                        <label style={{
-                            display: 'block', fontSize: 12, fontWeight: 600, color: '#374151',
-                            marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.05em'
-                        }}>Active</label>
-                        <button onClick={() => set('active', !form.active)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
-                                border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 500,
-                                background: form.active ? '#d1fae5' : '#fee2e2', color: form.active ? '#065f46' : '#991b1b'
-                            }}>
-                            {form.active ? <><Check size={14} /> Live</> : <><EyeOff size={14} /> Hidden</>}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Save/Cancel */}
                 <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
                     <button onClick={handleSubmit} disabled={!form.title || saving}
                         style={{
-                            flex: 1, padding: '11px 24px', background: '#6366f1', color: '#fff',
+                            flex: 1, padding: '12px 24px', background: '#6366f1', color: '#fff',
                             border: 'none', borderRadius: 8, cursor: saving || !form.title ? 'not-allowed' : 'pointer',
                             fontWeight: 600, fontSize: 14, opacity: saving ? .7 : 1
                         }}>
-                        {saving ? 'Saving…' : '✓ Save Advertisement'}
+                        {saving ? 'Synchronizing…' : '✓ Publish Advertisement'}
                     </button>
                     <button onClick={onCancel}
                         style={{
-                            padding: '11px 20px', background: '#f3f4f6', color: '#374151',
+                            padding: '12px 20px', background: '#f3f4f6', color: '#374151',
                             border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 500, fontSize: 14
                         }}>
                         Cancel
@@ -384,14 +343,14 @@ function AdForm({ initial, onSave, onCancel, saving }:
 }
 
 /* ── Ad row in table ── */
-function AdRow({ ad, onEdit, onDelete, onToggle }:
-    { ad: AdItem; onEdit: () => void; onDelete: () => void; onToggle: () => void }) {
-    const TYPE_COLORS: Record<AdCardType, string> = {
-        video: '#fef3c7', image: '#dbeafe', wide: '#f3e8ff', promo: '#fce7f3',
+function AdRow({ ad, onEdit, onDelete, onToggle, onPreview }:
+    { ad: AdItem; onEdit: () => void; onDelete: () => void; onToggle: () => void; onPreview: () => void }) {
+    const TYPE_COLORS: Record<string, string> = {
+        video: '#fef3c7', image: '#dbeafe', video_image: '#f3e8ff',
     };
     return (
         <div style={{
-            display: 'grid', gridTemplateColumns: '40px 80px 1fr 100px 80px 100px',
+            display: 'grid', gridTemplateColumns: '40px 100px 1fr 100px 80px 100px',
             alignItems: 'center', gap: 12, padding: '14px 20px',
             borderBottom: '1px solid #f3f4f6', background: '#fff',
             transition: 'background .15s'
@@ -408,21 +367,27 @@ function AdRow({ ad, onEdit, onDelete, onToggle }:
                 <div style={{ fontWeight: 600, fontSize: 14, color: '#111', marginBottom: 2 }}>{ad.title}</div>
                 <div style={{ fontSize: 12, color: '#9ca3af' }}>{ad.eyebrow}</div>
             </div>
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: 4, fontSize: 12,
-                color: ad.active ? '#16a34a' : '#9ca3af', fontWeight: 500
-            }}>
-                {ad.active ? <Eye size={13} /> : <EyeOff size={13} />}
+            <button 
+                onClick={onToggle}
+                title="Click to toggle status"
+                style={{
+                    display: 'flex', alignItems: 'center', gap: 6, fontSize: 12,
+                    color: ad.active ? '#16a34a' : '#9ca3af', fontWeight: 600,
+                    background: ad.active ? '#d1fae5' : '#f3f4f6',
+                    border: 'none', padding: '4px 10px', borderRadius: 20, cursor: 'pointer',
+                    transition: 'all .2s'
+                }}>
+                {ad.active ? <Check size={13} /> : <EyeOff size={13} />}
                 {ad.active ? 'Live' : 'Hidden'}
-            </div>
+            </button>
             <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 500 }}>#{ad.order}</div>
             <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={onToggle} title="Toggle visibility"
+                <button onClick={onPreview} title="Instant Preview"
                     style={{
-                        padding: '5px 8px', background: '#f9fafb', border: '1px solid #e5e7eb',
-                        borderRadius: 6, cursor: 'pointer', color: '#6b7280'
+                        padding: '5px 8px', background: '#f5f3ff', border: '1px solid #ddd6fe',
+                        borderRadius: 6, cursor: 'pointer', color: '#6366f1'
                     }}>
-                    {ad.active ? <EyeOff size={13} /> : <Eye size={13} />}
+                    <Eye size={13} />
                 </button>
                 <button onClick={onEdit} title="Edit"
                     style={{
@@ -449,8 +414,12 @@ export default function AdsManagement() {
     const [loading, setLoading] = useState(true);
     const [panel, setPanel] = useState<'closed' | 'create' | 'edit'>('closed');
     const [editing, setEditing] = useState<AdItem | null>(null);
+    const [previewing, setPreviewing] = useState<AdItem | null>(null);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
+
+    useFont();
+    useCSS();
 
     const showToast = (msg: string) => {
         setToast(msg);
@@ -519,7 +488,7 @@ export default function AdsManagement() {
                 <div>
                     <h1 style={{ fontWeight: 800, fontSize: 22, margin: 0 }}>Advertisement Manager</h1>
                     <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>
-                        Manage the Partner Spotlight carousel on the home page
+                        Manage the Spotlight carousel content
                     </p>
                 </div>
                 <button
@@ -557,14 +526,47 @@ export default function AdsManagement() {
                 </div>
             )}
 
+            {/* Preview Modal */}
+            {previewing && (
+                <div 
+                    onClick={() => setPreviewing(null)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 9999, backdropFilter: 'blur(4px)'
+                    }}
+                >
+                    <div 
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#fff', borderRadius: 16, padding: '48px',
+                            boxShadow: '0 24px 64px rgba(0,0,0,.3)', position: 'relative'
+                        }}
+                    >
+                        <button 
+                            onClick={() => setPreviewing(null)}
+                            style={{
+                                position: 'absolute', top: 16, right: 16, border: 'none',
+                                background: 'none', cursor: 'pointer', color: '#9ca3af'
+                            }}
+                        >
+                            <X size={24} />
+                        </button>
+                        <div style={{ transform: 'scale(1.1)', transformOrigin: 'center' }}>
+                            {renderCard(previewing, 0)}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Ads table */}
             <div style={{
-                margin: '0 32px 32px', background: '#fff', border: '1px solid #e5e7eb',
+                margin: '32px', background: '#fff', border: '1px solid #e5e7eb',
                 borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,.04)'
             }}>
                 {/* Table header */}
                 <div style={{
-                    display: 'grid', gridTemplateColumns: '40px 80px 1fr 100px 80px 100px',
+                    display: 'grid', gridTemplateColumns: '40px 100px 1fr 100px 80px 100px',
                     gap: 12, padding: '12px 20px', background: '#f9fafb',
                     borderBottom: '1px solid #e5e7eb', fontSize: 11, fontWeight: 700,
                     textTransform: 'uppercase', letterSpacing: '.06em', color: '#6b7280'
@@ -586,29 +588,11 @@ export default function AdsManagement() {
                         <AdRow key={ad._id} ad={ad}
                             onEdit={() => { setEditing(ad); setPanel('edit'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                             onDelete={() => handleDelete(ad._id!)}
-                            onToggle={() => handleToggle(ad._id!)} />
+                            onToggle={() => handleToggle(ad._id!)}
+                            onPreview={() => setPreviewing(ad)} />
                     ))
                 )}
             </div>
-
-            {/* Stats bar */}
-            {ads.length > 0 && (
-                <div style={{ margin: '0 32px 32px', display: 'flex', gap: 16 }}>
-                    {[
-                        { label: 'Total', val: ads.length, color: '#6366f1' },
-                        { label: 'Live', val: ads.filter(a => a.active).length, color: '#16a34a' },
-                        { label: 'Hidden', val: ads.filter(a => !a.active).length, color: '#9ca3af' },
-                    ].map(s => (
-                        <div key={s.label} style={{
-                            flex: 1, background: '#fff', border: '1px solid #e5e7eb',
-                            borderRadius: 10, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                        }}>
-                            <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>{s.label} Ads</span>
-                            <span style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.val}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

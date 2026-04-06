@@ -12,6 +12,14 @@ const testimonials = [
         bgColor: "bg-purple-50"
     },
     {
+        name: "P. Jaikrishna",
+        course: "AI & DATA SCIENCE",
+        text: "Studlyf's curriculum helped me transition into AI with confidence. The mentorship and real-world projects were the highlight of my journey.",
+        logo: "https://ui-avatars.com/api/?name=PJ&background=fff&color=7C3AED",
+        rating: 5,
+        bgColor: "bg-indigo-50"
+    },
+    {
         name: "Vivek Goud Adula",
         course: "AI Engineer",
         text: "Training and doubt clarification were excellent. Mic access during class would help clear doubts more effectively.",

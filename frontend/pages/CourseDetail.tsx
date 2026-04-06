@@ -39,6 +39,9 @@ interface Course {
   key_topics?: string[];
   last_updated?: string;
   instructor?: string;
+  instructor_name?: string;
+  instructor_image?: string;
+  instructor_description?: string;
   is_bestseller?: boolean;
   is_premium?: boolean;
   school?: string;
@@ -186,7 +189,9 @@ const CourseDetail: React.FC = () => {
   const totalHours = course.total_hours || course.duration || '12 weeks';
   const level = course.level || course.difficulty || 'Intermediate';
   const topics = course.key_topics || course.skills || ['System Design', 'Architecture', 'Performance'];
-  const instructor = course.instructor || course.role_tag || 'Engineering Expert';
+  const instructorName = course.instructor_name || course.instructor || 'Eshwar G';
+  const instructorRole = course.instructor_description || `Expert ${course.role_tag} Engineer`;
+  const instructorImg = course.instructor_image || '/images/Eshwar.jpg';
   const displayImage = course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=1200';
 
   return (
@@ -392,12 +397,14 @@ const CourseDetail: React.FC = () => {
             >
               <h2 className="text-2xl font-black text-[#111827] mb-6 uppercase tracking-tight">Instructor</h2>
               <div className="flex items-start gap-6">
-                <div className="w-20 h-20 rounded-full bg-[#7C3AED] flex items-center justify-center text-white text-2xl font-black flex-shrink-0">
-                  {instructor.charAt(0)}
+                <div className="w-20 h-20 rounded-full bg-[#7C3AED] flex items-center justify-center text-white text-2xl font-black overflow-hidden flex-shrink-0">
+                  <img src={instructorImg} alt={instructorName} className="w-full h-full object-cover" onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=7C3AED&color=fff`;
+                  }} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{instructor}</h3>
-                  <p className="text-gray-600 mb-4">Expert {course.role_tag} Engineer</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{instructorName}</h3>
+                  <p className="text-gray-600 mb-4">{instructorRole}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-700">
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -409,7 +416,7 @@ const CourseDetail: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <PlayCircle className="w-4 h-4" />
-                      <span>5 Courses</span>
+                      <span>Multiple Courses</span>
                     </div>
                   </div>
                 </div>
@@ -438,12 +445,12 @@ const CourseDetail: React.FC = () => {
 
                 <div className="p-6">
                   {/* Price */}
-                  <div className="mb-6">
-                    <div className="text-4xl font-black text-[#111827] mb-1">
-                      ${price.toFixed(2)}
+                    <div className="mb-6">
+                      <div className="text-4xl font-black text-[#111827] mb-1">
+                        ₹{Number(price).toLocaleString('en-IN')}
+                      </div>
+                      <div className="text-sm text-gray-600 line-through">₹{(Number(price) * 1.5).toLocaleString('en-IN')}</div>
                     </div>
-                    <div className="text-sm text-gray-600 line-through">$199.99</div>
-                  </div>
 
                   {/* Action Buttons */}
                   <div className="space-y-3 mb-6">

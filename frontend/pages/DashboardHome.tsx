@@ -1,3 +1,4 @@
+import Example, { ExampleColorContext } from "../components/Example";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -25,7 +26,7 @@ import { DevHeroSection } from '../components/DevHeroSection';
 import FeaturedColleges from '../components/FeaturedColleges';
 // import { NeonBackground } from '../components/NeonBackground';
 
-const DUMMY_COURSES: any[] = [];
+// Removed DUMMY_COURSES to only show database content.
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
@@ -34,24 +35,23 @@ const DashboardHome: React.FC = () => {
   const [isMuted, setIsMuted] = useState(true);
 
   const [courses, setCourses] = useState<any[]>([]);
+
   const carouselRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/courses`);
         const data = await res.json();
-        if (data && Array.isArray(data)) {
+        if (data && data.length > 0) {
           setCourses(data);
         }
-      } catch (err) {
-        console.error("Course fetch error:", err);
-        setCourses([]);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
       }
     };
+
     fetchCourses();
   }, []);
-
-
 
   const createSlug = (title: string, id: string) => {
     if (!title || !id) return '';
@@ -61,54 +61,60 @@ const DashboardHome: React.FC = () => {
     return `${slug}--${id}`;
   };
 
-  const briefDetails: Record<string, { title: string; desc: React.ReactNode; image: string; video?: string; gradient: string; accent: string; icon: string }> = {
+  const briefDetails: Record<string, { title: string; headline: string; desc: React.ReactNode; image: string; video?: string; gradient: string; accent: string; icon: string }> = {
     'Cognition': {
       title: 'Cognition',
-      desc: 'Studlyf understands people beyond resumes. Our AI analyzes skills, experience, learning patterns, and career intent to create meaningful connections between talent and opportunity. It delivers intelligent career guidance while helping recruiters discover true potential, not just keywords.',
-      image: '/images/producrbriefCONG.png',
-      gradient: '#301040',
-      accent: '#E03070',
+      headline: 'Deep AI-Driven Talent Matching',
+      desc: 'Studlyf understands people beyond resumes. Our AI analyzes skills, experience, learning patterns, and career intent to create meaningful connections between talent and opportunity.',
+      image: '/images/impact/mainpagrimages/image.png',
+      gradient: 'linear-gradient(135deg, #0891B2 0%, #155E75 100%)',
+      accent: '#06B6D4',
       icon: '🧠',
     },
     'Protocol': {
       title: 'Protocol',
-      desc: 'Every interaction follows a structured AI workflow — from resume analysis to hiring decisions. Automated protocols ensure fairness, transparency, and consistency across recruitment, skill evaluation, and personalized learning recommendations.',
+      headline: 'Structured & Fair AI Workflows',
+      desc: 'Every interaction follows a structured AI workflow — from resume analysis to hiring decisions. Automated protocols ensure fairness and consistency across skills.',
       image: '/images/protocol.png',
-      gradient: '#301050',
-      accent: '#E03040',
+      gradient: 'linear-gradient(135deg, #059669 0%, #064E3B 100%)',
+      accent: '#10B981',
       icon: '⚙️',
     },
     'Verification': {
       title: 'Verification',
-      desc: 'Trust is built through verification. Studlyf validates skills, certifications, and professional experience using intelligent document parsing and contextual analysis. Recruiters receive confidence-based insights to make accurate hiring decisions.',
-      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
+      headline: 'Certified Trust & Validation',
+      desc: 'Trust is built through verification. Studlyf validates skills, certifications, and professional experience using intelligent document parsing and contextual analysis.',
+      image: '/images/impact/mainpagrimages/image copy.png',
       video: '/videos/verification.mp4',
-      gradient: '#201040',
-      accent: '#E02040',
+      gradient: 'linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%)',
+      accent: '#8B5CF6',
       icon: '✅',
     },
     'Blueprint': {
       title: 'Blueprint',
-      desc: 'Studlyf transforms insights into action. Candidates receive personalized learning paths and growth plans, while recruiters gain structured hiring blueprints aligned with real job requirements and organizational goals.',
-      image: '/images/blueprint.png',
-      gradient: '#201050',
-      accent: '#e2e8f0',
+      headline: 'Actionable Career Growth Paths',
+      desc: 'Studlyf transforms insights into action. Candidates receive personalized learning paths and growth plans aligned with real job requirements and organizational goals.',
+      image: '/images/impact/mainpagrimages/image copy 2.png',
+      gradient: 'linear-gradient(135deg, #D97706 0%, #78350F 100%)',
+      accent: '#F59E0B',
       icon: '📐',
     },
     'Clinical': {
       title: 'Clinical',
-      desc: 'Precision matters. Advanced analytics evaluate performance trends, interview outcomes, and behavioral signals to provide measurable improvement strategies for both candidates and hiring teams.',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800',
-      gradient: '#E03040',
-      accent: '#f8fafc',
+      headline: 'Precision Analytics & Trends',
+      desc: 'Precision matters. Advanced analytics evaluate performance trends, interview outcomes, and behavioral signals to provide measurable improvement strategies.',
+      image: '/images/impact/mainpagrimages/image copy 2.png',
+      gradient: 'linear-gradient(135deg, #E11D48 0%, #881337 100%)',
+      accent: '#F43F5E',
       icon: '📊',
     },
     'Evidence': {
       title: 'Evidence',
-      desc: 'Every recommendation is explainable and data-backed. Matching scores, learning suggestions, and hiring insights are supported by transparent reasoning and industry benchmarks, ensuring trust at every step.',
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
-      gradient: '#E03070',
-      accent: '#f8fafc',
+      headline: 'Data-Backed Decision Making',
+      desc: 'Every recommendation is explainable and data-backed. Matching scores, learning suggestions, and hiring insights are supported by transparent reasoning.',
+      image: '/images/impact/mainpagrimages/image copy 3.png',
+      gradient: 'linear-gradient(135deg, #4F46E5 0%, #1E1B4B 100%)',
+      accent: '#6366F1',
       icon: '🔬',
     }
   };
@@ -320,13 +326,12 @@ const DashboardHome: React.FC = () => {
                     onClick={() => navigate(`/learn/courses/${createSlug(course.title, course._id)}`)}
                     className="min-w-[220px] sm:min-w-[260px] lg:min-w-[290px] h-[400px] lg:h-[440px] relative rounded-[2rem] overflow-hidden group hover:scale-[1.02] transition-all duration-700 cursor-pointer shadow-lg border border-black/[0.03]"
                   >
-                    {/* Background Image */}
                     <img
                       src={course.image || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format&fit=crop'}
                       alt={course.title}
-                      className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      className="h-full w-full object-contain transition-transform duration-1000 group-hover:scale-110 p-4"
+                      style={{ background: '#F8F9FB' }}
                     />
-
                     {/* Bottom Information Block */}
                     <div className="absolute bottom-4 left-4 right-4 bg-white rounded-[1.2rem] p-4 flex justify-between items-center shadow-xl shadow-black/5">
                       <div className="flex flex-col">
@@ -392,6 +397,11 @@ const DashboardHome: React.FC = () => {
             </div>
           </section>
         </div>
+
+        {/* Advertisements Section */}
+        <div className="relative z-20 mb-20 px-4 sm:px-12">
+          <AdsCarousel />
+        </div>
       </div>
 
 
@@ -411,19 +421,19 @@ const DashboardHome: React.FC = () => {
               }
             `}
           </style>
-          
+
           <div className="flex w-max animate-slide-right flex-nowrap">
             {/* First half */}
             <div className="flex items-center gap-10 md:gap-20 pr-10 md:pr-20 flex-shrink-0">
-               {[...Array(10)].map((_, i) => (
-                 <img key={`first-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
-               ))}
+              {[...Array(10)].map((_, i) => (
+                <img key={`first-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+              ))}
             </div>
             {/* Second half (Duplicate for seamless loop) */}
             <div className="flex items-center gap-10 md:gap-20 pr-10 md:pr-20 flex-shrink-0">
-               {[...Array(10)].map((_, i) => (
-                 <img key={`second-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
-               ))}
+              {[...Array(10)].map((_, i) => (
+                <img key={`second-${i}`} src="/images/studlyf.png" alt="Studlyf" className="h-14 sm:h-16 md:h-20 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300" />
+              ))}
             </div>
           </div>
         </div>
@@ -467,8 +477,15 @@ const DashboardHome: React.FC = () => {
 
 
         {/* Product Brief Section */}
-        < section className="mb-16 mt-12 px-4 sm:px-0" >
-          <div className="flex flex-col items-center text-center">
+        <section className="mb-16 mt-12 px-4 sm:px-0 relative overflow-hidden py-16 bg-[#FAFAFA] rounded-[3rem] border border-black/5" >
+          {/* Vibrant Ambient Glows from User Palette */}
+          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] bg-[#0891B2]/12 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-[0%] right-[-15%] w-[45%] h-[55%] bg-[#059669]/12 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-[10%] right-[10%] w-[40%] h-[50%] bg-[#7C3AED]/15 rounded-full blur-[130px] pointer-events-none" />
+          <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[60%] bg-[#D97706]/08 rounded-full blur-[150px] pointer-events-none" />
+          <div className="absolute top-[40%] left-[40%] w-[35%] h-[45%] bg-[#E11D48]/10 rounded-full blur-[110px] pointer-events-none" />
+
+          <div className="flex flex-col items-center text-center relative z-10">
             {/* Product Brief Header */}
             <div className="flex flex-col items-center gap-3 mb-8">
               <h2 className="text-2xl sm:text-4xl font-black text-black uppercase tracking-tighter inline-block relative w-fit">
@@ -506,7 +523,7 @@ const DashboardHome: React.FC = () => {
 
             {/* Dynamic Content Display with Background */}
             <div
-              className="max-w-[1400px] w-full mx-auto min-h-[600px] relative rounded-[3rem] overflow-hidden flex items-center justify-center transition-all duration-700 py-8 px-4 sm:px-10 -mt-2"
+              className="max-w-[1300px] w-full mx-auto min-h-[480px] relative rounded-[2.5rem] overflow-hidden flex items-center justify-center transition-all duration-700 py-6 px-4 sm:px-8 -mt-2"
             >
               <div className="relative z-10 w-full h-full max-w-7xl flex items-center justify-center">
                 <AnimatePresence mode="wait">
@@ -517,76 +534,23 @@ const DashboardHome: React.FC = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 1.02 }}
                       transition={{ duration: 0.5, ease: "easeOut" }}
-                      className="relative w-full min-h-[500px] rounded-[2.5rem] overflow-hidden flex items-center justify-center p-6 sm:p-10"
+                      className="relative w-full min-h-[420px] rounded-[2rem] overflow-hidden flex items-center justify-center p-4 sm:p-8"
                       style={{
                         background: briefDetails[activeBrief].gradient,
                       }}
                     >
 
-                      <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 lg:gap-12 w-full">
-                        <div className="flex-1 text-left order-2 lg:order-1">
-                          {/* Accent label */}
-                          <span className="text-xs font-black uppercase tracking-[0.4em] mb-4 block" style={{ color: briefDetails[activeBrief].accent }}>
-                            {briefDetails[activeBrief].icon} {activeBrief} Module
-                          </span>
-                          <motion.p
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.3 }}
-                            className="text-white/90 text-base sm:text-lg leading-relaxed tracking-tight"
-                            style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}
-                          >
-                            {briefDetails[activeBrief].desc}
-                          </motion.p>
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.3 }}
-                            className="mt-8"
-                          >
-                            <Button
-                              className="bg-black text-white font-bold px-8 py-3.5 rounded-full text-xs shadow-xl hover:bg-black/80 hover:scale-105 transition-all"
-                            >
-                              Start Journey
-                            </Button>
-                          </motion.div>
-                        </div>
-
-                        {(briefDetails[activeBrief].image || briefDetails[activeBrief].video) && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.1, duration: 0.4 }}
-                            className="lg:w-[280px] w-full flex-shrink-0 relative group order-1 lg:order-2 flex items-center justify-center"
-                          >
-                            {briefDetails[activeBrief].video ? (
-                              <div className="relative w-full aspect-square flex items-center justify-center">
-                                <video
-                                  src={briefDetails[activeBrief].video}
-                                  autoPlay
-                                  loop
-                                  muted={isMuted}
-                                  playsInline
-                                  className="w-full h-full object-contain relative z-10"
-                                />
-                                <button
-                                  onClick={() => setIsMuted(!isMuted)}
-                                  className="absolute bottom-4 right-4 p-3 bg-black/30 backdrop-blur-xl rounded-full text-white hover:bg-black/50 border border-white/20 transition-all z-20 shadow-xl"
-                                >
-                                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="relative w-full aspect-square flex items-center justify-center">
-                                <img
-                                  src={briefDetails[activeBrief].image}
-                                  alt={briefDetails[activeBrief].title}
-                                  className="w-full h-full object-contain relative z-10 transform group-hover:scale-105 transition-transform duration-1000"
-                                />
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
+                      <div className="relative z-10 flex flex-col items-center justify-center w-full">
+                        {/* Replacing Product Brief content with Example phone UI */}
+                        <ExampleColorContext.Provider value={{
+                          gradient: briefDetails[activeBrief].gradient,
+                          accent: briefDetails[activeBrief].accent,
+                          headline: briefDetails[activeBrief].headline,
+                          text: briefDetails[activeBrief].desc as string,
+                          image: briefDetails[activeBrief].image,
+                        }}>
+                          <Example />
+                        </ExampleColorContext.Provider>
                       </div>
                     </motion.div>
                   )}
@@ -604,9 +568,6 @@ const DashboardHome: React.FC = () => {
         <GetHiredSection />
       </div>
 
-      <div className="relative z-20">
-        <AdsCarousel />
-      </div>
       <FeaturedColleges />
       <WhyUsSection />
       <FAQCarousel />

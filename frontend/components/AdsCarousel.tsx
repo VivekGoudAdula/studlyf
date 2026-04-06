@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Play, ExternalLink, ImageIcon } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 
 /* ─── Google Font injection ─────────────────────── */
-function useFont() {
+export function useFont() {
     useEffect(() => {
         const id = 'ads-google-fonts';
         if (document.getElementById(id)) return;
         const l = document.createElement('link');
         l.id = id; l.rel = 'stylesheet';
-        l.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap';
+        l.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=Inter:wght@400;600;700;800&display=swap';
         document.head.appendChild(l);
     }, []);
 }
@@ -68,7 +70,7 @@ const ADS_CSS = `
   color:rgba(255,255,255,.07); line-height:1; }
 `;
 
-function useCSS() {
+export function useCSS() {
     useEffect(() => {
         const id = 'ads-carousel-css';
         if (document.getElementById(id)) return;
@@ -79,7 +81,7 @@ function useCSS() {
 }
 
 /* ─── Types ─────────────────────────────────────── */
-export type AdCardType = 'video' | 'image' | 'wide' | 'promo';
+export type AdCardType = 'video' | 'image' | 'video_image';
 export interface AdItem {
     _id?: string;
     card_type: AdCardType;
@@ -88,6 +90,8 @@ export interface AdItem {
     description: string;
     media_url?: string;
     media_type?: 'image' | 'video';
+    secondary_media_url?: string;
+    secondary_media_type?: 'image' | 'video';
     tag?: string;
     badge?: string;
     cta_text: string;
@@ -101,186 +105,12 @@ export interface AdItem {
     promo_stats?: { num: string; label: string }[];
     order: number;
     active?: boolean;
+    show_cta?: boolean;
+    cta_link?: string;
 }
 
 /* ─── Dummy data ─────────────────────────────────── */
-const DUMMY: AdItem[] = [
-    {
-        card_type: 'video', eyebrow: 'Data Science', title: 'Machine Learning A–Z: Hands-On Python',
-        description: 'Master ML algorithms with real datasets. From regression to deep neural networks, all from scratch.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-        media_type: 'video', tag: '🎬 Video Course', duration: '42 lectures · 18h',
-        cta_text: 'Enroll →', cta_style: 'primary', pills: ['Beginner', 'Certificate'],
-        color_scheme: 'dark', bg_color: 'blue', order: 0,
-    },
-    {
-        card_type: 'image', eyebrow: 'Creative Design', title: 'UI/UX Design Masterclass — Figma to Prototype',
-        description: 'Build stunning interfaces. Learn Figma, design systems, and ship your first real product.',
-        media_url: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: 'New 2025',
-        cta_text: 'Start Free →', cta_style: 'dark', pills: ['Intermediate'],
-        color_scheme: 'light', bg_color: 'soft-blue', order: 1,
-    },
-    {
-        card_type: 'wide', eyebrow: 'Full-Stack Web Dev', title: 'React + Node.js: Build Real-World Apps',
-        description: 'The complete fullstack bootcamp. Deploy live projects with auth, databases, and REST APIs.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-        media_type: 'video', tag: '🎓 Bestseller', duration: '6h preview free',
-        cta_text: 'Grab Deal →', cta_style: 'gold', color_scheme: 'dark', wide_side: 'dark',
-        bg_color: 'teal', order: 2,
-    },
-    {
-        card_type: 'promo', eyebrow: '', title: 'Unlock Every Course for ₹999/mo',
-        description: '', promo_tag: '⚡ Flash Sale — 48 hrs left',
-        promo_stats: [{ num: '5,200+', label: 'Courses' }, { num: '180+', label: 'Instructors' }, { num: '96%', label: 'Completion' }, { num: '∞', label: 'Access' }],
-        cta_text: 'Get All-Access →', cta_style: 'white',
-        color_scheme: 'dark', order: 3,
-    },
-    {
-        card_type: 'image', eyebrow: 'Science & Biology', title: 'Introduction to Genetics & Genomics',
-        description: 'Decode DNA. Understand CRISPR, gene editing, and the science reshaping humanity.',
-        media_url: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: 'Top Rated',
-        cta_text: 'Explore →', cta_style: 'sage', pills: ['All Levels'],
-        color_scheme: 'light', bg_color: 'soft-green', order: 4,
-    },
-    {
-        card_type: 'video', eyebrow: 'Business & Finance', title: 'MBA Essentials: Strategy, Finance & Leadership',
-        description: 'Learn what top business schools teach — in a fraction of the time and cost.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-        media_type: 'video', tag: '🏆 Award Winning', duration: '28 lectures · 9h',
-        cta_text: 'Enroll →', cta_style: 'gold', pills: ['Advanced', 'MBA'],
-        color_scheme: 'dark', bg_color: 'purple', order: 5,
-    },
-    {
-        card_type: 'wide', eyebrow: 'Arts & Music', title: 'Music Theory & Composition for Beginners',
-        description: 'From reading notes to composing your own pieces. No prior experience needed.',
-        media_url: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800&auto=format&fit=crop',
-        media_type: 'image',
-        cta_text: 'Start Learning →', cta_style: 'primary', color_scheme: 'light', wide_side: 'light',
-        bg_color: 'soft-amber', order: 6,
-    },
-    {
-        card_type: 'video', eyebrow: 'Cybersecurity', title: 'Ethical Hacking & Penetration Testing',
-        description: 'Learn to think like a hacker. Protect systems, find vulnerabilities, earn your CEH.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        media_type: 'video', tag: '🔥 Trending', duration: '15 lectures · 6h',
-        cta_text: 'Join Now →', cta_style: 'outline-light', pills: ['Advanced'],
-        color_scheme: 'dark', bg_color: 'rose', order: 7,
-    },
-    {
-        card_type: 'image', eyebrow: 'Artificial Intelligence', title: 'Prompt Engineering & LLM Applications',
-        description: 'Master GPT-4, Claude, and Gemini. Build production AI apps, agents, and pipelines from scratch.',
-        media_url: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: 'Hot 🔥',
-        cta_text: 'Learn Now →', cta_style: 'dark', pills: ['All Levels'],
-        color_scheme: 'light', bg_color: 'soft-blue', order: 8,
-    },
-    {
-        card_type: 'promo', eyebrow: '', title: 'Land Your Dream Job in 90 Days',
-        description: '', promo_tag: '🎯 Career Guarantee Program',
-        promo_stats: [{ num: '94%', label: 'Placement' }, { num: '₹12L+', label: 'Avg. Package' }, { num: '200+', label: 'Hiring Partners' }, { num: '90', label: 'Day Track' }],
-        cta_text: 'Apply Now →', cta_style: 'white',
-        color_scheme: 'dark', order: 9,
-    },
-    {
-        card_type: 'wide', eyebrow: 'Product Management', title: 'Become a PM at FAANG: Zero to Offer',
-        description: 'From PRDs to product metrics, strategy to stakeholder management — get PM-ready with real case studies.',
-        media_url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: 'Top Pick',
-        cta_text: 'Start Journey →', cta_style: 'primary', color_scheme: 'light', wide_side: 'light',
-        bg_color: 'soft-amber', order: 10,
-    },
-    {
-        card_type: 'video', eyebrow: 'Cloud & DevOps', title: 'Kubernetes & Docker: Production Mastery',
-        description: 'Deploy, scale, and manage containerised workloads on Kubernetes. Hands-on with real clusters.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-        media_type: 'video', tag: '☁️ Cloud Track', duration: '36 lectures · 22h',
-        cta_text: 'Enroll →', cta_style: 'primary', pills: ['Intermediate', 'Cert'],
-        color_scheme: 'dark', bg_color: 'teal', order: 11,
-    },
-    // ── NEW CARDS ───────────────────────────────────────────────────────────
-    {
-        card_type: 'image', eyebrow: 'Blockchain & Web3', title: 'Solidity & Smart Contracts: Build on Ethereum',
-        description: 'Write, test, and deploy ERC-20 tokens and DeFi protocols. Go from zero to on-chain in 6 weeks.',
-        media_url: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: '🔗 Web3',
-        cta_text: 'Start Building →', cta_style: 'dark', pills: ['Intermediate'],
-        color_scheme: 'light', bg_color: 'soft-blue', order: 12,
-    },
-    {
-        card_type: 'wide', eyebrow: 'Adobe & Creative Suite', title: 'Photography Masterclass: From DSLR to Editorial',
-        description: 'Shoot, retouch, and sell professional photography. Covers composition, Lightroom, Photoshop, and client workflows.',
-        media_url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: 'Staff Pick',
-        cta_text: 'Explore Course →', cta_style: 'dark', color_scheme: 'light', wide_side: 'light',
-        bg_color: 'soft-green', order: 13,
-    },
-    {
-        card_type: 'video', eyebrow: 'Language Learning', title: 'Spanish B2 in 60 Days — Immersive Method',
-        description: 'Learn real conversational Spanish through storytelling, native content, and live tutoring sessions.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-        media_type: 'video', tag: '🌍 Language', duration: '80 lessons · 24h',
-        cta_text: 'Start Free →', cta_style: 'sage', pills: ['Beginner → B2'],
-        color_scheme: 'dark', bg_color: 'green', order: 14,
-    },
-    {
-        card_type: 'image', eyebrow: 'Personal Finance', title: 'Stock Market Investing for Indian Millennials',
-        description: 'Mutual funds, SIPs, NSE/BSE, F&O basics, and tax planning — all explained simply by SEBI-registered advisors.',
-        media_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: '📈 Finance',
-        cta_text: 'Invest in Yourself →', cta_style: 'primary', pills: ['All Levels'],
-        color_scheme: 'light', bg_color: 'soft-amber', order: 15,
-    },
-    {
-        card_type: 'promo', eyebrow: '', title: 'Study Now. Pay When You Get Hired.',
-        description: '', promo_tag: '🎓 Income Share Agreement',
-        promo_stats: [{ num: '₹0', label: 'Upfront Cost' }, { num: '6mo', label: 'Payment Grace' }, { num: '10%', label: 'ISA Rate' }, { num: '3yr', label: 'Max Term' }],
-        cta_text: 'Check Eligibility →', cta_style: 'white',
-        color_scheme: 'dark', order: 16,
-    },
-    {
-        card_type: 'wide', eyebrow: 'Leadership & Soft Skills', title: 'Executive Communication: Speak Like a Leader',
-        description: 'Public speaking, persuasion, conflict resolution, and C-suite storytelling — all in one power-packed programme.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
-        media_type: 'video', tag: '🎙 Leadership', duration: '18 modules · 10h',
-        cta_text: 'Enroll Now →', cta_style: 'gold', color_scheme: 'dark', wide_side: 'dark',
-        bg_color: 'amber', order: 17,
-    },
-    {
-        card_type: 'video', eyebrow: 'Data Analytics', title: 'Power BI & Tableau: Turn Data Into Decisions',
-        description: 'Build live dashboards, KPIs, and executive reports. Used by 40,000+ analysts at Fortune 500 companies.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
-        media_type: 'video', tag: '📊 Analytics', duration: '52 lessons · 20h',
-        cta_text: 'Get Certified →', cta_style: 'primary', pills: ['Intermediate', 'MBA-ready'],
-        color_scheme: 'dark', bg_color: 'blue', order: 18,
-    },
-    {
-        card_type: 'image', eyebrow: 'Health & Wellness', title: 'Yoga & Mindfulness for High-Performance Professionals',
-        description: '30-minute daily sequences designed for desk workers. Reduce burnout, boost focus, and sleep better every night.',
-        media_url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: '🧘 Wellness',
-        cta_text: 'Start Today →', cta_style: 'sage', pills: ['All Levels'],
-        color_scheme: 'light', bg_color: 'soft-green', order: 19,
-    },
-    {
-        card_type: 'video', eyebrow: 'Game Development', title: 'Unreal Engine 5: Build AAA Games from Scratch',
-        description: 'Nanite, Lumen, Blueprints, and multiplayer networking — the full UE5 stack from a AAA ex-senior developer.',
-        media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-        media_type: 'video', tag: '🎮 Game Dev', duration: '110 lectures · 38h',
-        cta_text: 'Launch Career →', cta_style: 'gold', pills: ['Intermediate'],
-        color_scheme: 'dark', bg_color: 'purple', order: 20,
-    },
-    {
-        card_type: 'wide', eyebrow: 'Placement Partner', title: 'Microsoft LEAP Program — Exclusive for Studlyf Alumni',
-        description: 'Microsoft LEAP is a 16-week apprenticeship for non-traditional engineers. Studlyf has a dedicated pipeline with 100% interview invitation for qualified graduates.',
-        media_url: 'https://images.unsplash.com/photo-1583752028088-91e3e9880b46?w=800&auto=format&fit=crop',
-        media_type: 'image', badge: '🏆 Elite Partner',
-        cta_text: 'View Partnership →', cta_style: 'dark', color_scheme: 'light', wide_side: 'light',
-        bg_color: 'soft-blue', order: 21,
-    },
-];
-
+const DUMMY: AdItem[] = [];
 
 /* ─── BG colour map ─────────────────────────────── */
 const BG_MAP: Record<string, string> = {
@@ -310,11 +140,22 @@ const CTA_STYLES: Record<string, React.CSSProperties> = {
     'outline-light': { background: 'transparent', border: '1px solid rgba(255,255,255,.35)', color: 'rgba(255,255,255,.85)' },
     white: { background: '#FFFFFF', color: '#C84B2F', fontWeight: 600 },
 };
-function CtaBtn({ text, style: s = 'primary', fullWidth = false }: { text: string; style?: string; fullWidth?: boolean }) {
+function CtaBtn({ text, link, style: s = 'primary', fullWidth = false }: { text: string; link?: string; style?: string; fullWidth?: boolean }) {
+    const handleClick = () => {
+        if (link) {
+            window.open(link, '_blank', 'noopener,noreferrer');
+        } else {
+            const el = document.getElementById('contact-us');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    };
+
     return (
-        <button style={{
-            fontFamily: "'DM Sans',sans-serif", fontSize: '.75rem', fontWeight: 500,
-            letterSpacing: '.08em', textTransform: 'uppercase', padding: '9px 18px', borderRadius: 2,
+        <button onClick={handleClick} style={{
+            fontFamily: "'Inter',sans-serif", fontSize: '.75rem', fontWeight: 600,
+            letterSpacing: '.08em', textTransform: 'uppercase', padding: '12px 18px', borderRadius: 4,
             border: 'none', cursor: 'pointer', marginTop: 'auto', width: fullWidth ? '100%' : 'fit-content',
             ...CTA_STYLES[s]
         }}>
@@ -323,73 +164,77 @@ function CtaBtn({ text, style: s = 'primary', fullWidth = false }: { text: strin
     );
 }
 
+/* ─── YouTube Helper ───────────────────────────── */
+function getYoutubeEmbed(url?: string) {
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=1&mute=1&loop=1&playlist=${match[1]}&controls=0&modestbranding=1` : null;
+}
+
 /* ─── Card components ──────────────────────────── */
 function VideoCard({ ad }: { ad: AdItem }) {
-    const isVideo = ad.media_type === 'video';
+    const isVideo = ad.media_type === 'video' || !!getYoutubeEmbed(ad.media_url) || !!ad.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 290px', height: 380,
-            borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateRows: '1fr auto',
-            background: '#1A1410'
+            flex: '0 0 540px', minHeight: 400,
+            borderRadius: 14, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1.3fr 1fr',
+            background: '#1A1410', boxShadow: '0 25px 50px rgba(0,0,0,0.15)'
         }}>
             <div style={{ position: 'relative', overflow: 'hidden' }}>
                 {isVideo ? (
-                    <video src={ad.media_url} autoPlay loop muted playsInline
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    getYoutubeEmbed(ad.media_url) ? (
+                        <iframe
+                            src={getYoutubeEmbed(ad.media_url)!}
+                            style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover' }}
+                            allow="autoplay; encrypted-media"
+                            title={ad.title}
+                        />
+                    ) : (
+                        <video
+                            key={ad.media_url}
+                            src={ad.media_url}
+                            autoPlay={true}
+                            loop={true}
+                            muted={true}
+                            playsInline={true}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                    )
                 ) : (
-                    <div style={{
-                        ...bgStyle(ad.bg_color), height: '100%', minHeight: 280, display: 'flex',
-                        alignItems: 'center', justifyContent: 'center'
-                    }}>
-                        <div className="ads-play-btn">
-                            <svg width={20} height={22} viewBox="0 0 20 22" fill="white"><path d="M1 1L19 11L1 21V1Z" /></svg>
-                        </div>
-                    </div>
+                    <img src={ad.media_url} alt={ad.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 )}
-                {!isVideo && <div style={{
-                    ...bgStyle(ad.bg_color), position: 'absolute', inset: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                    <div className="ads-play-btn">
-                        <svg width={20} height={22} viewBox="0 0 20 22" fill="white"><path d="M1 1L19 11L1 21V1Z" /></svg>
-                    </div>
-                </div>}
                 {ad.tag && <div style={{
                     position: 'absolute', top: 20, left: 20, background: '#C84B2F',
-                    color: '#fff', fontSize: '.68rem', fontWeight: 500, letterSpacing: '.12em',
-                    textTransform: 'uppercase', padding: '5px 12px', borderRadius: 2
+                    color: '#fff', fontSize: '.68rem', fontWeight: 600, letterSpacing: '.1em',
+                    textTransform: 'uppercase', padding: '6px 14px', borderRadius: 4
                 }}>{ad.tag}</div>}
-                {ad.duration && <div style={{
-                    position: 'absolute', bottom: 16, right: 16,
-                    background: 'rgba(0,0,0,.7)', color: '#fff', fontSize: '.72rem',
-                    padding: '3px 8px', borderRadius: 2, letterSpacing: '.05em'
-                }}>{ad.duration}</div>}
             </div>
             <div style={{
-                padding: '18px 20px 20px', background: ad.bg_color === 'rose' ? '#2C3E50' : '#1A1410',
-                color: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: 10
+                padding: '24px', background: '#1A1410',
+                color: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: 12
             }}>
                 <div style={{
                     fontSize: '.65rem', letterSpacing: '.14em', textTransform: 'uppercase',
-                    color: '#D4A847', fontWeight: 500
+                    color: '#D4A847', fontWeight: 600
                 }}>{ad.eyebrow}</div>
                 <h3 style={{
-                    fontFamily: "'Playfair Display',serif", fontSize: '1.05rem', fontWeight: 700,
-                    lineHeight: 1.3, letterSpacing: '-.01em', margin: 0
+                    fontFamily: "'Inter', sans-serif", fontSize: '1.2rem', fontWeight: 800,
+                    lineHeight: 1.2, letterSpacing: '-.02em', margin: 0
                 }}>{ad.title}</h3>
                 <p style={{
-                    fontSize: '.75rem', lineHeight: 1.6, color: 'rgba(250,247,242,.65)',
-                    fontWeight: 300, margin: 0
+                    fontSize: '.85rem', lineHeight: 1.6, color: 'rgba(255,255,255,.7)',
+                    fontWeight: 400, margin: 0, overflowY: 'auto', maxHeight: '180px'
                 }}>{ad.description}</p>
-                <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {ad.pills?.map(p => <span key={p} style={{
-                            fontSize: '.65rem', letterSpacing: '.08em',
-                            textTransform: 'uppercase', padding: '4px 9px', borderRadius: 2, fontWeight: 500,
-                            border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.6)'
+                            fontSize: '.6rem', letterSpacing: '.05em',
+                            textTransform: 'uppercase', padding: '4px 10px', borderRadius: 4, fontWeight: 600,
+                            background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)',
+                            border: '1px solid rgba(255,255,255,0.1)'
                         }}>{p}</span>)}
                     </div>
-                    <CtaBtn text={ad.cta_text} style={ad.cta_style} />
+                    {ad.show_cta !== false && <CtaBtn text={ad.cta_text} link={ad.cta_link} style={ad.cta_style} fullWidth={true} />}
                 </div>
             </div>
         </div>
@@ -399,174 +244,125 @@ function VideoCard({ ad }: { ad: AdItem }) {
 function ImageCard({ ad }: { ad: AdItem }) {
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 290px', height: 380,
-            borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateRows: '1fr auto',
-            background: '#fff', border: '1px solid #E5E7EB'
+            flex: '0 0 380px', minHeight: 440,
+            borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            background: '#fff', border: '1px solid #f3f4f6', boxShadow: '0 20px 40px rgba(0,0,0,0.06)'
         }}>
-            <div style={{ position: 'relative', overflow: 'hidden' }}>
-                {ad.media_url ? (
-                    <img src={ad.media_url} alt={ad.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                ) : (
-                    <div style={{
-                        ...bgStyle(ad.bg_color), height: '100%', minHeight: 230,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.3rem'
-                    }}>🎨</div>
-                )}
+            <div style={{ position: 'relative', overflow: 'hidden', height: '200px', flexShrink: 0 }}>
+                <img src={ad.media_url} alt={ad.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 {ad.badge && <div style={{
-                    position: 'absolute', top: 20, right: 20, background: '#fff',
-                    color: '#1A1410', fontSize: '.65rem', fontWeight: 500, letterSpacing: '.12em',
-                    textTransform: 'uppercase', padding: '5px 11px', borderRadius: 20,
-                    border: '1px solid #E5E7EB'
+                    position: 'absolute', top: 16, right: 16, background: '#fff',
+                    color: '#111', fontSize: '.65rem', fontWeight: 700, letterSpacing: '.1em',
+                    textTransform: 'uppercase', padding: '6px 14px', borderRadius: 20,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}>{ad.badge}</div>}
             </div>
             <div style={{
-                padding: '18px 20px 20px', background: '#fff', color: '#1A1410',
-                display: 'flex', flexDirection: 'column', gap: 10
+                padding: '24px', background: '#fff', color: '#111',
+                display: 'flex', flexDirection: 'column', gap: 12, flex: 1
             }}>
                 <div style={{
                     fontSize: '.65rem', letterSpacing: '.14em', textTransform: 'uppercase',
-                    color: '#4A6741', fontWeight: 500
+                    color: '#6366f1', fontWeight: 700
                 }}>{ad.eyebrow}</div>
                 <h3 style={{
-                    fontFamily: "'Playfair Display',serif", fontSize: '1.05rem', fontWeight: 700,
-                    lineHeight: 1.3, letterSpacing: '-.01em', margin: 0
+                    fontFamily: "'Inter', sans-serif", fontSize: '1.25rem', fontWeight: 800,
+                    lineHeight: 1.2, letterSpacing: '-.02em', margin: 0
                 }}>{ad.title}</h3>
-                <p style={{ fontSize: '.75rem', lineHeight: 1.6, color: '#666', fontWeight: 300, margin: 0 }}>
+                <p style={{ 
+                    fontSize: '.9rem', lineHeight: 1.5, color: '#555', fontWeight: 400, margin: 0,
+                    overflowY: 'auto', maxHeight: '140px'
+                 }}>
                     {ad.description}</p>
-                <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                        {ad.pills?.map(p => <span key={p} style={{
-                            fontSize: '.65rem', letterSpacing: '.08em',
-                            textTransform: 'uppercase', padding: '4px 9px', borderRadius: 2, fontWeight: 500,
-                            border: '1px solid #ccc', color: '#555'
-                        }}>{p}</span>)}
-                    </div>
-                    <CtaBtn text={ad.cta_text} style={ad.cta_style} />
+                <div style={{ marginTop: 'auto' }}>
+                    {ad.show_cta !== false && <CtaBtn text={ad.cta_text} link={ad.cta_link} style={ad.cta_style} fullWidth={true} />}
                 </div>
             </div>
         </div>
     );
 }
 
-function WideCard({ ad }: { ad: AdItem }) {
-    const isDark = ad.wide_side !== 'light';
-    const isVideo = ad.media_type === 'video';
+function VideoImageCard({ ad }: { ad: AdItem }) {
+    const isVideo = ad.media_type === 'video' || !!getYoutubeEmbed(ad.media_url) || !!ad.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 480px', height: 380,
-            borderRadius: 4, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr'
+            flex: '0 0 580px', minHeight: 400,
+            borderRadius: 14, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1.1fr 1fr',
+            background: '#fff', border: '1px solid #f3f4f6', boxShadow: '0 25px 60px rgba(0,0,0,0.1)'
         }}>
-            <div style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', overflow: 'hidden', borderRight: '1px solid #f3f4f6' }}>
                 {isVideo ? (
-                    <video src={ad.media_url} autoPlay loop muted playsInline
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                ) : ad.media_url ? (
-                    <img src={ad.media_url} alt={ad.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    getYoutubeEmbed(ad.media_url) ? (
+                        <iframe
+                            src={getYoutubeEmbed(ad.media_url)!}
+                            style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover' }}
+                            allow="autoplay; encrypted-media"
+                            title={ad.title}
+                        />
+                    ) : (
+                        <video
+                            key={ad.media_url}
+                            src={ad.media_url}
+                            autoPlay={true}
+                            loop={true}
+                            muted={true}
+                            playsInline={true}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                    )
                 ) : (
-                    <div style={{
-                        ...bgStyle(ad.bg_color), height: '100%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'
-                    }}>
-                        <div className="ads-play-btn">
-                            <svg width={20} height={22} viewBox="0 0 20 22" fill="white"><path d="M1 1L19 11L1 21V1Z" /></svg>
+                    <img src={ad.media_url} alt="Primary" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+                <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Main View</div>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateRows: '1.2fr 1fr' }}>
+                {/* Secondary Image Area */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: '#f9fafb' }}>
+                    {ad.secondary_media_url ? (
+                        <img src={ad.secondary_media_url} alt="Secondary" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
+                             <ImageIcon size={32} />
                         </div>
+                    )}
+                     <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(255,255,255,0.8)', color: '#111', padding: '4px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Feature</div>
+                </div>
+
+                {/* Content Area */}
+                <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 8, background: '#fff' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#111', lineHeight: 1.2 }}>{ad.title}</h3>
+                    <p style={{ fontSize: '.85rem', color: '#555', margin: 0, overflowY: 'auto', maxHeight: '120px', lineHeight: 1.5 }}>{ad.description}</p>
+                    <div style={{ marginTop: 'auto' }}>
+                         {ad.show_cta !== false && <CtaBtn text={ad.cta_text} link={ad.cta_link} style={ad.cta_style} fullWidth={true} />}
                     </div>
-                )}
-                {ad.tag && <div style={{
-                    position: 'absolute', top: 20, left: 20, background: '#C84B2F',
-                    color: '#fff', fontSize: '.68rem', fontWeight: 500, letterSpacing: '.12em',
-                    textTransform: 'uppercase', padding: '5px 12px', borderRadius: 2
-                }}>{ad.tag}</div>}
-                {ad.duration && <div style={{
-                    position: 'absolute', bottom: 16, right: 16,
-                    background: 'rgba(0,0,0,.7)', color: '#fff', fontSize: '.72rem',
-                    padding: '3px 8px', borderRadius: 2
-                }}>{ad.duration}</div>}
-            </div>
-            <div style={{
-                padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 10,
-                background: isDark ? '#2C3E50' : '#fff', color: isDark ? '#FFFFFF' : '#1A1410'
-            }}>
-                <div style={{
-                    fontSize: '.68rem', letterSpacing: '.16em', textTransform: 'uppercase',
-                    fontWeight: 500, color: isDark ? '#D4A847' : '#C84B2F'
-                }}>{ad.eyebrow}</div>
-                <h3 style={{
-                    fontFamily: "'Playfair Display',serif", fontSize: '1.25rem', lineHeight: 1.25,
-                    fontWeight: 700, letterSpacing: '-.02em', margin: 0
-                }}>{ad.title}</h3>
-                <p style={{
-                    fontSize: '.78rem', lineHeight: 1.65, fontWeight: 300, margin: 0,
-                    color: isDark ? 'rgba(250,247,242,.6)' : '#666'
-                }}>{ad.description}</p>
-                <CtaBtn text={ad.cta_text} style={ad.cta_style} />
+                </div>
             </div>
         </div>
     );
 }
 
-function PromoCard({ ad }: { ad: AdItem }) {
-    return (
-        <div className="ads-card-hover" style={{
-            flex: '0 0 290px', height: 380,
-            background: '#C84B2F', color: '#FFFFFF', padding: '24px 22px', display: 'flex',
-            flexDirection: 'column', justifyContent: 'space-between', borderRadius: 4,
-            position: 'relative', overflow: 'hidden'
-        }}>
-            <div>
-                {ad.promo_tag && <div style={{
-                    display: 'inline-block', background: 'rgba(255,255,255,.15)',
-                    fontSize: '.68rem', letterSpacing: '.12em', textTransform: 'uppercase',
-                    padding: '5px 12px', borderRadius: 2, marginBottom: 20
-                }}>{ad.promo_tag}</div>}
-                <h3 style={{
-                    fontFamily: "'Playfair Display',serif", fontSize: '1.7rem', fontWeight: 900,
-                    lineHeight: 1.1, letterSpacing: '-.03em', margin: 0
-                }}>{ad.title}</h3>
-                {ad.promo_stats && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
-                        {ad.promo_stats.map(s => (
-                            <div key={s.label}>
-                                <div style={{
-                                    fontFamily: "'Playfair Display',serif", fontSize: '2rem',
-                                    fontWeight: 700, lineHeight: 1
-                                }}>{s.num}</div>
-                                <div style={{
-                                    fontSize: '.72rem', letterSpacing: '.08em', textTransform: 'uppercase',
-                                    opacity: .7, marginTop: 3, fontWeight: 300
-                                }}>{s.label}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <CtaBtn text={ad.cta_text} style="white" fullWidth />
-            <div className="ads-promo-bg">∞</div>
-        </div>
-    );
-}
-
-function renderCard(ad: AdItem, idx: number) {
+export function renderCard(ad: AdItem, idx: number) {
     switch (ad.card_type) {
-        case 'video': return <VideoCard key={idx} ad={ad} />;
-        case 'image': return <ImageCard key={idx} ad={ad} />;
-        case 'wide': return <WideCard key={idx} ad={ad} />;
-        case 'promo': return <PromoCard key={idx} ad={ad} />;
-        default: return <ImageCard key={idx} ad={ad} />;
+        case 'video':       return <VideoCard key={idx} ad={ad} />;
+        case 'image':       return <ImageCard key={idx} ad={ad} />;
+        case 'video_image': return <VideoImageCard key={idx} ad={ad} />;
+        default:            return <ImageCard key={idx} ad={ad} />;
     }
 }
 
 /* ─── easeOutQuint ──────────────────────────────── */
 function easeOutQuint(t: number) { return 1 - Math.pow(1 - t, 5); }
 
+const DEFAULT_ADS: AdItem[] = [];
+
 /* ─── Main carousel ─────────────────────────────── */
 export default function AdsCarousel() {
     useFont();
     useCSS();
 
-    const [ads, setAds] = useState<AdItem[]>(DUMMY);
+    const [ads, setAds] = useState<AdItem[]>(DEFAULT_ADS);
     const [current, setCurrent] = useState(0);
     const trackRef = useRef<HTMLDivElement>(null);
     const autoRef = useRef<number>(0);
@@ -577,13 +373,21 @@ export default function AdsCarousel() {
 
     /* fetch live data */
     useEffect(() => {
-        fetch('http://localhost:8000/api/ads')
+        fetch(`${API_BASE_URL}/api/ads`)
             .then(r => r.json())
-            .then(data => { if (Array.isArray(data) && data.length) setAds(data.sort((a, b) => a.order - b.order)); })
-            .catch(() => {/* use dummy */ });
+            .then(data => { 
+                if (Array.isArray(data) && data.length > 0) {
+                    console.log("AdsCarousel: Fetched ads successfully:", data.length);
+                    setAds(data.sort((a, b) => a.order - b.order)); 
+                } else {
+                    console.warn("AdsCarousel: No ads received from API");
+                }
+            })
+            .catch(err => {
+                console.error("AdsCarousel: Error fetching ads:", err);
+            });
     }, []);
 
-    /* collect card refs after render */
     const getCards = useCallback(() =>
         Array.from(trackRef.current?.querySelectorAll<HTMLElement>('.ads-card-hover,.ads-card-active') ?? []), []);
 
@@ -594,7 +398,6 @@ export default function AdsCarousel() {
         const safeIdx = ((idx % cards.length) + cards.length) % cards.length;
         currentRef.current = safeIdx;
         setCurrent(safeIdx);
-        // smooth scroll
         const card = cards[safeIdx];
         trackRef.current.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
     }, [getCards]);
@@ -605,11 +408,11 @@ export default function AdsCarousel() {
             if (!pausedRef.current && trackRef.current) {
                 const max = trackRef.current.scrollWidth - trackRef.current.clientWidth;
                 if (trackRef.current.scrollLeft >= max - 2) {
-                    trackRef.current.scrollTo({ left: 0, behavior: 'smooth' }); // Loop back
+                    trackRef.current.scrollTo({ left: 0, behavior: 'smooth' }); 
                     setTimeout(() => { if (!pausedRef.current) autoRef.current = requestAnimationFrame(step); }, 800);
                     return;
                 } else {
-                    trackRef.current.scrollLeft += 1; // Smooth linear scroll velocity
+                    trackRef.current.scrollLeft += 1;
                 }
             }
             autoRef.current = requestAnimationFrame(step);
@@ -622,17 +425,13 @@ export default function AdsCarousel() {
         setTimeout(() => { pausedRef.current = false; }, resumeMs);
     }, []);
 
-    /* kickstart auto scroll on mount */
     useEffect(() => {
-        // give it a second to render
         const t = setTimeout(() => startContinuousScroll(), 1000);
         return () => { clearTimeout(t); if (autoRef.current) cancelAnimationFrame(autoRef.current); };
     }, [startContinuousScroll]);
 
-    /* cleanup on unmount */
     useEffect(() => () => { if (autoRef.current) cancelAnimationFrame(autoRef.current); }, []);
 
-    /* drag scroll */
     const dragRef = useRef({ down: false, startX: 0, scrollLeft: 0 });
     const onMouseDown = (e: React.MouseEvent) => {
         if (!trackRef.current) return;
@@ -655,13 +454,11 @@ export default function AdsCarousel() {
         scrollToCard(nearest);
     };
 
+    if (ads.length === 0) return null;
+
     return (
-        <section style={{ background: '#fff', fontFamily: "'DM Sans',sans-serif", color: '#1A1410', overflow: 'hidden' }}>
-
-
-            {/* Scroll section without side buttons */}
+        <section style={{ background: '#fff', fontFamily: "'Inter', sans-serif", color: '#111', overflow: 'hidden' }}>
             <div style={{ width: '100%', padding: '28px 0 0 24px', position: 'relative' }}>
-                {/* Track */}
                 <div
                     ref={trackRef}
                     className="ads-scroll-track"
@@ -670,33 +467,20 @@ export default function AdsCarousel() {
                     onMouseUp={onMouseUp}
                     onMouseLeave={() => { dragRef.current.down = false; }}
                     onMouseEnter={() => pause(3000)}
-                    onTouchStart={e => { dragRef.current.startX = e.touches[0].clientX; pause(5000); }}
-                    onTouchEnd={e => {
-                        const dx = dragRef.current.startX - e.changedTouches[0].clientX;
-                        scrollToCard(currentRef.current + (Math.abs(dx) > 50 ? (dx > 0 ? 1 : -1) : 0));
-                    }}
                 >
                     {ads.map((ad, i) => renderCard(ad, i))}
                 </div>
             </div>
 
-            {/* Bottom Controls Area */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, padding: '32px 24px 48px' }}>
-
-
-                {/* Centered Navigation Buttons */}
                 <div style={{ display: 'flex', gap: 16 }}>
                     <button className="ads-nav-btn" aria-label="Previous"
                         onClick={() => { pause(4000); scrollToCard(currentRef.current - 1); }}>
-                        <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-                            <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        <ChevronLeft size={20} />
                     </button>
                     <button className="ads-nav-btn" aria-label="Next"
                         onClick={() => { pause(4000); scrollToCard(currentRef.current + 1); }}>
-                        <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-                            <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        <ChevronRight size={20} />
                     </button>
                 </div>
             </div>
