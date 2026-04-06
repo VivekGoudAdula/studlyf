@@ -59,12 +59,12 @@ function MediaDropper({ preview, mediaType, onFile, onClear }:
                 <>
                     {mediaType === 'video' ? (
                         getYoutubeEmbed(preview) ? (
-                            <img src={`https://img.youtube.com/vi/${getYoutubeEmbed(preview)}/hqdefault.jpg`} className="w-full h-full object-cover" />
+                            <img src={`https://img.youtube.com/vi/${getYoutubeEmbed(preview)}/hqdefault.jpg`} className="w-full h-full object-contain bg-black" />
                         ) : (
-                            <video src={preview} className="w-full h-full object-cover" />
+                            <video src={preview} className="w-full h-full object-contain bg-black" />
                         )
                     ) : (
-                        <img src={preview} className="w-full h-full object-cover" />
+                        <img src={preview} className="w-full h-full object-contain bg-slate-50" />
                     )}
                     <button 
                         onClick={e => { e.stopPropagation(); onClear(); }}

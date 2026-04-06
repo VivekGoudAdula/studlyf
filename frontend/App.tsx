@@ -65,7 +65,6 @@ import AdminStudentManagement from './pages/admin/students/StudentManagement';
 import AdminCourseManagement from './pages/admin/courses/CourseManagement';
 import AdminAssessmentManagement from './pages/admin/assessments/AssessmentManagement';
 import AdminAnalytics from './pages/admin/analytics/Analytics';
-import AdminMockInterviews from './pages/admin/interviews/MockInterviews';
 import AdminSDLManagement from './pages/admin/sdl/SDLManagement';
 import AdminProtectedRoute from './AdminProtectedRoute';
 import AdsManagement from './pages/admin/ads/AdsManagement';
@@ -180,7 +179,6 @@ const App: React.FC = () => {
               <Route path="students" element={<AdminStudentManagement />} />
               <Route path="courses" element={<AdminCourseManagement />} />
               <Route path="assessments" element={<AdminAssessmentManagement />} />
-              <Route path="mock-interviews" element={<AdminMockInterviews />} />
               <Route path="sdl-projects" element={<AdminSDLManagement />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="mentors" element={<AdminMentorManagement />} />

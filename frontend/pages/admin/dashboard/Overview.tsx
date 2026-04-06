@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Users,
@@ -15,12 +16,12 @@ import {
 } from 'lucide-react';
 import AIInsightsPanel from '../components/AIInsightsPanel';
 
-import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../../apiConfig';
 import { useAuth } from '../../../AuthContext';
 
 const DashboardOverview: React.FC = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -46,14 +47,12 @@ const DashboardOverview: React.FC = () => {
         { title: 'Total Students', value: stats.totalStudents.toLocaleString(), trend: stats.studentGrowth, icon: Users, color: 'text-blue-500' },
         { title: 'Active Courses', value: stats.activeCourses, trend: stats.courseGrowth, icon: BookOpen, color: 'text-purple-500' },
         { title: 'Completed Assessments', value: stats.completedAssessments.toLocaleString(), trend: stats.assessmentGrowth, icon: Layout, color: 'text-green-500' },
-        { title: 'Interview Success', value: stats.interviewSuccess, trend: stats.interviewGrowth, icon: Target, color: 'text-yellow-500' },
         { title: 'Hiring Conversions', value: stats.hiringConversions.toLocaleString(), trend: stats.hiringGrowth, icon: Briefcase, color: 'text-red-500' },
         { title: 'Revenue', value: stats.revenue, trend: '+24.8%', icon: DollarSign, color: 'text-emerald-500' },
     ] : [
         { title: 'Total Students', value: '...', trend: '...', icon: Users, color: 'text-blue-500' },
         { title: 'Active Courses', value: '...', trend: '...', icon: BookOpen, color: 'text-purple-500' },
         { title: 'Completed Assessments', value: '...', trend: '...', icon: Layout, color: 'text-green-500' },
-        { title: 'Interview Success', value: '...', trend: '...', icon: Target, color: 'text-yellow-500' },
         { title: 'Hiring Conversions', value: '...', trend: '...', icon: Briefcase, color: 'text-red-500' },
         { title: 'Revenue', value: '...', trend: '...', icon: DollarSign, color: 'text-emerald-500' },
     ];
@@ -84,7 +83,7 @@ const DashboardOverview: React.FC = () => {
                     <button className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2">
                         <Download size={14} /> Download Report
                     </button>
-                    <button className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] rounded-xl text-xs font-bold text-white transition-all shadow-lg shadow-purple-500/20">
+                    <button onClick={() => navigate('/admin/courses')} className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] rounded-xl text-xs font-bold text-white transition-all shadow-lg shadow-purple-500/20">
                         + Add New Course
                     </button>
                 </div>

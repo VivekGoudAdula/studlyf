@@ -39,8 +39,21 @@ sdl_join_requests_col = db["sdl_join_requests"]
 # Ads / Advertisements
 ads_col = db["advertisements"]
 
+# Users and Badges
+users_col = db["users"]
+
 # Resume Builder
 resumes_col = db["resumes"]
 
 # Skill Assessment
 skill_assessments_col = db["skill_assessments"]
+
+# Mentors & Companies
+mentors_col = db["mentors"]
+companies_col = db["companies"]
+
+# Payments & Revenue logs
+payments_col = db["payments"]
+
+# System Auditing
+audit_logs_col = db["audit_logs"]

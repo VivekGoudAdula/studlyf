@@ -1,13 +1,21 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    Plus, Play, FileText, Trash2, Edit2, Eye, 
+    GripVertical, Image, Upload, Link, ArrowUpRight 
+} from 'lucide-react';
+import { API_BASE_URL } from '../../../apiConfig';
+import { useAuth } from '../../../AuthContext';
+
 const uploadImageFile = (file: File): Promise<string> => {
     return new Promise((resolve) => {
         const reader = new FileReader();
-
         reader.onloadend = () => {
             resolve(reader.result as string);
         };
-
-import { API_BASE_URL } from '../../../apiConfig';
-import { useAuth } from '../../../AuthContext';
+        reader.readAsDataURL(file);
+    });
+};
 
 const CourseManagement: React.FC = () => {
     const { user } = useAuth();
@@ -109,7 +117,7 @@ const CourseManagement: React.FC = () => {
     };
 
     const updateLesson = (moduleId: any, lessonIndex: number, updates: any) => {
-        setModules(modules.map(m => {
+        setModules(modules?.map(m => {
             if (m.id === moduleId || m._id === moduleId) {
                 const newLessons = [...m.lessons];
                 newLessons[lessonIndex] = { ...newLessons[lessonIndex], ...updates };
@@ -117,6 +125,38 @@ const CourseManagement: React.FC = () => {
             }
             return m;
         }));
+    };
+
+    const insertAtCursor = (modId: string, lessonIdx: number, textToInsert: string) => {
+        const textarea = document.getElementById(`textarea-${modId}-${lessonIdx}`) as HTMLTextAreaElement;
+        if (!textarea) {
+            // Fallback: append if not found
+            setModules(modules?.map(m => {
+                if (m.id === modId || m._id === modId) {
+                    const newLessons = [...m.lessons];
+                    const content = newLessons[lessonIdx].content || '';
+                    newLessons[lessonIdx] = { ...newLessons[lessonIdx], content: content + textToInsert };
+                    return { ...m, lessons: newLessons };
+                }
+                return m;
+            }));
+            return;
+        }
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const currentContent = textarea.value;
+
+        const newContent = currentContent.substring(0, start) + textToInsert + currentContent.substring(end);
+        
+        // Use the updateLesson function to trigger state change
+        updateLesson(modId, lessonIdx, { content: newContent });
+
+        // Restore focus and cursor position after React update
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + textToInsert.length, start + textToInsert.length);
+        }, 0);
     };
 
     const deleteLesson = (moduleId: any, lessonIndex: number) => {
@@ -657,7 +697,6 @@ const CourseManagement: React.FC = () => {
                                                             >
                                                                 <option className="bg-[#111]" value="video">Video</option>
                                                                 <option className="bg-[#111]" value="text">Text</option>
-                                                                <option className="bg-[#111]" value="image">Image</option>
                                                                 <option className="bg-[#111]" value="quiz">Quiz</option>
                                                                 <option className="bg-[#111]" value="code">Code</option>
                                                             </select>
@@ -679,9 +718,7 @@ const CourseManagement: React.FC = () => {
                                                                         onClick={() => {
                                                                             const url = prompt("Enter Image URL:");
                                                                             if (url) {
-                                                                                const content = les.content || '';
-                                                                                const newContent = content + `\n![image](${url})\n`;
-                                                                                updateLesson(mod._id || mod.id, lessonIndex, { content: newContent });
+                                                                                insertAtCursor(mod._id || mod.id, lessonIndex, `\n![image](${url})\n`);
                                                                             }
                                                                         }}
                                                                         className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 hover:bg-[#7C3AED]/20 border border-white/10 rounded-lg text-[10px] text-white/50 hover:text-white transition-all">
@@ -704,32 +741,45 @@ const CourseManagement: React.FC = () => {
                                                                                 if (file) {
                                                                                     const url = await uploadImageFile(file);
                                                                                     if (url) {
-                                                                                        const content = les.content || '';
-                                                                                        const newContent = content + `\n![image](${url})\n`;
-                                                                                        updateLesson(mod._id || mod.id, lessonIndex, { content: newContent });
+                                                                                        insertAtCursor(mod._id || mod.id, lessonIndex, `\n![image](${url})\n`);
                                                                                     }
                                                                                 }
                                                                             }}
                                                                         />
                                                                      </div>
 
-                                                                     <button 
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            const text = prompt("Enter Link Text:", "Click here");
-                                                                            const url = prompt("Enter Target URL (starting with http/https):");
-                                                                            if (text && url) {
-                                                                                const content = les.content || '';
-                                                                                const newContent = content + `\n[${text}](${url})\n`;
-                                                                                updateLesson(mod._id || mod.id, lessonIndex, { content: newContent });
-                                                                            }
-                                                                        }}
-                                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 hover:bg-blue-500/20 border border-white/10 rounded-lg text-[10px] text-white/50 hover:text-white transition-all">
-                                                                         <Link size={12} className="text-blue-400" />
-                                                                         Insert Link
-                                                                     </button>
+                                                                    <div className="flex items-center gap-1.5 ml-2 border-l border-white/10 pl-3">
+                                                                        <button z
+                                                                            type="button"
+                                                                            onClick={() => insertAtCursor(mod._id || mod.id, lessonIndex, "\n# Your Heading\n")}
+                                                                            className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[10px] text-white/40 hover:text-white font-bold"
+                                                                            title="Add Heading"
+                                                                        >H1</button>
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={() => insertAtCursor(mod._id || mod.id, lessonIndex, "\n## Your Sub-heading\n")}
+                                                                            className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[10px] text-white/40 hover:text-white font-bold"
+                                                                            title="Add Sub-heading"
+                                                                        >H2</button>
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const link = prompt("Enter External Resource URL:");
+                                                                                if (link) {
+                                                                                    const currentResources = les.resources || [];
+                                                                                    updateLesson(mod._id || mod.id, lessonIndex, { resources: [...currentResources, link] });
+                                                                                }
+                                                                            }}
+                                                                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 hover:bg-yellow-500/20 border border-white/10 rounded-lg text-[10px] text-white/50 hover:text-white transition-all"
+                                                                        >
+                                                                            <Link size={12} className="text-yellow-500" />
+                                                                            Add Resource Link
+                                                                        </button>
+                                                                    </div>
+
                                                                  </div>
-                                                                <textarea
+                                                                 <textarea
+                                                                    id={`textarea-${mod._id || mod.id}-${lessonIndex}`}
                                                                     className={`w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[11px] text-white/80 focus:ring-1 focus:ring-[#7C3AED]/50 resize-none ${les.type === 'code' ? 'font-mono' : 'font-sans'}`}
                                                                     rows={les.type === 'code' ? 8 : 4}
                                                                     placeholder={les.type === 'code' ? "// Enter your lab code or instructions here..." : "Enter your lesson text, markdown, or theory here..."}
@@ -739,6 +789,24 @@ const CourseManagement: React.FC = () => {
                                                                     onDragOver={(e) => e.preventDefault()}
                                                                     onDrop={(e) => handleLessonDrop(mod._id || mod.id, lessonIndex, e)}
                                                                 />
+                                                                
+                                                                {les.resources && les.resources.length > 0 && (
+                                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                                        {les.resources.map((resUrl: string, ridx: number) => (
+                                                                            <div key={ridx} className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/5 rounded text-[9px] text-white/40">
+                                                                                <Link size={10} />
+                                                                                <span className="truncate max-w-[150px]">{resUrl}</span>
+                                                                                <button 
+                                                                                    onClick={() => {
+                                                                                        const newRes = (les.resources || []).filter((_: any, idx: number) => idx !== ridx);
+                                                                                        updateLesson(mod._id || mod.id, lessonIndex, { resources: newRes });
+                                                                                    }}
+                                                                                    className="text-red-500/50 hover:text-red-500"
+                                                                                ><Trash2 size={10} /></button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
 
@@ -774,63 +842,6 @@ const CourseManagement: React.FC = () => {
                                                             </div>
                                                         )}
 
-                                                        {les.type === 'image' && (
-                                                            <div className="ml-1 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
-                                                                <div 
-                                                                    className="relative group/dropzone overflow-hidden rounded-2xl"
-                                                                    onPaste={(e) => handleLessonPaste(mod._id || mod.id, lessonIndex, e)}
-                                                                    onDragOver={(e) => e.preventDefault()}
-                                                                    onDrop={(e) => handleLessonDrop(mod._id || mod.id, lessonIndex, e)}
-                                                                >
-                                                                    <div className={`
-                                                                        flex flex-col items-center justify-center gap-3 py-6 px-4
-                                                                        bg-black/20 border-2 border-dashed border-white/10 rounded-2xl
-                                                                        hover:border-[#7C3AED]/40 hover:bg-[#7C3AED]/5 transition-all
-                                                                        ${les.image_url ? 'py-4' : 'py-8'}
-                                                                    `}>
-                                                                        {les.image_url ? (
-                                                                            <div className="flex items-center gap-5 w-full relative z-20">
-                                                                                <div className="w-16 h-16 rounded-xl border-2 border-white/10 overflow-hidden bg-black shadow-2xl flex items-center justify-center shrink-0">
-                                                                                    <img src={les.image_url?.startsWith('/') ? `${API_BASE_URL}${les.image_url}` : les.image_url} alt="preview" className="w-full h-full object-cover" />
-                                                                                </div>
-                                                                                <div className="flex-grow">
-                                                                                    <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest leading-none mb-1">Visual Asset Attached</p>
-                                                                                    <button 
-                                                                                        onClick={() => updateLesson(mod._id || mod.id, lessonIndex, { image_url: '' })}
-                                                                                        className="text-[9px] font-black uppercase text-red-500 hover:text-red-400 mt-1 transition-colors"
-                                                                                    >
-                                                                                        Remove Asset
-                                                                                    </button>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div className="flex flex-col items-center gap-2 opacity-50 group-hover/dropzone:opacity-100 transition-opacity">
-                                                                                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                                                                                    <ImageIcon size={20} className="text-white/40 group-hover/dropzone:text-[#7C3AED] transition-colors" />
-                                                                                </div>
-                                                                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Drop or Paste Image Asset</p>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    {!les.image_url && (
-                                                                        <input 
-                                                                            type="file" 
-                                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                                                                            accept="image/*"
-                                                                            onChange={(e) => handleLessonImageUpload(mod._id || mod.id, lessonIndex, e)}
-                                                                        />
-                                                                    )}
-                                                                </div>
-                                                                <div className="relative">
-                                                                    <input
-                                                                        className="w-full text-[10px] text-[#7C3AED]/70 bg-black/20 border border-white/5 rounded-xl px-4 py-2 focus:ring-1 focus:ring-[#7C3AED]/30 font-mono placeholder:text-white/10"
-                                                                        placeholder="...or paste image URL"
-                                                                        value={les.image_url?.startsWith('data:') ? '' : (les.image_url || '')}
-                                                                        onChange={(e) => updateLesson(mod._id || mod.id, lessonIndex, { image_url: e.target.value })}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        )}
 
                                                         {les.type === 'quiz' && (
                                                             <div className="ml-1 space-y-4 bg-black/40 p-5 rounded-2xl border border-white/10 animate-in fade-in slide-in-from-top-1 duration-300">
@@ -1218,159 +1229,8 @@ const CourseManagement: React.FC = () => {
                     </motion.div>
                 ) : null}
             </AnimatePresence>
-        </div >
+        </div>
     );
 };
 
-
-const handleLessonPaste = async (
-    moduleId: any,
-    lessonIdx: number,
-    e: React.ClipboardEvent<any>
-) => {
-
-    const items = e.clipboardData.items;
-
-    const textarea =
-        e.currentTarget as HTMLTextAreaElement;
-
-    const start = textarea.selectionStart || 0;
-    const end = textarea.selectionEnd || 0;
-
-    for (let i = 0; i < items.length; i++) {
-
-        if (items[i].type.indexOf('image') !== -1) {
-
-            const file = items[i].getAsFile();
-
-            if (file) {
-
-                const url =
-                    await uploadImageFile(file);
-
-                if (url) {
-
-                    const mod = modules.find(
-                        m =>
-                            m._id === moduleId ||
-                            m.id === moduleId
-                    );
-
-                    const lesson =
-                        mod?.lessons[lessonIdx];
-
-                    if (
-                        lesson?.type === 'text' ||
-                        lesson?.type === 'code'
-                    ) {
-
-                        const content =
-                            lesson.content || '';
-
-                        const newContent =
-                            content.substring(0, start) +
-                            `\n![image](${url})\n` +
-                            content.substring(end);
-
-                        updateLesson(
-                            moduleId,
-                            lessonIdx,
-                            {
-                                content: newContent
-                            }
-                        );
-
-                    } else {
-
-                        updateLesson(
-                            moduleId,
-                            lessonIdx,
-                            {
-                                image_url: url
-                            }
-                        );
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-};
-
-
-const handleLessonDrop = async (
-    moduleId: any,
-    lessonIdx: number,
-    e: React.DragEvent<any>
-) => {
-
-    e.preventDefault();
-
-    const file =
-        e.dataTransfer.files?.[0];
-
-    const textarea =
-        e.currentTarget as HTMLTextAreaElement;
-
-    const start = textarea.selectionStart || 0;
-    const end = textarea.selectionEnd || 0;
-
-    const mod = modules.find(
-        m =>
-            m._id === moduleId ||
-            m.id === moduleId
-    );
-
-    const lesson =
-        mod?.lessons[lessonIdx];
-
-    if (file && file.type.startsWith('image/')) {
-
-        const url =
-            await uploadImageFile(file);
-
-        if (url) {
-
-            if (
-                lesson?.type === 'text' ||
-                lesson?.type === 'code'
-            ) {
-
-                const content =
-                    lesson.content || '';
-
-                const newContent =
-                    content.substring(0, start) +
-                    `\n![image](${url})\n` +
-                    content.substring(end);
-
-                updateLesson(
-                    moduleId,
-                    lessonIdx,
-                    {
-                        content: newContent
-                    }
-                );
-
-            } else {
-
-                updateLesson(
-                    moduleId,
-                    lessonIdx,
-                    {
-                        image_url: url
-                    }
-                );
-
-            }
-
-        }
-
-    }
-
-};
+export default CourseManagement;

@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Step = 'INTRO' | 'SETUP' | 'INTERVIEW' | 'REPORT';
+type Step = 'INTRO' | 'API_KEY' | 'SETUP' | 'INTERVIEW' | 'REPORT';
 type RoundIndex = 0 | 1 | 2;
 
 interface ChatMessage {
@@ -183,6 +183,10 @@ export default function MockInterview() {
     const [showHint, setShowHint] = useState(false);
     const hintTimerRef = useRef<any>(null);
 
+    const [apiKey, setApiKey] = useState(localStorage.getItem('groq_api_key') || '');
+    const [showingKey, setShowingKey] = useState(false);
+    const [isThinking, setIsThinking] = useState(false);
+
     const checkSkip = (text: string) => {
         const t = text.toLowerCase().trim();
         return t === 'skip' || t === 'idont know' || t === 'next question';
@@ -275,7 +279,10 @@ export default function MockInterview() {
         try {
             const res = await fetch(`${API_BASE_URL}/api/interview/setup`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Groq-API-Key': apiKey
+                },
                 body: JSON.stringify(setup)
             });
             const data = await res.json();
@@ -309,7 +316,6 @@ export default function MockInterview() {
          setMessages(prev => [...prev, { role: 'user', content: turn, timestamp: new Date().toLocaleTimeString() }]);
 
         const isSkip = checkSkip(turn);
-        // We use the EXACT keyword for skip to ensure the backend identifies it correctly
         const actualResponse = isSkip ? turn : turn;
 
         // Track response metadata
@@ -325,6 +331,7 @@ export default function MockInterview() {
 
         setUserInput('');
         setIsSending(true);
+        setIsThinking(true);
         try {
              if (isDummyMode) {
                 setTimeout(() => {
@@ -335,16 +342,21 @@ export default function MockInterview() {
                         setMessages(prev => [...prev, { role: 'interviewer', content: nextQ, timestamp: new Date().toLocaleTimeString() }]);
                         speak(nextQ, roundIndex);
                     }
+                    setIsThinking(false);
                     setIsSending(false);
-                }, 400); // Reduced delay for "real-time" feel
+                }, 400); 
                 return;
             }
              const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Groq-API-Key': apiKey
+                },
                 body: JSON.stringify({ session_id: sessionId, user_response: actualResponse, round_index: roundIndex })
             });
             const data = await res.json();
+            setIsThinking(false);
             if (data.is_round_complete) {
                 advanceRound();
             } else {
@@ -352,13 +364,14 @@ export default function MockInterview() {
                 speak(data.interviewer_text, roundIndex);
             }
         } catch (err) {
+            setIsThinking(false);
             console.error("Chat Error:", err);
-            // Optional: fallback to dummy if backend is down
         } finally { setIsSending(false); }
     };
 
     const advanceRound = async () => {
         setIsSending(true);
+        setIsThinking(true);
         const nextRound = (roundIndex + 1) as RoundIndex;
 
         if (nextRound > 2) {
@@ -372,10 +385,14 @@ export default function MockInterview() {
             // Fetch first question of next round from AI
             const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Groq-API-Key': apiKey
+                },
                 body: JSON.stringify({ session_id: sessionId, user_response: "", round_index: nextRound })
             });
             const data = await res.json();
+            setIsThinking(false);
 
             setRoundIndex(nextRound);
             setMessages([]); // Clear chat for new round
@@ -447,6 +464,7 @@ export default function MockInterview() {
         if (!text.trim()) return;
         const lastQ = messages.filter(m => m.role === 'interviewer').slice(-1)[0]?.content || "";
         setIsSending(true);
+        setIsThinking(true);
         setVoiceTranscript('');
         setMessages(prev => [...prev, { role: 'user', content: text, timestamp: new Date().toLocaleTimeString() }]);
 
@@ -476,17 +494,21 @@ export default function MockInterview() {
                         setMessages(prev => [...prev, { role: 'interviewer', content: nextQ, timestamp: new Date().toLocaleTimeString() }]);
                         speak(nextQ, 2);
                     }
+                    setIsThinking(false);
                     setIsSending(false);
                 }, 1000);
                 return;
             }
              const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Groq-API-Key': apiKey
+                },
                 body: JSON.stringify({ session_id: sessionId, user_response: actualText, round_index: 2 })
             });
             const data = await res.json();
-
+            setIsThinking(false);
             if (data.is_round_complete) {
                 setHrCallOver(true);
                 setMessages(prev => [...prev, { role: 'interviewer', content: data.interviewer_text, timestamp: new Date().toLocaleTimeString() }]);
@@ -496,7 +518,10 @@ export default function MockInterview() {
                 setMessages(prev => [...prev, { role: 'interviewer', content: data.interviewer_text, timestamp: new Date().toLocaleTimeString() }]);
                 speak(data.interviewer_text, 2);
             }
-        } catch (err) { console.error(err); } finally { setIsSending(false); }
+        } catch (err) { 
+            setIsThinking(false);
+            console.error(err); 
+        } finally { setIsSending(false); }
     };
 
     const speak = (text: string, currentRound: number) => {
@@ -597,6 +622,12 @@ export default function MockInterview() {
                 <style>{`@keyframes glowPulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.8;transform:scale(1.05)} } @keyframes breathing { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.01)} }`}</style>
                 <div className="relative">
                     <div className={`absolute inset-0 ${isHR ? 'bg-cyan-400' : 'bg-[#7C3AED]'} rounded-full blur-[80px] opacity-15 animate-[glowPulse_3s_infinite]`} />
+                    {isThinking && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className={`w-40 h-40 border-4 ${isHR ? 'border-cyan-400/20' : 'border-[#7C3AED]/20'} rounded-full animate-ping`} />
+                            <div className={`absolute w-44 h-44 border-2 ${isHR ? 'border-cyan-400/10' : 'border-[#7C3AED]/10'} rounded-full animate-pulse`} />
+                        </div>
+                    )}
                     <svg width="180" height="300" viewBox="0 0 220 380" className="relative z-10 drop-shadow-xl overflow-visible">
                         <defs>
                             <radialGradient id="faceGrad" cx="50%" cy="45%" r="55%"><stop offset="0%" stopColor="#FFE0BB" /><stop offset="60%" stopColor="#F5C28A" /><stop offset="100%" stopColor="#E8A96B" /></radialGradient>
@@ -637,7 +668,7 @@ export default function MockInterview() {
                                 <p className="text-xl text-[#475569] mb-12 leading-relaxed max-w-lg font-medium">
                                     Simulate high-stakes interviews with our AI protocol. Practice Technical, Behavioral, and HR rounds to build clinical authority.
                                 </p>
-                                <button onClick={() => setStep('SETUP')} className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 hover:scale-105 transition-all shadow-xl shadow-violet-900/20">
+                                <button onClick={() => setStep('API_KEY')} className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 hover:scale-105 transition-all shadow-xl shadow-violet-900/20">
                                     Start Practice <ArrowRight className="w-5 h-5" />
                                 </button>
                             </div>
@@ -652,6 +683,70 @@ export default function MockInterview() {
                                         </div>
                                         <p className="text-sm font-bold text-[#111827] leading-relaxed">"Practice is the hardest part of learning, and training is the essence of transformation."</p>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {step === 'API_KEY' && (
+                    <motion.div key="api-key" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md mx-auto px-6 pt-16 relative">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[250px] bg-gradient-to-b from-[#7C3AED]/10 to-transparent blur-[100px] pointer-events-none -z-10" />
+                        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-2xl space-y-6">
+                            <div className="text-center">
+                                <h2 className="text-3xl font-black mb-2 uppercase tracking-tighter italic">
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6C4DFF] via-[#EC4899] to-[#FF5B5B] inline-block pb-1">
+                                        API AUTH.
+                                    </span>
+                                </h2>
+                                <div className="h-1 w-16 bg-black mx-auto rounded-full" />
+                            </div>
+                            <div className="space-y-6 text-left">
+                                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-2">
+                                    <div className="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase tracking-wider">
+                                        <ShieldCheck size={14} /> Protocol Requirement
+                                    </div>
+                                    <p className="text-[11px] text-amber-800 leading-relaxed font-semibold">
+                                        Our AI engine requires a <strong>Groq API Key</strong> to process low-latency conversations. 
+                                        Don't have one? Get a free key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900">console.groq.com</a>
+                                    </p>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-black uppercase tracking-widest ml-4">Groq API Key</label>
+                                    <div className="relative">
+                                        <Zap className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                                        <input 
+                                            type={showingKey ? "text" : "password"} 
+                                            placeholder="gsk_..." 
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-14 py-4 text-xs font-bold focus:ring-4 focus:ring-violet-500/10 placeholder:text-gray-300" 
+                                            value={apiKey} 
+                                            onChange={e => setApiKey(e.target.value)} 
+                                        />
+                                        <button 
+                                            onClick={() => setShowingKey(!showingKey)}
+                                            className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                                        >
+                                            <Sparkles size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="pt-3">
+                                    <button 
+                                        onClick={() => {
+                                            if (apiKey.startsWith('gsk_')) {
+                                                localStorage.setItem('groq_api_key', apiKey);
+                                                setStep('SETUP');
+                                            } else {
+                                                alert("Invalid key format. Groq keys usually start with 'gsk_'.");
+                                            }
+                                        }} 
+                                        disabled={!apiKey.trim()} 
+                                        className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.4em] shadow-xl transition-all flex items-center justify-center gap-4 ${!apiKey.trim() ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-black text-white hover:bg-[#7C3AED]'}`}
+                                    >
+                                        Authorize & Continue <ArrowRight className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -784,40 +879,32 @@ export default function MockInterview() {
                                                             <button 
                                                                 key={hint} 
                                                                 onClick={async () => { 
-                                                                    const targetInput = hint;
-                                                                    setUserInput('');
-                                                                    setMessages(prev => [...prev, { role: 'user', content: targetInput, timestamp: new Date().toLocaleTimeString() }]);
+                                                                    if (isSending || isSpeaking) return;
+                                                                    const val = hint.toUpperCase();
+                                                                    setMessages(prev => [...prev, { role: 'user', content: val, timestamp: new Date().toLocaleTimeString() }]);
                                                                     setIsSending(true);
-
+                                                                    setIsThinking(true);
                                                                     try {
-                                                                        if (isDummyMode) {
-                                                                            setTimeout(() => {
-                                                                                dummyQIdxRef.current++;
-                                                                                if (dummyQIdxRef.current >= 5) advanceRound();
-                                                                                else {
-                                                                                    const nextQ = DUMMY_QUESTIONS[roundIndex][dummyQIdxRef.current];
-                                                                                    setMessages(prev => [...prev, { role: 'interviewer', content: nextQ, timestamp: new Date().toLocaleTimeString() }]);
-                                                                                    speak(nextQ, roundIndex);
-                                                                                }
-                                                                                setIsSending(false);
-                                                                            }, 400);
-                                                                            return;
-                                                                        }
                                                                         const res = await fetch(`${API_BASE_URL}/api/interview/chat`, {
                                                                             method: 'POST',
-                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({ session_id: sessionId, user_response: targetInput, round_index: roundIndex })
+                                                                            headers: { 
+                                                                                'Content-Type': 'application/json',
+                                                                                'X-Groq-API-Key': apiKey
+                                                                            },
+                                                                            body: JSON.stringify({ session_id: sessionId, user_response: val, round_index: roundIndex })
                                                                         });
                                                                         const data = await res.json();
-                                                                        if (data.is_round_complete) {
-                                                                            advanceRound();
-                                                                        } else {
+                                                                        setIsThinking(false);
+                                                                        if (data.is_round_complete) advanceRound();
+                                                                        else {
                                                                             setMessages(prev => [...prev, { role: 'interviewer', content: data.interviewer_text, timestamp: new Date().toLocaleTimeString() }]);
                                                                             speak(data.interviewer_text, roundIndex);
                                                                         }
-                                                                    } catch (err) { console.error(err); } finally { setIsSending(false); }
+                                                                    } catch (e) {
+                                                                        setIsThinking(false);
+                                                                    } finally { setIsSending(false); }
                                                                 }} 
-                                                                className="px-3 py-1 bg-white border border-[#7C3AED]/20 rounded-full text-[9px] font-black text-[#7C3AED] hover:bg-[#7C3AED] hover:text-white transition-all uppercase tracking-widest shadow-sm"
+                                                                className="px-4 py-1.5 bg-white border border-violet-100 rounded-full text-[10px] font-black text-[#7C3AED] uppercase tracking-widest hover:bg-violet-50 transition-all shadow-sm"
                                                             >
                                                                 {hint}
                                                             </button>

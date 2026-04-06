@@ -145,6 +145,18 @@ const AssessmentManagement: React.FC = () => {
 
     const [selectedTemplatePerId, setSelectedTemplatePerId] = useState<Record<string, string>>({});
 
+    const [adminStats, setAdminStats] = useState<any>(null);
+
+    const fetchAdminStats = async () => {
+        if (!user?.email) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/stats`, {
+                headers: { 'X-Admin-Email': user.email }
+            });
+            if (res.ok) setAdminStats(await res.json());
+        } catch (err) { console.error(err); }
+    };
+
     useEffect(() => {
         const fetchQuizzes = async () => {
             if (!user?.email) return;
@@ -157,11 +169,11 @@ const AssessmentManagement: React.FC = () => {
                     id: q._id,
                     name: q.title || 'Dynamic Assessment',
                     difficulty: q.difficulty || 'Medium',
-                    passRate: 72,
-                    avgTime: '45m',
+                    passRate: q.pass_rate || 72,
+                    avgTime: q.avg_time || '45m',
                     questionsCount: q.questions?.length || 0,
-                    status: 'Active',
-                    cheatingFlags: 0,
+                    status: q.status || 'Active',
+                    cheatingFlags: q.cheating_incidents || 0,
                     rawData: q
                 }));
                 setAssessments(formatted);
@@ -173,7 +185,15 @@ const AssessmentManagement: React.FC = () => {
         };
         fetchQuizzes();
         fetchCertTemplates();
+        fetchAdminStats();
     }, [user]);
+
+    const kpiMetrics = [
+        { label: 'Avg Pass Rate', value: adminStats ? `${adminStats.success_rate || 72}%` : '...', icon: Zap, color: 'text-yellow-500' },
+        { label: 'Avg Progress', value: adminStats ? `${adminStats.courseCompletion || 84}%` : '...', icon: Timer, color: 'text-blue-500' },
+        { label: 'Cheating Incidence', value: '1.2%', icon: ShieldAlert, color: 'text-red-500' },
+        { label: 'AI Evaluation Success', value: '98%', icon: BrainCircuit, color: 'text-purple-500' },
+    ];
 
     return (
         <div className="space-y-8">
@@ -218,12 +238,7 @@ const AssessmentManagement: React.FC = () => {
                 <>
                     {/* Quick Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {[
-                            { label: 'Avg Pass Rate', value: '65%', icon: Zap, color: 'text-yellow-500' },
-                            { label: 'Avg Completion Time', value: '42m', icon: Timer, color: 'text-blue-500' },
-                            { label: 'Cheating Incidence', value: '1.2%', icon: ShieldAlert, color: 'text-red-500' },
-                            { label: 'AI Evaluation Success', value: '98%', icon: BrainCircuit, color: 'text-purple-500' },
-                        ].map(stat => (
+                        {kpiMetrics.map(stat => (
                             <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
                                 <div className={`p-2 rounded-xl bg-white/5 ${stat.color}`}>
                                     <stat.icon size={20} />

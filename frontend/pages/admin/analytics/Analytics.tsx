@@ -84,20 +84,15 @@ const Analytics: React.FC = () => {
 
                 <div className="bg-[#111111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between h-64 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Target size={80} />
+                        <Activity size={80} />
                     </div>
                     <div>
-                        <div className="text-xs font-bold text-white/30 uppercase tracking-[0.2em] mb-4">Placement Efficiency</div>
-                        <div className="text-5xl font-bold text-white tracking-tighter">{stats?.interviewSuccess || '82%'}</div>
-                        <div className="flex items-center gap-2 mt-4 text-[#7C3AED] font-bold">
-                            <Activity size={18} />
-                            <span>Optimal performance</span>
+                        <div className="text-xs font-bold text-white/30 uppercase tracking-[0.2em] mb-4">Course Progress Avg</div>
+                        <div className="text-5xl font-bold text-white tracking-tighter">{stats?.courseCompletion || '84%'}</div>
+                        <div className="flex items-center gap-2 mt-4 text-blue-400 font-bold">
+                            <TrendingUp size={18} />
+                            <span>System optimal</span>
                         </div>
-                    </div>
-                    <div className="flex items-end gap-1 h-12">
-                        {[12, 10, 15, 12, 18, 14, 20, 15, 12, 8, 10, 14].map((h, i) => (
-                            <div key={i} className="flex-grow bg-blue-500/20 hover:bg-blue-500 transition-colors rounded-t-sm" style={{ height: `${(h / 20) * 100}%` }} />
-                        ))}
                     </div>
                 </div>
 
@@ -175,18 +170,30 @@ const Analytics: React.FC = () => {
                         </div>
                     </div>
                     <div className="space-y-4 mt-8">
-                        <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#7C3AED]" /><span className="text-white/70">Frontend Engineeering</span></div>
-                            <span className="text-white/40 font-bold">42%</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500" /><span className="text-white/70">Data Science & ML</span></div>
-                            <span className="text-white/40 font-bold">28%</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white/10" /><span className="text-white/70">Other (DevOps, UI, etc)</span></div>
-                            <span className="text-white/40 font-bold">30%</span>
-                        </div>
+                        {stats?.trackDistribution ? Object.entries(stats.trackDistribution).map(([name, count]: [string, any], i) => (
+                            <div key={name} className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-[#7C3AED]' : i === 1 ? 'bg-blue-500' : 'bg-white/10'}`} />
+                                    <span className="text-white/70">{name}</span>
+                                </div>
+                                <span className="text-white/40 font-bold">{((count / stats.totalStudents) * 100).toFixed(0)}%</span>
+                            </div>
+                        )) : (
+                            <>
+                                <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#7C3AED]" /><span className="text-white/70">Frontend Engineeering</span></div>
+                                    <span className="text-white/40 font-bold">42%</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500" /><span className="text-white/70">Data Science & ML</span></div>
+                                    <span className="text-white/40 font-bold">28%</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white/10" /><span className="text-white/70">Other (DevOps, UI, etc)</span></div>
+                                    <span className="text-white/40 font-bold">30%</span>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

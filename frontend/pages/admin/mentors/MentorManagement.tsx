@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { UserCheck, Search, Filter, Mail, Shield, MoreVertical, Star, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../../apiConfig';
+import { useAuth } from '../../../AuthContext';
 
 interface Mentor {
     id: string;
@@ -12,14 +13,20 @@ interface Mentor {
 }
 
 const MentorManagement: React.FC = () => {
+    const { user } = useAuth();
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newMentor, setNewMentor] = useState({ name: '', expertise: '', students: 0, status: 'Available' });
+
     const fetchMentors = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/api/admin/mentors`);
+            const response = await fetch(`${API_BASE_URL}/api/admin/mentors`, {
+                headers: { 'X-Admin-Email': user?.email || '' }
+            });
             const data = await response.json();
             if (Array.isArray(data)) setMentors(data);
         } catch (error) {
@@ -27,7 +34,26 @@ const MentorManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user]);
+
+    const handleAddMentor = async () => {
+        if (!newMentor.name || !newMentor.expertise) return alert("Name and expertise required!");
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/mentors`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Admin-Email': user?.email || ''
+                },
+                body: JSON.stringify(newMentor)
+            });
+            if (res.ok) {
+                setIsAddModalOpen(false);
+                setNewMentor({ name: '', expertise: '', students: 0, status: 'Available' });
+                fetchMentors();
+            }
+        } catch (err) { console.error(err); }
+    };
 
     useEffect(() => {
         fetchMentors();
@@ -46,7 +72,14 @@ const MentorManagement: React.FC = () => {
                     <h1 className="text-3xl font-black text-white tracking-tight uppercase">Mentor Network</h1>
                     <p className="text-zinc-400 text-sm mt-1">Manage institutional mentors and their student assignment protocols.</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-purple-500/20"
+                    >
+                        <UserCheck size={18} />
+                        Register Mentor
+                    </button>
                     <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl flex items-center gap-4">
                         <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400">
                             <UserCheck size={20} />
@@ -58,6 +91,85 @@ const MentorManagement: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Add Mentor Modal */}
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsAddModalOpen(false)}
+                            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                            className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-3xl p-8 overflow-hidden shadow-2xl"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl -mr-16 -mt-16" />
+                            
+                            <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight">Onboard New Mentor</h2>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Full Name</label>
+                                    <input 
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                        placeholder="e.g. Dr. Sarah Chen"
+                                        value={newMentor.name}
+                                        onChange={(e) => setNewMentor({...newMentor, name: e.target.value})}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Expertise Area</label>
+                                    <input 
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                        placeholder="e.g. Machine Learning, Web Dev"
+                                        value={newMentor.expertise}
+                                        onChange={(e) => setNewMentor({...newMentor, expertise: e.target.value})}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Load (Students)</label>
+                                        <input 
+                                            type="number"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                            value={newMentor.students}
+                                            onChange={(e) => setNewMentor({...newMentor, students: parseInt(e.target.value) || 0})}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
+                                        <select 
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                            value={newMentor.status}
+                                            onChange={(e) => setNewMentor({...newMentor, status: e.target.value})}
+                                        >
+                                            <option className="bg-zinc-900" value="Available">Available</option>
+                                            <option className="bg-zinc-900" value="Busy">Busy</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 mt-8">
+                                <button 
+                                    onClick={() => setIsAddModalOpen(false)}
+                                    className="flex-grow py-4 bg-white/5 hover:bg-white/10 text-zinc-400 font-bold rounded-2xl transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleAddMentor}
+                                    className="flex-grow py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-purple-500/20"
+                                >
+                                    Confirm Onboarding
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Controls */}
             <div className="flex flex-col md:flex-row gap-4">

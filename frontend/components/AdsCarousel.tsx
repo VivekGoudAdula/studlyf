@@ -17,8 +17,8 @@ export function useFont() {
 /* ─── CSS injection ─────────────────────────────── */
 const ADS_CSS = `
 .ads-scroll-track {
-  display:flex; gap:28px; overflow-x:auto;
-  -webkit-overflow-scrolling:touch; scrollbar-width:none; cursor:grab; padding-right:64px;
+  display:flex; gap:16px; overflow-x:auto;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; cursor:grab; padding-right:48px;
 }
 .ads-scroll-track::-webkit-scrollbar { display:none; }
 .ads-scroll-track:active { cursor:grabbing; }
@@ -176,7 +176,7 @@ function VideoCard({ ad }: { ad: AdItem }) {
     const isVideo = ad.media_type === 'video' || !!getYoutubeEmbed(ad.media_url) || !!ad.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 540px', minHeight: 400,
+            flex: '0 0 380px', minHeight: 220,
             borderRadius: 14, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1.3fr 1fr',
             background: '#1A1410', boxShadow: '0 25px 50px rgba(0,0,0,0.15)'
         }}>
@@ -190,19 +190,19 @@ function VideoCard({ ad }: { ad: AdItem }) {
                             title={ad.title}
                         />
                     ) : (
-                        <video
-                            key={ad.media_url}
-                            src={ad.media_url}
-                            autoPlay={true}
-                            loop={true}
-                            muted={true}
-                            playsInline={true}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        />
-                    )
-                ) : (
-                    <img src={ad.media_url} alt={ad.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                )}
+                             <video
+                                key={ad.media_url}
+                                src={ad.media_url}
+                                autoPlay={true}
+                                loop={true}
+                                muted={true}
+                                playsInline={true}
+                                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#000' }}
+                            />
+                        )
+                    ) : (
+                        <img src={ad.media_url} alt={ad.title} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+                    )}
                 {ad.tag && <div style={{
                     position: 'absolute', top: 20, left: 20, background: '#C84B2F',
                     color: '#fff', fontSize: '.68rem', fontWeight: 600, letterSpacing: '.1em',
@@ -244,15 +244,15 @@ function VideoCard({ ad }: { ad: AdItem }) {
 function ImageCard({ ad }: { ad: AdItem }) {
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 380px', minHeight: 440,
+            flex: '0 0 260px', minHeight: 260,
             borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
             background: '#fff', border: '1px solid #f3f4f6', boxShadow: '0 20px 40px rgba(0,0,0,0.06)'
         }}>
-            <div style={{ position: 'relative', overflow: 'hidden', height: '200px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', overflow: 'hidden', height: '120px', flexShrink: 0, background: '#f8fafc' }}>
                 <img src={ad.media_url} alt={ad.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
                 {ad.badge && <div style={{
-                    position: 'absolute', top: 16, right: 16, background: '#fff',
+                    position: 'absolute', top: 12, right: 12, background: '#fff',
                     color: '#111', fontSize: '.65rem', fontWeight: 700, letterSpacing: '.1em',
                     textTransform: 'uppercase', padding: '6px 14px', borderRadius: 20,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
@@ -287,7 +287,7 @@ function VideoImageCard({ ad }: { ad: AdItem }) {
     const isVideo = ad.media_type === 'video' || !!getYoutubeEmbed(ad.media_url) || !!ad.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
     return (
         <div className="ads-card-hover" style={{
-            flex: '0 0 580px', minHeight: 400,
+            flex: '0 0 420px', minHeight: 220,
             borderRadius: 14, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1.1fr 1fr',
             background: '#fff', border: '1px solid #f3f4f6', boxShadow: '0 25px 60px rgba(0,0,0,0.1)'
         }}>
@@ -308,20 +308,20 @@ function VideoImageCard({ ad }: { ad: AdItem }) {
                             loop={true}
                             muted={true}
                             playsInline={true}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f8fafc' }}
                         />
                     )
                 ) : (
-                    <img src={ad.media_url} alt="Primary" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={ad.media_url} alt="Primary" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f8fafc' }} />
                 )}
-                <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Main View</div>
+                <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Main</div>
             </div>
             
             <div style={{ display: 'grid', gridTemplateRows: '1.2fr 1fr' }}>
                 {/* Secondary Image Area */}
                 <div style={{ position: 'relative', overflow: 'hidden', background: '#f9fafb' }}>
                     {ad.secondary_media_url ? (
-                        <img src={ad.secondary_media_url} alt="Secondary" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={ad.secondary_media_url} alt="Secondary" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
                              <ImageIcon size={32} />

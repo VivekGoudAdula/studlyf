@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Building2, Search, Plus, ExternalLink, MoreVertical, Briefcase, Users, LayoutGrid, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../../apiConfig';
+import { useAuth } from '../../../AuthContext';
 
 interface Company {
     id: string;
@@ -12,14 +13,20 @@ interface Company {
 }
 
 const CompanyManagement: React.FC = () => {
+    const { user } = useAuth();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newOrg, setNewOrg] = useState({ name: '', sector: '', openings: 0, placed: 0 });
 
     const fetchCompanies = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/api/admin/companies`);
+            const response = await fetch(`${API_BASE_URL}/api/admin/companies`, {
+                headers: { 'X-Admin-Email': user?.email || '' }
+            });
             const data = await response.json();
             if (Array.isArray(data)) setCompanies(data);
         } catch (error) {
@@ -27,7 +34,26 @@ const CompanyManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user]);
+
+    const handleAddCompany = async () => {
+        if (!newOrg.name || !newOrg.sector) return alert("All fields are required!");
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/companies`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Admin-Email': user?.email || ''
+                },
+                body: JSON.stringify(newOrg)
+            });
+            if (res.ok) {
+                setIsAddModalOpen(false);
+                setNewOrg({ name: '', sector: '', openings: 0, placed: 0 });
+                fetchCompanies();
+            }
+        } catch (err) { console.error(err); }
+    };
 
     useEffect(() => {
         fetchCompanies();
@@ -46,10 +72,90 @@ const CompanyManagement: React.FC = () => {
                     <h1 className="text-3xl font-black text-white tracking-tight uppercase italics">Partner Ecosystem</h1>
                     <p className="text-zinc-500 text-sm mt-1">Management of institutional placement partners and corporate alliances.</p>
                 </div>
-                <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3.5 rounded-2xl font-black text-sm flex items-center gap-2 shadow-2xl shadow-indigo-500/20 active:scale-95 transition-all uppercase tracking-tighter">
+                <button 
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3.5 rounded-2xl font-black text-sm flex items-center gap-2 shadow-2xl shadow-indigo-500/20 active:scale-95 transition-all uppercase tracking-tighter"
+                >
                     <Plus size={20} /> Register Partner
                 </button>
             </div>
+
+            {/* Add Company Modal */}
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsAddModalOpen(false)}
+                            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                            className="relative w-full max-w-lg bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl"
+                        >
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 blur-3xl -mr-20 -mt-20" />
+                            
+                            <h2 className="text-2xl font-black text-white mb-8 uppercase tracking-widest italic border-b border-white/5 pb-4">Onboard Corporate Partner</h2>
+                            
+                            <div className="space-y-5">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2 font-mono">Company Name</label>
+                                    <input 
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-700 focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                        placeholder="e.g. Anthropic AI"
+                                        value={newOrg.name}
+                                        onChange={(e) => setNewOrg({...newOrg, name: e.target.value})}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2 font-mono">Industry Sector</label>
+                                    <input 
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-700 focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                        placeholder="e.g. LLM Infrastructure"
+                                        value={newOrg.sector}
+                                        onChange={(e) => setNewOrg({...newOrg, sector: e.target.value})}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2 font-mono">Openings</label>
+                                        <input 
+                                            type="number"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                            value={newOrg.openings}
+                                            onChange={(e) => setNewOrg({...newOrg, openings: parseInt(e.target.value) || 0})}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2 font-mono">Placed</label>
+                                        <input 
+                                            type="number"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                            value={newOrg.placed}
+                                            onChange={(e) => setNewOrg({...newOrg, placed: parseInt(e.target.value) || 0})}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 mt-10">
+                                <button 
+                                    onClick={() => setIsAddModalOpen(false)}
+                                    className="flex-grow py-5 bg-white/5 hover:bg-white/10 text-zinc-500 font-black uppercase text-xs rounded-2xl transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleAddCompany}
+                                    className="flex-grow py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-xs rounded-2xl transition-all shadow-xl shadow-indigo-500/20"
+                                >
+                                    Authorize Partner
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Quick Stats Banner */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

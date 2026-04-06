@@ -62,6 +62,7 @@ const LearnerDashboard: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
   const [resumeData, setResumeData] = useState<any>(null);
+  const [badges, setBadges] = useState<any[]>([]);
 
   useEffect(() => {
     if (user?.uid) {
@@ -85,6 +86,12 @@ const LearnerDashboard: React.FC = () => {
       fetch(`${API_BASE_URL}/api/resume/${user.uid}`)
         .then(res => res.json())
         .then(data => setResumeData(data))
+        .catch(console.error);
+      
+      // Fetch badges
+      fetch(`${API_BASE_URL}/api/user/${user.uid}/badges`)
+        .then(res => res.json())
+        .then(data => setBadges(data.badges || []))
         .catch(console.error);
     }
   }, [user]);
@@ -467,6 +474,41 @@ const LearnerDashboard: React.FC = () => {
                 </div>
               </div>
             </section>
+
+            {/* Achievement Protocol (Badges) */}
+            {badges.length > 0 && (
+              <section className="mb-12">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="h-px flex-grow bg-gray-100" />
+                  <h3 className="text-[10px] font-black text-[#7C3AED] uppercase tracking-[0.4em] whitespace-nowrap">Achievement Protocol</h3>
+                  <div className="h-px flex-grow bg-gray-100" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {badges.map((badge, idx) => (
+                    <motion.div
+                      key={idx}
+                      whileHover={{ y: -5 }}
+                      className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center text-center group hover:border-[#7C3AED]/30 transition-all shadow-sm"
+                    >
+                      <div className="w-16 h-16 bg-[#F5F3FF] rounded-2xl flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition-transform">
+                        {badge.icon || '🏅'}
+                      </div>
+                      <span className="text-[8px] font-black text-[#7C3AED] uppercase tracking-[0.2em] mb-1">{badge.level || 'Elite'}</span>
+                      <h4 className="text-xs font-black uppercase tracking-tight text-[#111827] mb-1">{badge.name}</h4>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-tight">{badge.description || badge.reason}</p>
+                    </motion.div>
+                  ))}
+                  {/* Placeholder for next achievement */}
+                  <div className="bg-gray-50/50 border border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-60">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4 grayscale">
+                      🚀
+                    </div>
+                    <h4 className="text-xs font-black uppercase tracking-tight text-gray-400">Lock Detected</h4>
+                    <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Keep growing...</p>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Performance Hub Section */}
             <section className="bg-[#FFFFFF] border border-gray-100 rounded-[2rem] sm:rounded-[4rem] p-6 sm:p-12 mb-12 relative overflow-hidden shadow-sm">
