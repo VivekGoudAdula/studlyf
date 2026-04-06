@@ -132,6 +132,8 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
     "http://localhost:8000",
     "http://127.0.0.1:8000"
 ]
@@ -201,36 +203,55 @@ async def create_ad(
     title:        str  = Form(...),
     description:  str  = Form(""),
     media_type:   str  = Form(""),
+    media_url:    str  = Form(""),
+    secondary_media_type: str = Form("image"),
+    secondary_media_url:  str = Form(""),
     tag:          str  = Form(""),
     badge:        str  = Form(""),
     cta_text:     str  = Form("Enroll →"),
+    cta_link:     str  = Form(""),
     cta_style:    str  = Form("primary"),
-    pills:        str  = Form(""),          # JSON array string
+    pills:        str  = Form(""),
     color_scheme: str  = Form("dark"),
     bg_color:     str  = Form("blue"),
     duration:     str  = Form(""),
     wide_side:    str  = Form("dark"),
-    promo_tag:    str  = Form(""),
-    promo_stats:  str  = Form(""),          # JSON array string
     order:        int  = Form(0),
     active:       bool = Form(True),
     media_file: Optional[UploadFile] = File(None),
+    secondary_media_file: Optional[UploadFile] = File(None),
 ):
-    media_url = ""
-    upload_media_type = media_type
-
+    final_media_url = media_url
+    final_media_type = media_type
+    
+    # Handle Primary
     if media_file and media_file.filename:
         ext = os.path.splitext(media_file.filename)[1].lower()
         fname = f"{uuid.uuid4()}{ext}"
         fpath = os.path.join(ADS_UPLOAD_DIR, fname)
         with open(fpath, "wb") as buf:
             shutil.copyfileobj(media_file.file, buf)
-        media_url = f"{BASE_URL}/uploads/ads/{fname}"
-        # auto-detect type
+        final_media_url = f"{BASE_URL}/uploads/ads/{fname}"
         if ext in [".mp4", ".webm", ".mov", ".ogg"]:
-            upload_media_type = "video"
-        elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
-            upload_media_type = "image"
+            final_media_type = "video"
+        else:
+            final_media_type = "image"
+
+    final_sec_url = secondary_media_url
+    final_sec_type = secondary_media_type
+    
+    # Handle Secondary
+    if secondary_media_file and secondary_media_file.filename:
+        ext = os.path.splitext(secondary_media_file.filename)[1].lower()
+        fname = f"sec_{uuid.uuid4()}{ext}"
+        fpath = os.path.join(ADS_UPLOAD_DIR, fname)
+        with open(fpath, "wb") as buf:
+            shutil.copyfileobj(secondary_media_file.file, buf)
+        final_sec_url = f"{BASE_URL}/uploads/ads/{fname}"
+        if ext in [".mp4", ".webm", ".mov", ".ogg"]:
+            final_sec_type = "video"
+        else:
+            final_sec_type = "image"
 
     import json as _json
     doc = {
@@ -238,19 +259,20 @@ async def create_ad(
         "eyebrow":      eyebrow,
         "title":        title,
         "description":  description,
-        "media_url":    media_url,
-        "media_type":   upload_media_type,
+        "media_url":    final_media_url,
+        "media_type":   final_media_type,
+        "secondary_media_url": final_sec_url,
+        "secondary_media_type": final_sec_type,
         "tag":          tag,
         "badge":        badge,
         "cta_text":     cta_text,
+        "cta_link":     cta_link,
         "cta_style":    cta_style,
         "pills":        _json.loads(pills) if pills else [],
         "color_scheme": color_scheme,
         "bg_color":     bg_color,
         "duration":     duration,
         "wide_side":    wide_side,
-        "promo_tag":    promo_tag,
-        "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
         "created_at":   datetime.now(timezone.utc).isoformat(),
@@ -267,25 +289,27 @@ async def update_ad(
     title:        str  = Form(...),
     description:  str  = Form(""),
     media_type:   str  = Form(""),
-    media_url_existing: str = Form(""),
+    media_url:    str  = Form(""),
+    secondary_media_type: str = Form("image"),
+    secondary_media_url:  str = Form(""),
     tag:          str  = Form(""),
     badge:        str  = Form(""),
     cta_text:     str  = Form("Enroll →"),
+    cta_link:     str  = Form(""),
     cta_style:    str  = Form("primary"),
     pills:        str  = Form(""),
     color_scheme: str  = Form("dark"),
     bg_color:     str  = Form("blue"),
     duration:     str  = Form(""),
     wide_side:    str  = Form("dark"),
-    promo_tag:    str  = Form(""),
-    promo_stats:  str  = Form(""),
     order:        int  = Form(0),
     active:       bool = Form(True),
     media_file: Optional[UploadFile] = File(None),
+    secondary_media_file: Optional[UploadFile] = File(None),
 ):
     import json as _json
-    media_url = media_url_existing
-    upload_media_type = media_type
+    final_media_url = media_url
+    final_media_type = media_type
 
     if media_file and media_file.filename:
         ext = os.path.splitext(media_file.filename)[1].lower()
@@ -293,30 +317,46 @@ async def update_ad(
         fpath = os.path.join(ADS_UPLOAD_DIR, fname)
         with open(fpath, "wb") as buf:
             shutil.copyfileobj(media_file.file, buf)
-        media_url = f"{BASE_URL}/uploads/ads/{fname}"
+        final_media_url = f"{BASE_URL}/uploads/ads/{fname}"
         if ext in [".mp4", ".webm", ".mov", ".ogg"]:
-            upload_media_type = "video"
-        elif ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]:
-            upload_media_type = "image"
+            final_media_type = "video"
+        else:
+            final_media_type = "image"
+
+    final_sec_url = secondary_media_url
+    final_sec_type = secondary_media_type
+    
+    if secondary_media_file and secondary_media_file.filename:
+        ext = os.path.splitext(secondary_media_file.filename)[1].lower()
+        fname = f"sec_{uuid.uuid4()}{ext}"
+        fpath = os.path.join(ADS_UPLOAD_DIR, fname)
+        with open(fpath, "wb") as buf:
+            shutil.copyfileobj(secondary_media_file.file, buf)
+        final_sec_url = f"{BASE_URL}/uploads/ads/{fname}"
+        if ext in [".mp4", ".webm", ".mov", ".ogg"]:
+            final_sec_type = "video"
+        else:
+            final_sec_type = "image"
 
     update = {
         "card_type":    card_type,
         "eyebrow":      eyebrow,
         "title":        title,
         "description":  description,
-        "media_url":    media_url,
-        "media_type":   upload_media_type,
+        "media_url":    final_media_url,
+        "media_type":   final_media_type,
+        "secondary_media_url": final_sec_url,
+        "secondary_media_type": final_sec_type,
         "tag":          tag,
         "badge":        badge,
         "cta_text":     cta_text,
+        "cta_link":     cta_link,
         "cta_style":    cta_style,
         "pills":        _json.loads(pills) if pills else [],
         "color_scheme": color_scheme,
         "bg_color":     bg_color,
         "duration":     duration,
         "wide_side":    wide_side,
-        "promo_tag":    promo_tag,
-        "promo_stats":  _json.loads(promo_stats) if promo_stats else [],
         "order":        order,
         "active":       active,
         "updated_at":   datetime.now(timezone.utc).isoformat(),
@@ -3955,6 +3995,87 @@ async def delete_cert_template(template_id: str):
         raise HTTPException(status_code=404, detail="Template not found")
     return {"message": "Template deleted"}
 
+
+# ─── Career Onboarding AI API ───────────────────────────────────────────
+class CareerOnboardingRequest(BaseModel):
+    subject: str
+    skills: List[str]
+    interests: List[str]
+
+@app.post("/api/career/identity")
+async def get_career_identity(req: CareerOnboardingRequest):
+    prompt = f"Student Field: {req.subject}. Skills: {', '.join(req.skills)}. Interests: {req.interests}. Create a professional 1-sentence career identity statement starting with 'I am a...'"
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+        )
+        return {"identity_statement": chat_completion.choices[0].message.content}
+    except Exception as e:
+        return {"identity_statement": f"Aspiring professional in {req.subject}"}
+
+@app.post("/api/career/explore-paths")
+async def explore_career_paths(req: CareerOnboardingRequest):
+    prompt = f"""
+    You are a Senior Global Career Architect at an elite technology consultancy.
+    Your task is to analyze the student's profile (Subject: {req.subject}, Skills: {req.skills}, Interests: {req.interests}) 
+    and generate exactly 20 HIGHLY ACCURATE, industry-standard professional career paths.
+    
+    CRITICAL ACCURACY GUIDELINES:
+    1. The job titles MUST be 100% correct, professional, and current.
+    2. Provide specialized expert roles (e.g., 'Cloud Infrastructure Architect' instead of just 'Cloud Engineer').
+    3. Return ONLY a JSON object with key 'paths'. 
+    Each path MUST have: 
+    - name: industry-standard title
+    - group: category (Cloud, AI, Web, Cyber, Data, etc.)
+    - pos: {{'x': int, 'y': int}} (Spread them across a wide NEAT GRID. x: -550 to 550, y: -450 to 450. min 180px from center.)
+    - color: a unique vibrant hex code for the node glow.
+    - image: a high-quality professional Unsplash URL specifically representing this exact career role.
+    """
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            response_format={"type": "json_object"}
+        )
+        res = json.loads(chat_completion.choices[0].message.content)
+        return {"paths": res.get("paths", [])}
+    except Exception as e:
+        return {"paths": []}
+
+@app.post("/api/career/roadmap")
+async def generate_career_roadmap(req: dict):
+    path_name = req.get("path", {}).get("name", "Career")
+    prompt = f"""
+    You are a Senior Professional Blueprint Architect. 
+    Your task is to generate a 100% accurate, high-fidelity 6-month roadmap for the career path: '{path_name}'.
+    Target student field: {req.get('subject')}.
+    
+    BLUEPRINT REQUIREMENTS:
+    1. Accuracy: Stacks must be specific (e.g., 'React 18, TypeScript 5, Tailwind 3').
+    2. Depth: Goals must be industry-standard and measurable.
+    3. Professionalism: Use advanced terminology. No simplifications.
+    
+    Return ONLY a JSON object with key 'roadmap'.
+    The 'roadmap' should be an array of 6 objects with:
+    - month: number
+    - title: brief professional title
+    - details: strategic goal summary (1 sentence)
+    - tasks: list of 4-5 high-impact professional requirements
+    - stack: a single string of 3-4 specific technologies (comma separated)
+    - concepts: a single string of 2-3 key principles (comma separated)
+    - project: a clear high-fidelity industry project title
+    """
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            response_format={"type": "json_object"}
+        )
+        res = json.loads(chat_completion.choices[0].message.content)
+        return {"roadmap": res.get("roadmap", [])}
+    except Exception as e:
+        return {"roadmap": []}
 
 if __name__ == "__main__":
     import uvicorn

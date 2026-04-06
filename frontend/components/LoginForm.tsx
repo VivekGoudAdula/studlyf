@@ -82,7 +82,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                     <label className={labelClasses}>Email Address</label>
                     <input
                         type="email"
-                        placeholder="name@company.com"
+                        placeholder="admin@studlyf.com"
                         className={inputClasses}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -99,7 +99,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                     </div>
                     <input
                         type="password"
-                        placeholder="••••••••"
+                        placeholder="admin123"
                         className={inputClasses}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}

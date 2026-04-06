@@ -13,18 +13,18 @@ export const ExampleColorContext = React.createContext({
 const Example = () => {
   const { gradient, accent, headline, text, image } = useContext(ExampleColorContext);
   return (
-    <section className="flex flex-col md:flex-row items-center justify-center gap-10 p-6 md:p-8" style={{ background: gradient, maxWidth: '900px', margin: '0 auto', minHeight: '420px' }}>
+    <section className="flex flex-col md:flex-row items-center justify-center gap-6 p-4 md:p-6" style={{ background: gradient, maxWidth: '800px', margin: '0 auto', minHeight: '340px' }}>
       {/* Text on the left (outside mobile) */}
       <div
-        className="max-w-md text-white mb-6 md:mb-0 md:mr-24 md:ml-0 ml-0 flex flex-col justify-center -translate-x-2 md:-translate-x-6"
-        style={{ color: '#fff', textAlign: 'left', minHeight: '320px' }}
+        className="max-w-sm text-white mb-4 md:mb-0 md:mr-16 md:ml-0 ml-0 flex flex-col justify-center -translate-x-2 md:-translate-x-4"
+        style={{ color: '#fff', textAlign: 'left', minHeight: '280px' }}
       >
         {headline && (
-          <h3 className="font-bold text-2xl sm:text-3xl lg:text-[2rem] mb-4 whitespace-nowrap tracking-tight underline decoration-white/30 decoration-2 underline-offset-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <h3 className="font-bold text-xl sm:text-2xl lg:text-[1.6rem] mb-3 whitespace-nowrap tracking-tight underline decoration-white/30 decoration-2 underline-offset-8" style={{ fontFamily: 'Inter, sans-serif' }}>
             {headline}
           </h3>
         )}
-        <p className="text-lg sm:text-xl font-normal text-justify leading-relaxed text-white/90" style={{ fontFamily: 'Times New Roman, Times, serif', fontWeight: 400 }}>
+        <p className="text-base sm:text-lg font-normal text-justify leading-relaxed text-white/90" style={{ fontFamily: 'Times New Roman, Times, serif', fontWeight: 400 }}>
           {text}
         </p>
       </div>
