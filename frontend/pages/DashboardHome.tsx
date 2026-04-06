@@ -47,8 +47,11 @@ const DashboardHome: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
+      }
+    };
 
-
+    fetchCourses();
+  }, []);
 
   const createSlug = (title: string, id: string) => {
     if (!title || !id) return '';

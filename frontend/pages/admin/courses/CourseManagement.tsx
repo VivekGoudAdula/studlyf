@@ -29,6 +29,15 @@ const CourseManagement: React.FC = () => {
     const [view, setView] = useState<'list' | 'create' | 'submissions'>('list');
     const [submissions, setSubmissions] = useState<any[]>([]);
 
+    const uploadImageFile = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
     // Assessment Builder State
     const [questions, setQuestions] = useState([
         { question: 'What is the primary role of this technology?', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answers: [0], explanation: '' }
@@ -244,59 +253,6 @@ const CourseManagement: React.FC = () => {
         }
     };
 
-<<<<<<< HEAD
-    const [dragActive, setDragActive] = useState(false);
-    const [instructorDragActive, setInstructorDragActive] = useState(false);
-    const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setDragActive(true);
-        } else if (e.type === "dragleave") {
-            setDragActive(false);
-        }
-    };
-    const handleInstructorDrag = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setInstructorDragActive(true);
-        } else if (e.type === "dragleave") {
-            setInstructorDragActive(false);
-        }
-    };
-    const handleInstructorDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setInstructorDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleInstructorImageUpload(e.dataTransfer.files[0]);
-        }
-    };
-
-    const handleInstructorImageUpload = (e: React.ChangeEvent<HTMLInputElement> | File) => {
-        let file: File | undefined;
-        if (e instanceof File) {
-            file = e;
-        } else {
-            file = e.target.files?.[0];
-        }
-        if (file) {
-            setErrorMsg("");
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setInstructorImage(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleImageUpload(e.dataTransfer.files[0]);
-=======
     const handlePaste = async (moduleId: any, lessonIdx: number, e: React.ClipboardEvent<any>) => {
         const items = e.clipboardData.items;
         const textarea = e.currentTarget as HTMLTextAreaElement;
@@ -324,7 +280,7 @@ const CourseManagement: React.FC = () => {
         }
     };
 
-    const handleDrop = async (moduleId: any, lessonIdx: number, e: React.DragEvent<any>) => {
+    const handleDrop_Legacy = async (moduleId: any, lessonIdx: number, e: React.DragEvent<any>) => {
         e.preventDefault();
         const file = e.dataTransfer.files?.[0];
         const textarea = e.currentTarget as HTMLTextAreaElement;
@@ -356,7 +312,6 @@ const CourseManagement: React.FC = () => {
                     updateLesson(moduleId, lessonIdx, { image_url: cleanedUrl });
                 }
             }
->>>>>>> 8755770e90df93ecb3499fc093ee4cc4ce71586e
         }
     };
 
@@ -1085,7 +1040,6 @@ const CourseManagement: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-white/40 uppercase mb-1.5 block">Course Thumbnail</label>
-<<<<<<< HEAD
                                             <div
                                                 className={`w-full bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-[#7C3AED]/50 transition-colors group relative overflow-hidden h-32 flex flex-col items-center justify-center ${dragActive ? 'border-[#7C3AED]/80 bg-[#7C3AED]/10' : ''}`}
                                                 onDragEnter={handleDrag}
