@@ -9,6 +9,7 @@ import {
     Trash2, 
     User, 
     Briefcase, 
+    GraduationCap,
     Layout, 
     Code2,
     CheckCircle2,
@@ -1131,7 +1132,7 @@ export default function ResumeBuilder() {
                                 </div>
                                 <div className="modern-entry-sub">
                                     <span>{e.degree}</span>
-                                    <span className="text-emerald-600 font-bold">{e.gpa ? `GPA: ${e.gpa}` : ""}</span>
+                                    <span className="text-purple-600 font-bold">{e.gpa ? `GPA: ${e.gpa}` : ""}</span>
                                 </div>
                             </div>
                         ))}
@@ -1730,7 +1731,7 @@ export default function ResumeBuilder() {
                 <button 
                     onClick={() => handleSave()}
                     disabled={isSaving}
-                    className={`flex items-center gap-3 px-6 py-3 rounded-full shadow-lg font-bold transition-all ${saveStatus === 'saved' ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-emerald-600'}`}
+                    className={`flex items-center gap-3 px-6 py-3 rounded-full shadow-lg font-bold transition-all ${saveStatus === 'saved' ? 'bg-purple-500 text-white' : 'bg-slate-900 text-white hover:bg-purple-600'}`}
                 >
                     {isSaving ? <Loader2 className="animate-spin" size={18} /> : (saveStatus === 'saved' ? <CheckCircle size={18} /> : <Save size={18} />)}
                     {isSaving ? 'Saving...' : (saveStatus === 'saved' ? 'Saved to Cloud' : 'Save Changes')}
@@ -1773,7 +1774,7 @@ export default function ResumeBuilder() {
 
                                     <div className="flex items-center justify-between py-4 border-y border-slate-100">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                            <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
                                                 <Globe size={20} />
                                             </div>
                                             <div>
@@ -1781,7 +1782,7 @@ export default function ResumeBuilder() {
                                                 <div className="text-xs text-slate-400">Public access enabled</div>
                                             </div>
                                         </div>
-                                        <button className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-emerald-500">
+                                        <button className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-purple-500">
                                             <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
                                         </button>
                                     </div>
@@ -1826,15 +1827,15 @@ export default function ResumeBuilder() {
                             </div>
                             
                             <div className="flex-1 overflow-y-auto premium-scrollbar p-6">
-                                <div className="aspect-[4/3] bg-emerald-50 rounded-2xl mb-8 flex items-center justify-center overflow-hidden relative border border-emerald-100">
+                                <div className="aspect-[4/3] bg-purple-50 rounded-2xl mb-8 flex items-center justify-center overflow-hidden relative border border-purple-100">
                                      <div className="absolute top-4 left-4 bg-slate-900 h-8 w-8 rounded-lg flex items-center justify-center text-white shadow-lg">
                                         <Sparkles size={18} />
                                      </div>
                                      {/* Symbolic Illustration mockup */}
                                      <div className="animate-pulse flex flex-col items-center gap-4">
-                                        <div className="h-24 w-16 bg-white rounded-lg shadow-sm border border-emerald-200 scale-110"></div>
-                                        <div className="h-2 w-32 bg-emerald-200 rounded-full"></div>
-                                        <div className="h-2 w-24 bg-emerald-200 rounded-full"></div>
+                                        <div className="h-24 w-16 bg-white rounded-lg shadow-sm border border-purple-200 scale-110"></div>
+                                        <div className="h-2 w-32 bg-purple-200 rounded-full"></div>
+                                        <div className="h-2 w-24 bg-purple-200 rounded-full"></div>
                                      </div>
                                 </div>
 
@@ -1861,7 +1862,7 @@ export default function ResumeBuilder() {
                                     </li>
                                 </ul>
 
-                                <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg inline-block text-sm font-bold mb-10">
+                                <div className="bg-purple-50 text-purple-700 px-4 py-2 rounded-lg inline-block text-sm font-bold mb-10">
                                     5 review credits available
                                 </div>
 
