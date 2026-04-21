@@ -1202,28 +1202,39 @@ export default function ResumeBuilder() {
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-white">
             <style>{styles}</style>
-            
-            {/* Top Navigation Bar */}
-            <nav className="h-16 bg-[#0e141e] border-b border-white/5 flex items-center justify-between px-8 shrink-0">
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center cursor-pointer" onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')}>
-                        <span className="text-white font-black text-2xl tracking-tighter">ST</span>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-tr from-purple-400 to-pink-400 font-black text-2xl tracking-tighter">U</span>
-                        <span className="text-white font-black text-2xl tracking-tighter">DLYF</span>
-                    </div>
-                    <div className="h-4 border-l border-white/10 mx-2"></div>
-                    <button onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')} className="text-slate-400 font-bold text-sm hover:text-white transition-colors">Home</button>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
-                        <User size={18} />
-                    </div>
-                </div>
-            </nav>
+        
+        <nav className="h-16 bg-[#0e141e] border-b border-white/5 flex items-center justify-between px-8 shrink-0">
+    <div className="flex items-center gap-6">
+        <div 
+            className="flex items-center cursor-pointer" 
+            onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')}
+        >
+            <span className="text-white font-black text-2xl tracking-tighter">ST</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-tr from-purple-400 to-pink-400 font-black text-2xl tracking-tighter">U</span>
+            <span className="text-white font-black text-2xl tracking-tighter">DLYF</span>
+        </div>
 
-            {/* Editor Header */}
-            <header className="editor-header">
-                <div className="flex items-center gap-4">
+        <div className="h-4 border-l border-white/10 mx-2"></div>
+
+        <button 
+            onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')} 
+            className="text-slate-400 font-bold text-sm hover:text-white transition-colors"
+        >
+            Home
+        </button>
+    </div>
+
+    <div className="flex items-center gap-4">
+        <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
+            <User size={18} />
+        </div>
+    </div>
+</nav>
+
+<header className="editor-header">
+    <div className="flex items-center gap-4">
+
+
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
                             <button onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')} className="hover:text-purple-600 transition-colors">Home</button>
@@ -1257,12 +1268,7 @@ export default function ResumeBuilder() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-8">
-                    <button 
-                        onClick={() => setStep('template_selection')}
-                        className="text-sm font-semibold text-slate-500 hover:text-purple-600 transition-colors flex items-center gap-2"
-                    >
-                        Change Template
+
                     </button>
                     <div className="flex items-center gap-3 relative">
                         <button 

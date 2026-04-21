@@ -114,10 +114,12 @@ const Cart: React.FC = () => {
             <p className="text-gray-600 mb-8">Start exploring courses to add them to your cart</p>
             <button
               onClick={() => navigate('/learn/courses')}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-[#7C3AED] text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-[#6D28D9] transition-all shadow-lg shadow-[#7C3AED]/30"
+              className="glow-btn glow-btn-purple inline-flex items-center gap-2 px-8 py-4 text-sm uppercase tracking-[0.2em] rounded-xl"
             >
-              Browse Courses
-              <ArrowRight className="w-4 h-4" />
+              <span className="glow-orb glow-orb-1" />
+              <span className="glow-orb glow-orb-2" />
+              <span className="glow-orb glow-orb-3" />
+              <span className="glow-label flex items-center gap-2">Browse Courses <ArrowRight className="w-4 h-4" /></span>
             </button>
           </motion.div>
         ) : (
@@ -205,19 +207,18 @@ const Cart: React.FC = () => {
               <button
                 onClick={handleCheckout}
                 disabled={checkoutLoading || cartItems.length === 0}
-                className="w-full py-4 bg-[#7C3AED] text-white font-black text-sm uppercase tracking-[0.3em] rounded-xl hover:bg-[#6D28D9] active:scale-[0.98] transition-all shadow-lg shadow-[#7C3AED]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="glow-btn glow-btn-purple w-full py-4 text-sm uppercase tracking-[0.3em] rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {checkoutLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Proceed to Checkout
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
+                <span className="glow-orb glow-orb-1" />
+                <span className="glow-orb glow-orb-2" />
+                <span className="glow-orb glow-orb-3" />
+                <span className="glow-label flex items-center gap-2">
+                  {checkoutLoading ? (
+                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Processing...</>
+                  ) : (
+                    <>Proceed to Checkout <ArrowRight className="w-4 h-4" /></>
+                  )}
+                </span>
               </button>
 
               <p className="text-[10px] text-[#6B7280] text-center mt-4 uppercase tracking-widest">

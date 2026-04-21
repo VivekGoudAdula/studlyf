@@ -148,14 +148,96 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                     </div>
                 </div>
 
-                <motion.button
-                    whileHover={{ scale: 1.01, translateY: -1 }}
-                    whileTap={{ scale: 0.99 }}
+                {/* Start Evolution button — same effects as Try Now */}
+                <style>{`
+                    @keyframes evo-shimmer {
+                        0%   { transform: translateX(-180%) skewX(-20deg); }
+                        100% { transform: translateX(300%) skewX(-20deg); }
+                    }
+                    @keyframes evo-orb1 {
+                        0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.55; }
+                        40%     { transform: translate(8px,-6px) scale(1.3);  opacity: 0.9; }
+                        70%     { transform: translate(-4px,4px) scale(0.8);  opacity: 0.4; }
+                    }
+                    @keyframes evo-orb2 {
+                        0%,100% { transform: translate(0px,0px) scale(1);     opacity: 0.4; }
+                        35%     { transform: translate(-10px,-8px) scale(1.4); opacity: 0.85; }
+                        65%     { transform: translate(6px,5px) scale(0.75);   opacity: 0.35; }
+                    }
+                    @keyframes evo-orb3 {
+                        0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.5; }
+                        50%     { transform: translate(6px,8px) scale(1.25);  opacity: 0.9; }
+                    }
+                    .evo-btn {
+                        position: relative;
+                        width: 100%;
+                        padding: 12px 0;
+                        background: linear-gradient(to right, #7C3AED, #6D28D9);
+                        color: #fff;
+                        border: none;
+                        border-radius: 16px;
+                        font-weight: 700;
+                        font-size: 12px;
+                        letter-spacing: 0.12em;
+                        text-transform: uppercase;
+                        cursor: pointer;
+                        overflow: hidden;
+                        margin-top: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                        box-shadow: 0 4px 20px rgba(124,58,237,0.3), 0 1px 0 rgba(255,255,255,0.1) inset;
+                    }
+                    .evo-btn::before {
+                        content: '';
+                        position: absolute;
+                        inset: 0;
+                        border-radius: 16px;
+                        background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                        pointer-events: none;
+                        z-index: 1;
+                    }
+                    .evo-btn::after {
+                        content: '';
+                        position: absolute;
+                        top: 0; left: 0;
+                        width: 40%; height: 100%;
+                        background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.22) 50%, transparent 80%);
+                        animation: evo-shimmer 2.8s ease-in-out infinite;
+                        pointer-events: none;
+                        z-index: 2;
+                    }
+                    .evo-btn:hover {
+                        transform: translateY(-2px) scale(1.01);
+                        box-shadow: 0 0 0 5px rgba(139,92,246,0.15), 0 0 30px 10px rgba(139,92,246,0.4), 0 12px 30px rgba(109,40,217,0.45);
+                    }
+                    .evo-btn:active { transform: scale(0.98); }
+                    .evo-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+                    .evo-orb {
+                        position: absolute;
+                        border-radius: 50%;
+                        pointer-events: none;
+                        filter: blur(7px);
+                        z-index: 1;
+                    }
+                    .evo-orb1 { width:28px; height:28px; background: radial-gradient(circle, rgba(196,168,255,0.95), transparent 70%); top:-4px; left:18px; animation: evo-orb1 3.2s ease-in-out infinite; }
+                    .evo-orb2 { width:22px; height:22px; background: radial-gradient(circle, rgba(255,255,255,0.8), transparent 70%);  bottom:-2px; right:52px; animation: evo-orb2 4s ease-in-out infinite; }
+                    .evo-orb3 { width:18px; height:18px; background: radial-gradient(circle, rgba(167,139,250,0.9), transparent 70%); top:4px; right:24px; animation: evo-orb3 2.6s ease-in-out infinite; }
+                    .evo-label { position: relative; z-index: 5; }
+                `}</style>
+
+                <button
+                    type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-[16px] font-bold text-xs uppercase tracking-widest shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300 flex items-center justify-center gap-2 mt-2"
+                    className="evo-btn"
                 >
-                    {loading ? 'Processing...' : 'Start Evolution'}
-                </motion.button>
+                    <span className="evo-orb evo-orb1" />
+                    <span className="evo-orb evo-orb2" />
+                    <span className="evo-orb evo-orb3" />
+                    <span className="evo-label">{loading ? 'Processing...' : 'Start Evolution'}</span>
+                </button>
             </form>
 
             <div className="my-6 flex items-center gap-4">

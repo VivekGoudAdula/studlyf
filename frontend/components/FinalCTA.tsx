@@ -43,15 +43,15 @@ const FinalCTA: React.FC = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8">
-              <motion.button
+              <button
                 onClick={() => navigate('/learn/assessment')}
-                whileHover={{ scale: 0.96 }}
-                whileTap={{ scale: 0.92 }}
-                className="px-10 py-5 sm:px-16 sm:py-8 bg-[#7C3AED] text-white font-bold rounded-2xl shadow-2xl shadow-[#7C3AED]/40 text-[10px] sm:text-[11px] tracking-[0.3em] sm:tracking-[0.4em] uppercase group overflow-hidden relative"
+                className="glow-btn glow-btn-purple px-10 py-5 sm:px-16 sm:py-8 rounded-2xl text-[10px] sm:text-[11px] tracking-[0.3em] sm:tracking-[0.4em] uppercase"
               >
-                <span className="relative z-10">Start Assessment</span>
-                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
-              </motion.button>
+                <span className="glow-orb glow-orb-1" />
+                <span className="glow-orb glow-orb-2" />
+                <span className="glow-orb glow-orb-3" />
+                <span className="glow-label">Start Assessment</span>
+              </button>
               <motion.button
                 onClick={() => navigate('/about')}
                 whileHover={{ scale: 0.96 }}

@@ -109,14 +109,95 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                     />
                 </div>
 
-                <motion.button
-                    whileHover={{ scale: 1.01, translateY: -1 }}
-                    whileTap={{ scale: 0.99 }}
+                {/* Log In button — same shimmer + orb effect as Try Now */}
+                <style>{`
+                    @keyframes login-shimmer {
+                        0%   { transform: translateX(-180%) skewX(-20deg); }
+                        100% { transform: translateX(300%) skewX(-20deg); }
+                    }
+                    @keyframes login-orb1 {
+                        0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.55; }
+                        40%     { transform: translate(8px,-6px) scale(1.3);  opacity: 0.9; }
+                        70%     { transform: translate(-4px,4px) scale(0.8);  opacity: 0.4; }
+                    }
+                    @keyframes login-orb2 {
+                        0%,100% { transform: translate(0px,0px) scale(1);     opacity: 0.4; }
+                        35%     { transform: translate(-10px,-8px) scale(1.4); opacity: 0.85; }
+                        65%     { transform: translate(6px,5px) scale(0.75);   opacity: 0.35; }
+                    }
+                    @keyframes login-orb3 {
+                        0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.5; }
+                        50%     { transform: translate(6px,8px) scale(1.25);  opacity: 0.9; }
+                    }
+                    .login-btn {
+                        position: relative;
+                        width: 100%;
+                        padding: 12px 0;
+                        background: linear-gradient(to right, #7C3AED, #6D28D9);
+                        color: #fff;
+                        border: none;
+                        border-radius: 16px;
+                        font-weight: 700;
+                        font-size: 12px;
+                        letter-spacing: 0.12em;
+                        text-transform: uppercase;
+                        cursor: pointer;
+                        overflow: hidden;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                        box-shadow: 0 4px 20px rgba(124,58,237,0.3), 0 1px 0 rgba(255,255,255,0.1) inset;
+                    }
+                    .login-btn::before {
+                        content: '';
+                        position: absolute;
+                        inset: 0;
+                        border-radius: 16px;
+                        background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                        pointer-events: none;
+                        z-index: 1;
+                    }
+                    .login-btn::after {
+                        content: '';
+                        position: absolute;
+                        top: 0; left: 0;
+                        width: 40%; height: 100%;
+                        background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.22) 50%, transparent 80%);
+                        animation: login-shimmer 2.8s ease-in-out infinite;
+                        pointer-events: none;
+                        z-index: 2;
+                    }
+                    .login-btn:hover {
+                        transform: translateY(-2px) scale(1.01);
+                        box-shadow: 0 0 0 5px rgba(139,92,246,0.15), 0 0 30px 10px rgba(139,92,246,0.4), 0 12px 30px rgba(109,40,217,0.45);
+                    }
+                    .login-btn:active { transform: scale(0.98); }
+                    .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+                    .login-orb {
+                        position: absolute;
+                        border-radius: 50%;
+                        pointer-events: none;
+                        filter: blur(7px);
+                        z-index: 1;
+                    }
+                    .login-orb1 { width:28px; height:28px; background: radial-gradient(circle, rgba(196,168,255,0.95), transparent 70%); top:-4px; left:18px; animation: login-orb1 3.2s ease-in-out infinite; }
+                    .login-orb2 { width:22px; height:22px; background: radial-gradient(circle, rgba(255,255,255,0.8), transparent 70%);  bottom:-2px; right:52px; animation: login-orb2 4s ease-in-out infinite; }
+                    .login-orb3 { width:18px; height:18px; background: radial-gradient(circle, rgba(167,139,250,0.9), transparent 70%); top:4px; right:24px; animation: login-orb3 2.6s ease-in-out infinite; }
+                    .login-label { position: relative; z-index: 5; }
+                `}</style>
+
+                <button
+                    type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-[16px] font-bold text-xs uppercase tracking-widest shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300 flex items-center justify-center gap-2"
+                    className="login-btn"
                 >
-                    {loading ? 'Processing...' : 'Log In'}
-                </motion.button>
+                    <span className="login-orb login-orb1" />
+                    <span className="login-orb login-orb2" />
+                    <span className="login-orb login-orb3" />
+                    <span className="login-label">{loading ? 'Processing...' : 'Log In'}</span>
+                </button>
             </form>
 
             <div className="my-6 flex items-center gap-4">

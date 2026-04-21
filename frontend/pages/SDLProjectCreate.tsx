@@ -152,6 +152,86 @@ const SDLProjectCreate: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-24 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
+        <style>{`
+            @keyframes cont-shimmer {
+                0%   { transform: translateX(-180%) skewX(-20deg); }
+                100% { transform: translateX(300%) skewX(-20deg); }
+            }
+            @keyframes cont-orb1 {
+                0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.55; }
+                40%     { transform: translate(8px,-6px) scale(1.3);  opacity:0.9; }
+                70%     { transform: translate(-4px,4px) scale(0.8);  opacity:0.4; }
+            }
+            @keyframes cont-orb2 {
+                0%,100% { transform: translate(0px,0px) scale(1);     opacity:0.4; }
+                35%     { transform: translate(-10px,-8px) scale(1.4); opacity:0.85; }
+                65%     { transform: translate(6px,5px) scale(0.75);   opacity:0.35; }
+            }
+            @keyframes cont-orb3 {
+                0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.5; }
+                50%     { transform: translate(6px,8px) scale(1.25);  opacity:0.9; }
+            }
+            .cont-btn {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                padding: 16px 0;
+                background: #7C3AED;
+                color: #fff;
+                font-weight: 800;
+                font-size: 12px;
+                letter-spacing: 0.25em;
+                text-transform: uppercase;
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                overflow: hidden;
+                transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                box-shadow: 0 4px 20px rgba(124,58,237,0.4), 0 1px 0 rgba(255,255,255,0.12) inset;
+            }
+            .cont-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            .cont-btn::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: 12px;
+                background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                pointer-events: none;
+                z-index: 1;
+            }
+            .cont-btn::after {
+                content: '';
+                position: absolute;
+                top: 0; left: 0;
+                width: 40%; height: 100%;
+                background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.24) 50%, transparent 80%);
+                animation: cont-shimmer 2.8s ease-in-out infinite;
+                pointer-events: none;
+                z-index: 2;
+            }
+            .cont-btn:not(:disabled):hover {
+                transform: translateY(-2px) scale(1.01);
+                box-shadow: 0 0 0 5px rgba(139,92,246,0.18), 0 0 32px 12px rgba(139,92,246,0.45), 0 16px 40px rgba(109,40,217,0.5);
+            }
+            .cont-btn:not(:disabled):active { transform: scale(0.98); }
+            .cont-orb {
+                position: absolute;
+                border-radius: 50%;
+                pointer-events: none;
+                filter: blur(7px);
+                z-index: 1;
+            }
+            .cont-orb1 { width:28px; height:28px; background:radial-gradient(circle,rgba(196,168,255,0.95),transparent 70%); top:-4px; left:18px; animation:cont-orb1 3.2s ease-in-out infinite; }
+            .cont-orb2 { width:22px; height:22px; background:radial-gradient(circle,rgba(255,255,255,0.8),transparent 70%);  bottom:-2px; right:48px; animation:cont-orb2 4s ease-in-out infinite; }
+            .cont-orb3 { width:18px; height:18px; background:radial-gradient(circle,rgba(167,139,250,0.9),transparent 70%); top:4px; right:18px;  animation:cont-orb3 2.6s ease-in-out infinite; }
+            .cont-label { position:relative; z-index:5; display:flex; align-items:center; gap:8px; }
+        `}</style>
 
         {/* Back button */}
         <button
@@ -215,12 +295,12 @@ const SDLProjectCreate: React.FC = () => {
               <button
                 disabled={!canProceedStep1}
                 onClick={() => setStep(2)}
-                className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${canProceedStep1
-                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
-                  : 'bg-white/[0.04] text-white/20 cursor-not-allowed'
-                  }`}
+                className="mt-8 cont-btn"
               >
-                Continue →
+                <span className="cont-orb cont-orb1" />
+                <span className="cont-orb cont-orb2" />
+                <span className="cont-orb cont-orb3" />
+                <span className="cont-label">Continue →</span>
               </button>
             </motion.div>
           )}
@@ -328,12 +408,12 @@ const SDLProjectCreate: React.FC = () => {
               <button
                 disabled={!canProceedStep2}
                 onClick={() => setStep(3)}
-                className={`mt-8 w-full py-4 rounded-xl font-bold text-xs uppercase tracking-[0.25em] transition-all ${canProceedStep2
-                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/30 hover:shadow-violet-500/50'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
+                className="mt-8 cont-btn"
               >
-                Continue →
+                <span className="cont-orb cont-orb1" />
+                <span className="cont-orb cont-orb2" />
+                <span className="cont-orb cont-orb3" />
+                <span className="cont-label">Continue →</span>
               </button>
             </motion.div>
           )}

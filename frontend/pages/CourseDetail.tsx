@@ -457,19 +457,24 @@ const CourseDetail: React.FC = () => {
                     {userState === 'NOT_PURCHASED' && (
                       <button
                         onClick={handleEnrollNow}
-                        className="w-full py-4 bg-[#7C3AED] text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-[#6D28D9] active:scale-[0.98] transition-all shadow-lg shadow-[#7C3AED]/30 flex items-center justify-center gap-2"
+                        className="glow-btn glow-btn-purple w-full py-4 text-sm uppercase tracking-[0.2em] rounded-xl"
                       >
-                        <Zap className="w-5 h-5" />
-                        Enroll Now
+                        <span className="glow-orb glow-orb-1" />
+                        <span className="glow-orb glow-orb-2" />
+                        <span className="glow-orb glow-orb-3" />
+                        <span className="glow-label flex items-center gap-2"><Zap className="w-5 h-5" /> Enroll Now</span>
                       </button>
                     )}
 
                     {userState === 'IN_CART' && (
                       <button
                         onClick={handleEnrollNow}
-                        className="w-full py-4 bg-[#111827] text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-[#1F2937] active:scale-[0.98] transition-all shadow-lg shadow-black/20"
+                        className="glow-btn glow-btn-purple w-full py-4 text-sm uppercase tracking-[0.2em] rounded-xl"
                       >
-                        Complete Enrollment
+                        <span className="glow-orb glow-orb-1" />
+                        <span className="glow-orb glow-orb-2" />
+                        <span className="glow-orb glow-orb-3" />
+                        <span className="glow-label">Complete Enrollment</span>
                       </button>
                     )}
 
@@ -477,10 +482,13 @@ const CourseDetail: React.FC = () => {
                       <button
                         onClick={handleGoToCourse}
                         disabled={actionLoading}
-                        className="w-full py-4 bg-green-600 text-white font-black text-sm uppercase tracking-[0.2em] rounded-xl hover:bg-green-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-600/30 flex items-center justify-center gap-2"
+                        className="glow-btn glow-btn-purple w-full py-4 text-sm uppercase tracking-[0.2em] rounded-xl"
+                        style={{background:'#16a34a'}}
                       >
-                        <BookOpen className="w-5 h-5" />
-                        Go to Course
+                        <span className="glow-orb glow-orb-1" style={{background:'radial-gradient(circle,rgba(134,239,172,0.9),transparent 70%)'}} />
+                        <span className="glow-orb glow-orb-2" />
+                        <span className="glow-orb glow-orb-3" style={{background:'radial-gradient(circle,rgba(74,222,128,0.9),transparent 70%)'}} />
+                        <span className="glow-label flex items-center gap-2"><BookOpen className="w-5 h-5" /> Go to Course</span>
                       </button>
                     )}
                   </div>
