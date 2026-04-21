@@ -395,7 +395,76 @@ const Assessment: React.FC = () => {
                   Calibrate your assessment protocol by specifying your target role and institution.
                 </p>
               </div>
-
+              <style>{`
+                  .asm-btn {
+                      position: relative;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      background: #7C3AED;
+                      color: #fff;
+                      border: none;
+                      overflow: hidden;
+                      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                      box-shadow: 0 4px 20px rgba(124,58,237,0.4), 0 1px 0 rgba(255,255,255,0.12) inset;
+                  }
+                  .asm-btn:disabled {
+                      opacity: 0.5;
+                      cursor: not-allowed;
+                  }
+                  .asm-btn::before {
+                      content: '';
+                      position: absolute;
+                      inset: 0;
+                      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                      pointer-events: none;
+                      z-index: 1;
+                  }
+                  .asm-btn::after {
+                      content: '';
+                      position: absolute;
+                      top: 0; left: 0;
+                      width: 40%; height: 100%;
+                      background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.24) 50%, transparent 80%);
+                      animation: asm-shimmer 2.8s ease-in-out infinite;
+                      pointer-events: none;
+                      z-index: 2;
+                  }
+                  .asm-btn:not(:disabled):hover {
+                      transform: translateY(-2px) scale(1.02);
+                      box-shadow: 0 0 0 5px rgba(139,92,246,0.18), 0 0 32px 12px rgba(139,92,246,0.45), 0 16px 40px rgba(109,40,217,0.5);
+                  }
+                  .asm-btn:not(:disabled):active { transform: scale(0.97); }
+                  .asm-orb {
+                      position: absolute;
+                      border-radius: 50%;
+                      pointer-events: none;
+                      filter: blur(7px);
+                      z-index: 1;
+                  }
+                  .asm-orb1 { width:28px; height:28px; background:radial-gradient(circle,rgba(196,168,255,0.95),transparent 70%); top:-4px; left:18px; animation:asm-orb1 3.2s ease-in-out infinite; }
+                  .asm-orb2 { width:22px; height:22px; background:radial-gradient(circle,rgba(255,255,255,0.8),transparent 70%);  bottom:-2px; right:48px; animation:asm-orb2 4s ease-in-out infinite; }
+                  .asm-orb3 { width:18px; height:18px; background:radial-gradient(circle,rgba(167,139,250,0.9),transparent 70%); top:4px; right:18px;  animation:asm-orb3 2.6s ease-in-out infinite; }
+                  .asm-label { position:relative; z-index:5; display:flex; align-items:center; justify-content:center; gap:8px; }
+                  @keyframes asm-shimmer {
+                      0%   { transform: translateX(-180%) skewX(-20deg); }
+                      100% { transform: translateX(300%) skewX(-20deg); }
+                  }
+                  @keyframes asm-orb1 {
+                      0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.55; }
+                      40%     { transform: translate(8px,-6px) scale(1.3);  opacity:0.9; }
+                      70%     { transform: translate(-4px,4px) scale(0.8);  opacity:0.4; }
+                  }
+                  @keyframes asm-orb2 {
+                      0%,100% { transform: translate(0px,0px) scale(1);     opacity:0.4; }
+                      35%     { transform: translate(-10px,-8px) scale(1.4); opacity:0.85; }
+                      65%     { transform: translate(6px,5px) scale(0.75);   opacity:0.35; }
+                  }
+                  @keyframes asm-orb3 {
+                      0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.5; }
+                      50%     { transform: translate(6px,8px) scale(1.25);  opacity:0.9; }
+                  }
+              `}</style>
               <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl space-y-6 relative max-w-[420px] mx-auto">
                 {/* ROLE INPUT */}
                 <div className="relative">
@@ -503,9 +572,18 @@ const Assessment: React.FC = () => {
                       <button
                         key={exp.id}
                         onClick={() => setExperience(exp.id as any)}
-                        className={`flex-1 py-4 rounded-xl border font-bold text-[10px] uppercase tracking-widest transition-all ${experience === exp.id ? 'bg-[#7C3AED] border-[#7C3AED] text-white shadow-lg' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-[#7C3AED]/20'}`}
+                        className={`flex-1 overflow-hidden py-4 rounded-xl border font-bold text-[10px] uppercase tracking-widest transition-all ${experience === exp.id ? 'asm-btn border-[#7C3AED]' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-[#7C3AED]/20'}`}
                       >
-                        {exp.label}
+                        {experience === exp.id ? (
+                          <>
+                            <span className="asm-orb asm-orb1" style={{width:'18px', height:'18px', left: '10px'}} />
+                            <span className="asm-orb asm-orb2" style={{width:'14px', height:'14px', right: '10px'}} />
+                            <span className="asm-orb asm-orb3" style={{width:'12px', height:'12px', top: '2px', right: '10px'}} />
+                            <span className="asm-label">{exp.label}</span>
+                          </>
+                        ) : (
+                          exp.label
+                        )}
                       </button>
                     ))}
                   </div>
@@ -519,9 +597,12 @@ const Assessment: React.FC = () => {
                       setStep('prep');
                     }}
                     disabled={!roleInput || !companyInput}
-                    className="w-full py-5 bg-[#111827] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-3 shadow-xl disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
+                    className="asm-btn w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em]"
                   >
-                    Generate Protocol <ArrowRight className="w-3.5 h-3.5" />
+                    <span className="asm-orb asm-orb1" />
+                    <span className="asm-orb asm-orb2" />
+                    <span className="asm-orb asm-orb3" />
+                    <span className="asm-label">Generate Protocol <ArrowRight className="w-3.5 h-3.5" /></span>
                   </button>
                 </div>
               </div>

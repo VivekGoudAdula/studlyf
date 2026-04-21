@@ -272,17 +272,94 @@ const CoursesOverview: React.FC = () => {
 
                     </div>
 
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() =>
-                            navigate('/learn/career-fit')
+                    <style>{`
+                        @keyframes sa-shimmer {
+                            0%   { transform: translateX(-180%) skewX(-20deg); }
+                            100% { transform: translateX(300%) skewX(-20deg); }
                         }
-                        className="px-10 py-4 bg-[#7C3AED] text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl shadow-xl"
+                        @keyframes sa-orb1 {
+                            0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.55; }
+                            40%     { transform: translate(8px,-6px) scale(1.3);  opacity:0.9; }
+                            70%     { transform: translate(-4px,4px) scale(0.8);  opacity:0.4; }
+                        }
+                        @keyframes sa-orb2 {
+                            0%,100% { transform: translate(0px,0px) scale(1);     opacity:0.4; }
+                            35%     { transform: translate(-10px,-8px) scale(1.4); opacity:0.85; }
+                            65%     { transform: translate(6px,5px) scale(0.75);   opacity:0.35; }
+                        }
+                        @keyframes sa-orb3 {
+                            0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.5; }
+                            50%     { transform: translate(6px,8px) scale(1.25);  opacity:0.9; }
+                        }
+                        .sa-btn {
+                            position: relative;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            padding: 16px 40px;
+                            background: #7C3AED;
+                            color: #fff;
+                            font-weight: 800;
+                            font-size: 13px;
+                            letter-spacing: 0.12em;
+                            text-transform: uppercase;
+                            border: none;
+                            border-radius: 16px;
+                            cursor: pointer;
+                            overflow: hidden;
+                            transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                            box-shadow: 0 4px 20px rgba(124,58,237,0.4), 0 1px 0 rgba(255,255,255,0.12) inset;
+                        }
+                        .sa-btn::before {
+                            content: '';
+                            position: absolute;
+                            inset: 0;
+                            border-radius: 16px;
+                            background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                            pointer-events: none;
+                            z-index: 1;
+                        }
+                        .sa-btn::after {
+                            content: '';
+                            position: absolute;
+                            top: 0; left: 0;
+                            width: 40%; height: 100%;
+                            background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.24) 50%, transparent 80%);
+                            animation: sa-shimmer 2.8s ease-in-out infinite;
+                            pointer-events: none;
+                            z-index: 2;
+                        }
+                        .sa-btn:hover {
+                            transform: translateY(-3px) scale(1.04);
+                            box-shadow: 0 0 0 5px rgba(139,92,246,0.18), 0 0 32px 12px rgba(139,92,246,0.45), 0 16px 40px rgba(109,40,217,0.5);
+                        }
+                        .sa-btn:active { transform: scale(0.97); }
+                        .sa-orb {
+                            position: absolute;
+                            border-radius: 50%;
+                            pointer-events: none;
+                            filter: blur(7px);
+                            z-index: 1;
+                        }
+                        .sa-orb1 { width:28px; height:28px; background:radial-gradient(circle,rgba(196,168,255,0.95),transparent 70%); top:-4px; left:18px; animation:sa-orb1 3.2s ease-in-out infinite; }
+                        .sa-orb2 { width:22px; height:22px; background:radial-gradient(circle,rgba(255,255,255,0.8),transparent 70%);  bottom:-2px; right:48px; animation:sa-orb2 4s ease-in-out infinite; }
+                        .sa-orb3 { width:18px; height:18px; background:radial-gradient(circle,rgba(167,139,250,0.9),transparent 70%); top:4px; right:18px;  animation:sa-orb3 2.6s ease-in-out infinite; }
+                        .sa-label { position:relative; z-index:5; display:flex; align-items:center; gap:8px; }
+                    `}</style>
+
+                    <button
+                        className="sa-btn"
+                        onClick={() => navigate('/learn/career-fit')}
                     >
-                        Start Assessment
-                        <ArrowRight className="w-4 h-4 inline ml-2" />
-                    </motion.button>
+                        <span className="sa-orb sa-orb1" />
+                        <span className="sa-orb sa-orb2" />
+                        <span className="sa-orb sa-orb3" />
+                        <span className="sa-label">
+                            Start Assessment
+                            <ArrowRight className="w-4 h-4" />
+                        </span>
+                    </button>
 
                 </motion.div>
 

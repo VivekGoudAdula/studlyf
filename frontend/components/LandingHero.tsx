@@ -196,14 +196,174 @@ const LandingHero: React.FC = () => {
 
                 {/* Row 3: CTA Button */}
                 <div className="relative flex flex-col items-center pt-2 md:pt-4 mb-32 z-20">
-                    <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: '#6D28D9' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/signup')}
-                        className="bg-[#7C3AED] text-white px-12 py-5 rounded-full text-lg font-bold shadow-2xl shadow-purple-500/40 transition-all flex items-center justify-center z-30"
-                    >
-                        Try now
-                    </motion.button>
+
+                    <style>{`
+                        @keyframes btn-shimmer {
+                            0%   { transform: translateX(-180%) skewX(-20deg); }
+                            100% { transform: translateX(300%) skewX(-20deg); }
+                        }
+                        @keyframes orb1-float {
+                            0%,100% { transform: translate(0px, 0px) scale(1);   opacity: 0.55; }
+                            40%     { transform: translate(8px, -6px) scale(1.3); opacity: 0.9; }
+                            70%     { transform: translate(-4px, 4px) scale(0.8); opacity: 0.4; }
+                        }
+                        @keyframes orb2-float {
+                            0%,100% { transform: translate(0px, 0px) scale(1);    opacity: 0.4; }
+                            35%     { transform: translate(-10px, -8px) scale(1.4); opacity: 0.85; }
+                            65%     { transform: translate(6px, 5px) scale(0.75);  opacity: 0.35; }
+                        }
+                        @keyframes orb3-float {
+                            0%,100% { transform: translate(0px, 0px) scale(1);   opacity: 0.5; }
+                            50%     { transform: translate(6px, 8px) scale(1.25); opacity: 0.9; }
+                        }
+
+                        .trynow-btn {
+                            position: relative;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 10px;
+                            padding: 18px 52px;
+                            font-size: 17px;
+                            font-family: 'Poppins', sans-serif;
+                            font-weight: 700;
+                            letter-spacing: 0.04em;
+                            color: #fff;
+                            background: #7c3aed;
+                            border: none;
+                            border-radius: 9999px;
+                            cursor: pointer;
+                            outline: none;
+                            overflow: hidden;
+                            transition:
+                                transform 0.25s cubic-bezier(0.34,1.56,0.64,1),
+                                box-shadow 0.3s ease,
+                                background 0.3s ease;
+                            box-shadow:
+                                0 4px 20px rgba(124,58,237,0.35),
+                                0 1px 0 rgba(255,255,255,0.12) inset;
+                            z-index: 30;
+                        }
+
+                        /* Top glass sheen */
+                        .trynow-btn::before {
+                            content: '';
+                            position: absolute;
+                            inset: 0;
+                            border-radius: 9999px;
+                            background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                            pointer-events: none;
+                            z-index: 1;
+                        }
+
+                        /* Continuous shimmer sweep */
+                        .trynow-btn::after {
+                            content: '';
+                            position: absolute;
+                            top: 0; left: 0;
+                            width: 40%;
+                            height: 100%;
+                            background: linear-gradient(
+                                110deg,
+                                transparent 20%,
+                                rgba(255,255,255,0.22) 50%,
+                                transparent 80%
+                            );
+                            animation: btn-shimmer 2.8s ease-in-out infinite;
+                            pointer-events: none;
+                            z-index: 2;
+                        }
+
+                        /* Floating inner orbs */
+                        .trynow-orb {
+                            position: absolute;
+                            border-radius: 50%;
+                            pointer-events: none;
+                            filter: blur(7px);
+                            z-index: 1;
+                        }
+                        .trynow-orb1 {
+                            width: 28px; height: 28px;
+                            background: radial-gradient(circle, rgba(196,168,255,0.95), transparent 70%);
+                            top: -4px; left: 18px;
+                            animation: orb1-float 3.2s ease-in-out infinite;
+                        }
+                        .trynow-orb2 {
+                            width: 22px; height: 22px;
+                            background: radial-gradient(circle, rgba(255,255,255,0.8), transparent 70%);
+                            bottom: -2px; right: 52px;
+                            animation: orb2-float 4s ease-in-out infinite;
+                        }
+                        .trynow-orb3 {
+                            width: 18px; height: 18px;
+                            background: radial-gradient(circle, rgba(167,139,250,0.9), transparent 70%);
+                            top: 4px; right: 24px;
+                            animation: orb3-float 2.6s ease-in-out infinite;
+                        }
+
+                        .trynow-btn:hover {
+                            background: #6d28d9;
+                            transform: translateY(-3px) scale(1.035);
+                            box-shadow:
+                                0 0 0 6px rgba(139,92,246,0.15),
+                                0 0 40px 12px rgba(139,92,246,0.45),
+                                0 16px 40px rgba(109,40,217,0.5),
+                                0 1px 0 rgba(255,255,255,0.15) inset;
+                        }
+                        .trynow-btn:active {
+                            transform: translateY(0px) scale(0.97);
+                        }
+                        .trynow-btn .arrow-icon {
+                            display: flex;
+                            align-items: center;
+                            transition: transform 0.25s ease;
+                            position: relative;
+                            z-index: 5;
+                        }
+                        .trynow-btn:hover .arrow-icon {
+                            transform: translateX(5px);
+                        }
+                        .trynow-label {
+                            position: relative;
+                            z-index: 5;
+                        }
+                        .trynow-glow {
+                            position: absolute;
+                            width: 240px; height: 60px;
+                            border-radius: 50%;
+                            background: radial-gradient(ellipse, rgba(139,92,246,0.0) 0%, transparent 80%);
+                            filter: blur(20px);
+                            bottom: -16px; left: 50%;
+                            transform: translateX(-50%);
+                            pointer-events: none;
+                            transition: background 0.35s ease;
+                            z-index: 0;
+                        }
+                        .trynow-wrap:hover .trynow-glow {
+                            background: radial-gradient(ellipse, rgba(139,92,246,0.65) 0%, transparent 80%);
+                        }
+                    `}</style>
+
+                    <div className="trynow-wrap relative">
+                        <div className="trynow-glow" />
+                        <button
+                            className="trynow-btn"
+                            onClick={() => navigate('/signup')}
+                        >
+                            {/* Floating inner glowing orbs */}
+                            <span className="trynow-orb trynow-orb1" />
+                            <span className="trynow-orb trynow-orb2" />
+                            <span className="trynow-orb trynow-orb3" />
+
+                            <span className="trynow-label">Try now</span>
+                            <span className="arrow-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M4 10h12M11 5l5 5-5 5"
+                                        stroke="white" strokeWidth="2.2"
+                                        strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
                 </div>
 
             </div>

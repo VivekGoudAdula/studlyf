@@ -104,17 +104,18 @@ const Footer: React.FC = () => {
                                     </motion.div>
                                 </div>
 
-                                <motion.button
+                                <button
                                     type="submit"
-                                    whileHover={{ y: -4, scale: 1.03 }}
-                                    whileTap={{ scale: 0.97 }}
-                                    className="px-10 py-4 bg-[#6C3BFF] hover:bg-[#9D7CFF] text-white text-base font-bold rounded-2xl transition-all duration-300 shadow-[0_15px_30px_rgba(108,59,255,0.4)] relative overflow-hidden group"
+                                    className="glow-btn glow-btn-purple px-10 py-4 text-base rounded-2xl"
                                 >
-                                    <span className="relative z-10 flex items-center gap-2">
+                                    <span className="glow-orb glow-orb-1" />
+                                    <span className="glow-orb glow-orb-2" />
+                                    <span className="glow-orb glow-orb-3" />
+                                    <span className="glow-label flex items-center gap-2">
                                         {isSubscribed ? "Thank You!" : "Subscribe"}
                                         {!isSubscribed && <Send size={20} />}
                                     </span>
-                                </motion.button>
+                                </button>
                             </form>
                         </div>
 

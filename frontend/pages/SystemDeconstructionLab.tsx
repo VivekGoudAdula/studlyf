@@ -382,6 +382,74 @@ const SystemDeconstructionLab: React.FC = () => {
       <div className="max-w-7xl mx-auto">
 
         {/* ── Hero ── */}
+        <style>{`
+          @keyframes sdf-shimmer {
+              0%   { transform: translateX(-180%) skewX(-20deg); }
+              100% { transform: translateX(300%) skewX(-20deg); }
+          }
+          @keyframes sdf-orb1 {
+              0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.55; }
+              40%     { transform: translate(8px,-6px) scale(1.3);  opacity:0.9; }
+              70%     { transform: translate(-4px,4px) scale(0.8);  opacity:0.4; }
+          }
+          @keyframes sdf-orb2 {
+              0%,100% { transform: translate(0px,0px) scale(1);     opacity:0.4; }
+              35%     { transform: translate(-10px,-8px) scale(1.4); opacity:0.85; }
+              65%     { transform: translate(6px,5px) scale(0.75);   opacity:0.35; }
+          }
+          @keyframes sdf-orb3 {
+              0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.5; }
+              50%     { transform: translate(6px,8px) scale(1.25);  opacity:0.9; }
+          }
+          .glow-btn-inline {
+              position: relative;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              background: #7C3AED;
+              color: #fff;
+              font-weight: 800;
+              border: none;
+              overflow: hidden;
+              transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+              box-shadow: 0 4px 20px rgba(124,58,237,0.4), 0 1px 0 rgba(255,255,255,0.12) inset;
+          }
+          .glow-btn-inline::before {
+              content: '';
+              position: absolute;
+              inset: 0;
+              background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+              pointer-events: none;
+              z-index: 1;
+          }
+          .glow-btn-inline::after {
+              content: '';
+              position: absolute;
+              top: 0; left: 0;
+              width: 40%; height: 100%;
+              background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.24) 50%, transparent 80%);
+              animation: sdf-shimmer 2.8s ease-in-out infinite;
+              pointer-events: none;
+              z-index: 2;
+          }
+          .glow-btn-inline:hover {
+              transform: translateY(-2px) scale(1.02);
+              box-shadow: 0 0 0 5px rgba(139,92,246,0.18), 0 0 32px 12px rgba(139,92,246,0.45), 0 16px 40px rgba(109,40,217,0.5);
+          }
+          .glow-btn-inline:active { transform: scale(0.97); }
+          .glow-orb {
+              position: absolute;
+              border-radius: 50%;
+              pointer-events: none;
+              filter: blur(7px);
+              z-index: 1;
+          }
+          .glow-orb-tab { filter: blur(5px); }
+          .glow-orb1 { width:28px; height:28px; background:radial-gradient(circle,rgba(196,168,255,0.95),transparent 70%); top:-4px; left:18px; animation:sdf-orb1 3.2s ease-in-out infinite; }
+          .glow-orb2 { width:22px; height:22px; background:radial-gradient(circle,rgba(255,255,255,0.8),transparent 70%);  bottom:-2px; right:48px; animation:sdf-orb2 4s ease-in-out infinite; }
+          .glow-orb3 { width:18px; height:18px; background:radial-gradient(circle,rgba(167,139,250,0.9),transparent 70%); top:4px; right:18px;  animation:sdf-orb3 2.6s ease-in-out infinite; }
+          .glow-label { position:relative; z-index:5; display:flex; align-items:center; gap:8px; }
+        `}</style>
         <motion.header
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -405,14 +473,15 @@ const SystemDeconstructionLab: React.FC = () => {
               </p>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+            <button
               onClick={() => navigate('/job-prep/projects/create')}
-              className="w-full sm:w-auto shrink-0 px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-xs uppercase tracking-[0.25em] rounded-xl shadow-2xl shadow-violet-600/30 hover:shadow-violet-500/50 transition-all border border-violet-500/30"
+              className="w-full sm:w-auto shrink-0 px-8 py-4 glow-btn-inline rounded-xl text-xs uppercase tracking-[0.25em]"
             >
-              + Start a New Project
-            </motion.button>
+              <span className="glow-orb glow-orb1" />
+              <span className="glow-orb glow-orb2" />
+              <span className="glow-orb glow-orb3" />
+              <span className="glow-label">+ Start a New Project</span>
+            </button>
           </div>
         </motion.header>
 
@@ -442,11 +511,20 @@ const SystemDeconstructionLab: React.FC = () => {
               key={tab}
               onClick={() => setActiveTab(i)}
               className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.15em] transition-all ${activeTab === i
-                ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                ? 'glow-btn-inline shadow-lg shadow-violet-600/30'
                 : 'bg-white text-gray-500 hover:text-gray-700 border border-gray-100'
                 }`}
             >
-              {tab}
+              {activeTab === i ? (
+                <>
+                  <span className="glow-orb glow-orb-tab glow-orb1" style={{width:'18px', height:'18px', left: '10px'}} />
+                  <span className="glow-orb glow-orb-tab glow-orb2" style={{width:'14px', height:'14px', right: '10px'}} />
+                  <span className="glow-orb glow-orb-tab glow-orb3" style={{width:'12px', height:'12px', top: '2px', right: '10px'}} />
+                  <span className="glow-label">{tab}</span>
+                </>
+              ) : (
+                tab
+              )}
             </button>
           ))}
         </div>
@@ -525,22 +603,24 @@ const SystemDeconstructionLab: React.FC = () => {
             Stop watching tutorials. Start deconstructing systems used by millions. Your portfolio will speak louder than any certificate.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+            <button
               onClick={() => navigate('/job-prep/projects/create')}
-              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-xs uppercase tracking-[0.25em] rounded-xl shadow-2xl shadow-violet-600/30"
+              className="px-8 py-4 glow-btn-inline rounded-xl text-xs uppercase tracking-[0.25em]"
             >
-              Launch Your Lab
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              <span className="glow-orb glow-orb1" />
+              <span className="glow-orb glow-orb2" />
+              <span className="glow-orb glow-orb3" />
+              <span className="glow-label">Launch Your Lab</span>
+            </button>
+            <button
               onClick={() => { setActiveTab(1); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
-              className="px-8 py-4 bg-white/[0.04] text-white/60 font-bold text-xs uppercase tracking-[0.25em] rounded-xl border border-white/[0.08] hover:border-white/20 transition-all"
+              className="px-8 py-4 glow-btn-inline rounded-xl text-xs uppercase tracking-[0.25em]"
             >
-              Join a Team
-            </motion.button>
+              <span className="glow-orb glow-orb1" />
+              <span className="glow-orb glow-orb2" />
+              <span className="glow-orb glow-orb3" />
+              <span className="glow-label">Join a Team</span>
+            </button>
           </div>
         </motion.div>
       </div>

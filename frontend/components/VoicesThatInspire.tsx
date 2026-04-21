@@ -12,19 +12,19 @@ const personalities = [
         name: "Elon Musk",
         role: "CEO, Tesla & SpaceX",
         quote: "Persistence is very important. You should not give up unless you are forced to give up.",
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Elon_Musk_Royal_Society.jpg/600px-Elon_Musk_Royal_Society.jpg"
+        image: "/images/elon-musk.jpg"
     },
     {
         name: "Bill Gates",
         role: "Co-founder, Microsoft",
         quote: "Your most unhappy customers are your greatest source of learning. Success is a lousy teacher.",
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Bill_Gates_2017_%28cropped%29.jpg/600px-Bill_Gates_2017_%28cropped%29.jpg"
+        image: "/images/bill-gates.jpg"
     },
     {
         name: "Warren Buffett",
         role: "CEO, Berkshire Hathaway",
         quote: "The most important investment you can make is in yourself. Knowledge builds up like interest.",
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit_%28cropped%29.jpg/600px-Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit_%28cropped%29.jpg"
+        image: "/images/warren-buffett.jpg"
     },
     {
         name: "Sundar Pichai",
@@ -54,7 +54,7 @@ const personalities = [
         name: "Jensen Huang",
         role: "Founder & CEO, NVIDIA",
         quote: "Software is eating the world, but AI is going to eat software. Never stop being a student.",
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Jensen_Huang_%28cropped%29.jpg/600px-Jensen_Huang_%28cropped%29.jpg"
+        image: "/images/jensen-huang.jpg"
     },
     {
         name: "Tim Cook",

@@ -28,12 +28,88 @@ const GetHiredSection: React.FC = () => {
                         IN STARTUP'S
                     </h2>
 
-                    <motion.button
-                        whileHover={{ translateY: -2, boxShadow: '0 8px 20px rgba(0,0,0,0.25)' }}
-                        className="bg-[#2F6FD6] text-white font-semibold flex items-center justify-center text-[17px] tracking-wide px-10 py-[18px] rounded-[40px] shadow-lg"
-                    >
-                        GET STARTED
-                    </motion.button>
+                    {/* GET STARTED — same shimmer + orb effect as Try Now */}
+                    <style>{`
+                        @keyframes gs-shimmer {
+                            0%   { transform: translateX(-180%) skewX(-20deg); }
+                            100% { transform: translateX(300%) skewX(-20deg); }
+                        }
+                        @keyframes gs-orb1 {
+                            0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.55; }
+                            40%     { transform: translate(8px,-6px) scale(1.3);  opacity: 0.9; }
+                            70%     { transform: translate(-4px,4px) scale(0.8);  opacity: 0.4; }
+                        }
+                        @keyframes gs-orb2 {
+                            0%,100% { transform: translate(0px,0px) scale(1);     opacity: 0.4; }
+                            35%     { transform: translate(-10px,-8px) scale(1.4); opacity: 0.85; }
+                            65%     { transform: translate(6px,5px) scale(0.75);   opacity: 0.35; }
+                        }
+                        @keyframes gs-orb3 {
+                            0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.5; }
+                            50%     { transform: translate(6px,8px) scale(1.25);  opacity: 0.9; }
+                        }
+                        .gs-btn {
+                            position: relative;
+                            background: #2F6FD6;
+                            color: #fff;
+                            font-weight: 600;
+                            font-size: 17px;
+                            letter-spacing: 0.06em;
+                            padding: 18px 40px;
+                            border-radius: 40px;
+                            border: none;
+                            cursor: pointer;
+                            overflow: hidden;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                            box-shadow: 0 8px 24px rgba(47,111,214,0.45), 0 1px 0 rgba(255,255,255,0.12) inset;
+                        }
+                        .gs-btn::before {
+                            content: '';
+                            position: absolute;
+                            inset: 0;
+                            border-radius: 40px;
+                            background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 55%);
+                            pointer-events: none;
+                            z-index: 1;
+                        }
+                        .gs-btn::after {
+                            content: '';
+                            position: absolute;
+                            top: 0; left: 0;
+                            width: 40%; height: 100%;
+                            background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.25) 50%, transparent 80%);
+                            animation: gs-shimmer 2.8s ease-in-out infinite;
+                            pointer-events: none;
+                            z-index: 2;
+                        }
+                        .gs-btn:hover {
+                            transform: translateY(-3px) scale(1.03);
+                            box-shadow: 0 0 0 5px rgba(47,111,214,0.18), 0 0 32px 10px rgba(47,111,214,0.45), 0 12px 30px rgba(30,80,180,0.5);
+                        }
+                        .gs-btn:active { transform: scale(0.97); }
+                        .gs-orb {
+                            position: absolute;
+                            border-radius: 50%;
+                            pointer-events: none;
+                            filter: blur(7px);
+                            z-index: 1;
+                        }
+                        .gs-orb1 { width:28px; height:28px; background: radial-gradient(circle, rgba(160,200,255,0.95), transparent 70%); top:-4px; left:18px; animation: gs-orb1 3.2s ease-in-out infinite; }
+                        .gs-orb2 { width:22px; height:22px; background: radial-gradient(circle, rgba(255,255,255,0.8),  transparent 70%); bottom:-2px; right:36px; animation: gs-orb2 4s ease-in-out infinite; }
+                        .gs-orb3 { width:18px; height:18px; background: radial-gradient(circle, rgba(100,170,255,0.9),  transparent 70%); top:4px; right:20px;  animation: gs-orb3 2.6s ease-in-out infinite; }
+                        .gs-label { position: relative; z-index: 5; }
+                    `}</style>
+
+                    <button className="gs-btn">
+                        <span className="gs-orb gs-orb1" />
+                        <span className="gs-orb gs-orb2" />
+                        <span className="gs-orb gs-orb3" />
+                        <span className="gs-label">GET STARTED</span>
+                    </button>
 
                 </div>
 
