@@ -38,6 +38,25 @@ const PaymentManagement: React.FC = () => {
         p.id.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Export visible payment data as CSV
+    const handleExportData = () => {
+        const rows = ['Transaction ID,User,Amount,Date,Status'];
+        filteredPayments.forEach(p => {
+            rows.push(`${p.id},${p.user},"${p.amount}",${p.date},${p.status}`);
+        });
+        rows.push('');
+        rows.push(`Total Revenue (Completed),$${totalRevenue}`);
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `studlyf_payments_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const totalRevenue = payments.reduce((acc, curr) => {
         if (curr.status === 'Completed') {
             const val = parseInt(curr.amount.replace('$', ''));
@@ -79,7 +98,7 @@ const PaymentManagement: React.FC = () => {
                         className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
                     />
                 </div>
-                <button className="whitespace-nowrap bg-zinc-900 border border-white/5 text-zinc-400 px-6 py-3.5 rounded-2xl font-bold text-sm flex items-center gap-2 hover:text-white transition-all shadow-lg active:scale-95">
+                <button onClick={handleExportData} className="whitespace-nowrap bg-zinc-900 border border-white/5 text-zinc-400 px-6 py-3.5 rounded-2xl font-bold text-sm flex items-center gap-2 hover:text-white transition-all shadow-lg active:scale-95">
                     <Download size={18} /> Export Data
                 </button>
             </div>

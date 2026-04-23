@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Instagram, Linkedin, Twitter, Github, Send, Mail } from 'lucide-react';
 
+// Custom WhatsApp icon (not available in lucide-react)
+const WhatsAppIcon = ({ size = 22 }: { size?: number }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
 const Footer: React.FC = () => {
     const [email, setEmail] = useState('');
     const [isSubscribed, setIsSubscribed] = useState(false);
@@ -16,9 +23,10 @@ const Footer: React.FC = () => {
     };
 
     const socialLinks = [
-        { icon: <Instagram size={22} />, href: "https://instagram.com", label: "Instagram" },
-        { icon: <Linkedin size={22} />, href: "https://linkedin.com", label: "LinkedIn" },
+        { icon: <Instagram size={22} />, href: "https://www.instagram.com/stuudent.lyf?igsh=bDIwYzIxaDFyeWd3", label: "Instagram" },
+        { icon: <Linkedin size={22} />, href: "https://www.linkedin.com/company/studlyf/", label: "LinkedIn" },
         { icon: <Twitter size={22} />, href: "https://twitter.com", label: "Twitter" },
+        { icon: <WhatsAppIcon size={22} />, href: "https://whatsapp.com/channel/0029VbCHsjAHVvTRqLfOau24/113 ", label: "WhatsApp" },
         { icon: <Github size={22} />, href: "https://github.com", label: "GitHub" },
     ];
 

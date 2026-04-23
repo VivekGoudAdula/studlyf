@@ -15,7 +15,7 @@ const testimonials = [
         name: "P. Jaikrishna",
         course: "AI & DATA SCIENCE",
         text: "Studlyf's curriculum helped me transition into AI with confidence. The mentorship and real-world projects were the highlight of my journey.",
-        logo: "https://ui-avatars.com/api/?name=PJ&background=fff&color=7C3AED",
+        logo: "data:image/webp;base64,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",
         rating: 5,
         bgColor: "bg-indigo-50"
     },
@@ -31,7 +31,7 @@ const testimonials = [
         name: "Purushotham",
         course: "SERVICENOW",
         text: "Rakesh is teaching very well, patiently clearing every doubt. I also learned communication skills from him.",
-        logo: "https://ui-avatars.com/api/?name=C3&background=fff&color=15151F",
+        logo: "/images/anuraguni.png",
         rating: 4,
         bgColor: "bg-rose-50"
     },
@@ -39,7 +39,7 @@ const testimonials = [
         name: "Anusha Goud",
         course: "FULL STACK DEVELOPMENT",
         text: "The curriculum is very industry-aligned. I feel much more confident in my coding skills now.",
-        logo: "https://ui-avatars.com/api/?name=C4&background=fff&color=15151F",
+        logo: "/images/cmr.png",
         rating: 5,
         bgColor: "bg-emerald-50"
     },
@@ -47,7 +47,7 @@ const testimonials = [
         name: "Kiran Kumar",
         course: "CYBER SECURITY",
         text: "Excellent hands-on labs. The mentors really know their stuff and guide us through complex scenarios.",
-        logo: "https://ui-avatars.com/api/?name=C5&background=fff&color=15151F",
+        logo: "/images/mallareddyuni.png",
         rating: 4,
         bgColor: "bg-amber-50"
     }
