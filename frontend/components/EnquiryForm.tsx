@@ -252,12 +252,15 @@ const EnquiryForm: React.FC = () => {
                         <motion.div className="pt-4 flex justify-center">
                             <motion.button
                                 type="submit"
-                                whileHover={{ y: -5, scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="px-16 py-3.5 bg-white text-[#7C3AED] text-base font-bold rounded-2xl shadow-xl transition-all duration-300 flex items-center gap-3 group overflow-hidden"
+                                className="px-16 py-3.5 text-base rounded-2xl transition-all duration-300 flex items-center gap-3 group overflow-hidden glow-btn glow-btn-purple"
                             >
-                                <span className="relative z-10 tracking-wider">Submit Inquiry</span>
-                                <Send size={18} className="relative z-10 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                <span className="glow-orb glow-orb-1" />
+                                <span className="glow-orb glow-orb-2" />
+                                <span className="glow-orb glow-orb-3" />
+                                <span className="glow-label flex items-center gap-3 w-full justify-center">
+                                    <span className="tracking-wider">Submit Inquiry</span>
+                                    <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                </span>
                             </motion.button>
                         </motion.div>
 

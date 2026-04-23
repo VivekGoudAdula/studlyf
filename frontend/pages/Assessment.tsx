@@ -374,8 +374,77 @@ const Assessment: React.FC = () => {
   return (
     <div className="pt-32 pb-24 px-6 bg-[#FAFAFA] min-h-screen flex items-center justify-center font-sans">
       <div className="max-w-6xl w-full mx-auto">
+        <style>{`
+            .asm-btn {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #7C3AED;
+                color: #fff;
+                border: none;
+                overflow: hidden;
+                transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                box-shadow: 0 4px 20px rgba(124,58,237,0.4), 0 1px 0 rgba(255,255,255,0.12) inset;
+            }
+            .asm-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            .asm-btn::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                pointer-events: none;
+                z-index: 1;
+            }
+            .asm-btn::after {
+                content: '';
+                position: absolute;
+                top: 0; left: 0;
+                width: 40%; height: 100%;
+                background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.24) 50%, transparent 80%);
+                animation: asm-shimmer 2.8s ease-in-out infinite;
+                pointer-events: none;
+                z-index: 2;
+            }
+            .asm-btn:not(:disabled):hover {
+                transform: translateY(-2px) scale(1.02);
+                box-shadow: 0 0 0 5px rgba(139,92,246,0.18), 0 0 32px 12px rgba(139,92,246,0.45), 0 16px 40px rgba(109,40,217,0.5);
+            }
+            .asm-btn:not(:disabled):active { transform: scale(0.97); }
+            .asm-orb {
+                position: absolute;
+                border-radius: 50%;
+                pointer-events: none;
+                filter: blur(7px);
+                z-index: 1;
+            }
+            .asm-orb1 { width:28px; height:28px; background:radial-gradient(circle,rgba(196,168,255,0.95),transparent 70%); top:-4px; left:18px; animation:asm-orb1 3.2s ease-in-out infinite; }
+            .asm-orb2 { width:22px; height:22px; background:radial-gradient(circle,rgba(255,255,255,0.8),transparent 70%);  bottom:-2px; right:48px; animation:asm-orb2 4s ease-in-out infinite; }
+            .asm-orb3 { width:18px; height:18px; background:radial-gradient(circle,rgba(167,139,250,0.9),transparent 70%); top:4px; right:18px;  animation:asm-orb3 2.6s ease-in-out infinite; }
+            .asm-label { position:relative; z-index:5; display:flex; align-items:center; justify-content:center; gap:8px; }
+            @keyframes asm-shimmer {
+                0%   { transform: translateX(-180%) skewX(-20deg); }
+                100% { transform: translateX(300%) skewX(-20deg); }
+            }
+            @keyframes asm-orb1 {
+                0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.55; }
+                40%     { transform: translate(8px,-6px) scale(1.3);  opacity:0.9; }
+                70%     { transform: translate(-4px,4px) scale(0.8);  opacity:0.4; }
+            }
+            @keyframes asm-orb2 {
+                0%,100% { transform: translate(0px,0px) scale(1);     opacity:0.4; }
+                35%     { transform: translate(-10px,-8px) scale(1.4); opacity:0.85; }
+                65%     { transform: translate(6px,5px) scale(0.75);   opacity:0.35; }
+            }
+            @keyframes asm-orb3 {
+                0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.5; }
+                50%     { transform: translate(6px,8px) scale(1.25);  opacity:0.9; }
+            }
+        `}</style>
         <AnimatePresence mode="wait">
-
           {/* STEP 1: CONFIGURATION (RESTORED OLD UI) */}
           {step === 'config' && (
             <motion.div
@@ -395,76 +464,6 @@ const Assessment: React.FC = () => {
                   Calibrate your assessment protocol by specifying your target role and institution.
                 </p>
               </div>
-              <style>{`
-                  .asm-btn {
-                      position: relative;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      background: #7C3AED;
-                      color: #fff;
-                      border: none;
-                      overflow: hidden;
-                      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
-                      box-shadow: 0 4px 20px rgba(124,58,237,0.4), 0 1px 0 rgba(255,255,255,0.12) inset;
-                  }
-                  .asm-btn:disabled {
-                      opacity: 0.5;
-                      cursor: not-allowed;
-                  }
-                  .asm-btn::before {
-                      content: '';
-                      position: absolute;
-                      inset: 0;
-                      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
-                      pointer-events: none;
-                      z-index: 1;
-                  }
-                  .asm-btn::after {
-                      content: '';
-                      position: absolute;
-                      top: 0; left: 0;
-                      width: 40%; height: 100%;
-                      background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.24) 50%, transparent 80%);
-                      animation: asm-shimmer 2.8s ease-in-out infinite;
-                      pointer-events: none;
-                      z-index: 2;
-                  }
-                  .asm-btn:not(:disabled):hover {
-                      transform: translateY(-2px) scale(1.02);
-                      box-shadow: 0 0 0 5px rgba(139,92,246,0.18), 0 0 32px 12px rgba(139,92,246,0.45), 0 16px 40px rgba(109,40,217,0.5);
-                  }
-                  .asm-btn:not(:disabled):active { transform: scale(0.97); }
-                  .asm-orb {
-                      position: absolute;
-                      border-radius: 50%;
-                      pointer-events: none;
-                      filter: blur(7px);
-                      z-index: 1;
-                  }
-                  .asm-orb1 { width:28px; height:28px; background:radial-gradient(circle,rgba(196,168,255,0.95),transparent 70%); top:-4px; left:18px; animation:asm-orb1 3.2s ease-in-out infinite; }
-                  .asm-orb2 { width:22px; height:22px; background:radial-gradient(circle,rgba(255,255,255,0.8),transparent 70%);  bottom:-2px; right:48px; animation:asm-orb2 4s ease-in-out infinite; }
-                  .asm-orb3 { width:18px; height:18px; background:radial-gradient(circle,rgba(167,139,250,0.9),transparent 70%); top:4px; right:18px;  animation:asm-orb3 2.6s ease-in-out infinite; }
-                  .asm-label { position:relative; z-index:5; display:flex; align-items:center; justify-content:center; gap:8px; }
-                  @keyframes asm-shimmer {
-                      0%   { transform: translateX(-180%) skewX(-20deg); }
-                      100% { transform: translateX(300%) skewX(-20deg); }
-                  }
-                  @keyframes asm-orb1 {
-                      0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.55; }
-                      40%     { transform: translate(8px,-6px) scale(1.3);  opacity:0.9; }
-                      70%     { transform: translate(-4px,4px) scale(0.8);  opacity:0.4; }
-                  }
-                  @keyframes asm-orb2 {
-                      0%,100% { transform: translate(0px,0px) scale(1);     opacity:0.4; }
-                      35%     { transform: translate(-10px,-8px) scale(1.4); opacity:0.85; }
-                      65%     { transform: translate(6px,5px) scale(0.75);   opacity:0.35; }
-                  }
-                  @keyframes asm-orb3 {
-                      0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.5; }
-                      50%     { transform: translate(6px,8px) scale(1.25);  opacity:0.9; }
-                  }
-              `}</style>
               <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl space-y-6 relative max-w-[420px] mx-auto">
                 {/* ROLE INPUT */}
                 <div className="relative">
@@ -624,12 +623,23 @@ const Assessment: React.FC = () => {
                 We have synthesized an adaptive assessment for <span className="text-[#111827] font-bold">{selectedRole?.name}</span> at <span className="text-[#111827] font-bold">{selectedCompany?.name}</span>.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onClick={() => setStep('config')} className="px-10 py-5 bg-white border border-gray-200 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Re-Calibrate</button>
+                <button
+                  onClick={() => setStep('config')}
+                  className="asm-btn !px-10 !py-5 !rounded-2xl text-[10px] font-bold uppercase tracking-widest"
+                >
+                  <span className="asm-orb asm-orb1" />
+                  <span className="asm-orb asm-orb2" />
+                  <span className="asm-orb asm-orb3" />
+                  <span className="asm-label">Re-Calibrate</span>
+                </button>
                 <button
                   onClick={startAssessment}
-                  className="px-12 py-5 bg-[#7C3AED] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:scale-105 transition-all"
+                  className="asm-btn !px-12 !py-5 !rounded-2xl text-[10px] font-black uppercase tracking-[0.3em]"
                 >
-                  Initiate Audit
+                  <span className="asm-orb asm-orb1" />
+                  <span className="asm-orb asm-orb2" />
+                  <span className="asm-orb asm-orb3" />
+                  <span className="asm-label">Initiate Audit</span>
                 </button>
               </div>
             </motion.div>
@@ -761,7 +771,12 @@ const Assessment: React.FC = () => {
                       <Award className="w-10 h-10 text-yellow-400 mb-6" />
                       <h4 className="text-xl font-black uppercase tracking-tighter mb-4">Unlock Proof Badge</h4>
                       <p className="text-white/60 text-xs font-medium mb-8">Verified evidence of your logic scores to display on LinkedIn.</p>
-                      <button className="w-full py-4 bg-white text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest group-hover:bg-[#7C3AED] group-hover:text-white transition-all">Claim Authority</button>
+                      <button className="asm-btn w-full !py-4 !rounded-xl text-[10px] font-black uppercase tracking-widest">
+                        <span className="asm-orb asm-orb1" />
+                        <span className="asm-orb asm-orb2" />
+                        <span className="asm-orb asm-orb3" />
+                        <span className="asm-label">Claim Authority</span>
+                      </button>
                     </div>
                   </motion.div>
 
