@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, GraduationCap, Building2, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const cardData = [
     {
@@ -60,6 +61,7 @@ const cardData = [
 ];
 
 const WhoWeServe: React.FC = () => {
+    const navigate = useNavigate();
     return (
         <section className="relative w-full py-10 md:py-12 overflow-hidden bg-white font-['Poppins']">
             {/* Animated Background Elements */}
@@ -188,15 +190,20 @@ const WhoWeServe: React.FC = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.02, y: -2 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth' })}
-                                        className={`mt-8 w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border-2 text-white shadow-lg
+                                        onClick={() => navigate('/signup')}
+                                        className={`mt-8 w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border-2 text-white shadow-lg glow-btn
                                             ${card.highlight
                                                 ? 'bg-purple-600 border-purple-600 shadow-purple-600/20 hover:bg-purple-700'
                                                 : `${card.theme.header} border-transparent hover:opacity-90`}
                                         `}
                                     >
-                                        Contact
-                                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        <span className="glow-orb glow-orb-1" />
+                                        <span className="glow-orb glow-orb-2" />
+                                        <span className="glow-orb glow-orb-3" />
+                                        <span className="glow-label flex items-center justify-center gap-2 w-full">
+                                            Contact
+                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        </span>
                                     </motion.button>
                                 </div>
 

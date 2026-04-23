@@ -495,22 +495,25 @@ const SDLProjectCreate: React.FC = () => {
               </div>
 
               {/* Submit */}
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 disabled={submitting}
                 onClick={handleSubmit}
-                className="mt-8 w-full py-5 rounded-xl font-bold text-sm uppercase tracking-[0.25em] bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-2xl shadow-violet-600/30 hover:shadow-violet-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-8 cont-btn !py-5 !rounded-xl"
               >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-3">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Initializing Project Lab...
-                  </span>
-                ) : (
-                  '◆ Launch Project'
-                )}
-              </motion.button>
+                <span className="cont-orb cont-orb1" />
+                <span className="cont-orb cont-orb2" />
+                <span className="cont-orb cont-orb3" />
+                <span className="cont-label font-bold text-sm uppercase tracking-[0.25em]">
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Initializing Project Lab...
+                    </span>
+                  ) : (
+                    '◆ Launch Project'
+                  )}
+                </span>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
