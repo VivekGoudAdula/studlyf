@@ -14,9 +14,11 @@ import {
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../../../apiConfig';
 import { useAuth } from '../../../AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Analytics: React.FC = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -41,6 +43,46 @@ const Analytics: React.FC = () => {
     const communityGrowth = stats?.totalStudents ? (stats.totalStudents / 1000).toFixed(1) + 'k' : '24.2k';
     const revenueValue = stats?.revenue || '$1.24M';
 
+    // Export analytics data as CSV report
+    const handleExportReport = () => {
+        const rows: string[] = [];
+        const timestamp = new Date().toISOString().split('T')[0];
+        rows.push('=== STUDLYF ANALYTICS REPORT ===');
+        rows.push(`Generated: ${new Date().toLocaleString()}`);
+        rows.push('');
+        rows.push('--- PERFORMANCE OVERVIEW ---');
+        rows.push(`Community Growth,${communityGrowth}`);
+        rows.push(`Student Growth Trend,${stats?.studentGrowth || '+18.4%'}`);
+        rows.push(`Course Progress Avg,${stats?.courseCompletion || '84%'}`);
+        rows.push(`Total Revenue,${revenueValue}`);
+        rows.push('');
+        rows.push('--- PLACEMENT METRICS ---');
+        rows.push('New Leads,+1240');
+        rows.push('Capped,412');
+        rows.push('Offered,188');
+        rows.push('Drop-off,12%');
+        rows.push('');
+        rows.push('--- SKILL DISTRIBUTION ---');
+        if (stats?.trackDistribution) {
+            Object.entries(stats.trackDistribution).forEach(([name, count]: [string, any]) => {
+                rows.push(`${name},${((count / (stats.totalStudents || 1)) * 100).toFixed(0)}%`);
+            });
+        } else {
+            rows.push('Frontend Engineering,42%');
+            rows.push('Data Science & ML,28%');
+            rows.push('Other (DevOps/UI/etc),30%');
+        }
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `studlyf_analytics_report_${timestamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="space-y-8">
             {/* Header */}
@@ -54,9 +96,9 @@ const Analytics: React.FC = () => {
                         <Calendar size={14} />
                         Q1 2026
                     </button>
-                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white/70 flex items-center gap-2">
+                    <button onClick={handleExportReport} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white/70 flex items-center gap-2 active:scale-95 transition-all">
                         <Download size={14} />
-                        Export PDF
+                        Export Report
                     </button>
                 </div>
             </div>
@@ -102,7 +144,7 @@ const Analytics: React.FC = () => {
                         <div className="text-5xl font-bold text-white tracking-tighter">{revenueValue}</div>
                         <p className="text-white/70 text-sm mt-4 leading-snug">Exceeded target by 12% in the current fiscal period.</p>
                     </div>
-                    <button className="w-full py-2 bg-white text-purple-700 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg">
+                    <button onClick={() => navigate('/admin/payments')} className="w-full py-2 bg-white text-purple-700 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all hover:bg-gray-100">
                         Revenue Breakdown
                     </button>
                 </div>
@@ -209,7 +251,7 @@ const Analytics: React.FC = () => {
                         Based on current enrollment velocity and course satisfaction scores, we project a <strong>140% increase</strong> in "Hire-Ready" candidates by August 2026. Suggesting proactive outreach to 12 new partner companies.
                     </p>
                 </div>
-                <button className="md:ml-auto px-8 py-3 bg-[#7C3AED] hover:bg-[#6D28D9] text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 active:scale-95 transition-all whitespace-nowrap">
+                <button onClick={handleExportReport} className="md:ml-auto px-8 py-3 bg-[#7C3AED] hover:bg-[#6D28D9] text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 active:scale-95 transition-all whitespace-nowrap">
                     View Full Forecast
                 </button>
             </div>
