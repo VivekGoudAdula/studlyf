@@ -93,6 +93,83 @@ const EnrollmentFlow: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-20 px-4">
+            <style>{`
+                @keyframes premium-shimmer {
+                    0%   { transform: translateX(-180%) skewX(-20deg); }
+                    100% { transform: translateX(300%) skewX(-20deg); }
+                }
+                @keyframes premium-orb1 {
+                    0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.55; }
+                    40%     { transform: translate(8px,-6px) scale(1.3);  opacity: 0.9; }
+                    70%     { transform: translate(-4px,4px) scale(0.8);  opacity: 0.4; }
+                }
+                @keyframes premium-orb2 {
+                    0%,100% { transform: translate(0px,0px) scale(1);     opacity: 0.4; }
+                    35%     { transform: translate(-10px,-8px) scale(1.4); opacity: 0.85; }
+                    65%     { transform: translate(6px,5px) scale(0.75);   opacity: 0.35; }
+                }
+                @keyframes premium-orb3 {
+                    0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.5; }
+                    50%     { transform: translate(6px,8px) scale(1.25);  opacity: 0.9; }
+                }
+                .premium-btn {
+                    position: relative;
+                    padding: 10px 24px;
+                    background: linear-gradient(to right, #7C3AED, #6D28D9);
+                    color: #fff;
+                    border: none;
+                    border-radius: 16px;
+                    font-weight: 900;
+                    font-size: 12px;
+                    letter-spacing: 0.2em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    overflow: hidden;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                    box-shadow: 0 4px 20px rgba(124,58,237,0.3), 0 1px 0 rgba(255,255,255,0.1) inset;
+                    white-space: nowrap;
+                }
+                .premium-btn::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    border-radius: inherit;
+                    background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                    pointer-events: none;
+                    z-index: 1;
+                }
+                .premium-btn::after {
+                    content: '';
+                    position: absolute;
+                    top: 0; left: 0;
+                    width: 40%; height: 100%;
+                    background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.22) 50%, transparent 80%);
+                    animation: premium-shimmer 2.8s ease-in-out infinite;
+                    pointer-events: none;
+                    z-index: 2;
+                }
+                .premium-btn:hover {
+                    transform: translateY(-2px) scale(1.01);
+                    box-shadow: 0 0 0 5px rgba(139,92,246,0.15), 0 0 30px 10px rgba(139,92,246,0.4), 0 12px 30px rgba(109,40,217,0.45);
+                }
+                .premium-btn:active { transform: scale(0.98); }
+                .premium-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+                .premium-orb {
+                    position: absolute;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    filter: blur(7px);
+                    z-index: 1;
+                }
+                .premium-orb1 { width:28px; height:28px; background: radial-gradient(circle, rgba(196,168,255,0.95), transparent 70%); top:-4px; left:18px; animation: premium-orb1 3.2s ease-in-out infinite; }
+                .premium-orb2 { width:22px; height:22px; background: radial-gradient(circle, rgba(255,255,255,0.8), transparent 70%);  bottom:-2px; right:52px; animation: premium-orb2 4s ease-in-out infinite; }
+                .premium-orb3 { width:18px; height:18px; background: radial-gradient(circle, rgba(167,139,250,0.9), transparent 70%); top:4px; right:24px; animation: premium-orb3 2.6s ease-in-out infinite; }
+                .premium-label { position: relative; z-index: 5; display: flex; align-items: center; gap: 8px; }
+            `}</style>
             {/* ── Progress Header ── */}
             <div className="max-w-4xl mx-auto mb-16">
                 <div className="flex items-center justify-between relative px-2">
@@ -155,15 +232,15 @@ const EnrollmentFlow: React.FC = () => {
                                     <button onClick={handleBack} className="flex items-center gap-2 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-600 transition-colors">
                                         <ArrowLeft className="w-4 h-4" /> Change Track
                                     </button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                    <button
                                         onClick={handleNext}
-                                        className="flex-1 py-5 rounded-2xl text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3"
-                                        style={{ background: `linear-gradient(135deg, ${track.accent}, ${track.accent}CC)`, boxShadow: `0 12px 32px -8px ${track.accent}55` }}
+                                        className="premium-btn flex-1 !py-5 !rounded-2xl"
                                     >
-                                        Confirm & Proceed <ChevronRight className="w-4 h-4" />
-                                    </motion.button>
+                                        <span className="premium-orb premium-orb1" />
+                                        <span className="premium-orb premium-orb2" />
+                                        <span className="premium-orb premium-orb3" />
+                                        <span className="premium-label">Confirm & Proceed <ChevronRight className="w-4 h-4" /></span>
+                                    </button>
                                 </div>
                             </div>
                             <div className="hidden lg:block relative">
@@ -257,16 +334,24 @@ const EnrollmentFlow: React.FC = () => {
                             </div>
 
                             <div className="flex items-center justify-center gap-6 pt-4">
-                                <button onClick={handleBack} className="px-8 py-5 text-gray-400 font-black text-xs uppercase tracking-widest">Back</button>
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={handleNext}
-                                    className="px-12 py-5 rounded-2xl text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl flex items-center gap-3"
-                                    style={{ background: `linear-gradient(135deg, ${track.accent}, ${track.accent}CC)`, boxShadow: `0 12px 32px -8px ${track.accent}55` }}
+                                <button
+                                    onClick={handleBack}
+                                    className="premium-btn !px-8 !py-5 !rounded-2xl"
                                 >
-                                    Select Plan & Pay <ChevronRight className="w-4 h-4" />
-                                </motion.button>
+                                    <span className="premium-orb premium-orb1" />
+                                    <span className="premium-orb premium-orb2" />
+                                    <span className="premium-orb premium-orb3" />
+                                    <span className="premium-label">Back</span>
+                                </button>
+                                <button
+                                    onClick={handleNext}
+                                    className="premium-btn !px-12 !py-5 !rounded-2xl"
+                                >
+                                    <span className="premium-orb premium-orb1" />
+                                    <span className="premium-orb premium-orb2" />
+                                    <span className="premium-orb premium-orb3" />
+                                    <span className="premium-label">Select Plan & Pay <ChevronRight className="w-4 h-4" /></span>
+                                </button>
                             </div>
                         </motion.div>
                     )}
@@ -318,25 +403,27 @@ const EnrollmentFlow: React.FC = () => {
 
                                         <p className="text-[10px] text-gray-400 font-bold uppercase text-center tracking-widest">Secured by Stripe & Verified by Studlyf</p>
 
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
+                                        <button
                                             onClick={handlePayment}
                                             disabled={isProcessing}
-                                            className="w-full py-6 rounded-3xl text-white font-black text-sm uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-4 disabled:opacity-50"
-                                            style={{ background: 'linear-gradient(135deg, #111827, #1F2937)', boxShadow: '0 20px 40px -10px rgba(17,24,39,0.3)' }}
+                                            className="premium-btn w-full !py-6 !rounded-3xl"
                                         >
-                                            {isProcessing ? (
-                                                <>
-                                                    <div className="w-5 h-5 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-                                                    Processing Protocol...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    Confirm Payment <ArrowRight className="w-5 h-5" />
-                                                </>
-                                            )}
-                                        </motion.button>
+                                            <span className="premium-orb premium-orb1" />
+                                            <span className="premium-orb premium-orb2" />
+                                            <span className="premium-orb premium-orb3" />
+                                            <span className="premium-label">
+                                                {isProcessing ? (
+                                                    <>
+                                                        <div className="w-5 h-5 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+                                                        Processing Protocol...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Confirm Payment <ArrowRight className="w-5 h-5" />
+                                                    </>
+                                                )}
+                                            </span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -390,9 +477,7 @@ const EnrollmentFlow: React.FC = () => {
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
+                                <button
                                     onClick={() => {
                                         let targetId = courseIdParam || 'm1';
 
@@ -423,15 +508,21 @@ const EnrollmentFlow: React.FC = () => {
 
                                         navigate(`/learn/course-player/${targetId}`);
                                     }}
-                                    className="px-12 py-6 bg-[#111827] text-white font-black text-xs uppercase tracking-[0.3em] rounded-2xl shadow-2xl flex items-center gap-3"
+                                    className="premium-btn !px-12 !py-6 !rounded-2xl"
                                 >
-                                    Start Learning Now <ArrowRight className="w-5 h-5" />
-                                </motion.button>
+                                    <span className="premium-orb premium-orb1" />
+                                    <span className="premium-orb premium-orb2" />
+                                    <span className="premium-orb premium-orb3" />
+                                    <span className="premium-label">Start Learning Now <ArrowRight className="w-5 h-5" /></span>
+                                </button>
                                 <button
                                     onClick={() => navigate(`/learn/courses?category=${track.title}`)}
-                                    className="px-12 py-6 bg-white text-gray-900 font-black text-xs uppercase tracking-[0.3em] rounded-2xl border border-gray-100 hover:bg-gray-50 transition-all"
+                                    className="premium-btn !px-12 !py-6 !rounded-2xl"
                                 >
-                                    View Other Courses
+                                    <span className="premium-orb premium-orb1" />
+                                    <span className="premium-orb premium-orb2" />
+                                    <span className="premium-orb premium-orb3" />
+                                    <span className="premium-label">View Other Courses</span>
                                 </button>
                             </div>
                         </motion.div>

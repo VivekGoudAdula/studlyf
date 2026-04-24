@@ -201,6 +201,81 @@ const styles = `
     border-color: #cbd5e1;
   }
 
+  /* Premium Button Styles */
+  @keyframes premium-shimmer {
+      0%   { transform: translateX(-180%) skewX(-20deg); }
+      100% { transform: translateX(300%) skewX(-20deg); }
+  }
+  @keyframes premium-orb1 {
+      0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.55; }
+      40%     { transform: translate(8px,-6px) scale(1.3);  opacity: 0.9; }
+      70%     { transform: translate(-4px,4px) scale(0.8);  opacity: 0.4; }
+  }
+  @keyframes premium-orb2 {
+      0%,100% { transform: translate(0px,0px) scale(1);     opacity: 0.4; }
+      35%     { transform: translate(-10px,-8px) scale(1.4); opacity: 0.85; }
+      65%     { transform: translate(6px,5px) scale(0.75);   opacity: 0.35; }
+  }
+  @keyframes premium-orb3 {
+      0%,100% { transform: translate(0px,0px) scale(1);    opacity: 0.5; }
+      50%     { transform: translate(6px,8px) scale(1.25);  opacity: 0.9; }
+  }
+  .premium-btn {
+      position: relative;
+      padding: 10px 24px;
+      background: linear-gradient(to right, #7C3AED, #6D28D9);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.3), 0 1px 0 rgba(255,255,255,0.1) inset;
+      white-space: nowrap;
+  }
+  .premium-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 1;
+  }
+  .premium-btn::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 40%; height: 100%;
+      background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.22) 50%, transparent 80%);
+      animation: premium-shimmer 2.8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 2;
+  }
+  .premium-btn:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 0 0 5px rgba(139,92,246,0.15), 0 0 30px 10px rgba(139,92,246,0.4), 0 12px 30px rgba(109,40,217,0.45);
+  }
+  .premium-btn:active { transform: scale(0.98); }
+  .premium-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+  .premium-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(7px);
+      z-index: 1;
+  }
+  .premium-orb1 { width:28px; height:28px; background: radial-gradient(circle, rgba(196,168,255,0.95), transparent 70%); top:-4px; left:18px; animation: premium-orb1 3.2s ease-in-out infinite; }
+  .premium-orb2 { width:22px; height:22px; background: radial-gradient(circle, rgba(255,255,255,0.8), transparent 70%);  bottom:-2px; right:52px; animation: premium-orb2 4s ease-in-out infinite; }
+  .premium-orb3 { width:18px; height:18px; background: radial-gradient(circle, rgba(167,139,250,0.9), transparent 70%); top:4px; right:24px; animation: premium-orb3 2.6s ease-in-out infinite; }
+  .premium-label { position: relative; z-index: 5; display: flex; align-items: center; gap: 8px; }
+
   /* Steps UI */
   .card-create-new {
     border: 1px solid #cbd5e1;
@@ -762,8 +837,7 @@ export default function ResumeBuilder() {
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col">
                 <style>{styles}</style>
-                <Navigation />
-                <div className="mt-28 flex-1 p-10 overflow-y-auto premium-scrollbar">
+
                     <div className="max-w-7xl mx-auto">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {/* Existing Resume Card */}
@@ -809,8 +883,11 @@ export default function ResumeBuilder() {
                                         <Plus size={32} className="text-slate-400 group-hover:text-[#7c3aed] transition-colors" />
                                     </div>
                                 </div>
-                                <button className="bg-slate-500 text-white px-6 py-2 rounded-lg font-bold text-sm group-hover:bg-[#7c3aed] transition-colors shadow-md">
-                                    Create New
+                                <button className="premium-btn !px-6 !py-2 !rounded-lg !text-sm">
+                                    <span className="premium-orb premium-orb1" />
+                                    <span className="premium-orb premium-orb2" />
+                                    <span className="premium-orb premium-orb3" />
+                                    <span className="premium-label">Create New</span>
                                 </button>
                             </motion.div>
                         </div>
@@ -987,13 +1064,7 @@ export default function ResumeBuilder() {
                         </div>
                     </div>
 
-                    <button 
-                        onClick={() => setStep('create_new')}
-                        className="mt-16 text-slate-400 font-bold hover:text-[#7c3aed] transition-colors flex items-center gap-2 group"
-                    >
-                        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                        Go Back
-                    </button>
+
                 </div>
             </div>
         );
@@ -1328,183 +1399,7 @@ export default function ResumeBuilder() {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-3 relative">
-                    <button
-                        onClick={() => setShowShareModal(true)}
-                        className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                    >
-                        <Share2 size={20} />
-                    </button>
-                    <button
-                        onClick={() => setShowAiPanel(true)}
-                        className="hr-button-outline flex items-center gap-2"
-                    >
-                        Try AI Review <Sparkles size={16} />
-                    </button>
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
-                            className="hr-button-primary flex items-center gap-2"
-                        >
-                            Download <ChevronDown size={18} />
-                        </button>
 
-                        {showDownloadDropdown && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 py-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                                <button
-                                    onClick={async () => {
-                                        setShowDownloadDropdown(false);
-                                        await handleSave(true);
-                                        const html = generatePdfHtml(resumeData, selectedTemplate);
-                                        const frame = document.createElement("iframe");
-                                        frame.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;";
-                                        document.body.appendChild(frame);
-                                        if (frame.contentWindow) {
-                                            frame.contentWindow.document.open();
-                                            frame.contentWindow.document.write(html);
-                                            frame.contentWindow.document.close();
-                                            frame.onload = () => {
-                                                frame.contentWindow?.focus();
-                                                frame.contentWindow?.print();
-                                                setTimeout(() => document.body.removeChild(frame), 1000);
-                                            };
-                                        }
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm font-bold text-slate-700 transition-colors border-b border-slate-50"
-                                >
-                                    Download Pdf
-                                </button>
-                                <button className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm font-bold text-slate-700 transition-colors border-b border-slate-50">
-                                    Download Latex
-                                </button>
-                                <button className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm font-bold text-slate-700 transition-colors">
-                                    Download Json
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </header>
-
-        {/* Tabs */}
-        <div className="bg-white border-b border-slate-200 px-10">
-            <div className="flex gap-10">
-                <button
-                    onClick={() => setActiveTab('details')}
-                    className={`py-4 px-2 font-bold text-sm tracking-wide transition-all border-b-2 ${activeTab === 'details' ? 'border-purple-600 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                >
-                    Resume Details
-                </button>
-                <button
-                    onClick={() => setActiveTab('matcher')}
-                    className={`py-4 px-2 font-bold text-sm tracking-wide transition-all border-b-2 ${activeTab === 'matcher' ? 'border-purple-600 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                >
-                    Resume Matcher
-                </button>
-            </div>
-        </div>
-
-        <div className="flex flex-1 overflow-hidden">
-            {/* Left Form Area */}
-            <div className="w-[45%] lg:w-[40%] bg-white border-r border-slate-200 overflow-y-auto premium-scrollbar pb-20">
-                <AccordionItem
-                    title="Personal Info"
-                    icon={User}
-                    isOpen={openSections.personalInfo}
-                    onClick={() => toggleSection('personalInfo')}
-                >
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="hr-label">First Name</label>
-                            <input
-                                className="hr-input"
-                                placeholder="John"
-                                value={resumeData?.personalInfo?.firstName || ""}
-                                onChange={(e) => updatePersonalInfo('firstName', e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label className="hr-label">Last Name</label>
-                            <input
-                                className="hr-input"
-                                placeholder="Doe"
-                                value={resumeData?.personalInfo?.lastName || ""}
-                                onChange={(e) => updatePersonalInfo('lastName', e.target.value)}
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="hr-label">Email</label>
-                            <input
-                                className="hr-input"
-                                placeholder="john.doe@example.com"
-                                value={resumeData?.personalInfo?.email || ""}
-                                onChange={(e) => updatePersonalInfo('email', e.target.value)}
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="hr-label">Phone</label>
-                            <input
-                                className="hr-input"
-                                placeholder="+1 206 555 0100"
-                                value={resumeData?.personalInfo?.phone || ""}
-                                onChange={(e) => updatePersonalInfo('phone', e.target.value)}
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="hr-label">Address</label>
-                            <input
-                                className="hr-input"
-                                placeholder="123 Main Street, New York, NY"
-                                value={resumeData?.personalInfo?.address || ""}
-                                onChange={(e) => updatePersonalInfo('address', e.target.value)}
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="hr-label">Job Title</label>
-                            <input
-                                className="hr-input"
-                                placeholder="Full-Stack Web Developer"
-                                value={resumeData?.personalInfo?.jobTitle || ""}
-                                onChange={(e) => updatePersonalInfo('jobTitle', e.target.value)}
-                            />
-                        </div>
-
-                    </div>
-
-                    <div className="mt-8">
-                        <label className="hr-label mb-4 flex items-center justify-between">
-                            Links ({resumeData.personalInfo.links.length}/5)
-                        </label>
-                        <div className="space-y-3">
-                            {resumeData.personalInfo.links.map((link, i) => (
-                                <div key={i} className="flex gap-3 items-center group">
-                                    <div className="flex-1 grid grid-cols-2 gap-2">
-                                        <input
-                                            className="hr-input"
-                                            placeholder="Label (e.g. GitHub)"
-                                            value={link.label}
-                                            onChange={(e) => updateLink(i, 'label', e.target.value)}
-                                        />
-                                        <input
-                                            className="hr-input"
-                                            placeholder="URL"
-                                            value={link.url}
-                                            onChange={(e) => updateLink(i, 'url', e.target.value)}
-                                        />
-                                    </div>
-                                    <button onClick={() => removeLink(i)} className="text-slate-300 hover:text-red-500 p-2">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
-                            <button
-                                onClick={addLink}
-                                disabled={resumeData.personalInfo.links.length >= 5}
-                                className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all mt-4"
-                            >
-                                <Plus size={18} /> Add Link
-                            </button>
-                        </div>
                     </div>
                 </AccordionItem>
 
@@ -1868,26 +1763,7 @@ export default function ResumeBuilder() {
                     </div>
                 </motion.div>
             </div>
-        )}
-    </AnimatePresence>
 
-    {/* AI Review Side Panel */ }
-    <AnimatePresence>
-        {showAiPanel && (
-            <div className="fixed inset-0 z-[300] flex justify-end bg-black/20 backdrop-blur-[2px]">
-                <motion.div
-                    initial={{ x: '100%' }}
-                    animate={{ x: 0 }}
-                    exit={{ x: '100%' }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="bg-white w-full max-w-md h-full shadow-2xl p-0 flex flex-col"
-                >
-                    <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                        <span className="font-bold text-slate-800">AI Resume Review</span>
-                        <button onClick={() => setShowAiPanel(false)} className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
-                            <X size={20} />
-                        </button>
-                    </div>
 
                     <div className="flex-1 overflow-y-auto premium-scrollbar p-6">
                         <div className="aspect-[4/3] bg-purple-50 rounded-2xl mb-8 flex items-center justify-center overflow-hidden relative border border-purple-100">

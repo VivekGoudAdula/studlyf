@@ -465,9 +465,12 @@ const DashboardHome: React.FC = () => {
                 </h2>
                 <Link
                   to="/learn/career-onboarding"
-                  className="bg-[#1D74F2] text-white px-10 sm:px-14 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-lg sm:text-xl hover:scale-105 transition-all shadow-xl shadow-blue-500/20 lg:mr-12 sm:lg:mr-20 mt-8"
+                  className="px-10 sm:px-14 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-lg sm:text-xl transition-all shadow-xl lg:mr-12 sm:lg:mr-20 mt-8 glow-btn glow-btn-blue"
                 >
-                  Start
+                  <span className="glow-orb glow-orb-1" />
+                  <span className="glow-orb glow-orb-2" />
+                  <span className="glow-orb glow-orb-3" />
+                  <span className="glow-label">Start</span>
                 </Link>
               </div>
             </div>

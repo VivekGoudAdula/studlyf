@@ -350,6 +350,63 @@ const SDLProjectDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#080515] pt-32 pb-24 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
+        <style>{`
+            @keyframes tab-shimmer {
+                0%   { transform: translateX(-180%) skewX(-20deg); }
+                100% { transform: translateX(300%) skewX(-20deg); }
+            }
+            @keyframes tab-orb1 {
+                0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.55; }
+                40%     { transform: translate(8px,-6px) scale(1.3);  opacity:0.9; }
+                70%     { transform: translate(-4px,4px) scale(0.8);  opacity:0.4; }
+            }
+            @keyframes tab-orb2 {
+                0%,100% { transform: translate(0px,0px) scale(1);     opacity:0.4; }
+                35%     { transform: translate(-10px,-8px) scale(1.4); opacity:0.85; }
+                65%     { transform: translate(6px,5px) scale(0.75);   opacity:0.35; }
+            }
+            @keyframes tab-orb3 {
+                0%,100% { transform: translate(0px,0px) scale(1);    opacity:0.5; }
+                50%     { transform: translate(6px,8px) scale(1.25);  opacity:0.9; }
+            }
+            .tab-btn {
+                position: relative;
+                overflow: hidden;
+                background: #7C3AED;
+                color: #fff;
+                box-shadow: 0 4px 20px rgba(124,58,237,0.4), 0 1px 0 rgba(255,255,255,0.12) inset;
+            }
+            .tab-btn::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+                pointer-events: none;
+                z-index: 1;
+            }
+            .tab-btn::after {
+                content: '';
+                position: absolute;
+                top: 0; left: 0;
+                width: 40%; height: 100%;
+                background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.24) 50%, transparent 80%);
+                animation: tab-shimmer 2.8s ease-in-out infinite;
+                pointer-events: none;
+                z-index: 2;
+            }
+            .tab-orb {
+                position: absolute;
+                border-radius: 50%;
+                pointer-events: none;
+                filter: blur(7px);
+                z-index: 1;
+            }
+            .tab-orb1 { width:28px; height:28px; background:radial-gradient(circle,rgba(196,168,255,0.95),transparent 70%); top:-4px; left:18px; animation:tab-orb1 3.2s ease-in-out infinite; }
+            .tab-orb2 { width:22px; height:22px; background:radial-gradient(circle,rgba(255,255,255,0.8),transparent 70%);  bottom:-2px; right:48px; animation:tab-orb2 4s ease-in-out infinite; }
+            .tab-orb3 { width:18px; height:18px; background:radial-gradient(circle,rgba(167,139,250,0.9),transparent 70%); top:4px; right:18px;  animation:tab-orb3 2.6s ease-in-out infinite; }
+            .tab-label { position:relative; z-index:5; display:flex; align-items:center; gap:8px; justify-content:center; }
+        `}</style>
 
         {/* ── Back & Status Bar ── */}
         <div className="flex items-center justify-between mb-8">
@@ -443,18 +500,20 @@ const SDLProjectDetail: React.FC = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(i)}
-              className={`px-5 py-3 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] transition-all whitespace-nowrap relative ${activeTab === i
-                ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]'
-                }`}
+              className={`tab-btn px-5 py-3 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] transition-all whitespace-nowrap relative ${activeTab === i ? 'opacity-100' : 'opacity-50 hover:opacity-80'}`}
             >
-              {tab}
-              {/* Pending requests badge for owner on Team tab */}
-              {tab === 'Team' && isOwner && pendingRequestCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center animate-pulse">
-                  {pendingRequestCount}
-                </span>
-              )}
+              <span className="tab-orb tab-orb1" />
+              <span className="tab-orb tab-orb2" />
+              <span className="tab-orb tab-orb3" />
+              <span className="tab-label">
+                {tab}
+                {/* Pending requests badge for owner on Team tab */}
+                {tab === 'Team' && isOwner && pendingRequestCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center animate-pulse">
+                    {pendingRequestCount}
+                  </span>
+                )}
+              </span>
             </button>
           ))}
         </div>
@@ -683,21 +742,29 @@ const SDLProjectDetail: React.FC = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
                     className="flex-grow px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-white/15 focus:outline-none focus:border-violet-500/40"
                   />
-                  <select
-                    value={newTaskPriority}
-                    onChange={(e) => setNewTaskPriority(e.target.value)}
-                    className="px-3 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none appearance-none"
-                  >
-                    <option value="low" className="bg-[#1A1030]">Low</option>
-                    <option value="medium" className="bg-[#1A1030]">Medium</option>
-                    <option value="high" className="bg-[#1A1030]">High</option>
-                    <option value="critical" className="bg-[#1A1030]">Critical</option>
-                  </select>
+                  <div className="tab-btn rounded-xl cursor-pointer">
+                    <span className="tab-orb tab-orb1" />
+                    <span className="tab-orb tab-orb2" />
+                    <span className="tab-orb tab-orb3" />
+                    <select
+                      value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value)}
+                      className="tab-label w-full h-full bg-transparent border-none text-white focus:outline-none appearance-none px-6 py-3 font-bold text-xs uppercase tracking-[0.2em] cursor-pointer"
+                    >
+                      <option value="low" className="bg-[#1A1030]">Low</option>
+                      <option value="medium" className="bg-[#1A1030]">Medium</option>
+                      <option value="high" className="bg-[#1A1030]">High</option>
+                      <option value="critical" className="bg-[#1A1030]">Critical</option>
+                    </select>
+                  </div>
                   <button
                     onClick={handleCreateTask}
-                    className="px-6 py-3 bg-violet-600 text-white font-bold text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-violet-500 transition-colors"
+                    className="tab-btn px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-[0.2em]"
                   >
-                    Add
+                    <span className="tab-orb tab-orb1" />
+                    <span className="tab-orb tab-orb2" />
+                    <span className="tab-orb tab-orb3" />
+                    <span className="tab-label">Add</span>
                   </button>
                 </div>
               )}
@@ -915,9 +982,12 @@ const SDLProjectDetail: React.FC = () => {
                       />
                       <button
                         onClick={handlePostComment}
-                        className="px-5 py-2.5 bg-violet-600 text-white font-bold text-[10px] uppercase tracking-[0.15em] rounded-xl hover:bg-violet-500 transition-colors"
+                        className="tab-btn px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-[0.15em]"
                       >
-                        Send
+                        <span className="tab-orb tab-orb1" />
+                        <span className="tab-orb tab-orb2" />
+                        <span className="tab-orb tab-orb3" />
+                        <span className="tab-label">Send</span>
                       </button>
                     </div>
                   </div>
