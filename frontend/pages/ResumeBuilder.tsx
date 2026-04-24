@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../AuthContext";
 import { API_BASE_URL } from "../apiConfig";
-import { 
-    ChevronLeft, 
-    Download, 
-    Plus, 
-    Trash2, 
-    User, 
-    Briefcase, 
+import {
+    ChevronLeft,
+    Download,
+    Plus,
+    Trash2,
+    User,
+    Briefcase,
     GraduationCap,
-    Layout, 
+    Layout,
     Code2,
     CheckCircle2,
     Loader2,
@@ -38,8 +38,9 @@ import {
     X,
     ChevronDown,
     ChevronUp,
-    GithubIcon
+    Upload
 } from "lucide-react";
+import Navigation from "../components/Navigation";
 
 // --- Types ---
 interface PersonalInfo {
@@ -339,7 +340,7 @@ const styles = `
 const AccordionItem = ({ title, icon: Icon, children, isOpen, onClick }: any) => {
     return (
         <div className="section-accordion">
-            <button 
+            <button
                 onClick={onClick}
                 className="w-full flex items-center justify-between py-4 px-6 hover:bg-slate-50 transition-colors"
             >
@@ -366,7 +367,7 @@ const AccordionItem = ({ title, icon: Icon, children, isOpen, onClick }: any) =>
  */
 export function generatePdfHtml(data: ResumeData, template: string = 'classic') {
     if (!data) return "";
-    
+
     // Fallback for older data structures if any
     const p = data.personalInfo || { firstName: "", lastName: "", email: "", phone: "", address: "", links: [] };
     const edu = data.education || [];
@@ -438,13 +439,13 @@ export function generatePdfHtml(data: ResumeData, template: string = 'classic') 
 
 
     // Classic Template Logic (Matches renderClassicPreview but for PDF)
-    const linksHtml = p.links?.length > 0 
+    const linksHtml = p.links?.length > 0
         ? `<div style="font-size:9pt;text-align:center;margin-top:-8pt;margin-bottom:12pt;color: #475569;">
             ${p.links.map((l, i) => `${i > 0 ? " | " : ""}<span style="font-weight:700;">${l.label}:</span> ${l.url}`).join("")}
-          </div>` 
+          </div>`
         : "";
 
-    const eduHtml = edu.length > 0 
+    const eduHtml = edu.length > 0
         ? `<div><h2 style="font-size:10pt;font-weight:bold;border-bottom:1px solid black;margin:12pt 0 6pt 0;text-transform:uppercase;">Education</h2>
             ${edu.map(e => `
                 <div style="margin-bottom:8pt">
@@ -456,10 +457,10 @@ export function generatePdfHtml(data: ResumeData, template: string = 'classic') 
                         <span>${e.degree || ""}</span>
                         <span>${e.gpa ? `GPA: ${e.gpa}` : ""}</span>
                     </div>
-                </div>`).join("")}</div>` 
+                </div>`).join("")}</div>`
         : "";
 
-    const expHtml = exp.length > 0 
+    const expHtml = exp.length > 0
         ? `<div><h2 style="font-size:10pt;font-weight:bold;border-bottom:1px solid black;margin:12pt 0 6pt 0;text-transform:uppercase;">Experience</h2>
             ${exp.map(ex => `
                 <div style="margin-bottom:10pt">
@@ -474,7 +475,7 @@ export function generatePdfHtml(data: ResumeData, template: string = 'classic') 
                     <ul style="padding-left:14pt;margin:0;">
                         ${ex.points.split('\n').filter(pt => pt.trim()).map(pt => `<li style="font-size:9pt;margin-bottom:2pt">${pt}</li>`).join("")}
                     </ul>
-                </div>`).join("")}</div>` 
+                </div>`).join("")}</div>`
         : "";
 
     const skillsHtml = (skills.languages?.length > 0 || skills.frameworks?.length > 0 || skills.tools?.length > 0 || skills.databases?.length > 0)
@@ -486,7 +487,7 @@ export function generatePdfHtml(data: ResumeData, template: string = 'classic') 
           </div>`
         : "";
 
-    const projHtml = projs.length > 0 
+    const projHtml = projs.length > 0
         ? `<div><h2 style="font-size:10pt;font-weight:bold;border-bottom:1px solid black;margin:12pt 0 6pt 0;text-transform:uppercase;">Projects / Open Source</h2>
             ${projs.map(pr => `
                 <div style="margin-bottom:8pt">
@@ -495,21 +496,21 @@ export function generatePdfHtml(data: ResumeData, template: string = 'classic') 
                         <span style="font-weight:400;font-size:9pt;font-style:italic">${pr.tech}</span>
                     </div>
                     <div style="font-size:9pt;color:#334155;margin-top:2pt;line-height:1.3">${pr.desc}</div>
-                </div>`).join("")}</div>` 
+                </div>`).join("")}</div>`
         : "";
 
-    const certHtml = certs.length > 0 
+    const certHtml = certs.length > 0
         ? `<div><h2 style="font-size:10pt;font-weight:bold;border-bottom:1px solid black;margin:12pt 0 6pt 0;text-transform:uppercase;">Certifications</h2>
             <ul style="padding-left:14pt;margin:0;">
                 ${certs.map(c => `<li style="font-size:9pt;margin-bottom:2pt">${c}</li>`).join("")}
-            </ul></div>` 
+            </ul></div>`
         : "";
 
-    const honorsHtml = add.honorsAndAwards?.length > 0 
+    const honorsHtml = add.honorsAndAwards?.length > 0
         ? `<div><h2 style="font-size:10pt;font-weight:bold;border-bottom:1px solid black;margin:12pt 0 6pt 0;text-transform:uppercase;">Honors & Awards</h2>
             <ul style="padding-left:14pt;margin:0;">
                 ${add.honorsAndAwards.map(h => `<li style="font-size:9pt;margin-bottom:2pt">${h}</li>`).join("")}
-            </ul></div>` 
+            </ul></div>`
         : "";
 
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>
@@ -542,6 +543,10 @@ export default function ResumeBuilder() {
     const [selectedTemplate, setSelectedTemplate] = useState<'classic' | 'modern'>('classic');
     const [resumeData, setResumeData] = useState<ResumeData>(DEFAULT_RESUME_DATA);
     const [activeTab, setActiveTab] = useState<'details' | 'matcher'>('details');
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [publicAccess, setPublicAccess] = useState(true);
+    const [isReviewing, setIsReviewing] = useState(false);
+    const [reviewResult, setReviewResult] = useState<null | string[]>(null);
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
         personalInfo: true,
         links: true,
@@ -582,7 +587,7 @@ export default function ResumeBuilder() {
                                 skills: { ...DEFAULT_RESUME_DATA.skills, ...config.skills },
                                 additional: { ...DEFAULT_RESUME_DATA.additional, ...config.additional }
                             };
-                        } 
+                        }
                         // If it's the OLD structure (has 'p')
                         else if (config.p) {
                             const nameParts = (config.p.name || "").split(" ");
@@ -626,7 +631,8 @@ export default function ResumeBuilder() {
 
                         setResumeData(migratedData);
                         setHasExistingData(true);
-                        setStep('dashboard');
+                        // Stay on onboarding page by default as requested
+                        // setStep('dashboard');
                     }
                 }
             } catch (err) {
@@ -646,12 +652,12 @@ export default function ResumeBuilder() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ config: resumeData })
             });
-            if (!silent) { 
-                setSaveStatus("saved"); 
-                setTimeout(() => setSaveStatus("idle"), 2000); 
+            if (!silent) {
+                setSaveStatus("saved");
+                setTimeout(() => setSaveStatus("idle"), 2000);
             }
-        } finally { 
-            setIsSaving(false); 
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -831,33 +837,11 @@ export default function ResumeBuilder() {
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col">
                 <style>{styles}</style>
-                {/* Dashboard Top Bar */}
-                <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shadow-sm shrink-0">
-                    <h1 className="text-2xl font-bold text-slate-700">Welcome <span className="text-[#7c3aed]">{displayName.toUpperCase()}!</span></h1>
-                    <div className="flex items-center gap-4">
-                        <button className="premium-btn !px-6 !py-2.5 !rounded-xl">
-                            <span className="premium-orb premium-orb1" />
-                            <span className="premium-orb premium-orb2" />
-                            <span className="premium-orb premium-orb3" />
-                            <span className="premium-label">Import Resume</span>
-                        </button>
-                        <button 
-                            onClick={() => setStep('template_selection')}
-                            className="premium-btn !px-6 !py-2.5 !rounded-xl"
-                        >
-                            <span className="premium-orb premium-orb1" />
-                            <span className="premium-orb premium-orb2" />
-                            <span className="premium-orb premium-orb3" />
-                            <span className="premium-label">Create New</span>
-                        </button>
-                    </div>
-                </header>
 
-                <main className="flex-1 p-10 overflow-y-auto premium-scrollbar">
                     <div className="max-w-7xl mx-auto">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {/* Existing Resume Card */}
-                            <motion.div 
+                            <motion.div
                                 whileHover={{ y: -5 }}
                                 onClick={() => setStep('editor')}
                                 className="group cursor-pointer"
@@ -888,7 +872,7 @@ export default function ResumeBuilder() {
                             </motion.div>
 
                             {/* Create New Add Card */}
-                            <motion.div 
+                            <motion.div
                                 whileHover={{ y: -5 }}
                                 onClick={() => setStep('template_selection')}
                                 className="aspect-[3/4] rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 hover:border-[#7c3aed] hover:bg-white transition-all cursor-pointer group"
@@ -908,7 +892,7 @@ export default function ResumeBuilder() {
                             </motion.div>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
         );
     }
@@ -917,25 +901,86 @@ export default function ResumeBuilder() {
         return (
             <div className="min-h-screen bg-white flex flex-col">
                 <style>{styles}</style>
-                <nav className="h-16 bg-[#0e141e] border-b border-white/5 flex items-center px-8">
-                    <div className="flex items-center">
-                        <span className="text-white font-black text-2xl tracking-tighter">ST</span>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-tr from-purple-400 to-pink-400 font-black text-2xl tracking-tighter">U</span>
-                        <span className="text-white font-black text-2xl tracking-tighter">DLYF</span>
-                    </div>
-                </nav>
+                <Navigation />
+                <div className="flex-1 overflow-y-auto premium-scrollbar pt-24 pb-20">
+                    <div className="flex flex-col items-center justify-center p-6 text-center max-w-7xl mx-auto">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-16"
+                        >
+                            <h1 className="text-7xl font-black text-slate-900 mb-6 tracking-tight">Start your journey</h1>
+                            <p className="text-slate-500 text-2xl mb-10 max-w-xl mx-auto">Create a professional resume in minutes with our templates.</p>
 
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                    <h1 className="text-4xl font-black text-slate-800 mb-4">Start your journey</h1>
-                    <p className="text-slate-500 mb-10 max-w-md">Create a professional resume in minutes with our templates.</p>
-                    
-                    <button 
-                        onClick={() => setStep('template_selection')}
-                        className="flex items-center gap-3 bg-[#7c3aed] text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-[#6d28d9] transition-all shadow-lg hover:shadow-purple-100 hover:-translate-y-1"
-                    >
-                        <Plus size={24} />
-                        Create New
-                    </button>
+                            <div className="flex items-center justify-center gap-6">
+                                <button
+                                    onClick={() => setStep('template_selection')}
+                                    className="flex items-center gap-4 bg-[#7c3aed] text-white px-12 py-5 rounded-2xl font-bold text-2xl hover:bg-[#6d28d9] transition-all shadow-2xl shadow-purple-200 hover:-translate-y-1"
+                                >
+                                    <Plus size={28} />
+                                    Create New
+                                </button>
+                                {hasExistingData && (
+                                    <button
+                                        onClick={() => setStep('dashboard')}
+                                        className="flex items-center gap-4 bg-white border-2 border-slate-200 text-slate-600 px-10 py-5 rounded-2xl font-bold text-2xl hover:bg-slate-50 transition-all hover:-translate-y-1"
+                                    >
+                                        Go to Dashboard
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+
+                        {/* Box 2: Attractive Information Section */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="w-full mt-20"
+                        >
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-100/50 flex flex-col items-center text-center group hover:border-purple-200 transition-all">
+                                    <div className="h-20 w-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                        <Sparkles className="text-[#7c3aed]" size={36} />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">AI-Powered Review</h3>
+                                    <p className="text-slate-500 leading-relaxed">Our smart AI analyzes your content and provides actionable tips to make your resume stand out.</p>
+                                </div>
+
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-100/50 flex flex-col items-center text-center group hover:border-purple-200 transition-all">
+                                    <div className="h-20 w-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                        <Layout className="text-[#7c3aed]" size={36} />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">Modern Templates</h3>
+                                    <p className="text-slate-500 leading-relaxed">Choose from multiple professional layouts designed by experts to match industry standards.</p>
+                                </div>
+
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-100/50 flex flex-col items-center text-center group hover:border-purple-200 transition-all">
+                                    <div className="h-20 w-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                        <Share2 className="text-[#7c3aed]" size={36} />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">One-Click Sharing</h3>
+                                    <p className="text-slate-500 leading-relaxed">Instantly share your resume via a unique public link or download as a high-quality PDF.</p>
+                                </div>
+                            </div>
+                            
+                            <div className="mt-20 p-12 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] rounded-[4rem] text-white text-left relative overflow-hidden shadow-2xl shadow-purple-200">
+                                <div className="relative z-10 max-w-2xl">
+                                    <h2 className="text-4xl font-black mb-6">Build your future with confidence.</h2>
+                                    <p className="text-purple-100 text-xl leading-relaxed mb-8">Join thousands of students who have already secured their dream roles using our professional resume builder.</p>
+                                    <div className="flex gap-4">
+                                        <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-xl text-sm font-bold border border-white/20">
+                                            Trusted by 10k+ Students
+                                        </div>
+                                        <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-xl text-sm font-bold border border-white/20">
+                                            98% Success Rate
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 translate-x-1/2" />
+                            </div>
+                        </motion.div>
+                    </div>
                 </div>
             </div>
         );
@@ -943,95 +988,83 @@ export default function ResumeBuilder() {
 
     if (step === 'template_selection') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="min-h-screen bg-gradient-to-b from-white to-purple-50/30 flex flex-col">
                 <style>{styles}</style>
-                <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
-                    <div className="p-6 md:p-8 overflow-y-auto premium-scrollbar flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                            <h2 className="text-2xl font-bold">Select a template</h2>
-                            <button onClick={() => setStep('create_new')} className="text-slate-400 hover:text-slate-600">
-                                <X size={24} />
-                            </button>
+                <Navigation />
+                <div className="flex-1 flex flex-col items-center pt-48 px-6 pb-20">
+                    <div className="text-center mb-16">
+                        <h1 className="text-5xl font-black text-[#0f172a] mb-4">Select a template</h1>
+                        <p className="text-slate-500 text-xl">Choose a template and start creating resume with us.</p>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row gap-8 max-w-4xl w-full justify-center px-4">
+                        {/* Classic Template Card */}
+                        <div 
+                            onClick={() => { setSelectedTemplate('classic'); setStep('editor'); }}
+                            className={`flex-1 bg-white border-2 rounded-[2rem] p-6 flex flex-col items-center group transition-all cursor-pointer ${selectedTemplate === 'classic' ? 'border-[#7c3aed] shadow-2xl shadow-purple-100 ring-4 ring-purple-50' : 'border-slate-100 hover:border-[#7c3aed] hover:shadow-xl hover:shadow-purple-50'}`}
+                        >
+                            <div className="w-full aspect-[3/4] bg-slate-50 rounded-xl mb-6 overflow-hidden border border-slate-100 group-hover:scale-[1.02] transition-transform duration-500 p-4">
+                                <div className="h-full w-full bg-white shadow-sm rounded-sm p-3 space-y-2.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <div className="h-3 w-1/3 mx-auto bg-slate-300 rounded-full"></div>
+                                    <div className="h-1.5 w-1/2 mx-auto bg-slate-200 rounded-full"></div>
+                                    <div className="h-0.5 w-full bg-slate-200 mt-4"></div>
+                                    <div className="space-y-1 pt-1">
+                                        <div className="h-1.5 w-full bg-slate-100 rounded"></div>
+                                        <div className="h-1.5 w-5/6 bg-slate-100 rounded"></div>
+                                        <div className="h-1.5 w-4/6 bg-slate-100 rounded"></div>
+                                    </div>
+                                    <div className="h-0.5 w-full bg-slate-200 mt-2"></div>
+                                    <div className="space-y-1 pt-1">
+                                        <div className="h-1.5 w-full bg-slate-100 rounded"></div>
+                                        <div className="h-1.5 w-5/6 bg-slate-100 rounded"></div>
+                                    </div>
+                                    <div className="h-0.5 w-full bg-slate-200 mt-2"></div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="h-1.5 bg-slate-100 rounded"></div>
+                                        <div className="h-1.5 bg-slate-100 rounded"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 mb-1">Classic</h3>
+                            <p className="text-slate-500 text-sm">Clean & Professional</p>
                         </div>
-                        <p className="text-slate-500 mb-6">Choose a template and start creating resume with us.</p>
 
-                        <div className="grid grid-cols-2 gap-6 md:gap-10 mb-8">
-                            <div 
-                                className={`template-card transition-all group ${selectedTemplate === 'classic' ? 'selected ring-2 ring-[#7c3aed] ring-offset-2' : 'hover:bg-slate-100'}`}
-                                onClick={() => setSelectedTemplate('classic')}
-                            >
-                                <div className="aspect-[3/4] max-h-[350px] bg-white border border-slate-200 rounded-lg mb-4 overflow-hidden p-4 group-hover:shadow-md transition-shadow">
-                                    <div className="h-full w-full bg-slate-50 relative">
-                                        {/* Symbolic Classic Resume */}
-                                        <div className="absolute inset-0 p-4 space-y-2 opacity-60">
-                                            <div className="h-4 w-1/3 mx-auto bg-slate-300"></div>
-                                            <div className="h-2 w-1/2 mx-auto bg-slate-200"></div>
-                                            <div className="h-3 w-full bg-slate-100 pt-4 border-t border-slate-300"></div>
-                                            <div className="h-2 w-full bg-slate-100"></div>
-                                            <div className="h-2 w-2/3 bg-slate-100"></div>
-                                            <div className="h-3 w-full bg-slate-100 pt-4 border-t border-slate-300"></div>
-                                            <div className="h-2 w-full bg-slate-100"></div>
+                        {/* Modern Template Card */}
+                        <div 
+                            onClick={() => { setSelectedTemplate('modern'); setStep('editor'); }}
+                            className={`flex-1 bg-white border-2 rounded-[2rem] p-6 flex flex-col items-center group transition-all cursor-pointer ${selectedTemplate === 'modern' ? 'border-[#7c3aed] shadow-2xl shadow-purple-100 ring-4 ring-purple-50' : 'border-slate-100 hover:border-[#7c3aed] hover:shadow-xl hover:shadow-purple-50'}`}
+                        >
+                            <div className="w-full aspect-[3/4] bg-slate-50 rounded-xl mb-6 overflow-hidden border border-slate-100 group-hover:scale-[1.02] transition-transform duration-500 p-4">
+                                <div className="h-full w-full bg-white shadow-sm rounded-sm flex opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <div className="w-1/3 bg-slate-50 h-full p-2.5 space-y-2 border-r border-slate-100">
+                                        <div className="h-8 w-8 rounded-full bg-slate-200 mx-auto"></div>
+                                        <div className="h-1 w-full bg-slate-200 rounded"></div>
+                                        <div className="space-y-1 pt-2">
+                                            <div className="h-1 w-full bg-slate-100 rounded"></div>
+                                            <div className="h-1 w-full bg-slate-100 rounded"></div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${selectedTemplate === 'classic' ? 'border-[#7c3aed] bg-[#7c3aed]' : 'border-slate-300'}`}>
-                                        {selectedTemplate === 'classic' && <div className="h-1.5 w-3 border-b-2 border-r-2 border-white rotate-45 mb-0.5"></div>}
+                                    <div className="w-2/3 p-3 space-y-3">
+                                        <div className="h-2.5 w-1/2 bg-slate-300 rounded-full"></div>
+                                        <div className="space-y-1.5 pt-1">
+                                            <div className="h-1 w-full bg-slate-100 rounded"></div>
+                                            <div className="h-1 w-full bg-slate-100 rounded"></div>
+                                            <div className="h-1 w-5/6 bg-slate-100 rounded"></div>
+                                        </div>
+                                        <div className="h-2 w-1/3 bg-slate-200 rounded-full mt-2"></div>
+                                        <div className="space-y-1 pt-1">
+                                            <div className="h-1 w-full bg-slate-100 rounded"></div>
+                                            <div className="h-1 w-full bg-slate-100 rounded"></div>
+                                        </div>
                                     </div>
-                                    <span className="font-bold text-lg">Classic</span>
                                 </div>
                             </div>
-
-                            <div 
-                                className={`template-card transition-all group ${selectedTemplate === 'modern' ? 'selected ring-2 ring-[#7c3aed] ring-offset-2' : 'hover:bg-slate-100'}`}
-                                onClick={() => setSelectedTemplate('modern')}
-                            >
-                                <div className="aspect-[3/4] max-h-[350px] bg-white border border-slate-200 rounded-lg mb-4 overflow-hidden p-4 group-hover:shadow-md transition-shadow">
-                                    <div className="h-full w-full bg-slate-50 flex">
-                                        {/* Symbolic Modern Resume */}
-                                        <div className="w-1/3 bg-slate-200 h-full p-2 space-y-2 opacity-60">
-                                            <div className="h-8 w-8 rounded-full bg-slate-300"></div>
-                                            <div className="h-2 w-full bg-slate-100"></div>
-                                            <div className="h-2 w-full bg-slate-100"></div>
-                                        </div>
-                                        <div className="w-2/3 p-4 space-y-2 opacity-60">
-                                            <div className="h-4 w-1/2 bg-slate-300"></div>
-                                            <div className="h-2 w-full bg-slate-100"></div>
-                                            <div className="h-2 w-full bg-slate-100"></div>
-                                            <div className="h-2 w-full bg-slate-100"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${selectedTemplate === 'modern' ? 'border-[#7c3aed] bg-[#7c3aed]' : 'border-slate-300'}`}>
-                                        {selectedTemplate === 'modern' && <div className="h-1.5 w-3 border-b-2 border-r-2 border-white rotate-45 mb-0.5"></div>}
-                                    </div>
-                                    <span className="font-bold text-lg">Modern</span>
-                                </div>
-                            </div>
+                            <h3 className="text-xl font-black text-slate-800 mb-1">Modern</h3>
+                            <p className="text-slate-500 text-sm">Creative & Visual</p>
                         </div>
                     </div>
 
-                    <div className="px-6 md:px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
-                        <button 
-                            onClick={() => setStep('create_new')}
-                            className="premium-btn !px-10 !py-3 !rounded-lg"
-                        >
-                            <span className="premium-orb premium-orb1" />
-                            <span className="premium-orb premium-orb2" />
-                            <span className="premium-orb premium-orb3" />
-                            <span className="premium-label">Cancel</span>
-                        </button>
-                        <button 
-                            onClick={() => setStep('editor')}
-                            className="premium-btn !px-10 !py-3 !rounded-lg"
-                        >
-                            <span className="premium-orb premium-orb1" />
-                            <span className="premium-orb premium-orb2" />
-                            <span className="premium-orb premium-orb3" />
-                            <span className="premium-label">Confirm</span>
-                        </button>
-                    </div>
+
                 </div>
             </div>
         );
@@ -1040,7 +1073,7 @@ export default function ResumeBuilder() {
     // --- Main Editor View ---
     const renderClassicPreview = () => {
         const { personalInfo: p, education: edu, experience: exp, skills, projects: projs, certifications, additional } = resumeData;
-        
+
         return (
             <div className="classic-resume">
                 <h1>{(p.firstName + " " + p.lastName).toUpperCase() || "YOUR NAME"}</h1>
@@ -1201,8 +1234,8 @@ export default function ResumeBuilder() {
                         {p?.firstName || "FIRST"} <span>{p?.lastName || "LAST"}</span>
                     </h1>
                     <div className="modern-contact">
-                        {p?.email || "email@example.com"} 
-                        {p?.phone && <span> • {p.phone}</span>} 
+                        {p?.email || "email@example.com"}
+                        {p?.phone && <span> • {p.phone}</span>}
                         {p?.address && <span> • {p.address}</span>}
                     </div>
                     <div className="modern-divider"></div>
@@ -1292,37 +1325,46 @@ export default function ResumeBuilder() {
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-white">
             <style>{styles}</style>
-        
-        <nav className="h-16 bg-[#0e141e] border-b border-white/5 flex items-center justify-between px-8 shrink-0">
-    <div className="flex items-center gap-6">
-        <div 
-            className="flex items-center cursor-pointer" 
-            onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')}
-        >
-            <span className="text-white font-black text-2xl tracking-tighter">ST</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-tr from-purple-400 to-pink-400 font-black text-2xl tracking-tighter">U</span>
-            <span className="text-white font-black text-2xl tracking-tighter">DLYF</span>
-        </div>
 
-        <div className="h-4 border-l border-white/10 mx-2"></div>
+            <nav className="h-16 bg-[#0e141e] border-b border-white/5 flex items-center justify-between px-8 shrink-0">
+                <div className="flex items-center gap-6">
+                    <div
+                        className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')}
+                    >
+                        <img 
+                            src="/images/studlyf.png" 
+                            alt="STUDLYF Logo" 
+                            className="h-7 sm:h-8 w-auto object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                        />
+                    </div>
 
-        <button 
-            onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')} 
-            className="text-slate-400 font-bold text-sm hover:text-white transition-colors"
-        >
-            Home
-        </button>
-    </div>
+                    <div className="h-4 border-l border-white/10 mx-2"></div>
 
-    <div className="flex items-center gap-4">
-        <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
-            <User size={18} />
-        </div>
-    </div>
-</nav>
+                    <button
+                        onClick={() => setStep(hasExistingData ? 'dashboard' : 'create_new')}
+                        className="text-slate-400 font-bold text-sm hover:text-white transition-colors"
+                    >
+                        Home
+                    </button>
+                </div>
 
-<header className="editor-header">
-    <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setIsShareModalOpen(true)}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                    >
+                        <Share2 size={16} />
+                        Share
+                    </button>
+                    <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
+                        <User size={18} />
+                    </div>
+                </div>
+            </nav>
+
+            <header className="editor-header">
+                <div className="flex items-center gap-4">
 
 
                     <div className="flex flex-col">
@@ -1333,16 +1375,16 @@ export default function ResumeBuilder() {
                         </div>
                         <div className="flex items-center gap-3 group mt-1">
                             {isEditingName ? (
-                                <input 
+                                <input
                                     autoFocus
-                                    value={resumeData.name} 
+                                    value={resumeData.name}
                                     onBlur={() => setIsEditingName(false)}
                                     onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-                                    onChange={(e) => setResumeData({...resumeData, name: e.target.value})}
+                                    onChange={(e) => setResumeData({ ...resumeData, name: e.target.value })}
                                     className="text-2xl font-bold text-slate-800 outline-none w-auto max-w-[400px] border-b-2 border-purple-500 transition-all bg-transparent"
                                 />
                             ) : (
-                                <h1 
+                                <h1
                                     onClick={() => setIsEditingName(true)}
                                     className="text-2xl font-bold text-slate-800 cursor-pointer hover:text-purple-600 transition-colors flex items-center gap-2"
                                 >
@@ -1358,634 +1400,535 @@ export default function ResumeBuilder() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 relative">
-                    <button 
-                            onClick={() => setShowShareModal(true)}
-                            className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                        >
-                            <Share2 size={20} />
-                        </button>
-                        <button 
-                            onClick={() => setShowAiPanel(true)}
-                            className="premium-btn"
-                        >
-                            <span className="premium-orb premium-orb1" />
-                            <span className="premium-orb premium-orb2" />
-                            <span className="premium-orb premium-orb3" />
-                            <span className="premium-label">Try AI Review <Sparkles size={16} /></span>
-                        </button>
-                        <div className="relative">
-                            <button 
-                                onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
-                                className="premium-btn"
-                            >
-                                <span className="premium-orb premium-orb1" />
-                                <span className="premium-orb premium-orb2" />
-                                <span className="premium-orb premium-orb3" />
-                                <span className="premium-label">Download <ChevronDown size={18} /></span>
+                    </div>
+                </AccordionItem>
+
+                <AccordionItem
+                    title="Education"
+                    icon={GraduationCap}
+                    isOpen={openSections.education}
+                    onClick={() => toggleSection('education')}
+                >
+                    {resumeData.education.map((edu, i) => (
+                        <div key={i} className="bg-slate-50 rounded-xl p-4 mb-4 relative group">
+                            <button onClick={() => removeEducation(i)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 size={16} />
                             </button>
-                            
-                            {showDownloadDropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 py-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <button 
-                                        onClick={async () => {
-                                            setShowDownloadDropdown(false);
-                                            await handleSave(true);
-                                            const html = generatePdfHtml(resumeData, selectedTemplate);
-                                            const frame = document.createElement("iframe");
-                                            frame.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;";
-                                            document.body.appendChild(frame);
-                                            if (frame.contentWindow) {
-                                                frame.contentWindow.document.open();
-                                                frame.contentWindow.document.write(html);
-                                                frame.contentWindow.document.close();
-                                                frame.onload = () => { 
-                                                    frame.contentWindow?.focus(); 
-                                                    frame.contentWindow?.print(); 
-                                                    setTimeout(() => document.body.removeChild(frame), 1000); 
-                                                };
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className="hr-label">Institution</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={edu.institution} onChange={(e) => updateEducation(i, 'institution', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="hr-label">Degree</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={edu.degree} onChange={(e) => updateEducation(i, 'degree', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="hr-label">Year / Range</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={edu.year} onChange={(e) => updateEducation(i, 'year', e.target.value)} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="hr-label">GPA / Score</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={edu.gpa} onChange={(e) => updateEducation(i, 'gpa', e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <button
+                        onClick={addEducation}
+                        className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
+                    >
+                        <Plus size={18} /> Add Education
+                    </button>
+                </AccordionItem>
+
+                <AccordionItem
+                    title="Experience"
+                    icon={Briefcase}
+                    isOpen={openSections.experience}
+                    onClick={() => toggleSection('experience')}
+                >
+                    {resumeData.experience.map((exp, i) => (
+                        <div key={i} className="bg-slate-50 rounded-xl p-4 mb-4 relative group">
+                            <button onClick={() => removeExperience(i)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 size={16} />
+                            </button>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className="hr-label">Company</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={exp.company} onChange={(e) => updateExperience(i, 'company', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="hr-label">Role</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={exp.role} onChange={(e) => updateExperience(i, 'role', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="hr-label">Range</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={exp.range} onChange={(e) => updateExperience(i, 'range', e.target.value)} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="hr-label">Location</label>
+                                    <input className="hr-input border-transparent focus:border-emerald-500" value={exp.location} onChange={(e) => updateExperience(i, 'location', e.target.value)} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="hr-label">Achievements</label>
+                                    <textarea
+                                        className="hr-input border-transparent focus:border-emerald-500 min-h-[100px]"
+                                        value={exp.points}
+                                        onChange={(e) => updateExperience(i, 'points', e.target.value)}
+                                        placeholder="Write point by point, one per line..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <button
+                        onClick={addExperience}
+                        className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
+                    >
+                        <Plus size={18} /> Add Experience
+                    </button>
+                </AccordionItem>
+
+                <AccordionItem
+                    title="Skillsets"
+                    icon={Code2}
+                    isOpen={openSections.skills}
+                    onClick={() => toggleSection('skills')}
+                >
+                    <div className="space-y-6">
+                        {[
+                            { key: 'languages', label: 'Add languages', icon: Terminal, placeholder: 'C++, Java, Python' },
+                            { key: 'frameworks', label: 'Add libraries / frameworks', icon: Layout, placeholder: 'JavaScript, React' },
+                            { key: 'tools', label: 'Add tools / platforms', icon: Cpu, placeholder: 'Git, VS Code' },
+                            { key: 'databases', label: 'Add databases', icon: Database, placeholder: 'SQL, MongoDB' },
+                        ].map((group) => (
+                            <div key={group.key}>
+                                <label className="hr-label">{group.label}</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        id={`input-${group.key}`}
+                                        className="hr-input"
+                                        placeholder={group.placeholder}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                const val = (e.target as HTMLInputElement).value;
+                                                addSkill(group.key as any, val);
+                                                (e.target as HTMLInputElement).value = '';
                                             }
                                         }}
-                                        className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm font-bold text-slate-700 transition-colors border-b border-slate-50"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const el = document.getElementById(`input-${group.key}`) as HTMLInputElement;
+                                            addSkill(group.key as any, el.value);
+                                            el.value = '';
+                                        }}
+                                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 hover:bg-slate-100"
                                     >
-                                        Download Pdf
-                                    </button>
-                                    <button className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm font-bold text-slate-700 transition-colors border-b border-slate-50">
-                                        Download Latex
-                                    </button>
-                                    <button className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm font-bold text-slate-700 transition-colors">
-                                        Download Json
+                                        <Plus size={18} />
                                     </button>
                                 </div>
-                            )}
-                    </div>
-                </div>
-            </header>
-
-            {/* Tabs */}
-            <div className="bg-white border-b border-slate-200 px-10">
-                <div className="flex gap-10">
-                    <button 
-                        onClick={() => setActiveTab('details')}
-                        className={`py-4 px-2 font-bold text-sm tracking-wide transition-all border-b-2 ${activeTab === 'details' ? 'border-purple-600 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Resume Details
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('matcher')}
-                        className={`py-4 px-2 font-bold text-sm tracking-wide transition-all border-b-2 ${activeTab === 'matcher' ? 'border-purple-600 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Resume Matcher
-                    </button>
-                </div>
-            </div>
-
-            <div className="flex flex-1 overflow-hidden">
-                {/* Left Form Area */}
-                <div className="w-[45%] lg:w-[40%] bg-white border-r border-slate-200 overflow-y-auto premium-scrollbar pb-20">
-                    <AccordionItem 
-                        title="Personal Info" 
-                        icon={User} 
-                        isOpen={openSections.personalInfo} 
-                        onClick={() => toggleSection('personalInfo')}
-                    >
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="hr-label">First Name</label>
-                                <input 
-                                    className="hr-input" 
-                                    placeholder="John" 
-                                    value={resumeData?.personalInfo?.firstName || ""} 
-                                    onChange={(e) => updatePersonalInfo('firstName', e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className="hr-label">Last Name</label>
-                                <input 
-                                    className="hr-input" 
-                                    placeholder="Doe"
-                                    value={resumeData?.personalInfo?.lastName || ""} 
-                                    onChange={(e) => updatePersonalInfo('lastName', e.target.value)}
-                                />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="hr-label">Email</label>
-                                <input 
-                                    className="hr-input" 
-                                    placeholder="john.doe@example.com"
-                                    value={resumeData?.personalInfo?.email || ""} 
-                                    onChange={(e) => updatePersonalInfo('email', e.target.value)}
-                                />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="hr-label">Phone</label>
-                                <input 
-                                    className="hr-input" 
-                                    placeholder="+1 206 555 0100"
-                                    value={resumeData?.personalInfo?.phone || ""} 
-                                    onChange={(e) => updatePersonalInfo('phone', e.target.value)}
-                                />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="hr-label">Address</label>
-                                <input 
-                                    className="hr-input" 
-                                    placeholder="123 Main Street, New York, NY"
-                                    value={resumeData?.personalInfo?.address || ""} 
-                                    onChange={(e) => updatePersonalInfo('address', e.target.value)}
-                                />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="hr-label">Job Title</label>
-                                <input 
-                                    className="hr-input" 
-                                    placeholder="Full-Stack Web Developer"
-                                    value={resumeData?.personalInfo?.jobTitle || ""} 
-                                    onChange={(e) => updatePersonalInfo('jobTitle', e.target.value)}
-                                />
-                            </div>
-
-                        </div>
-
-                        <div className="mt-8">
-                            <label className="hr-label mb-4 flex items-center justify-between">
-                                Links ({resumeData.personalInfo.links.length}/5)
-                            </label>
-                            <div className="space-y-3">
-                                {resumeData.personalInfo.links.map((link, i) => (
-                                    <div key={i} className="flex gap-3 items-center group">
-                                        <div className="flex-1 grid grid-cols-2 gap-2">
-                                            <input 
-                                                className="hr-input" 
-                                                placeholder="Label (e.g. GitHub)" 
-                                                value={link.label}
-                                                onChange={(e) => updateLink(i, 'label', e.target.value)}
-                                            />
-                                            <input 
-                                                className="hr-input" 
-                                                placeholder="URL" 
-                                                value={link.url}
-                                                onChange={(e) => updateLink(i, 'url', e.target.value)}
-                                            />
-                                        </div>
-                                        <button onClick={() => removeLink(i)} className="text-slate-300 hover:text-red-500 p-2">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                                <button 
-                                    onClick={addLink}
-                                    disabled={resumeData.personalInfo.links.length >= 5}
-                                    className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all mt-4"
-                                >
-                                    <Plus size={18} /> Add Link
-                                </button>
-                            </div>
-                        </div>
-                    </AccordionItem>
-
-                    <AccordionItem 
-                        title="Education" 
-                        icon={GraduationCap} 
-                        isOpen={openSections.education} 
-                        onClick={() => toggleSection('education')}
-                    >
-                        {resumeData.education.map((edu, i) => (
-                            <div key={i} className="bg-slate-50 rounded-xl p-4 mb-4 relative group">
-                                <button onClick={() => removeEducation(i)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Trash2 size={16} />
-                                </button>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="hr-label">Institution</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={edu.institution} onChange={(e) => updateEducation(i, 'institution', e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="hr-label">Degree</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={edu.degree} onChange={(e) => updateEducation(i, 'degree', e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="hr-label">Year / Range</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={edu.year} onChange={(e) => updateEducation(i, 'year', e.target.value)} />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="hr-label">GPA / Score</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={edu.gpa} onChange={(e) => updateEducation(i, 'gpa', e.target.value)} />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <button 
-                            onClick={addEducation}
-                            className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
-                        >
-                            <Plus size={18} /> Add Education
-                        </button>
-                    </AccordionItem>
-
-                    <AccordionItem 
-                        title="Experience" 
-                        icon={Briefcase} 
-                        isOpen={openSections.experience} 
-                        onClick={() => toggleSection('experience')}
-                    >
-                        {resumeData.experience.map((exp, i) => (
-                            <div key={i} className="bg-slate-50 rounded-xl p-4 mb-4 relative group">
-                                <button onClick={() => removeExperience(i)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Trash2 size={16} />
-                                </button>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="hr-label">Company</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={exp.company} onChange={(e) => updateExperience(i, 'company', e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="hr-label">Role</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={exp.role} onChange={(e) => updateExperience(i, 'role', e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="hr-label">Range</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={exp.range} onChange={(e) => updateExperience(i, 'range', e.target.value)} />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="hr-label">Location</label>
-                                        <input className="hr-input border-transparent focus:border-emerald-500" value={exp.location} onChange={(e) => updateExperience(i, 'location', e.target.value)} />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="hr-label">Achievements</label>
-                                        <textarea 
-                                            className="hr-input border-transparent focus:border-emerald-500 min-h-[100px]" 
-                                            value={exp.points} 
-                                            onChange={(e) => updateExperience(i, 'points', e.target.value)}
-                                            placeholder="Write point by point, one per line..."
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <button 
-                            onClick={addExperience}
-                            className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
-                        >
-                            <Plus size={18} /> Add Experience
-                        </button>
-                    </AccordionItem>
-
-                    <AccordionItem 
-                        title="Skillsets" 
-                        icon={Code2} 
-                        isOpen={openSections.skills} 
-                        onClick={() => toggleSection('skills')}
-                    >
-                        <div className="space-y-6">
-                            {[
-                                { key: 'languages', label: 'Add languages', icon: Terminal, placeholder: 'C++, Java, Python' },
-                                { key: 'frameworks', label: 'Add libraries / frameworks', icon: Layout, placeholder: 'JavaScript, React' },
-                                { key: 'tools', label: 'Add tools / platforms', icon: Cpu, placeholder: 'Git, VS Code' },
-                                { key: 'databases', label: 'Add databases', icon: Database, placeholder: 'SQL, MongoDB' },
-                            ].map((group) => (
-                                <div key={group.key}>
-                                    <label className="hr-label">{group.label}</label>
-                                    <div className="flex gap-2">
-                                        <input 
-                                            id={`input-${group.key}`}
-                                            className="hr-input" 
-                                            placeholder={group.placeholder} 
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    const val = (e.target as HTMLInputElement).value;
-                                                    addSkill(group.key as any, val);
-                                                    (e.target as HTMLInputElement).value = '';
-                                                }
-                                            }}
-                                        />
-                                        <button 
-                                            onClick={() => {
-                                                const el = document.getElementById(`input-${group.key}`) as HTMLInputElement;
-                                                addSkill(group.key as any, el.value);
-                                                el.value = '';
-                                            }}
-                                            className="bg-slate-50 border border-slate-200 rounded-lg px-3 hover:bg-slate-100"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {resumeData.skills[group.key as keyof ResumeData['skills']].map((s, i) => (
-                                            <div key={i} className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-sm font-medium group">
-                                                {s}
-                                                <button onClick={() => removeSkill(group.key as any, i)} className="text-slate-400 hover:text-red-500">
-                                                    <X size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </AccordionItem>
-
-                    <AccordionItem 
-                        title="Projects" 
-                        icon={Briefcase} 
-                        isOpen={openSections.projects} 
-                        onClick={() => toggleSection('projects')}
-                    >
-                        <div className="mb-4">
-                            <h4 className="text-sm font-bold text-slate-800 mb-2">Open Source / Personal Projects</h4>
-                            {resumeData.projects.map((p, i) => (
-                                <div key={i} className="bg-slate-50 rounded-xl p-4 mb-4 relative group">
-                                    <button onClick={() => removeProject(i)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Trash2 size={16} />
-                                    </button>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="col-span-2">
-                                            <label className="hr-label">Project Name</label>
-                                            <input className="hr-input border-transparent focus:border-emerald-500" value={p.name} onChange={(e) => updateProject(i, 'name', e.target.value)} />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="hr-label">Technologies (e.g. React, Node.js)</label>
-                                            <input className="hr-input border-transparent focus:border-emerald-500" value={p.tech} onChange={(e) => updateProject(i, 'tech', e.target.value)} />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="hr-label">Description</label>
-                                            <textarea className="hr-input border-transparent focus:border-emerald-500 min-h-[80px]" value={p.desc} onChange={(e) => updateProject(i, 'desc', e.target.value)} />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="hr-label">Link (optional)</label>
-                                            <input className="hr-input border-transparent focus:border-emerald-500" value={p.link} onChange={(e) => updateProject(i, 'link', e.target.value)} />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            <div className="flex gap-3 mt-4">
-                                <button 
-                                    onClick={addProject}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
-                                >
-                                    <Plus size={18} /> Add Contribution / Project
-                                </button>
-                                <button 
-                                    className="px-6 flex items-center justify-center gap-2 py-3 border border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
-                                >
-                                    <GithubIcon size={18} /> Import
-                                </button>
-                            </div>
-                        </div>
-                    </AccordionItem>
-
-                    <AccordionItem 
-                        title="Certifications" 
-                        icon={CertificationIcon} 
-                        isOpen={openSections.certifications} 
-                        onClick={() => toggleSection('certifications')}
-                    >
-                         <div className="flex gap-2 mb-4">
-                            <input 
-                                id="input-cert"
-                                className="hr-input" 
-                                placeholder="AWS Certified Developer..." 
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        addCertification((e.target as HTMLInputElement).value);
-                                        (e.target as HTMLInputElement).value = '';
-                                    }
-                                }}
-                            />
-                            <button 
-                                onClick={() => {
-                                    const el = document.getElementById('input-cert') as HTMLInputElement;
-                                    addCertification(el.value);
-                                    el.value = '';
-                                }}
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-3 hover:bg-slate-100"
-                            >
-                                <Plus size={18} />
-                            </button>
-                        </div>
-                        <div className="space-y-2">
-                            {resumeData.certifications.map((c, i) => (
-                                <div key={i} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100 group">
-                                    <span className="text-sm font-medium">{c}</span>
-                                    <button onClick={() => removeCertification(i)} className="text-slate-300 hover:text-red-500">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </AccordionItem>
-
-                    <AccordionItem 
-                        title="Additional: Honors & Awards" 
-                        icon={Award} 
-                        isOpen={openSections.additional} 
-                        onClick={() => toggleSection('additional')}
-                    >
-                         <div className="flex gap-2 mb-4">
-                            <input 
-                                id="input-honor"
-                                className="hr-input" 
-                                placeholder="Dean's List 2023..." 
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        addHonor((e.target as HTMLInputElement).value);
-                                        (e.target as HTMLInputElement).value = '';
-                                    }
-                                }}
-                            />
-                            <button 
-                                onClick={() => {
-                                    const el = document.getElementById('input-honor') as HTMLInputElement;
-                                    addHonor(el.value);
-                                    el.value = '';
-                                }}
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-3 hover:bg-slate-100"
-                            >
-                                <Plus size={18} />
-                            </button>
-                        </div>
-                        <div className="space-y-2">
-                            {resumeData.additional.honorsAndAwards.map((h, i) => (
-                                <div key={i} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100 group">
-                                    <span className="text-sm font-medium">{h}</span>
-                                    <button onClick={() => removeHonor(i)} className="text-slate-300 hover:text-red-500">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </AccordionItem>
-                </div>
-
-                {/* Right Preview Area */}
-                <div className="flex-1 resume-preview-container overflow-y-auto premium-scrollbar flex flex-col items-center">
-                    <div className="resume-paper animate-in fade-in zoom-in-95 duration-500">
-                        {selectedTemplate === 'classic' ? renderClassicPreview() : renderModernPreview()}
-                    </div>
-                </div>
-            </div>
-            
-            {/* Save Status Floating Indicator */}
-            <div className="fixed bottom-6 right-6">
-                <button 
-                    onClick={() => handleSave()}
-                    disabled={isSaving}
-                    className="premium-btn !px-8 !py-4 !rounded-full !text-base"
-                >
-                    <span className="premium-orb premium-orb1" />
-                    <span className="premium-orb premium-orb2" />
-                    <span className="premium-orb premium-orb3" />
-                    <span className="premium-label">
-                        {isSaving ? <Loader2 className="animate-spin" size={18} /> : (saveStatus === 'saved' ? <CheckCircle size={18} /> : <Save size={18} />)}
-                        {isSaving ? 'Saving...' : (saveStatus === 'saved' ? 'Saved to Cloud' : 'Save Changes')}
-                    </span>
-                </button>
-            </div>
-
-            {/* Share Modal */}
-            <AnimatePresence>
-                {showShareModal && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
-                        >
-                            <div className="p-8">
-                                <h2 className="text-xl font-bold mb-6">Share Resume</h2>
-                                
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="hr-label mb-2">Resume Link</label>
-                                        <div className="flex gap-2 p-1.5 bg-slate-50 border border-slate-200 rounded-xl group focus-within:border-emerald-500 transition-all">
-                                            <input 
-                                                readOnly
-                                                value={`https://studlyf.io/resume/${user?.uid || 'shared'}`}
-                                                className="flex-1 bg-transparent border-none outline-none text-sm text-slate-500 px-3"
-                                            />
-                                            <button 
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(`https://studlyf.io/resume/${user?.uid || 'shared'}`);
-                                                    alert("Link copied to clipboard!");
-                                                }}
-                                                className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
-                                            >
-                                                <Share2 size={16} />
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    {resumeData.skills[group.key as keyof ResumeData['skills']].map((s, i) => (
+                                        <div key={i} className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-sm font-medium group">
+                                            {s}
+                                            <button onClick={() => removeSkill(group.key as any, i)} className="text-slate-400 hover:text-red-500">
+                                                <X size={14} />
                                             </button>
                                         </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between py-4 border-y border-slate-100">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
-                                                <Globe size={20} />
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-bold text-slate-800">Anyone with the link can view</div>
-                                                <div className="text-xs text-slate-400">Public access enabled</div>
-                                            </div>
-                                        </div>
-                                        <button className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-purple-500">
-                                            <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="mt-10 flex justify-end gap-3">
-                                    <button 
-                                        onClick={() => setShowShareModal(false)}
-                                        className="px-6 py-3 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowShareModal(false)}
-                                        className="px-8 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-colors"
-                                    >
-                                        Done
-                                    </button>
+                                    ))}
                                 </div>
                             </div>
-                        </motion.div>
+                        ))}
                     </div>
-                )}
-            </AnimatePresence>
+                </AccordionItem>
 
-            {/* AI Review Side Panel */}
-            <AnimatePresence>
-                {showAiPanel && (
-                    <div className="fixed inset-0 z-[300] flex justify-end bg-black/20 backdrop-blur-[2px]">
-                        <motion.div 
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="bg-white w-full max-w-md h-full shadow-2xl p-0 flex flex-col"
+                <AccordionItem
+                    title="Projects"
+                    icon={Briefcase}
+                    isOpen={openSections.projects}
+                    onClick={() => toggleSection('projects')}
+                >
+                    <div className="mb-4">
+                        <h4 className="text-sm font-bold text-slate-800 mb-2">Open Source / Personal Projects</h4>
+                        {resumeData.projects.map((p, i) => (
+                            <div key={i} className="bg-slate-50 rounded-xl p-4 mb-4 relative group">
+                                <button onClick={() => removeProject(i)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Trash2 size={16} />
+                                </button>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2">
+                                        <label className="hr-label">Project Name</label>
+                                        <input className="hr-input border-transparent focus:border-emerald-500" value={p.name} onChange={(e) => updateProject(i, 'name', e.target.value)} />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="hr-label">Technologies (e.g. React, Node.js)</label>
+                                        <input className="hr-input border-transparent focus:border-emerald-500" value={p.tech} onChange={(e) => updateProject(i, 'tech', e.target.value)} />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="hr-label">Description</label>
+                                        <textarea className="hr-input border-transparent focus:border-emerald-500 min-h-[80px]" value={p.desc} onChange={(e) => updateProject(i, 'desc', e.target.value)} />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="hr-label">Link (optional)</label>
+                                        <input className="hr-input border-transparent focus:border-emerald-500" value={p.link} onChange={(e) => updateProject(i, 'link', e.target.value)} />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={addProject}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 border border-dashed border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
+                            >
+                                <Plus size={18} /> Add Contribution / Project
+                            </button>
+                            <button
+                                className="px-6 flex items-center justify-center gap-2 py-3 border border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all"
+                            >
+                                <Github size={18} /> Import
+                            </button>
+                        </div>
+                    </div>
+                </AccordionItem>
+
+                <AccordionItem
+                    title="Certifications"
+                    icon={CertificationIcon}
+                    isOpen={openSections.certifications}
+                    onClick={() => toggleSection('certifications')}
+                >
+                    <div className="flex gap-2 mb-4">
+                        <input
+                            id="input-cert"
+                            className="hr-input"
+                            placeholder="AWS Certified Developer..."
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    addCertification((e.target as HTMLInputElement).value);
+                                    (e.target as HTMLInputElement).value = '';
+                                }
+                            }}
+                        />
+                        <button
+                            onClick={() => {
+                                const el = document.getElementById('input-cert') as HTMLInputElement;
+                                addCertification(el.value);
+                                el.value = '';
+                            }}
+                            className="bg-slate-50 border border-slate-200 rounded-lg px-3 hover:bg-slate-100"
                         >
-                            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                                <span className="font-bold text-slate-800">AI Resume Review</span>
-                                <button onClick={() => setShowAiPanel(false)} className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
-                                    <X size={20} />
+                            <Plus size={18} />
+                        </button>
+                    </div>
+                    <div className="space-y-2">
+                        {resumeData.certifications.map((c, i) => (
+                            <div key={i} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100 group">
+                                <span className="text-sm font-medium">{c}</span>
+                                <button onClick={() => removeCertification(i)} className="text-slate-300 hover:text-red-500">
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
-                            
-                            <div className="flex-1 overflow-y-auto premium-scrollbar p-6">
-                                <div className="aspect-[4/3] bg-purple-50 rounded-2xl mb-8 flex items-center justify-center overflow-hidden relative border border-purple-100">
-                                     <div className="absolute top-4 left-4 bg-slate-900 h-8 w-8 rounded-lg flex items-center justify-center text-white shadow-lg">
-                                        <Sparkles size={18} />
-                                     </div>
-                                     {/* Symbolic Illustration mockup */}
-                                     <div className="animate-pulse flex flex-col items-center gap-4">
-                                        <div className="h-24 w-16 bg-white rounded-lg shadow-sm border border-purple-200 scale-110"></div>
-                                        <div className="h-2 w-32 bg-purple-200 rounded-full"></div>
-                                        <div className="h-2 w-24 bg-purple-200 rounded-full"></div>
-                                     </div>
-                                </div>
+                        ))}
+                    </div>
+                </AccordionItem>
 
-                                <h2 className="text-2xl font-bold text-slate-900 mb-6">Introducing AI powered reviews</h2>
-                                
-                                <ul className="space-y-6 mb-10">
-                                    <li className="flex gap-4">
-                                        <div className="h-2 w-2 rounded-full bg-slate-800 mt-2.5 shrink-0" />
-                                        <div className="text-slate-600 text-[15px] leading-relaxed">
-                                            Get actionable feedback in less than 60 seconds.
-                                        </div>
-                                    </li>
-                                    <li className="flex gap-4">
-                                        <div className="h-2 w-2 rounded-full bg-slate-800 mt-2.5 shrink-0" />
-                                        <div className="text-slate-600 text-[15px] leading-relaxed">
-                                            Receive personalized recommendations, according to the role you'd like to land.
-                                        </div>
-                                    </li>
-                                    <li className="flex gap-4">
-                                        <div className="h-2 w-2 rounded-full bg-slate-800 mt-2.5 shrink-0" />
-                                        <div className="text-slate-600 text-[15px] leading-relaxed">
-                                            Increase your likelihood of landing interviews with a polished resume.
-                                        </div>
-                                    </li>
-                                </ul>
+                <AccordionItem
+                    title="Additional: Honors & Awards"
+                    icon={Award}
+                    isOpen={openSections.additional}
+                    onClick={() => toggleSection('additional')}
+                >
+                    <div className="flex gap-2 mb-4">
+                        <input
+                            id="input-honor"
+                            className="hr-input"
+                            placeholder="Dean's List 2023..."
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    addHonor((e.target as HTMLInputElement).value);
+                                    (e.target as HTMLInputElement).value = '';
+                                }
+                            }}
+                        />
+                        <button
+                            onClick={() => {
+                                const el = document.getElementById('input-honor') as HTMLInputElement;
+                                addHonor(el.value);
+                                el.value = '';
+                            }}
+                            className="bg-slate-50 border border-slate-200 rounded-lg px-3 hover:bg-slate-100"
+                        >
+                            <Plus size={18} />
+                        </button>
+                    </div>
+                    <div className="space-y-2">
+                        {resumeData.additional.honorsAndAwards.map((h, i) => (
+                            <div key={i} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100 group">
+                                <span className="text-sm font-medium">{h}</span>
+                                <button onClick={() => removeHonor(i)} className="text-slate-300 hover:text-red-500">
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </AccordionItem>
+            </div>
 
-                                <div className="bg-purple-50 text-purple-700 px-4 py-2 rounded-lg inline-block text-sm font-bold mb-10">
-                                    5 review credits available
-                                </div>
+            {/* Right Preview Area */}
+            <div className="flex-1 resume-preview-container overflow-y-auto premium-scrollbar flex flex-col items-center">
+                <div className="resume-paper animate-in fade-in zoom-in-95 duration-500">
+                    {selectedTemplate === 'classic' ? renderClassicPreview() : renderModernPreview()}
+                </div>
+            </div>
+        </div>
 
-                                <div className="space-y-4">
-                                    <button 
-                                        className="w-full py-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-200/50"
+    {/* Save Status Floating Indicator */ }
+    <div className="fixed bottom-6 right-6">
+        <button
+            onClick={() => handleSave()}
+            disabled={isSaving}
+            className={`flex items-center gap-3 px-6 py-3 rounded-full shadow-lg font-bold transition-all ${saveStatus === 'saved' ? 'bg-purple-500 text-white' : 'bg-slate-900 text-white hover:bg-purple-600'}`}
+        >
+            {isSaving ? <Loader2 className="animate-spin" size={18} /> : (saveStatus === 'saved' ? <CheckCircle size={18} /> : <Save size={18} />)}
+            {isSaving ? 'Saving...' : (saveStatus === 'saved' ? 'Saved to Cloud' : 'Save Changes')}
+        </button>
+    </div>
+
+    {/* Share Modal */ }
+    <AnimatePresence>
+        {showShareModal && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+                >
+                    <div className="p-8">
+                        <h2 className="text-xl font-bold mb-6">Share Resume</h2>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="hr-label mb-2">Resume Link</label>
+                                <div className="flex gap-2 p-1.5 bg-slate-50 border border-slate-200 rounded-xl group focus-within:border-emerald-500 transition-all">
+                                    <input
+                                        readOnly
+                                        value={`https://studlyf.io/resume/${user?.uid || 'shared'}`}
+                                        className="flex-1 bg-transparent border-none outline-none text-sm text-slate-500 px-3"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`https://studlyf.io/resume/${user?.uid || 'shared'}`);
+                                            alert("Link copied to clipboard!");
+                                        }}
+                                        className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
                                     >
-                                        Start Review
+                                        <Share2 size={16} />
                                     </button>
-                                    <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-medium">
-                                        <div className="h-4 w-4 rounded-full border border-slate-300 flex items-center justify-center text-[10px]">i</div>
-                                        1 review credit will be utilized
-                                    </div>
                                 </div>
                             </div>
-                        </motion.div>
+
+                            <div className="flex items-center justify-between py-4 border-y border-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+                                        <Globe size={20} />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-bold text-slate-800">Anyone with the link can view</div>
+                                        <div className="text-xs text-slate-400">Public access enabled</div>
+                                    </div>
+                                </div>
+                                <button className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-purple-500">
+                                    <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mt-10 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowShareModal(false)}
+                                className="px-6 py-3 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => setShowShareModal(false)}
+                                className="px-8 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-colors"
+                            >
+                                Done
+                            </button>
+                        </div>
                     </div>
-                )}
-            </AnimatePresence>
+                </motion.div>
+            </div>
+
+
+                    <div className="flex-1 overflow-y-auto premium-scrollbar p-6">
+                        <div className="aspect-[4/3] bg-purple-50 rounded-2xl mb-8 flex items-center justify-center overflow-hidden relative border border-purple-100">
+                            <div className="absolute top-4 left-4 bg-slate-900 h-8 w-8 rounded-lg flex items-center justify-center text-white shadow-lg">
+                                <Sparkles size={18} />
+                            </div>
+                            {/* Symbolic Illustration mockup */}
+                            <div className="animate-pulse flex flex-col items-center gap-4">
+                                <div className="h-24 w-16 bg-white rounded-lg shadow-sm border border-purple-200 scale-110"></div>
+                                <div className="h-2 w-32 bg-purple-200 rounded-full"></div>
+                                <div className="h-2 w-24 bg-purple-200 rounded-full"></div>
+                            </div>
+                        </div>
+
+                        <h2 className="text-2xl font-bold text-slate-900 mb-6">Introducing AI powered reviews</h2>
+
+                        <ul className="space-y-6 mb-10">
+                            <li className="flex gap-4">
+                                <div className="h-2 w-2 rounded-full bg-slate-800 mt-2.5 shrink-0" />
+                                <div className="text-slate-600 text-[15px] leading-relaxed">
+                                    Get actionable feedback in less than 60 seconds.
+                                </div>
+                            </li>
+                            <li className="flex gap-4">
+                                <div className="h-2 w-2 rounded-full bg-slate-800 mt-2.5 shrink-0" />
+                                <div className="text-slate-600 text-[15px] leading-relaxed">
+                                    Receive personalized recommendations, according to the role you'd like to land.
+                                </div>
+                            </li>
+                            <li className="flex gap-4">
+                                <div className="h-2 w-2 rounded-full bg-slate-800 mt-2.5 shrink-0" />
+                                <div className="text-slate-600 text-[15px] leading-relaxed">
+                                    Increase your likelihood of landing interviews with a polished resume.
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div className="bg-purple-50 text-purple-700 px-4 py-2 rounded-lg inline-block text-sm font-bold mb-10">
+                            {isReviewing ? "Analyzing your resume..." : "5 review credits available"}
+                        </div>
+
+                        <div className="space-y-4">
+                            {reviewResult ? (
+                                <div className="space-y-4 text-left">
+                                    <h4 className="font-bold text-slate-800">Review Results:</h4>
+                                    <ul className="space-y-2">
+                                        {reviewResult.map((res, i) => (
+                                            <li key={i} className="flex gap-2 text-sm text-slate-600">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                                                {res}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <button 
+                                        onClick={() => setReviewResult(null)}
+                                        className="w-full py-3 border-2 border-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    disabled={isReviewing}
+                                    onClick={() => {
+                                        setIsReviewing(true);
+                                        setTimeout(() => {
+                                            setIsReviewing(false);
+                                            setReviewResult([
+                                                "Action verbs could be stronger in experience section.",
+                                                "Add more measurable metrics (e.g. 20% increase).",
+                                                "Ensure consistent date formatting across sections."
+                                            ]);
+                                        }, 2000);
+                                    }}
+                                    className="w-full py-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-200/50 flex items-center justify-center gap-2"
+                                >
+                                    {isReviewing ? (
+                                        <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        "Start Review"
+                                    )}
+                                </button>
+                            )}
+                            <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-medium">
+                                <div className="h-4 w-4 rounded-full border border-slate-300 flex items-center justify-center text-[10px]">i</div>
+                                1 review credit will be utilized
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+    </AnimatePresence>
+
+    {/* Share Modal */}
+    <AnimatePresence>
+        {isShareModalOpen && (
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsShareModalOpen(false)}
+                    className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+                />
+                <motion.div 
+                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                    className="relative bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden p-10"
+                >
+                    <h2 className="text-3xl font-black text-slate-900 mb-8">Share Resume</h2>
+                    
+                    <div className="space-y-6">
+                        <div>
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Resume Link</label>
+                            <div className="flex items-center gap-2 p-4 bg-slate-50 border border-slate-100 rounded-2xl group focus-within:border-purple-200 focus-within:bg-white transition-all">
+                                <input 
+                                    readOnly 
+                                    value={`https://studlyf.io/resume/${Math.random().toString(36).substring(7)}`}
+                                    className="flex-1 bg-transparent border-none outline-none text-slate-600 font-medium"
+                                />
+                                <button className="p-2 text-slate-400 hover:text-purple-600 transition-colors">
+                                    <Share2 size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-6 bg-purple-50/50 rounded-2xl">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                                    <Globe size={24} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800">Anyone with the link can view</h4>
+                                    <p className="text-xs text-purple-600 font-medium">Public access enabled</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setPublicAccess(!publicAccess)}
+                                className={`w-14 h-8 rounded-full p-1 transition-all duration-300 ${publicAccess ? 'bg-purple-600' : 'bg-slate-200'}`}
+                            >
+                                <div className={`h-6 w-6 rounded-full bg-white shadow-sm transition-all duration-300 ${publicAccess ? 'translate-x-6' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
+
+                        <div className="pt-4 flex gap-4">
+                            <button 
+                                onClick={() => setIsShareModalOpen(false)}
+                                className="flex-1 py-4 border-2 border-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={() => setIsShareModalOpen(false)}
+                                className="flex-1 py-4 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-200"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+    </AnimatePresence>
         </div>
     );
 }
