@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -49,26 +49,20 @@ import {
 import { API_BASE_URL as API_BASE } from '../apiConfig';
 
 const DEFAULT_PATHS = [
-    { name: "Cloud Solutions Architect", group: "Cloud", pos: { x: -350, y: -220 }, color: "#0EA5E9", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=300&fit=crop" },
-    { name: "Mobile App Developer", group: "App", pos: { x: -400, y: -80 }, color: "#3B82F6", image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=300&h=300&fit=crop" },
-    { name: "Cyber Security Lead", group: "Security", pos: { x: -320, y: 150 }, color: "#EF4444", image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=300&h=300&fit=crop" },
-    { name: "AI Research Scientist", group: "AI", pos: { x: -180, y: -320 }, color: "#6366F1", image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=300&h=300&fit=crop" },
-    { name: "Data Science Manager", group: "Maths", pos: { x: 320, y: -260 }, color: "#10B981", image: "https://images.unsplash.com/photo-1551288049-bbda38a10ad1?w=300&h=300&fit=crop" },
-    { name: "Product Development", group: "Business", pos: { x: 420, y: -120 }, color: "#F59E0B", image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=300&h=300&fit=crop" },
-    { name: "UX Design Architect", group: "Design", pos: { x: 360, y: 180 }, color: "#EC4899", image: "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?w=300&h=300&fit=crop" },
-    { name: "Full Stack Engineer", group: "Dev", pos: { x: 150, y: 320 }, color: "#F97316", image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&h=300&fit=crop" },
-    { name: "Robotics Lead Eng", group: "Robotics", pos: { x: -220, y: 360 }, color: "#06B6D4", image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=300&fit=crop" },
-    { name: "NLP Systems Specialist", group: "AI", pos: { x: 220, y: -380 }, color: "#8B5CF6", image: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=300&h=300&fit=crop" },
-    { name: "Blockchain Strategist", group: "Web3", pos: { x: -480, y: -320 }, color: "#F43F5E", image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=300&h=300&fit=crop" },
-    { name: "Digital Twin Expert", group: "Eng", pos: { x: -520, y: 120 }, color: "#D946EF", image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=300&fit=crop" },
-    { name: "Quantum Computing Dev", group: "Future", pos: { x: -120, y: 420 }, color: "#14B8A6", image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=300&h=300&fit=crop" },
-    { name: "Metaverse Architect", group: "Design", pos: { x: 520, y: 360 }, color: "#6366F1", image: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=300&h=300&fit=crop" },
-    { name: "Big Data Engineer", group: "Data", pos: { x: 550, y: -320 }, color: "#F59E0B", image: "https://images.unsplash.com/photo-1558494949-ef01091244ea?w=300&h=300&fit=crop" },
-    { name: "Systems Integrator", group: "Ops", pos: { x: 540, y: 120 }, color: "#10B981", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=300&fit=crop" },
-    { name: "IoT Platform Eng", group: "Tech", pos: { x: -550, y: 320 }, color: "#3B82F6", image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=300&h=300&fit=crop" },
-    { name: "DevOps Champion", group: "Ops", pos: { x: 0, y: -480 }, color: "#EF4444", image: "https://images.unsplash.com/photo-1618401471353-b98aade8103a?w=300&h=300&fit=crop" },
-    { name: "SaaS Product Owner", group: "Business", pos: { x: -250, y: -450 }, color: "#8B5CF6", image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&h=300&fit=crop" },
-    { name: "FinTech Consultant", group: "Finance", pos: { x: 350, y: 450 }, color: "#0EA5E9", image: "https://images.unsplash.com/photo-1611974714013-3c81048fd89b?w=300&h=300&fit=crop" },
+    { name: "Cloud Solutions Architect", group: "Cloud", color: "#0EA5E9", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=300&fit=crop", desc: "Design secure, scalable cloud architectures." },
+    { name: "Mobile App Developer", group: "App", color: "#3B82F6", image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=300&h=300&fit=crop", desc: "Build native and hybrid mobile experiences." },
+    { name: "Cyber Security Lead", group: "Security", color: "#EF4444", image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=300&h=300&fit=crop", desc: "Protect systems and data from digital threats." },
+    { name: "AI Research Scientist", group: "AI", color: "#6366F1", image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=300&h=300&fit=crop", desc: "Advance the future with machine learning." },
+    { name: "Data Science Manager", group: "Maths", color: "#10B981", image: "https://images.unsplash.com/photo-1551288049-bbda38a10ad1?w=300&h=300&fit=crop", desc: "Extract insights and drive data decisions." },
+    { name: "Product Development", group: "Business", color: "#F59E0B", image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=300&h=300&fit=crop", desc: "Turn ideas into scalable, impactful products." },
+    { name: "UX Design Architect", group: "Design", color: "#EC4899", image: "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?w=300&h=300&fit=crop", desc: "Design meaningful experiences users love." },
+    { name: "Full Stack Engineer", group: "Dev", color: "#F97316", image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&h=300&fit=crop", desc: "Build end-to-end web applications." },
+    { name: "Robotics Lead Eng", group: "Robotics", color: "#06B6D4", image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=300&fit=crop", desc: "Build intelligent robots for the real world." },
+    { name: "Blockchain Strategist", group: "Web3", color: "#F43F5E", image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=300&h=300&fit=crop", desc: "Design secure, transparent ledger solutions." },
+    { name: "Quantum Computing Dev", group: "Future", color: "#14B8A6", image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=300&h=300&fit=crop", desc: "Work on next-gen computing systems." },
+    { name: "Big Data Engineer", group: "Data", color: "#F59E0B", image: "https://images.unsplash.com/photo-1558494949-ef01091244ea?w=300&h=300&fit=crop", desc: "Process and scale massive data streams." },
+    { name: "Systems Integrator", group: "Ops", color: "#10B981", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=300&fit=crop", desc: "Unify complex technical subsystems." },
+    { name: "IoT Platform Eng", group: "Tech", color: "#3B82F6", image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=300&h=300&fit=crop", desc: "Connect devices for smarter ecosystems." },
 ];
 
 const FALLBACK_ROADMAP = [
@@ -79,6 +73,215 @@ const FALLBACK_ROADMAP = [
     { "month": 5, "title": "Testing & Polish", "tasks": ["Check for errors", "Make video tour"], "project": "Final Polish", "stack": ["Jest", "Postman"], "concepts": ["Unit Testing", "Debugging"], "extras": "Optimize Performance" },
     { "month": 6, "title": "Job Search", "tasks": ["Send applications", "Practice talking"], "project": "Career Start", "stack": ["LinkedIn", "GitHub"], "concepts": ["Interview Prep", "Networking"], "extras": "Mock Interviews" }
 ];
+
+// --- NETWORK VISUALIZATION COMPONENTS ---
+
+interface Position {
+  cx: number;
+  cy: number;
+}
+
+interface Connection {
+  from: number | 'center';
+  to: number | 'center';
+  color: string;
+}
+
+interface PathPositions {
+  [key: string]: Position;
+}
+
+const CareerNetwork: React.FC<{ paths: any[]; onPathClick: (p: any) => void; isGenerating: boolean }> = ({ paths, onPathClick, isGenerating }) => {
+    const [containerSize, setContainerSize] = useState({ width: 1000, height: 1000 });
+    const [hoveredPathId, setHoveredPathId] = useState<number | string | null>(null);
+    
+    const dimensions = useMemo(() => {
+        const width = window.innerWidth;
+        const baseSize = Math.min(width - 32, 1200);
+        const scale = baseSize / 1000;
+        return {
+            containerSize: baseSize,
+            innerRadius: Math.floor(70 * scale),
+            outerRadius: Math.floor(110 * scale),
+            cardRadius: Math.floor(240 * scale), // Baseline radius for cards
+            cardWidth: Math.floor(160 * scale),
+            cardHeight: Math.floor(64 * scale),
+            centerX: baseSize / 2,
+            centerY: baseSize / 2,
+        };
+    }, [containerSize]);
+
+    useEffect(() => {
+        const updateSize = () => {
+            setContainerSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+        updateSize();
+        window.addEventListener('resize', updateSize);
+        return () => window.removeEventListener('resize', updateSize);
+    }, []);
+
+    const ringPaths = useMemo(() => {
+        // Limit to 10 paths for an Enterprise-grade clean aesthetic
+        return paths.slice(0, 10).map((p, i) => ({
+            ...p,
+            id: p.id || i,
+        }));
+    }, [paths]);
+
+    const positions: any = useMemo(() => {
+        const pos: any = {};
+        const total = ringPaths.length;
+        ringPaths.forEach((p, i) => {
+            const angle = (i / total) * 2 * Math.PI - Math.PI / 2;
+            
+            // Pronounced staggered radius to ensure zero horizontal overlap
+            const currentCardRadius = i % 2 === 0 ? dimensions.cardRadius : dimensions.cardRadius + (90 * (dimensions.containerSize / 1000));
+            
+            // Anchor point on the outer dashed ring
+            pos[`anchor_${p.id}`] = {
+                cx: dimensions.centerX + dimensions.outerRadius * Math.cos(angle),
+                cy: dimensions.centerY + dimensions.outerRadius * Math.sin(angle)
+            };
+            
+            // Card center position on the staggered circle
+            pos[`card_${p.id}`] = {
+                cx: dimensions.centerX + currentCardRadius * Math.cos(angle),
+                cy: dimensions.centerY + currentCardRadius * Math.sin(angle)
+            };
+        });
+        return pos;
+    }, [dimensions, ringPaths]);
+
+    return (
+        <div className="w-full relative flex items-center justify-center overflow-hidden bg-white" style={{ height: dimensions.containerSize }}>
+            {/* Background Grid */}
+            <div className="absolute inset-0 opacity-[0.2]" style={{ backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+            
+            {isGenerating && (
+                <div className="absolute top-10 z-[100] flex items-center gap-2 px-5 py-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-blue-100 text-blue-600 font-black text-[10px] uppercase tracking-widest">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Synchronizing Network...</span>
+                </div>
+            )}
+
+            <div style={{ width: dimensions.containerSize, height: dimensions.containerSize }} className="relative">
+                {/* SVG Connections and Rings */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+                    {/* Inner Dashed Ring */}
+                    <circle 
+                        cx={dimensions.centerX} 
+                        cy={dimensions.centerY} 
+                        r={dimensions.innerRadius} 
+                        fill="none" 
+                        stroke="#D8B4FE" 
+                        strokeWidth="1.5" 
+                        strokeDasharray="4 4" 
+                        className="opacity-40"
+                    />
+                    
+                    {/* Outer Dashed Ring */}
+                    <circle 
+                        cx={dimensions.centerX} 
+                        cy={dimensions.centerY} 
+                        r={dimensions.outerRadius} 
+                        fill="none" 
+                        stroke="#D8B4FE" 
+                        strokeWidth="1.5" 
+                        strokeDasharray="4 4" 
+                        className="opacity-40"
+                    />
+
+                    {/* Anchor Nodes and Connecting Lines */}
+                    {ringPaths.map((p) => {
+                        const anchor = positions[`anchor_${p.id}`];
+                        const card = positions[`card_${p.id}`];
+                        if (!anchor || !card) return null;
+                        
+                        return (
+                            <g key={p.id}>
+                                {/* Node on the ring */}
+                                <circle 
+                                    cx={anchor.cx} 
+                                    cy={anchor.cy} 
+                                    r="4" 
+                                    fill="white" 
+                                    stroke="#A855F7" 
+                                    strokeWidth="2" 
+                                />
+                                {/* Connecting line to card */}
+                                <motion.line 
+                                    x1={anchor.cx} 
+                                    y1={anchor.cy} 
+                                    x2={card.cx} 
+                                    y2={card.cy} 
+                                    stroke={hoveredPathId === p.id ? "#8B5CF6" : "#C4B5FD"} 
+                                    strokeWidth={hoveredPathId === p.id ? "2.5" : "1.5"}
+                                    initial={false}
+                                    animate={{ 
+                                        stroke: hoveredPathId === p.id ? "#8B5CF6" : "#C4B5FD",
+                                        strokeWidth: hoveredPathId === p.id ? 2.5 : 1.5,
+                                        opacity: hoveredPathId === p.id ? 1 : 0.4
+                                    }}
+                                    className="transition-all duration-300"
+                                />
+                            </g>
+                        );
+                    })}
+                </svg>
+
+                {/* Path Cards */}
+                {ringPaths.map((p) => {
+                    const pos = positions[`card_${p.id}`];
+                    if (!pos) return null;
+                    
+                    return (
+                        <motion.div
+                            key={p.id}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onMouseEnter={() => setHoveredPathId(p.id)}
+                            onMouseLeave={() => setHoveredPathId(null)}
+                            className="absolute z-30 cursor-pointer group"
+                            style={{ 
+                                left: pos.cx, 
+                                top: pos.cy, 
+                                width: dimensions.cardWidth,
+                                height: dimensions.cardHeight,
+                                transform: 'translate(-50%, -50%)' 
+                            }}
+                            onClick={() => onPathClick(p)}
+                        >
+                            <div className="w-full h-full bg-white/95 backdrop-blur-md rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 p-2.5 flex items-center gap-3 hover:shadow-[0_12px_30px_rgba(168,85,247,0.08)] hover:border-purple-200 transition-all duration-500 group-active:scale-95">
+                                <div 
+                                    className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-50 shadow-sm flex items-center justify-center bg-gray-50"
+                                    style={{ backgroundColor: `${p.color}10` }}
+                                >
+                                    <img src={p.image} alt="" className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="text-[10px] font-bold text-slate-700 uppercase tracking-tight truncate leading-none mb-1">
+                                        {p.name}
+                                    </h4>
+                                    <p className="text-[8px] text-slate-400 font-medium leading-tight line-clamp-2">
+                                        {p.desc || p.description || "Synthesizing career trajectory..."}
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    );
+                })}
+
+                {/* Central Hub Area (Empty as per design) */}
+                <div 
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ width: dimensions.innerRadius * 2, height: dimensions.innerRadius * 2 }}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-100/10 via-blue-100/10 to-pink-100/10 rounded-full blur-3xl opacity-30" />
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // --- ROADMAP DETAIL MODAL ---
 const RoadmapDetailModal: React.FC<{ month: any; onClose: () => void }> = ({ month, onClose }) => {
@@ -203,70 +406,84 @@ const RoadmapDetailModal: React.FC<{ month: any; onClose: () => void }> = ({ mon
 const RoadmapCard: React.FC<{ month: any; idx: number; isLast: boolean; onDetails: (m: any) => void }> = ({ month, idx, isLast, onDetails }) => {
     return (
         <motion.div 
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative pl-12 sm:pl-32 py-6 group"
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: idx * 0.1 }}
+            className="relative pl-8 sm:pl-40 pb-16 group/card"
         >
-            {/* Timeline Line & Node */}
-            {!isLast && <div className="absolute left-[16px] sm:left-[56px] top-14 bottom-[-24px] w-[2px] bg-slate-100" />}
+            {/* Architectural Vertical Connector */}
+            {!isLast && (
+                <div className="absolute left-[15px] sm:left-[60px] top-12 bottom-0 w-[1px] bg-slate-200 transition-colors duration-500 group-hover/card:bg-blue-400" />
+            )}
             
-            <motion.div 
-                initial={{ scale: 0, borderColor: "#e2e8f0" }}
-                whileInView={{ scale: 1, borderColor: "#3b82f6", backgroundColor: "#eff6ff" }}
-                viewport={{ once: true, margin: "-150px" }}
-                transition={{ duration: 0.4 }}
-                className="absolute left-[11px] sm:left-[51px] top-12 w-3 h-3 bg-white border-2 border-slate-300 rounded-full z-10 shadow-[0_0_0_4px_white]" 
-            />
+            {/* Engineering Node */}
+            <div className="absolute left-[10px] sm:left-[55px] top-10 w-[12px] h-[12px] rounded-full bg-white border-2 border-slate-300 z-10 shadow-[0_0_0_4px_white] transition-all duration-500 group-hover/card:border-blue-600 group-hover/card:shadow-[0_0_0_4px_white,0_0_15px_rgba(37,99,235,0.4)]" />
 
-            <div className="absolute left-0 sm:left-0 top-11 w-8 sm:w-24 text-right pr-4 hidden sm:block">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Month {month.month}</span>
+            {/* Technical Month Indicator */}
+            <div className="absolute left-0 sm:left-0 top-9 w-24 hidden sm:flex flex-col items-end pr-8 transition-all duration-500">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 transition-colors group-hover/card:text-amber-500">Phase</span>
+                <span className="text-2xl font-bold text-slate-800 tabular-nums leading-none transition-colors group-hover/card:text-amber-600">{month.month.toString().padStart(2, '0')}</span>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 hover:shadow-md hover:border-blue-200 transition-all duration-300 relative overflow-hidden">
-                <motion.div 
-                    initial={{ width: 0 }}
-                    whileInView={{ width: "4px" }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="absolute left-0 top-0 bottom-0 bg-blue-500"
-                />
+            {/* Professional Content Card */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-10 hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:border-amber-200 transition-all duration-500 relative overflow-hidden group/card">
+                {/* Dynamic Line Effect on Hover (Contrast Color) */}
+                <div className="absolute left-0 top-0 bottom-0 w-0 bg-amber-500 transition-all duration-500 group-hover/card:w-1.5 shadow-[2px_0_15px_rgba(245,158,11,0.4)] z-20" />
                 
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-1.5">
-                            <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{month.title}</h3>
-                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase tracking-wider border border-blue-100/50">Phase {month.month}</span>
+                {/* Architectural Grid Background (Subtle) */}
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                
+                <div className="flex flex-col xl:flex-row justify-between items-start gap-8 relative z-10">
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-4 mb-4">
+                            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight group-hover/card:text-amber-600 transition-colors duration-300">{month.title}</h3>
+                            <span className="shrink-0 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-black rounded-lg uppercase tracking-widest border border-amber-100">Validated</span>
                         </div>
-                        <p className="text-sm text-slate-500 font-medium">{month.details}</p>
+                        <p className="text-slate-500 text-[13px] font-medium leading-relaxed max-w-2xl">{month.details || month.tasks?.[0] || "Synthesizing specialized technical curriculum and operational milestones."}</p>
                     </div>
+                    
                     <button 
                         onClick={() => onDetails(month)}
-                        className="shrink-0 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors flex items-center gap-2 shadow-sm"
+                        className="shrink-0 group/btn px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all flex items-center gap-3 shadow-lg shadow-slate-200 active:scale-95"
                     >
-                        View Specifications <ArrowRight className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-black uppercase tracking-widest">Analysis Specs</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                     </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/80 rounded-lg p-5 border border-slate-100">
-                    <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                            <Terminal className="w-3.5 h-3.5 text-slate-400" /> Technical Requirements
-                        </h4>
+                {/* Technical Specifications Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-10 relative z-10">
+                    {/* Stack Specification */}
+                    <div className="bg-slate-50/50 rounded-xl p-6 border border-slate-100/50">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-sm">
+                                <Terminal className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Technical Stack</span>
+                        </div>
                         <div className="flex flex-wrap gap-2">
                             {(Array.isArray(month.stack) ? month.stack : (month.stack || '').split(',')).map((s: any, i: number) => (
-                                <span key={i} className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 text-[11px] font-medium rounded shadow-sm hover:border-blue-200 hover:bg-blue-50 transition-colors">{s.toString().trim()}</span>
+                                <span key={i} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg shadow-sm hover:border-blue-400 hover:text-blue-600 transition-all cursor-default">
+                                    {s.toString().trim()}
+                                </span>
                             ))}
                         </div>
                     </div>
-                    <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                            <TrendingUp className="w-3.5 h-3.5 text-slate-400" /> Core Competencies
-                        </h4>
+
+                    {/* Competency Specification */}
+                    <div className="bg-slate-50/50 rounded-xl p-6 border border-slate-100/50">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-sm">
+                                <TrendingUp className="w-4 h-4 text-green-600" />
+                            </div>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Core Competencies</span>
+                        </div>
                         <div className="flex flex-wrap gap-2">
                             {(Array.isArray(month.concepts) ? month.concepts : (month.concepts || '').split(',')).map((c: any, i: number) => (
-                                <span key={i} className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 text-[11px] font-medium rounded shadow-sm hover:border-blue-200 hover:bg-blue-50 transition-colors">{c.toString().trim()}</span>
+                                <span key={i} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg shadow-sm hover:border-green-400 hover:text-green-600 transition-all cursor-default">
+                                    {c.toString().trim()}
+                                </span>
                             ))}
                         </div>
                     </div>
@@ -285,25 +502,28 @@ const RoadmapSection: React.FC<{
     navigate: any;
 }> = ({ roadmapData, selectedPath, isGeneratingRoadmap, handlePathClick, onDetails, navigate }) => {
     return (
-        <section className="w-full max-w-5xl mx-auto py-16 px-6 relative bg-white">
-            <div className="mb-12 border-b border-slate-200 pb-8">
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="w-2 h-2 bg-blue-600 rounded-sm" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Enterprise Architecture Protocol</span>
+        <section className="w-full max-w-6xl mx-auto py-24 px-6 relative bg-white">
+            {/* Section Heading with Technical Specs */}
+            <div className="mb-20">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-[1px] bg-blue-600" />
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">Operational Protocol 741</span>
                 </div>
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Career Architecture Blueprint</h2>
-                        <p className="text-slate-500 mt-2 text-sm max-w-2xl font-medium leading-relaxed">Structured 6-month progression roadmap aligned with industry-standard technical requirements and professional competencies.</p>
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+                    <div className="max-w-3xl">
+                        <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-[1.1] mb-6">Career Architecture<br/><span className="text-slate-400">Blueprint</span></h2>
+                        <p className="text-slate-500 text-base sm:text-lg font-medium leading-relaxed">
+                            A validated 6-month technical progression strategy engineered for professional excellence and industry standard compliance.
+                        </p>
                     </div>
                     {selectedPath && (
-                        <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4 max-w-sm w-full md:w-auto shadow-sm">
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white shrink-0 border border-slate-200">
-                                {selectedPath.image ? <img src={selectedPath.image} alt="path" className="w-full h-full object-cover grayscale opacity-90" /> : null}
+                        <div className="bg-slate-900 rounded-2xl p-6 lg:p-8 flex items-center gap-6 shadow-2xl shadow-slate-200 lg:min-w-[400px]">
+                            <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800 shrink-0">
+                                <img src={selectedPath.image} alt="" className="w-full h-full object-cover grayscale opacity-80" />
                             </div>
                             <div>
-                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Target Discipline</p>
-                                <p className="text-sm font-semibold text-slate-900 leading-tight mt-0.5">{selectedPath.name}</p>
+                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Selected Discipline</p>
+                                <p className="text-xl font-bold text-white leading-tight">{selectedPath.name}</p>
                             </div>
                         </div>
                     )}
@@ -312,13 +532,16 @@ const RoadmapSection: React.FC<{
 
             <div className="relative">
                 {isGeneratingRoadmap ? (
-                    <div className="py-32 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
-                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-4" />
-                        <h3 className="text-sm font-bold text-slate-900">Compiling Blueprint Architecture...</h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">Analyzing industry standards and technical prerequisites.</p>
+                    <div className="py-40 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-[2rem] border-dashed">
+                        <div className="relative w-16 h-16 mb-8">
+                            <div className="absolute inset-0 border-4 border-blue-50 rounded-full" />
+                            <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Compiling System Architecture</h3>
+                        <p className="text-sm text-slate-500 mt-2 font-medium">Synchronizing with industry standard technical vectors...</p>
                     </div>
                 ) : roadmapData && roadmapData.length > 0 ? (
-                    <div className="space-y-0">
+                    <div className="space-y-0 relative">
                         {roadmapData.map((month: any, idx: number) => (
                             <RoadmapCard 
                                 key={idx} 
@@ -330,21 +553,32 @@ const RoadmapSection: React.FC<{
                         ))}
                     </div>
                 ) : selectedPath ? (
-                    <div className="py-24 text-center bg-white border border-slate-200 rounded-2xl shadow-sm">
-                        <Cpu className="w-8 h-8 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">Initialize Architecture Protocol</h3>
-                        <p className="text-sm text-slate-500 max-w-md mx-auto mb-8 font-medium">Execution of this protocol will synthesize a validated technical roadmap for {selectedPath.name}.</p>
-                        <button onClick={() => handlePathClick(selectedPath)} className="px-6 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2 mx-auto">
-                            Generate Architecture Blueprint <ArrowRight className="w-4 h-4" />
+                    <div className="py-32 text-center bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.04)] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-10 opacity-[0.05] pointer-events-none">
+                            <Network className="w-64 h-64" />
+                        </div>
+                        <Cpu className="w-12 h-12 text-blue-600 mx-auto mb-8 animate-pulse" />
+                        <h3 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">Protocol Ready for Initiation</h3>
+                        <p className="text-slate-500 max-w-xl mx-auto mb-12 text-lg font-medium leading-relaxed px-6">
+                            Execute the synthesis engine to generate a validated technical roadmap for <span className="text-slate-900 font-bold">{selectedPath.name}</span>.
+                        </p>
+                        <button 
+                            onClick={() => handlePathClick(selectedPath)} 
+                            className="px-10 py-5 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center gap-4 mx-auto"
+                        >
+                            Initiate Synthesis Engine <ArrowRight className="w-5 h-5" />
                         </button>
                     </div>
                 ) : (
-                    <div className="py-24 text-center bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
-                        <Network className="w-8 h-8 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-sm font-semibold text-slate-400">Select a discipline from the network vector above to review its technical blueprint.</h3>
+                    <div className="py-32 text-center bg-slate-50 border border-slate-200 rounded-[2.5rem] border-dashed">
+                        <div className="p-6 bg-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-8 shadow-sm">
+                            <Network className="w-8 h-8 text-slate-300" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-400 tracking-tight uppercase px-6">Select a network vector above to review technical specifications.</h3>
                     </div>
                 )}
             </div>
+
 
             {/* FINAL CTA */}
             {roadmapData && !isGeneratingRoadmap && (
@@ -682,69 +916,12 @@ const CareerOnboarding: React.FC = () => {
 
         if (activeTab === 'Paths') {
             return (
-                <div className="w-full min-h-screen bg-[#F8F9FA] pt-24 sm:pt-28">
-                    <div className="h-[80vh] w-full relative flex items-center justify-center overflow-hidden border-b border-gray-100 bg-white">
-                        {/* ENTERPRISE DOT GRID BACKGROUND */}
-                        <div className="absolute inset-0 opacity-[0.3]" style={{ backgroundImage: 'radial-gradient(#d1d5db 1.2px, transparent 0)', backgroundSize: '40px 40px' }} />
-                        
-                        {isGeneratingPaths && (
-                           <div className="absolute top-10 z-[100] flex items-center gap-2 px-5 py-2.5 bg-white/95 backdrop-blur-md rounded-full shadow-2xl border border-blue-100 text-blue-600 font-black text-[11px] uppercase tracking-widest">
-                               <Loader2 className="w-4 h-4 animate-spin" />
-                               <span>Synthesizing Enterprise Network...</span>
-                           </div>
-                        )}
-
-                        {/* ENTERPRISE CENTRAL HUB WITH NEON GLOW */}
-                        <div className="relative z-20">
-                            {/* MULTI-COLOR NEON GLOW EFFECT */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full opacity-35 blur-[100px] bg-gradient-to-br from-green-300 via-cyan-400 to-blue-500 animate-pulse" />
-                            <div className="relative w-80 h-80 rounded-full bg-white shadow-[0_0_120px_rgba(34,197,94,0.15)] border border-gray-50 flex flex-col items-center justify-center text-center p-10 z-10">
-                                <div className="text-gray-400 text-[14px] font-medium leading-relaxed mb-4">Explore paths<br/><span className="text-gray-300">based on your goals</span></div>
-                                <div className="flex items-center gap-6 text-3xl mb-4 grayscale opacity-80">
-                                    <GraduationCap className="w-8 h-8 text-blue-500" />
-                                    <Dumbbell className="w-8 h-8 text-green-500" />
-                                </div>
-                                <ChevronDown className="w-6 h-6 text-gray-200 animate-bounce mt-4" />
-                            </div>
-                        </div>
-                        <div className="absolute inset-0">
-                            {(generatedPaths.length > 0 ? generatedPaths : DEFAULT_PATHS).map((node, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    onMouseEnter={() => setHoveredPath(node)}
-                                    onMouseLeave={() => setHoveredPath(null)}
-                                    onClick={() => handlePathClick(node)}
-                                    className="absolute flex items-center gap-3 cursor-pointer group z-30"
-                                    style={{ 
-                                        left: `calc(50% + ${node.pos?.x || 0}px)`, 
-                                        top: `calc(50% + ${node.pos?.y || 0}px)`,
-                                        transform: 'translate(-50%, -50%)' 
-                                    }}
-                                >
-                                    <motion.div 
-                                        whileHover={{ scale: 1.5, y: -8, boxShadow: `0 0 20px ${node.color || '#3B82F6'}55` }}
-                                        className="relative w-10 h-10 rounded-full shadow-xl border-2 border-white overflow-hidden transition-all bg-gray-100"
-                                    >
-                                        <img 
-                                            src={node.image || "https://images.unsplash.com/photo-1484417894907-623942c8ee29?w=200&h=200&fit=crop"} 
-                                            alt={node.name} 
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                e.currentTarget.src = "https://images.unsplash.com/photo-1484417894907-623942c8ee29?w=200&h=200&fit=crop";
-                                            }}
-                                        />
-                                        <div className="absolute inset-0 opacity-20 border-[3px] rounded-full pointer-events-none" style={{ borderColor: node.color }} />
-                                    </motion.div>
-                                    <span className="text-[12px] font-black text-[#111] transition-all group-hover:text-blue-600 whitespace-nowrap bg-white/70 backdrop-blur-[4px] px-2.5 py-1 rounded-lg border border-white/40 shadow-sm uppercase tracking-wide">
-                                        {node.name}
-                                    </span>
-                                </motion.div>
-                            ))}
-                        </div>
-                        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-                    </div>
+                <div className="w-full min-h-screen bg-white pt-24 sm:pt-28">
+                    <CareerNetwork 
+                        paths={generatedPaths.length > 0 ? generatedPaths : DEFAULT_PATHS} 
+                        onPathClick={handlePathClick}
+                        isGenerating={isGeneratingPaths}
+                    />
 
                     <RoadmapSection 
                         roadmapData={roadmapData} 
