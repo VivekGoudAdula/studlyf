@@ -11,6 +11,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
 
     if (user) {
+        console.log("[PublicRoute] User already logged in. Role:", role);
         // Wait for role to be fetched before redirecting
         if (role === null && loading === false) {
             return <div className="h-screen flex items-center justify-center font-mono text-xs tracking-widest uppercase text-[#7C3AED]">Identifying Authority...</div>;
@@ -22,6 +23,11 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         if (role === 'hiring_partner') {
             return <Navigate to="/dashboard/partner" replace />;
         }
+        if (role === 'institution') {
+            console.log("[PublicRoute] Redirecting Institution to dashboard");
+            return <Navigate to="/institution-dashboard" replace />;
+        }
+        console.log("[PublicRoute] Redirecting Student/Default to learner dashboard");
         return <Navigate to="/dashboard/learner" replace />;
     }
 

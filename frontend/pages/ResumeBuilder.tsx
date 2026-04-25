@@ -838,6 +838,7 @@ export default function ResumeBuilder() {
             <div className="min-h-screen bg-slate-50 flex flex-col">
                 <style>{styles}</style>
                 <Navigation />
+                <Navigation />
                 <div className="flex-1 overflow-y-auto premium-scrollbar pt-32 pb-20">
                     <div className="max-w-7xl mx-auto">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -1365,6 +1366,7 @@ export default function ResumeBuilder() {
             </nav>
 
             <header className="editor-header">
+            <header className="editor-header">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
@@ -1414,6 +1416,7 @@ export default function ResumeBuilder() {
             </header>
 
             <main className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex overflow-hidden">
                 {/* Left Sidebar - Editor Controls */}
                 <div className="w-[450px] bg-white border-r border-slate-200 flex flex-col shadow-xl z-10">
                     <div className="flex-1 overflow-y-auto premium-scrollbar p-8">
@@ -1447,6 +1450,36 @@ export default function ResumeBuilder() {
                                 <div className="col-span-2">
                                     <label className="hr-label">Location</label>
                                     <input className="hr-input" value={resumeData.personalInfo.address} onChange={(e) => updatePersonalInfo('address', e.target.value)} />
+                                </div>
+                            </div>
+
+                            <div className="mt-8">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-sm font-bold text-slate-800">Links & Social</h4>
+                                    <button onClick={addLink} className="text-purple-600 hover:text-purple-700 font-bold text-xs flex items-center gap-1">
+                                        <Plus size={14} /> Add Link
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {resumeData.personalInfo.links.map((link, i) => (
+                                        <div key={i} className="flex gap-2 group">
+                                            <input 
+                                                placeholder="Label (e.g. LinkedIn)" 
+                                                className="w-1/3 hr-input !py-2 !px-3" 
+                                                value={link.label} 
+                                                onChange={(e) => updateLink(i, 'label', e.target.value)} 
+                                            />
+                                            <input 
+                                                placeholder="URL" 
+                                                className="flex-1 hr-input !py-2 !px-3" 
+                                                value={link.url} 
+                                                onChange={(e) => updateLink(i, 'url', e.target.value)} 
+                                            />
+                                            <button onClick={() => removeLink(i)} className="text-slate-300 hover:text-red-500 transition-colors">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </AccordionItem>
@@ -1724,7 +1757,6 @@ export default function ResumeBuilder() {
                 </AccordionItem>
                     </div>
                 </div>
-
                 {/* Right Preview Area */}
                 <div className="flex-1 resume-preview-container overflow-y-auto premium-scrollbar flex flex-col items-center">
                     <div className="resume-paper animate-in fade-in zoom-in-95 duration-500">
@@ -1776,22 +1808,22 @@ export default function ResumeBuilder() {
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto premium-scrollbar p-6">
-                                <div className="aspect-[4/3] bg-purple-50 rounded-2xl mb-8 flex items-center justify-center overflow-hidden relative border border-purple-100">
-                                    <div className="absolute top-4 left-4 bg-slate-900 h-8 w-8 rounded-lg flex items-center justify-center text-white shadow-lg">
-                                        <Sparkles size={18} />
-                                    </div>
-                                    {/* Symbolic Illustration mockup */}
-                                    <div className="animate-pulse flex flex-col items-center gap-4">
-                                        <div className="h-24 w-16 bg-white rounded-lg shadow-sm border border-purple-200 scale-110"></div>
-                                        <div className="h-2 w-32 bg-purple-200 rounded-full"></div>
-                                        <div className="h-2 w-24 bg-purple-200 rounded-full"></div>
-                                    </div>
-                                </div>
 
-                                <h2 className="text-2xl font-bold text-slate-900 mb-6">Introducing AI powered reviews</h2>
+                    <div className="flex-1 overflow-y-auto premium-scrollbar p-6">
+                        <div className="aspect-[4/3] bg-purple-50 rounded-2xl mb-8 flex items-center justify-center overflow-hidden relative border border-purple-100">
+                            <div className="absolute top-4 left-4 bg-slate-900 h-8 w-8 rounded-lg flex items-center justify-center text-white shadow-lg">
+                                <Sparkles size={18} />
+                            </div>
+                            {/* Symbolic Illustration mockup */}
+                            <div className="animate-pulse flex flex-col items-center gap-4">
+                                <div className="h-24 w-16 bg-white rounded-lg shadow-sm border border-purple-200 scale-110"></div>
+                                <div className="h-2 w-32 bg-purple-200 rounded-full"></div>
+                                <div className="h-2 w-24 bg-purple-200 rounded-full"></div>
+                            </div>
+                        </div>
 
-                                <ul className="space-y-6 mb-10">
+                        <h2 className="text-2xl font-bold text-slate-900 mb-6">Introducing AI powered reviews</h2>
+                        <ul className="space-y-6 mb-10">
                                     <li className="flex gap-4">
                                         <div className="h-2 w-2 rounded-full bg-slate-800 mt-2.5 shrink-0" />
                                         <div className="text-slate-600 text-[15px] leading-relaxed">

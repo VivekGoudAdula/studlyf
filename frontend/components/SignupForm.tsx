@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, db } from '../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -21,12 +21,17 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const selectedRole = 'student';
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const selectedRole = (queryParams.get('role') as string) || 'student';
+
     const ADMIN_EMAIL = 'admin@studlyf.com';
 
     const redirectByRole = (role: string) => {
         if (role === 'super_admin' || role === 'admin') {
             navigate('/admin');
+        } else if (role === 'institution') {
+            navigate('/institution-dashboard');
         } else {
             navigate('/dashboard/learner');
         }
@@ -45,6 +50,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
             const user = userCredential.user;
             await updateProfile(user, { displayName: name });
             const finalRole = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'super_admin' : selectedRole;
+            console.log("[Signup] Attempting to save user to Firestore with role:", finalRole);
+            localStorage.setItem(`userRole_${user.uid}`, finalRole);
             await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
                 displayName: name,
@@ -53,6 +60,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                 createdAt: new Date().toISOString(),
                 status: 'active',
             });
+            console.log("[Signup] Successfully saved user role to Firestore.");
             redirectByRole(finalRole);
         } catch (err: any) {
             setError(err.message || 'Failed to create account');

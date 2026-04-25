@@ -343,22 +343,35 @@ const LandingHero: React.FC = () => {
                         }
                     `}</style>
 
-                    <div className="trynow-wrap relative">
+                    <div className="trynow-wrap relative flex flex-col sm:flex-row gap-6">
                         <div className="trynow-glow" />
                         <button
                             className="trynow-btn"
-                            onClick={() => navigate('/signup')}
+                            onClick={() => navigate('/signup?role=student')}
                         >
-                            {/* Floating inner glowing orbs */}
                             <span className="trynow-orb trynow-orb1" />
                             <span className="trynow-orb trynow-orb2" />
                             <span className="trynow-orb trynow-orb3" />
 
-                            <span className="trynow-label">Try now</span>
+                            <span className="trynow-label">For Students</span>
                             <span className="arrow-icon">
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                                     <path d="M4 10h12M11 5l5 5-5 5"
                                         stroke="white" strokeWidth="2.2"
+                                        strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </span>
+                        </button>
+
+                        <button
+                            className="trynow-btn !bg-white !text-[#7c3aed] border-2 border-[#7c3aed] shadow-xl hover:!bg-[#f5f3ff]"
+                            onClick={() => navigate('/signup?role=institution')}
+                        >
+                            <span className="trynow-label">For Institutions</span>
+                            <span className="arrow-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M4 10h12M11 5l5 5-5 5"
+                                        stroke="#7c3aed" strokeWidth="2.2"
                                         strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                             </span>

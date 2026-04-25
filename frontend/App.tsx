@@ -49,6 +49,7 @@ import LinkedListPage from './pages/LinkedListPage';
 import BSTPage from './pages/BSTPage';
 import HashTablePage from './pages/HashTablePage';
 import AITools from './pages/AITools';
+import InstitutionDashboard from './pages/institution-dashboard/InstitutionDashboard';
 
 
 // Unique Components
@@ -85,7 +86,7 @@ const ScrollToTop = () => {
 const App: React.FC = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, role, loading } = useAuth();
 
   const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboard = pathname.startsWith('/dashboard');
@@ -99,19 +100,35 @@ const App: React.FC = () => {
                        ['/stack', '/queue', '/linked-list', '/bst', '/hash-table'].includes(pathname);
   const isCareerOnboarding = pathname === '/learn/career-onboarding';
 
-  // Admin Redirect Logic
+  // Global Redirect Logic
   useEffect(() => {
-    if (!loading && user?.email?.toLowerCase() === 'admin@studlyf.com') {
+    if (loading) return;
+    console.log("[AuthDebug] Role:", role, "Path:", pathname);
+
+    if (user?.email?.toLowerCase() === 'admin@studlyf.com') {
       if (!pathname.startsWith('/admin')) {
         navigate('/admin', { replace: true });
       }
+      return;
     }
-  }, [user, pathname, loading, navigate]);
+
+    if (user && role) {
+      if (role === 'institution') {
+        if (!pathname.startsWith('/institution-dashboard') && (pathname.startsWith('/dashboard') || pathname === '/')) {
+          navigate('/institution-dashboard', { replace: true });
+        }
+      } else if (role === 'student') {
+        if (pathname.startsWith('/institution-dashboard')) {
+          navigate('/dashboard/learner', { replace: true });
+        }
+      }
+    }
+  }, [user, role, pathname, loading, navigate]);
 
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
 
-      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer && !isCareerOnboarding) && <Navigation />}
+      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer && !isCareerOnboarding && !pathname.startsWith('/institution-dashboard')) && <Navigation />}
 
       <main className="flex-grow">
         <Suspense fallback={
@@ -166,10 +183,15 @@ const App: React.FC = () => {
             <Route path="/signup" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/ai-tools" element={<AITools />} />
 
-            <Route path="/dashboard" element={<ProtectedRoute><LearnerDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                {role === 'institution' ? <Navigate to="/institution-dashboard" replace /> : <LearnerDashboard />}
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
+            <Route path="/institution-dashboard" element={<ProtectedRoute><InstitutionDashboard /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
             {/* Admin */}

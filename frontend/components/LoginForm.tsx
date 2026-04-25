@@ -28,8 +28,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
+                if (userData.role) {
+                    localStorage.setItem(`userRole_${user.uid}`, userData.role);
+                }
                 if (userData.role === 'super_admin' || userData.role === 'admin') {
                     navigate('/admin');
+                } else if (userData.role === 'institution') {
+                    navigate('/institution-dashboard');
                 } else {
                     navigate('/dashboard/learner');
                 }

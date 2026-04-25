@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, GraduationCap, Building2, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 
 const cardData = [
     {
@@ -61,6 +62,7 @@ const cardData = [
 ];
 
 const WhoWeServe: React.FC = () => {
+    const { user, role } = useAuth();
     const navigate = useNavigate();
     return (
         <section className="relative w-full py-10 md:py-12 overflow-hidden bg-white font-['Poppins']">
@@ -190,7 +192,33 @@ const WhoWeServe: React.FC = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.02, y: -2 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth' })}
+                                        onClick={() => {
+                                            console.log("[WhoWeServe] Card clicked:", card.title, "Current User:", user?.email, "Current Role:", role);
+                                            if (user) {
+                                                if (role === 'institution') {
+                                                    console.log("[WhoWeServe] Routing to Institution Dashboard");
+                                                    navigate('/institution-dashboard');
+                                                } else if (role === 'super_admin' || role === 'admin') {
+                                                    navigate('/admin');
+                                                } else if (role === 'student') {
+                                                    console.log("[WhoWeServe] Routing to Learner Dashboard");
+                                                    navigate('/dashboard/learner');
+                                                } else {
+                                                    console.log("[WhoWeServe] Role not yet loaded or unknown, waiting for global redirect...");
+                                                }
+                                                return;
+                                            }
+
+                                            if (card.title === 'Students') {
+                                                console.log("[WhoWeServe] No user. Routing to Student Signup");
+                                                navigate('/signup?role=student');
+                                            } else if (card.title === 'Institutions') {
+                                                console.log("[WhoWeServe] No user. Routing to Institution Signup");
+                                                navigate('/signup?role=institution');
+                                            } else {
+                                                navigate('/login');
+                                            }
+                                        }}
                                         className={`mt-8 w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border-2 text-white shadow-lg glow-btn
                                             ${card.highlight
                                                 ? 'bg-purple-600 border-purple-600 shadow-purple-600/20 hover:bg-purple-700'

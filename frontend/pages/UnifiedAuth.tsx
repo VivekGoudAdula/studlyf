@@ -20,7 +20,10 @@ const UnifiedAuth: React.FC = () => {
     const handleToggle = () => {
         const newIsLogin = !isLogin;
         setIsLogin(newIsLogin);
-        navigate(newIsLogin ? '/login' : '/signup');
+        navigate({
+            pathname: newIsLogin ? '/login' : '/signup',
+            search: location.search
+        });
     };
 
     return (
