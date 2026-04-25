@@ -190,7 +190,7 @@ const WhoWeServe: React.FC = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.02, y: -2 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => navigate('/signup')}
+                                        onClick={() => document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth' })}
                                         className={`mt-8 w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border-2 text-white shadow-lg glow-btn
                                             ${card.highlight
                                                 ? 'bg-purple-600 border-purple-600 shadow-purple-600/20 hover:bg-purple-700'
