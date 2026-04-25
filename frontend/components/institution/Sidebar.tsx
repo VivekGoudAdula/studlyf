@@ -8,8 +8,12 @@ import {
     UserCircle, 
     Download, 
     Settings,
-    Plus
+    Plus,
+    LogOut
 } from 'lucide-react';
+import { auth } from '../../firebase';
+import { useNavigate } from 'react-router-dom';
+
 
 interface SidebarProps {
     activeTab: string;
@@ -28,6 +32,18 @@ const sidebarItems = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpportunity }) => {
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        try {
+            await auth.signOut();
+            navigate('/login');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
+
     return (
         <div className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 pt-8">
             <div className="p-6 flex items-center gap-3">
@@ -63,13 +79,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
             </nav>
 
             <div className="p-4 mt-auto border-t border-gray-50">
-                <div className="bg-purple-50 p-4 rounded-2xl">
+                <div className="bg-purple-50 p-4 rounded-2xl mb-4">
                     <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-1">Support</p>
                     <p className="text-xs text-gray-600 mb-3">Facing any issues? Our team is here to help.</p>
                     <button className="text-xs font-bold text-[#6C3BFF] hover:underline">Contact Support</button>
                 </div>
+
+                <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-red-500 hover:bg-red-50 transition-all mt-2"
+                >
+                    <LogOut size={20} className="text-red-500" />
+                    Logout
+                </button>
             </div>
         </div>
+
     );
 };
 
