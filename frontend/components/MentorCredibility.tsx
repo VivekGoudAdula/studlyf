@@ -119,6 +119,7 @@ const MentorCredibility: React.FC = () => {
                                     ${hoveredLogo === logo.name ? 'scale-115 shadow-2xl border-purple-200 z-50' : 'z-10'}
                                     cursor-pointer p-4 group
                                 `}
+                                onClick={() => document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth' })}
                             >
                                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <img
@@ -179,7 +180,10 @@ const MentorCredibility: React.FC = () => {
                                 transition={{ duration: 0.5 }}
                                 className="flex justify-center"
                             >
-                                <div className="w-24 h-24 bg-white/60 backdrop-blur-md rounded-full shadow-lg border border-white flex items-center justify-center p-4">
+                                <div 
+                                    className="w-24 h-24 bg-white/60 backdrop-blur-md rounded-full shadow-lg border border-white flex items-center justify-center p-4 cursor-pointer hover:scale-110 transition-transform duration-300"
+                                    onClick={() => document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth' })}
+                                >
                                     <img
                                         src={`/images/${logo.fileName}`}
                                         alt={logo.name}
@@ -198,7 +202,10 @@ const MentorCredibility: React.FC = () => {
                     <div className="grid grid-cols-3 gap-6">
                         {companyLogos.slice(0, 12).map((logo) => (
                             <div key={logo.name} className="flex flex-col items-center gap-2">
-                                <div className="w-20 h-20 bg-white/60 backdrop-blur-md rounded-full shadow-md border border-white flex items-center justify-center p-3">
+                                <div 
+                                    className="w-20 h-20 bg-white/60 backdrop-blur-md rounded-full shadow-md border border-white flex items-center justify-center p-3 cursor-pointer hover:scale-110 transition-transform duration-300"
+                                    onClick={() => document.getElementById('enquiry-form')?.scrollIntoView({ behavior: 'smooth' })}
+                                >
                                     <img
                                         src={`/images/${logo.fileName}`}
                                         alt={logo.name}

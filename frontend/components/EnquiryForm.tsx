@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence, useSpring } from 'framer-motion';
-import { Send, User, Mail, Globe, Phone, MessageSquare, HelpCircle, Check } from 'lucide-react';
+import { Send, User, Mail, Globe, Phone, MessageSquare, HelpCircle, Check, Loader2 } from 'lucide-react';
 import InteractiveCreature from './InteractiveCreature';
+import emailjs from '@emailjs/browser';
 
 const EnquiryForm: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const EnquiryForm: React.FC = () => {
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [isVerified, setIsVerified] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Mouse Tilt Effect
     const containerRef = useRef<HTMLDivElement>(null);
@@ -42,26 +44,71 @@ const EnquiryForm: React.FC = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isVerified) {
             alert('Please complete the human verification to proceed.');
             return;
         }
-        setIsSubmitted(true);
-        
-        // Reset form data
-        setFormData({
-            name: '',
-            email: '',
-            country: '',
-            phone: '',
-            description: '',
-            questions: ''
-        });
-        setIsVerified(false);
 
-        setTimeout(() => setIsSubmitted(false), 5000);
+        setIsSubmitting(true);
+
+        const serviceId = import.meta.env.VITE_EMAIL_JS_SERVICE_ID;
+        const templateId = import.meta.env.VITE_EMAIL_JS_TEMPLATE_ID;
+        const publicKey = import.meta.env.VITE_EMAIL_JS_USER_ID;
+
+        // Clean any potential whitespace from environment variables
+        const cleanServiceId = serviceId?.trim();
+        const cleanTemplateId = templateId?.trim();
+        const cleanPublicKey = publicKey?.trim();
+
+        if (!cleanServiceId || !cleanTemplateId || !cleanPublicKey) {
+            console.error('Missing EmailJS Configuration! Please check your .env file.', { 
+                serviceId: cleanServiceId, 
+                templateId: cleanTemplateId, 
+                publicKey: cleanPublicKey ? '***' : undefined 
+            });
+            alert('Email service is not configured properly.');
+            setIsSubmitting(false);
+            return;
+        }
+
+        const templateParams = {
+            to_email: 'vishnumaxpolla32@gmail.com',
+            from_name: formData.name,
+            from_email: formData.email,
+            country: formData.country,
+            phone: formData.phone,
+            description: formData.description,
+            questions: formData.questions,
+            // Fallbacks in case the template uses different variable names
+            name: formData.name,
+            email: formData.email,
+            message: formData.questions
+        };
+
+        try {
+            await emailjs.send(cleanServiceId, cleanTemplateId, templateParams, {
+                publicKey: cleanPublicKey
+            });
+            
+            setIsSubmitted(true);
+            setFormData({
+                name: '',
+                email: '',
+                country: '',
+                phone: '',
+                description: '',
+                questions: ''
+            });
+            setIsVerified(false);
+            setTimeout(() => setIsSubmitted(false), 5000);
+        } catch (error: any) {
+            console.error('Failed to send email. Status:', error?.status, 'Text:', error?.text, 'Error:', error);
+            alert(`Failed to send inquiry: ${error?.text || 'Unknown error. Check console.'}`);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const inputClasses = (fieldName: string) => `
@@ -252,14 +299,24 @@ const EnquiryForm: React.FC = () => {
                         <motion.div className="pt-4 flex justify-center">
                             <motion.button
                                 type="submit"
-                                className="px-16 py-3.5 text-base rounded-2xl transition-all duration-300 flex items-center gap-3 group overflow-hidden glow-btn glow-btn-purple"
+                                disabled={isSubmitting}
+                                className={`px-16 py-3.5 text-base rounded-2xl transition-all duration-300 flex items-center gap-3 group overflow-hidden glow-btn glow-btn-purple ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
                                 <span className="glow-orb glow-orb-1" />
                                 <span className="glow-orb glow-orb-2" />
                                 <span className="glow-orb glow-orb-3" />
                                 <span className="glow-label flex items-center gap-3 w-full justify-center">
-                                    <span className="tracking-wider">Submit Inquiry</span>
-                                    <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            <span className="tracking-wider">Sending...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="tracking-wider">Submit Inquiry</span>
+                                            <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                        </>
+                                    )}
                                 </span>
                             </motion.button>
                         </motion.div>
