@@ -21,11 +21,11 @@ const InstitutionDashboard: React.FC = () => {
 
             {/* Main Content */}
             <div className="flex-1 ml-64 flex flex-col min-h-screen">
-                <div className="px-8 pt-6"> {/* Added top wrapper with padding */}
+                <div className="px-8 pt-10"> {/* Increased top space */}
                     <Topbar />
                 </div>
 
-                <main className="p-10 pt-6 flex-1">
+                <main className="p-10 pt-10 flex-1">
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Center Column */}
                         <div className="flex-1">

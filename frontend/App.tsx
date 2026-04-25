@@ -128,7 +128,13 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
 
-      {(!isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer && !isCareerOnboarding && !pathname.startsWith('/institution-dashboard')) && <Navigation />}
+      {(() => {
+        const showNav = !isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer && !isCareerOnboarding && !pathname.startsWith('/institution-dashboard');
+        if (!showNav && pathname.startsWith('/institution-dashboard')) {
+          console.log("[AuthDebug] Navigation hidden for Institution Dashboard");
+        }
+        return showNav && <Navigation />;
+      })()}
 
       <main className="flex-grow">
         <Suspense fallback={

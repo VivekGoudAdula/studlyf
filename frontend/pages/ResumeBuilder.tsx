@@ -1366,7 +1366,6 @@ export default function ResumeBuilder() {
             </nav>
 
             <header className="editor-header">
-            <header className="editor-header">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
@@ -1415,7 +1414,6 @@ export default function ResumeBuilder() {
                 </div>
             </header>
 
-            <main className="flex-1 flex overflow-hidden">
             <main className="flex-1 flex overflow-hidden">
                 {/* Left Sidebar - Editor Controls */}
                 <div className="w-[450px] bg-white border-r border-slate-200 flex flex-col shadow-xl z-10">
@@ -1972,6 +1970,6 @@ export default function ResumeBuilder() {
             </div>
         )}
     </AnimatePresence>
-        </div>
+</div>
     );
 }
