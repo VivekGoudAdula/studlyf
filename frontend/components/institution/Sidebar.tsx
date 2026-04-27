@@ -24,12 +24,12 @@ interface SidebarProps {
 const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
-    { id: 'assessments', label: 'Assessments', icon: ClipboardList },
-    { id: 'talent', label: 'Talent Pipeline', icon: Users },
-    { id: 'interviews', label: 'Interviews', icon: UserCircle },
+    { id: 'submissions', label: 'Submissions', icon: ClipboardList },
+    { id: 'judges', label: 'Judges & Scoring', icon: Users },
     { id: 'downloads', label: 'Downloads', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
+
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpportunity }) => {
     const navigate = useNavigate();

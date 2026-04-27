@@ -58,7 +58,6 @@ Generates clinical-grade technical MCQ and task-based assessments based on speci
    pip install -r requirements.txt
    python main.py
    ```
-3. **Frontend**:
    ```bash
    cd frontend
    npm install
