@@ -57,3 +57,9 @@ payments_col = db["payments"]
 
 # System Auditing
 audit_logs_col = db["audit_logs"]
+
+# Submissions & Judging
+submissions_col = db["submissions"]
+judges_col = db["judges"]
+scores_col = db["scores"]
+
