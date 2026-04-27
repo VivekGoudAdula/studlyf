@@ -6,20 +6,37 @@ import RecentListings from '../../components/institution/RecentListings';
 import AlertsPanel from '../../components/institution/AlertsPanel';
 import PostOpportunityModal from '../../components/institution/PostOpportunityModal';
 
+import EventsManagement from './EventsManagement';
+import EventDetails from './EventDetails';
+import SettingsPage from './SettingsPage';
 import SubmissionList from './submissions/SubmissionList';
-import SubmitProject from './submissions/SubmitProject';
 import JudgeDashboard from './judge/JudgeDashboard';
 
 const InstitutionDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+
+    const handleViewEvent = (eventId: string) => {
+        setSelectedEventId(eventId);
+        setActiveTab('event-details');
+    };
 
     const renderContent = () => {
         switch (activeTab) {
+            case 'events':
+                return <EventsManagement 
+                    onViewEvent={handleViewEvent} 
+                    onCreateEvent={() => setIsPostModalOpen(true)}
+                />;
+            case 'event-details':
+                return <EventDetails eventId={selectedEventId} onBack={() => setActiveTab('events')} />;
             case 'submissions':
                 return <SubmissionList />;
             case 'judges':
                 return <JudgeDashboard />;
+            case 'settings':
+                return <SettingsPage />;
             case 'dashboard':
             default:
                 return (
@@ -27,7 +44,7 @@ const InstitutionDashboard: React.FC = () => {
                         {/* Center Column */}
                         <div className="flex-1">
                             <StatsSection />
-                            <RecentListings />
+                            <RecentListings onViewEvent={handleViewEvent} />
                         </div>
 
                         {/* Right Sidebar */}

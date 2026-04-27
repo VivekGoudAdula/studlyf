@@ -200,3 +200,42 @@ class SDLJoinRequest(BaseModel):
     message: Optional[str] = None
     status: str = "pending"  # pending, accepted, rejected
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# ========== Institution Dashboard Models ==========
+
+class Event(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    institution_id: str
+    title: str
+    description: str
+    category: str  # Technology, Business, Design, etc.
+    event_type: str  # Hackathon, Coding Competition, Design Challenge, etc.
+    status: str = "Draft"  # Draft, Published, Live, Ended, Archived
+    
+    # Timeline
+    registration_deadline: datetime
+    start_date: datetime
+    end_date: datetime
+    
+    # Prizes & Rules
+    prize_pool: Optional[str] = None
+    number_of_prizes: Optional[int] = 1
+    rules_guidelines: Optional[str] = None
+    
+    # Logistics
+    max_participants: Optional[int] = None
+    min_team_size: int = 1
+    max_team_size: int = 4
+    
+    # Personnel
+    judges: List[str] = []  # List of judge names or IDs
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class DashboardStats(BaseModel):
+    total_participants: int = 0
+    active_events: int = 0
+    total_submissions: int = 0
+    upcoming_deadlines: int = 0
+    engagement_rate: float = 0.0

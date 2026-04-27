@@ -23,7 +23,7 @@ interface SidebarProps {
 
 const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
+    { id: 'events', label: 'Events Management', icon: Briefcase },
     { id: 'submissions', label: 'Submissions', icon: ClipboardList },
     { id: 'judges', label: 'Judges & Scoring', icon: Users },
     { id: 'downloads', label: 'Downloads', icon: Download },
@@ -57,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
                     className="w-full py-3 bg-gradient-to-r from-[#6C3BFF] to-[#9F6BFF] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-200 hover:scale-[1.02] transition-all"
                 >
                     <Plus size={20} />
-                    Post Opportunity
+                    Post New Event
                 </button>
             </div>
 

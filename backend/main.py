@@ -213,12 +213,14 @@ def fix_progress(prog, default_status="locked"):
 
 # (Middleware and App config remains here)
 
-from routes import submission_routes, judge_routes
+from routes import submission_routes, judge_routes, event_routes, dashboard_routes
 
 app = FastAPI()
 
 app.include_router(submission_routes.router)
 app.include_router(judge_routes.router)
+app.include_router(event_routes.router)
+app.include_router(dashboard_routes.router)
 
 
 @app.get("/api/user/{user_id}/badges")
