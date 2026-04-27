@@ -223,11 +223,16 @@ def fix_progress(prog, default_status="locked"):
 
 # (Middleware and App config remains here)
 
+from routes import submission_routes, judge_routes
+
 app = FastAPI()
 
 # --- Activate Rate Limiting ---
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.include_router(submission_routes.router)
+app.include_router(judge_routes.router)
+
 
 @app.get("/api/user/{user_id}/badges")
 async def get_user_badges(user_id: str):
@@ -4938,4 +4943,4 @@ async def notify_event_participants(event_id: str, message: str, current_user: d
         raise HTTPException(status_code=500, detail=str(e))
 
 # ─── END INSTITUTION DASHBOARD SYSTEM ─────────────────────────────────────────
-# ─── End AI Tools API ────────────────────────────────────────────────────────
+# ─── End AI Tools API ────────────────────────────────────────────────────────
