@@ -259,6 +259,7 @@ class Event(BaseModel):
     requires_demo_video: bool = False
     requires_file_upload: bool = False
     has_judging: bool = True
+    is_blind_judging: bool = False
     judging_criteria: List[dict] = []  # [{name, max_score}]
     created_by: str  # user_id of admin
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -369,3 +370,13 @@ class Certificate(BaseModel):
     verification_url: str
     qr_code: Optional[str] = None
     immutable_flag: bool = True
+
+class AuditLog(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    actor_id: str  # user_id
+    action: str  # e.g., "DELETE_EVENT", "CHANGE_PRIZE"
+    resource_type: str  # e.g., "EVENT", "JUDGE"
+    resource_id: str
+    details: dict = {}
+    ip_address: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)

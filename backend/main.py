@@ -65,6 +65,7 @@ from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_c
 from models import Institution, Event, Participant, Team, Submission, Judge, Score, Notification, LeaderboardEntry, Certificate
 from services.email_service import send_notification_email, get_registration_template
 from auth_utils import get_password_hash, verify_password, create_access_token, decode_access_token
+import upgrade_routes
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -228,6 +229,7 @@ app = FastAPI()
 # --- Activate Rate Limiting ---
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.include_router(upgrade_routes.router)
 
 @app.get("/api/user/{user_id}/badges")
 async def get_user_badges(user_id: str):
@@ -4938,4 +4940,4 @@ async def notify_event_participants(event_id: str, message: str, current_user: d
         raise HTTPException(status_code=500, detail=str(e))
 
 # ─── END INSTITUTION DASHBOARD SYSTEM ─────────────────────────────────────────
-# ─── End AI Tools API ────────────────────────────────────────────────────────
+# ─── End AI Tools API ────────────────────────────────────────────────────────
