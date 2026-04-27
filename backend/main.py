@@ -4771,10 +4771,9 @@ async def get_judge_submissions_view(event_id: str, current_user: dict = Depends
     """
     from bson import ObjectId
     try:
-        # 1. Check if event is blind and get rubric
+        # 1. Check if event is blind
         event = await events_col.find_one({"_id": ObjectId(event_id)})
         is_blind = event.get("is_blind_judging", False)
-        rubric = event.get("judging_criteria", [])
 
         # 2. Get submissions
         subs = await submissions_col.find({"event_id": event_id}).to_list(None)
@@ -4788,7 +4787,7 @@ async def get_judge_submissions_view(event_id: str, current_user: dict = Depends
                 s.pop("team_id", None)
                 s["masked_identity"] = f"Anonymous_Team_{s['_id'][-4:]}" # Show last 4 chars of ID only
         
-        return {"is_blind_mode": is_blind, "rubric": rubric, "submissions": subs}
+        return {"is_blind_mode": is_blind, "submissions": subs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -4939,4 +4938,4 @@ async def notify_event_participants(event_id: str, message: str, current_user: d
         raise HTTPException(status_code=500, detail=str(e))
 
 # ─── END INSTITUTION DASHBOARD SYSTEM ─────────────────────────────────────────
-# ─── End AI Tools API ────────────────────────────────────────────────────────
+# ─── End AI Tools API ────────────────────────────────────────────────────────

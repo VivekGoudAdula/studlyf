@@ -259,12 +259,7 @@ class Event(BaseModel):
     requires_demo_video: bool = False
     requires_file_upload: bool = False
     has_judging: bool = True
-    is_blind_judging: bool = False
-    judging_criteria: List[dict] = Field(default_factory=lambda: [
-        {"name": "Innovation", "max_score": 10},
-        {"name": "Technical Execution", "max_score": 10},
-        {"name": "Impact", "max_score": 10}
-    ])
+    judging_criteria: List[dict] = []  # [{name, max_score}]
     created_by: str  # user_id of admin
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
