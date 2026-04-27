@@ -14,3 +14,7 @@ firebase-admin
 certifi
 pydantic
 weasyprint
+PyJWT
+passlib[bcrypt]
+bcrypt
+slowapi

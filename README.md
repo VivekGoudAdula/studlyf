@@ -24,6 +24,18 @@ Generates clinical-grade technical MCQ and task-based assessments based on speci
 - **Backend**: FastAPI (Python), MongoDB (Motor).
 - **AI**: Groq Cloud (Llama 3.3 70B).
 - **Voice**: Web Speech API (Recognition + Synthesis).
+
+### 4. 🏫 Institution Dashboard System
+A comprehensive competition management platform for colleges and organizations.
+- **Backbone Infrastructure**: High-security backend with JWT, RBAC, and Audit Logging.
+- **Smart Management**: Automation for team formation, deadline enforcement, and blind judging.
+- **Real-time Analytics**: Live statistics, registration heatmaps, and demographic tracking.
+
+### 5. 🏆 Leaderboard & Certification System
+- **Live Rankings**: Finalist ticker and high-fidelity podium for competition winners.
+- **QR-Verified Smart Certificates**: PDF generation with unique QR codes for instant employer verification.
+- **Advanced Reporting**: Demographic and performance analytics with CSV/PDF export.
+
 ---
 ## ⚠️ Known Issues & Limitations (For GitHub)
 
@@ -63,3 +75,22 @@ Generates clinical-grade technical MCQ and task-based assessments based on speci
    npm install
    npm run dev
    ```
+
+---
+
+## 🏫 Institution Dashboard Setup
+
+### 1. 🔐 Security & Env Setup
+Add the following to your `.env` file:
+```env
+SECRET_KEY=your_generated_hex_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+DB_NAME=studlyf_db
+```
+
+### 2. 🏗️ Database Initialization
+Run the mandatory index setup script to enforce system constraints:
+```bash
+python backend/setup_indexes.py
+```
