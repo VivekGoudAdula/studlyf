@@ -23,13 +23,20 @@ interface SidebarProps {
 
 const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
-    { id: 'assessments', label: 'Assessments', icon: ClipboardList },
-    { id: 'talent', label: 'Talent Pipeline', icon: Users },
-    { id: 'interviews', label: 'Interviews', icon: UserCircle },
+    { id: 'events', label: 'Events Management', icon: Briefcase },
+    { id: 'submissions', label: 'Submissions', icon: ClipboardList },
+    { id: 'judges', label: 'Judges & Scoring', icon: Users },
     { id: 'downloads', label: 'Downloads', icon: Download },
+    { id: 'events', label: 'Events Management', icon: Briefcase },
+    { id: 'participants', label: 'Participants', icon: Users },
+    { id: 'teams', label: 'Teams', icon: UserCircle },
+    { id: 'submissions', label: 'Submissions', icon: ClipboardList },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Plus },
+    { id: 'analytics', label: 'Reports & Analytics', icon: LayoutDashboard },
+    { id: 'judges', label: 'Judge Management', icon: UserCircle },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
+
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpportunity }) => {
     const navigate = useNavigate();
@@ -57,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
                     className="w-full py-3 bg-gradient-to-r from-[#6C3BFF] to-[#9F6BFF] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-200 hover:scale-[1.02] transition-all"
                 >
                     <Plus size={20} />
-                    Post Opportunity
+                    Post New Event
                 </button>
             </div>
 

@@ -31,6 +31,11 @@ A comprehensive competition management platform for colleges and organizations.
 - **Smart Management**: Automation for team formation, deadline enforcement, and blind judging.
 - **Real-time Analytics**: Live statistics, registration heatmaps, and demographic tracking.
 
+### 5. 🏆 Leaderboard & Certification System
+- **Live Rankings**: Finalist ticker and high-fidelity podium for competition winners.
+- **QR-Verified Smart Certificates**: PDF generation with unique QR codes for instant employer verification.
+- **Advanced Reporting**: Demographic and performance analytics with CSV/PDF export.
+
 ---
 ## ⚠️ Known Issues & Limitations (For GitHub)
 
@@ -65,7 +70,6 @@ A comprehensive competition management platform for colleges and organizations.
    pip install -r requirements.txt
    python main.py
    ```
-3. **Frontend**:
    ```bash
    cd frontend
    npm install
