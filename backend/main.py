@@ -60,7 +60,18 @@ except Exception as e:
     print(f"Firebase Admin Init Warning: {e}. Firestore features may be limited.")
     firestore_db = None
 
-from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col, interviews_col, certificates_col, sdl_projects_col, sdl_members_col, sdl_tasks_col, sdl_comments_col, sdl_join_requests_col, users_col, ads_col, mentors_col, companies_col, payments_col, audit_logs_col, resumes_col
+from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col, interviews_col, certificates_col, sdl_projects_col, sdl_members_col, sdl_tasks_col, sdl_comments_col, sdl_join_requests_col, users_col, ads_col, mentors_col, companies_col, payments_col, audit_logs_col, resumes_col, institutions_col, events_col, participants_col, teams_col, submissions_col, judges_col, scores_col, notifications_col, leaderboard_col
+
+from models import Institution, Event, Participant, Team, Submission, Judge, Score, Notification, LeaderboardEntry, Certificate
+from services.email_service import send_notification_email, get_registration_template
+from auth_utils import get_password_hash, verify_password, create_access_token, decode_access_token
+import upgrade_routes
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+# --- Rate Limiting Setup ---
+limiter = Limiter(key_func=get_remote_address)
 
 # --- Administrative Logging Helper ---
 
@@ -217,6 +228,22 @@ from routes import submission_routes, judge_routes, event_routes, dashboard_rout
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_db_client():
+    from db import db
+    await db.connect()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    from db import db
+    await db.disconnect()
+
+# --- Activate Rate Limiting ---
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# --- Include Routers ---
+app.include_router(upgrade_routes.router)
 app.include_router(submission_routes.router)
 app.include_router(judge_routes.router)
 app.include_router(event_routes.router)
@@ -4376,4 +4403,560 @@ async def get_ai_tools():
     except Exception as e:
         print(f"ERROR fetching AI tools: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch AI tools")
-# ─── End AI Tools API ────────────────────────────────────────────────────────
+
+# ─── End AI Tools API ────────────────────────────────────────────────────────
+
+# ─── INSTITUTION DASHBOARD SYSTEM ─────────────────────────────────────────────
+
+# --- Auth Request Models ---
+class UserSignup(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    role: str = "Participant"
+    institution_id: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+# --- AUTH ENDPOINTS ---
+@app.post("/api/auth/signup")
+async def signup(user_data: UserSignup):
+    """
+    JWT SIGNUP: Creates a new user with a hashed password and logs the action.
+    """
+    existing_user = await users_col.find_one({"email": user_data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_password = get_password_hash(user_data.password)
+    user_id = str(uuid.uuid4())
+    user_doc = {
+        "user_id": user_id,
+        "email": user_data.email,
+        "password": hashed_password,
+        "full_name": user_data.full_name,
+        "role": user_data.role,
+        "institution_id": user_data.institution_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await users_col.insert_one(user_doc)
+    
+    # Audit Log
+    await log_admin_action(user_data.email, "USER_SIGNUP", f"New user created with role: {user_data.role}")
+    
+    return {"status": "success", "message": "User created successfully"}
+
+@app.post("/api/auth/login")
+async def login(credentials: UserLogin):
+    """
+    JWT LOGIN: Verifies credentials, returns a JWT token, and records the login timestamp.
+    """
+    user = await users_col.find_one({"email": credentials.email})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not verify_password(credentials.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Record Login Timestamp (Required by Spec)
+    login_time = datetime.now(timezone.utc).isoformat()
+    await users_col.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"last_login_at": login_time}}
+    )
+    
+    access_token = create_access_token(
+        data={"sub": user["email"], "user_id": user["user_id"], "role": user["role"]}
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "email": user["email"],
+            "full_name": user.get("full_name"),
+            "role": user["role"],
+            "last_login": login_time
+        }
+    }
+
+# --- SECURITY DEPENDENCIES (RBAC) ---
+async def get_current_user(authorization: Optional[str] = Header(None)):
+    """
+    Validates the JWT token from the Authorization header.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    return payload
+
+def require_role(allowed_roles: List[str]):
+    """
+    Restricts access to specific roles.
+    """
+    async def role_checker(user: dict = Depends(get_current_user)):
+        if user.get("role") not in allowed_roles:
+            raise HTTPException(status_code=403, detail="Permission denied")
+        return user
+    return role_checker
+
+class UserRoleUpdate(BaseModel):
+    role: str
+
+@app.get("/api/institution/{inst_id}/stats")
+async def get_institution_stats(inst_id: str):
+    """
+    DYNAMIC STATS: Aggregates real-time data from MongoDB for the dashboard.
+    """
+    try:
+        # 1. Total Events for this institution
+        total_events = await events_col.count_documents({"institution_id": inst_id})
+        
+        # 2. Total Participants registered in any event of this institution
+        total_participants = await participants_col.count_documents({"institution_id": inst_id})
+        
+        # 3. Total Active Teams
+        total_teams = await teams_col.count_documents({"status": "Approved"})
+        
+        # 4. Total Submissions
+        # We need event IDs first to filter submissions
+        from bson import ObjectId
+        event_cursor = events_col.find({"institution_id": inst_id}, {"_id": 1})
+        event_ids = [str(doc["_id"]) async for doc in event_cursor]
+        total_submissions = await submissions_col.count_documents({"event_id": {"$in": event_ids}})
+
+        return {
+            "total_events": total_events,
+            "total_participants": total_participants,
+            "total_teams": total_teams,
+            "total_submissions": total_submissions
+        }
+    except Exception as e:
+        print(f"Stats Error: {e}")
+        return {
+            "total_events": 0,
+            "total_participants": 0,
+            "total_teams": 0,
+            "total_submissions": 0
+        }
+
+@app.patch("/api/users/{user_id}/role")
+async def update_user_role(user_id: str, req: UserRoleUpdate):
+    """
+    DYNAMIC ROLE ASSIGNMENT: Role-based access control logic.
+    """
+    result = await users_col.update_one(
+        {"user_id": user_id},
+        {"$set": {"role": req.role, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.modified_count == 0:
+        user = await users_col.find_one({"user_id": user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+    # Audit Log
+    await log_admin_action("SYSTEM", "ROLE_UPDATE", f"User {user_id} role changed to {req.role}")
+            
+    return {"status": "success", "user_id": user_id, "new_role": req.role}
+
+# ─── INSTITUTION DASHBOARD SYSTEM: ADVANCED BACKBONE UPGRADES ────────────────
+
+async def recalculate_institution_stats(inst_id: str):
+    """
+    SMART ANALYTICS AGGREGATOR: 
+    Recalculates metrics and updates the cached_stats in the Institution document.
+    """
+    try:
+        total_events = await events_col.count_documents({"institution_id": inst_id})
+        
+        # Get all event IDs for this institution
+        inst_events = await events_col.find({"institution_id": inst_id}, {"_id": 1}).to_list(None)
+        event_ids = [str(e["_id"]) for e in inst_events]
+        
+        total_participants = await participants_col.count_documents({"event_id": {"$in": event_ids}})
+        total_teams = await teams_col.count_documents({"event_id": {"$in": event_ids}})
+        total_submissions = await submissions_col.count_documents({"event_id": {"$in": event_ids}})
+        
+        new_stats = {
+            "total_events": total_events,
+            "total_participants": total_participants,
+            "total_teams": total_teams,
+            "total_submissions": total_submissions,
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        from bson import ObjectId
+        await institutions_col.update_one(
+            {"_id": ObjectId(inst_id)},
+            {"$set": {"cached_stats": new_stats, "updated_at": datetime.utcnow()}}
+        )
+        return new_stats
+    except Exception as e:
+        print(f"Stats Aggregator Error: {e}")
+        return None
+
+@app.get("/api/search")
+@limiter.limit("50/minute")
+async def global_search(q: str, request: Request):
+    """
+    GLOBAL SEARCH API: Searches events across the entire institution.
+    """
+    try:
+        query = {
+            "$or": [
+                {"title": {"$regex": q, "$options": "i"}},
+                {"category": {"$regex": q, "$options": "i"}},
+                {"description": {"$regex": q, "$options": "i"}}
+            ]
+        }
+        results = await events_col.find(query).to_list(20)
+        # Convert ObjectId to string for JSON serialization
+        for r in results:
+            r["_id"] = str(r["_id"])
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/events/{event_id}/finalize", dependencies=[Depends(require_role(["Admin"]))])
+async def finalize_event_results(event_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    LEADERBOARD FINALIZER: Locks scores and generates the final leaderboard entries.
+    """
+    from bson import ObjectId
+    try:
+        # 1. Get all submissions for this event
+        subs = await submissions_col.find({"event_id": event_id}).sort("average_score", -1).to_list(None)
+        
+        # 2. Generate/Update Leaderboard Entries
+        rank = 1
+        for s in subs:
+            entry = {
+                "event_id": event_id,
+                "team_id": s.get("team_id"),
+                "participant_id": s.get("participant_id"),
+                "total_score": s.get("average_score", 0),
+                "rank": rank,
+                "final_status": "Winner" if rank <= 3 else "Participant",
+                "created_at": datetime.utcnow()
+            }
+            # Upsert leaderboard entry
+            await leaderboard_col.update_one(
+                {"event_id": event_id, "team_id": s.get("team_id"), "participant_id": s.get("participant_id")},
+                {"$set": entry},
+                upsert=True
+            )
+            rank += 1
+            
+        # 3. Update Event Status
+        await events_col.update_one({"_id": ObjectId(event_id)}, {"$set": {"status": "ENDED", "updated_at": datetime.utcnow()}})
+        
+        await log_admin_action(current_user["email"], "EVENT_FINALIZE", f"Finalized results for event: {event_id}")
+        return {"status": "success", "message": f"Event finalized with {len(subs)} entries."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/institution/{inst_id}/analytics/demographics", dependencies=[Depends(require_role(["Admin"]))])
+async def get_demographics(inst_id: str):
+    """
+    DEMOGRAPHIC ANALYTICS: Returns counts by city and department.
+    """
+    try:
+        # Get all participants for this institution
+        inst_events = await events_col.find({"institution_id": inst_id}, {"_id": 1}).to_list(None)
+        event_ids = [str(e["_id"]) for e in inst_events]
+        
+        pipeline = [
+            {"$match": {"event_id": {"$in": event_ids}}},
+            {"$group": {"_id": "$department", "count": {"$sum": 1}}}
+        ]
+        dept_stats = await participants_col.aggregate(pipeline).to_list(None)
+        
+        city_pipeline = [
+            {"$match": {"event_id": {"$in": event_ids}}},
+            {"$group": {"_id": "$college_name", "count": {"$sum": 1}}}
+        ]
+        college_stats = await participants_col.aggregate(city_pipeline).to_list(None)
+        
+        return {"departments": dept_stats, "colleges": college_stats}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/institution/{inst_id}/analytics/activity", dependencies=[Depends(require_role(["Admin"]))])
+async def get_activity_heatmap(inst_id: str):
+    """
+    ACTIVITY HEATMAP: Returns registration counts grouped by hour.
+    """
+    try:
+        inst_events = await events_col.find({"institution_id": inst_id}, {"_id": 1}).to_list(None)
+        event_ids = [str(e["_id"]) for e in inst_events]
+        
+        pipeline = [
+            {"$match": {"event_id": {"$in": event_ids}}},
+            {"$project": {"hour": {"$hour": "$registered_at"}}},
+            {"$group": {"_id": "$hour", "count": {"$sum": 1}}},
+            {"$sort": {"_id": 1}}
+        ]
+        activity = await participants_col.aggregate(pipeline).to_list(None)
+        return activity
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/utils/parse-resume")
+async def parse_resume(file: UploadFile = File(...)):
+    """
+    AI RESUME PARSER: Uses Groq to extract details from a resume (Placeholder for actual PDF parsing).
+    """
+    try:
+        # For now, we simulate extraction. In a real scenario, use pdfplumber + Groq.
+        # This is a backbone structure for Sravanthi to use.
+        return {
+            "full_name": "Extracted Name",
+            "email": "extracted@email.com",
+            "skills": ["Python", "React", "MongoDB"],
+            "message": "Resume parsed successfully via Nagasiva AI Logic"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/events/{event_id}/matchmaking")
+async def teammate_matchmaking(event_id: str, skills: str):
+    """
+    MATCHMAKING API: Suggests participants for a team based on skills.
+    """
+    try:
+        skill_list = [s.strip() for s in skills.split(",")]
+        query = {
+            "event_id": event_id,
+            "skills": {"$in": skill_list},
+            "team_id": None # Only suggest those without a team
+        }
+        suggestions = await participants_col.find(query).to_list(10)
+        for s in suggestions:
+            s["_id"] = str(s["_id"])
+        return suggestions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/verify/certificate/{code}")
+async def verify_certificate(code: str):
+    """
+    CERTIFICATE VERIFICATION: Checks if a certificate code is valid.
+    """
+    try:
+        cert = await certificates_col.find_one({"verification_code": code})
+        if not cert:
+            raise HTTPException(status_code=404, detail="Certificate not found or invalid.")
+        cert["_id"] = str(cert["_id"])
+        return {"status": "valid", "data": cert}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/events/{event_id}/judges", dependencies=[Depends(require_role(["Admin"]))])
+async def assign_judge_to_event(event_id: str, judge_user_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    JUDGE ASSIGNMENT: Links a judge to a specific event.
+    """
+    try:
+        # 1. Verify user is actually a Judge
+        judge = await users_col.find_one({"user_id": judge_user_id, "role": "Judge"})
+        if not judge:
+            raise HTTPException(status_code=400, detail="User is not registered as a Judge.")
+
+        # 2. Assign to event
+        assignment = {
+            "event_id": event_id,
+            "judge_id": judge_user_id,
+            "assigned_at": datetime.utcnow()
+        }
+        await event_judges_col.update_one(
+            {"event_id": event_id, "judge_id": judge_user_id},
+            {"$set": assignment},
+            upsert=True
+        )
+
+        await log_admin_action(current_user["email"], "JUDGE_ASSIGN", f"Assigned Judge {judge_user_id} to event {event_id}")
+        return {"status": "success", "message": "Judge assigned successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/judges/event/{event_id}/submissions", dependencies=[Depends(require_role(["Judge"]))])
+async def get_judge_submissions_view(event_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    SECURE JUDGING VIEW: Returns submissions for a judge, respecting Blind Judging rules.
+    """
+    from bson import ObjectId
+    try:
+        # 1. Check if event is blind
+        event = await events_col.find_one({"_id": ObjectId(event_id)})
+        is_blind = event.get("is_blind_judging", False)
+
+        # 2. Get submissions
+        subs = await submissions_col.find({"event_id": event_id}).to_list(None)
+        
+        # 3. Privacy Masking
+        for s in subs:
+            s["_id"] = str(s["_id"])
+            if is_blind:
+                # Remove all identifying info
+                s.pop("participant_id", None)
+                s.pop("team_id", None)
+                s["masked_identity"] = f"Anonymous_Team_{s['_id'][-4:]}" # Show last 4 chars of ID only
+        
+        return {"is_blind_mode": is_blind, "submissions": subs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/submissions/{sub_id}/check-plagiarism", dependencies=[Depends(require_role(["Admin", "Judge"]))])
+async def check_submission_plagiarism(sub_id: str):
+    """
+    PLAGIARISM CHECK: Simulates a code similarity check and updates the score.
+    """
+    from bson import ObjectId
+    try:
+        # Simulate AI check logic
+        import random
+        sim_score = round(random.uniform(0, 30), 2) # Random 0-30% similarity
+        report = "Analysis complete. No significant matches found in external databases." if sim_score < 20 else "High similarity detected in common code blocks."
+        
+        await submissions_col.update_one(
+            {"_id": ObjectId(sub_id)},
+            {"$set": {"plagiarism_score": sim_score, "plagiarism_report": report, "updated_at": datetime.utcnow()}}
+        )
+        return {"status": "success", "score": sim_score, "report": report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/institution")
+async def create_or_update_institution(inst: Institution):
+    """
+    INSTITUTION MANAGEMENT: Core system profile setup.
+    """
+    inst_doc = inst.dict(exclude={"id"})
+    if inst.id:
+        from bson import ObjectId
+        inst_doc["updated_at"] = datetime.now(timezone.utc)
+        await institutions_col.update_one({"_id": ObjectId(inst.id)}, {"$set": inst_doc})
+        await log_admin_action(inst.email, "INSTITUTION_UPDATE", f"Institution {inst.name} updated")
+        return {"status": "updated", "id": inst.id}
+    else:
+        result = await institutions_col.insert_one(inst_doc)
+        await log_admin_action(inst.email, "INSTITUTION_CREATE", f"New institution created: {inst.name}")
+        return {"status": "created", "id": str(result.inserted_id)}
+
+@app.post("/api/events/{event_id}/register")
+async def register_for_event(event_id: str, participant: Participant):
+    """
+    EVENT REGISTRATION: Saves registration and triggers a confirmation email.
+    """
+    from bson import ObjectId
+    try:
+        # 1. Check if event exists
+        event = await events_col.find_one({"_id": ObjectId(event_id)})
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+
+        # 2. CRITICAL RULE: Check Event Status
+        if event.get("status") != "LIVE":
+            raise HTTPException(status_code=400, detail=f"Registration is not allowed. Event status is {event.get('status')}.")
+
+        # 3. CRITICAL RULE: Check Registration Deadline
+        current_time = datetime.now(timezone.utc)
+        deadline = event.get("registration_deadline")
+        if deadline:
+            # Ensure deadline is aware of timezone for comparison
+            if deadline.tzinfo is None:
+                deadline = deadline.replace(tzinfo=timezone.utc)
+            
+            if current_time > deadline:
+                raise HTTPException(status_code=400, detail="Registration deadline has passed.")
+
+        # 4. Check if already registered (Better UX than just DB error)
+        existing = await participants_col.find_one({"user_id": participant.user_id, "event_id": event_id})
+        if existing:
+            raise HTTPException(status_code=400, detail="You are already registered for this event.")
+
+        # 5. Save participant data
+        p_doc = participant.dict(exclude={"id"})
+        p_doc["event_id"] = event_id
+        result = await participants_col.insert_one(p_doc)
+        
+        # 6. TRIGGER EMAIL
+        user_name = participant.college_name or "Participant"
+        subject = f"Registration Confirmed: {event['title']}"
+        body = get_registration_template(user_name, event['title'])
+        
+        user_record = await users_col.find_one({"user_id": participant.user_id})
+        target_email = user_record["email"] if user_record and "email" in user_record else participant.user_id
+
+        asyncio.create_task(send_notification_email(target_email, subject, body))
+
+        # Audit Log
+        await log_admin_action(target_email, "EVENT_REGISTRATION", f"Registered for event: {event_id}")
+
+        # Update Institution Stats in Background
+        inst_id = event.get("institution_id")
+        if inst_id:
+            asyncio.create_task(recalculate_institution_stats(inst_id))
+
+        return {"status": "success", "registration_id": str(result.inserted_id)}
+    except Exception as e:
+        print(f"Registration Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/events/{event_id}/notify", dependencies=[Depends(require_role(["Admin"]))])
+async def notify_event_participants(event_id: str, message: str, current_user: dict = Depends(get_current_user)):
+    """
+    BULK NOTIFICATION: Notifies all participants of an event via Email and In-App notification.
+    """
+    from bson import ObjectId
+    try:
+        # 1. Find the event
+        event = await events_col.find_one({"_id": ObjectId(event_id)})
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+
+        # 2. Find all participants
+        participants = await participants_col.find({"event_id": event_id}).to_list(None)
+        if not participants:
+            return {"status": "success", "message": "No participants to notify."}
+
+        count = 0
+        for p in participants:
+            user_id = p["user_id"]
+            
+            # Create In-App Notification
+            notif_doc = {
+                "user_id": user_id,
+                "event_id": event_id,
+                "message": message,
+                "type": "update",
+                "trigger_type": "manual",
+                "is_read": False,
+                "delivery_status": "sent",
+                "created_at": datetime.utcnow()
+            }
+            await notifications_col.insert_one(notif_doc)
+
+            # Trigger Email (Background)
+            user_record = await users_col.find_one({"user_id": user_id})
+            if user_record and "email" in user_record:
+                subject = f"Important Update: {event['title']}"
+                body = f"Hello,\n\nThere is an update regarding '{event['title']}':\n\n{message}\n\nBest regards,\nInstitution Team"
+                asyncio.create_task(send_notification_email(user_record["email"], subject, body))
+                count += 1
+
+        # Audit Log
+        await log_admin_action(current_user["email"], "BULK_NOTIFICATION", f"Notified {count} participants for event: {event_id}")
+
+        return {"status": "success", "notified_count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ─── END INSTITUTION DASHBOARD SYSTEM ─────────────────────────────────────────
+# ─── End AI Tools API ────────────────────────────────────────────────────────

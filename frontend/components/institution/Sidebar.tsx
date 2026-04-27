@@ -27,6 +27,13 @@ const sidebarItems = [
     { id: 'submissions', label: 'Submissions', icon: ClipboardList },
     { id: 'judges', label: 'Judges & Scoring', icon: Users },
     { id: 'downloads', label: 'Downloads', icon: Download },
+    { id: 'events', label: 'Events Management', icon: Briefcase },
+    { id: 'participants', label: 'Participants', icon: Users },
+    { id: 'teams', label: 'Teams', icon: UserCircle },
+    { id: 'submissions', label: 'Submissions', icon: ClipboardList },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Plus },
+    { id: 'analytics', label: 'Reports & Analytics', icon: LayoutDashboard },
+    { id: 'judges', label: 'Judge Management', icon: UserCircle },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
