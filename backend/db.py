@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Load explicitly from the parent directory .env
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://saieshwarerelli10:Nirvaha%25studly@nirvaha-studlfy.s1l8mvx.mongodb.net/?appName=Nirvaha-studlfy")
+MONGO_URL = os.getenv("MONGO_URL")
 DB_NAME = os.getenv("DB_NAME", "studlyf_db")
 
 client = AsyncIOMotorClient(MONGO_URL, tlsCAFile=certifi.where())
@@ -57,3 +57,16 @@ payments_col = db["payments"]
 
 # System Auditing
 audit_logs_col = db["audit_logs"]
+
+# --- Institution Dashboard Collections ---
+institutions_col = db["institutions"]
+events_col = db["events"]
+participants_col = db["participants"]
+teams_col = db["teams"]
+submissions_col = db["submissions"]
+judges_col = db["judges"]
+scores_col = db["scores"]
+notifications_col = db["notifications"]
+leaderboard_col = db["leaderboard"]
+certificates_col = db["certificates"]
+event_judges_col = db["event_judges"]

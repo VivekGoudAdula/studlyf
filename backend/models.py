@@ -90,6 +90,25 @@ class CartItem(BaseModel):
     course_price: float
     added_at: datetime = Field(default_factory=datetime.utcnow)
 
+class Notification(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    event_id: Optional[str] = None
+    message: str
+    type: str  # registration / approval / result
+    trigger_type: str = "system" # system / manual
+    sent_at: Optional[datetime] = None
+    is_read: bool = False
+    delivery_status: str = "pending" # pending / sent / failed
+    retry_count: int = 0
+    last_attempt_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class EventJudge(BaseModel):
+    event_id: str
+    judge_id: str
+    assigned_at: datetime = Field(default_factory=datetime.utcnow)
+
 class Enrollment(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     user_id: str
@@ -200,3 +219,153 @@ class SDLJoinRequest(BaseModel):
     message: Optional[str] = None
     status: str = "pending"  # pending, accepted, rejected
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# ========== Institution Dashboard Models ==========
+
+class Institution(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    name: str
+    email: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    cached_stats: dict = {}  # To store pre-calculated dashboard metrics
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Event(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    institution_id: str
+    title: str
+    description: str
+    category: str  # Hackathon, Coding Competition, Design Challenge
+    event_type: str  # Online, Offline, Hybrid
+    status: str = "DRAFT"  # DRAFT, LIVE, ENDED, ARCHIVED
+    start_date: datetime
+    end_date: datetime
+    registration_deadline: datetime
+    submission_deadline: Optional[datetime] = None
+    participation_mode: str = "BOTH"  # INDIVIDUAL, TEAM, BOTH
+    max_participants: Optional[int] = None
+    min_team_size: int = 1
+    max_team_size: int = 5
+    prize_pool: Optional[str] = None
+    number_of_prizes: Optional[int] = None
+    rules_guidelines: Optional[str] = None
+    # Feature Flags
+    has_submission: bool = True
+    requires_github: bool = False
+    requires_demo_video: bool = False
+    requires_file_upload: bool = False
+    has_judging: bool = True
+    judging_criteria: List[dict] = []  # [{name, max_score}]
+    created_by: str  # user_id of admin
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Participant(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    event_id: str
+    institution_id: str
+    college_name: Optional[str] = None
+    year: Optional[str] = None
+    department: Optional[str] = None
+    skills: List[str] = []
+    registration_status: str = "Registered"  # Registered, Verified, Rejected
+    team_id: Optional[str] = None
+    registered_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Team(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    event_id: str
+    team_name: str
+    team_leader_id: str
+    members: List[dict] = []  # [{user_id, role}]
+    status: str = "Pending"  # Pending, Approved, Rejected, Disqualified
+    formed_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Submission(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    event_id: str
+    team_id: Optional[str] = None
+    participant_id: Optional[str] = None
+    project_title: str
+    project_description: str
+    github_url: Optional[str] = None
+    demo_video_url: Optional[str] = None
+    attachments: List[str] = []  # URLs
+    submitted_at: datetime = Field(default_factory=datetime.utcnow)
+    status: str = "Submitted"  # Submitted, Under Review, Approved, Rejected
+    average_score: float = 0.0
+    plagiarism_score: float = 0.0
+    plagiarism_report: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Judge(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    expertise_areas: List[str] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Score(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    submission_id: str
+    judge_id: str
+    event_id: str
+    criteria_scores: dict  # {criterion_name: score}
+    total_score: float
+    comments: Optional[str] = None
+    evaluated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class LeaderboardEntry(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    event_id: str
+    team_id: Optional[str] = None
+    participant_id: Optional[str] = None
+    total_score: float
+    rank: int
+    points: int = 0
+    final_status: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Notification(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    event_id: Optional[str] = None
+    message: str
+    type: str  # registration, approval, result, update
+    trigger_type: str = "system"  # system, manual
+    is_read: bool = False
+    delivery_status: str = "pending"  # pending, sent, failed
+    retry_count: int = 0
+    last_attempt_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class EventJudge(BaseModel):
+    event_id: str
+    judge_id: str
+    assigned_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Certificate(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    event_id: str
+    user_id: str
+    team_id: Optional[str] = None
+    participant_name: str
+    team_name: Optional[str] = None
+    rank: Optional[int] = None
+    issued_date: datetime = Field(default_factory=datetime.utcnow)
+    verification_code: str
+    verification_url: str
+    qr_code: Optional[str] = None
+    immutable_flag: bool = True
