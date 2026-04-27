@@ -70,7 +70,6 @@ A comprehensive competition management platform for colleges and organizations.
    pip install -r requirements.txt
    python main.py
    ```
-3. **Frontend**:
    ```bash
    cd frontend
    npm install

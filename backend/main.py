@@ -224,12 +224,29 @@ def fix_progress(prog, default_status="locked"):
 
 # (Middleware and App config remains here)
 
+from routes import submission_routes, judge_routes
+
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup_db_client():
+    from db import db
+    await db.connect()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    from db import db
+    await db.disconnect()
 
 # --- Activate Rate Limiting ---
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# --- Include Routers ---
 app.include_router(upgrade_routes.router)
+app.include_router(submission_routes.router)
+app.include_router(judge_routes.router)
+
 
 @app.get("/api/user/{user_id}/badges")
 async def get_user_badges(user_id: str):
