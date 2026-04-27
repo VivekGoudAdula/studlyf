@@ -71,8 +71,6 @@ from slowapi.errors import RateLimitExceeded
 
 # --- Rate Limiting Setup ---
 limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # --- Administrative Logging Helper ---
 
@@ -226,6 +224,10 @@ def fix_progress(prog, default_status="locked"):
 # (Middleware and App config remains here)
 
 app = FastAPI()
+
+# --- Activate Rate Limiting ---
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/api/user/{user_id}/badges")
 async def get_user_badges(user_id: str):
