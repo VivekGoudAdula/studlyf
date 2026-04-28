@@ -9,7 +9,9 @@ import {
     Download, 
     Settings,
     Plus,
-    LogOut
+    LogOut,
+    UserCheck,
+    Users
 } from 'lucide-react';
 import { auth } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
@@ -24,16 +26,13 @@ interface SidebarProps {
 const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'events', label: 'Events Management', icon: Briefcase },
-    { id: 'submissions', label: 'Submissions', icon: ClipboardList },
-    { id: 'judges', label: 'Judges & Scoring', icon: Users },
-    { id: 'downloads', label: 'Downloads', icon: Download },
-    { id: 'events', label: 'Events Management', icon: Briefcase },
-    { id: 'participants', label: 'Participants', icon: Users },
-    { id: 'teams', label: 'Teams', icon: UserCircle },
+    { id: 'participants', label: 'Participants', icon: UserCheck },
+    { id: 'teams', label: 'Teams', icon: Users },
     { id: 'submissions', label: 'Submissions', icon: ClipboardList },
     { id: 'leaderboard', label: 'Leaderboard', icon: Plus },
     { id: 'analytics', label: 'Reports & Analytics', icon: LayoutDashboard },
-    { id: 'judges', label: 'Judge Management', icon: UserCircle },
+    { id: 'judges', label: 'Judges & Scoring', icon: UserCircle },
+    { id: 'downloads', label: 'Downloads', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
