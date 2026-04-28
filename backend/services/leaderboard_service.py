@@ -35,11 +35,27 @@ class LeaderboardService:
                 
                 avg_score = round(total_points / total_criteria, 2) if total_criteria > 0 else 0
 
+            # Fetch names for integration
+            team_name = "N/A"
+            recipient_name = "Participant"
+            
+            if sub.get("team_id"):
+                from db import teams_col
+                team = await teams_col.find_one({"_id": ObjectId(sub["team_id"])})
+                team_name = team.get("team_name", "Unknown Team") if team else "Unknown Team"
+            
+            if sub.get("participant_id"):
+                from db import participants_col
+                p = await participants_col.find_one({"_id": ObjectId(sub["participant_id"])})
+                recipient_name = p.get("full_name", "Participant") if p else "Participant"
+
             rankings_data.append({
                 "event_id": event_id,
                 "team_id": sub.get("team_id"),
                 "participant_id": sub.get("participant_id"),
                 "participation_type": "TEAM" if sub.get("team_id") else "INDIVIDUAL",
+                "team_name": team_name,
+                "recipient_name": recipient_name,
                 "total_score": avg_score,
                 "project_name": sub.get("project_name", "Unnamed Project"),
                 "last_updated": datetime.utcnow()

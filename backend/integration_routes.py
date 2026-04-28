@@ -87,6 +87,14 @@ async def finalize_event(event_id: str):
             upsert=True
         )
 
+    # [INTEGRATION ENHANCEMENT]
+    from services.leaderboard_service import leaderboard_service
+    from db import results_col
+    # Resolving undefined variable 'final_rankings' from original code by using the dynamic service
+    final_rankings = await leaderboard_service.calculate_event_leaderboard(event_id)
+    winner_ids = [r.get("team_id") or r.get("participant_id") for r in final_rankings[:3]]
+    await results_col.update_one({"event_id": event_id}, {"$set": {"winner_ids": winner_ids, "final_rankings": final_rankings}}, upsert=True)
+
     # 3. Mark event as ended
     await events_col.update_one(
         {"_id": ObjectId(event_id)},
