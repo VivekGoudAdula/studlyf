@@ -576,3 +576,31 @@ async def get_submission_distribution():
             "count": r["count"]
         })
     return enriched
+@router.get("/export-participants")
+async def export_participants():
+    """Generates a CSV export of all registered participants."""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    
+    cursor = participants_col.find({})
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name", "Email", "Phone", "Event ID", "Status", "Joined Date"])
+    
+    async for p in cursor:
+        writer.writerow([
+            p.get("full_name") or p.get("name", "N/A"),
+            p.get("email", "N/A"),
+            p.get("phone", "N/A"),
+            p.get("event_id", "N/A"),
+            p.get("status", "N/A"),
+            p.get("created_at", "N/A")
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode()),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=participants_roster_{datetime.utcnow().strftime('%Y%m%d')}.csv"}
+    )

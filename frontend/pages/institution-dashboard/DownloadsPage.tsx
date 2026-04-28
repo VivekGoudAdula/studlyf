@@ -9,7 +9,11 @@ import {
     Loader2 
 } from 'lucide-react';
 
-const DownloadsPage: React.FC = () => {
+interface DownloadsPageProps {
+    onNavigate: (tab: string) => void;
+}
+
+const DownloadsPage: React.FC<DownloadsPageProps> = ({ onNavigate }) => {
     const [loading, setLoading] = useState<string | null>(null);
 
     const downloadFiles = [
@@ -113,7 +117,10 @@ const DownloadsPage: React.FC = () => {
                             Our integration engine can generate custom data exports for specific events, time ranges, or departments. Use the Reports tab to filter your data before exporting.
                         </p>
                     </div>
-                    <button className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-blue-500 hover:text-white transition-all flex items-center gap-3 group whitespace-nowrap">
+                    <button 
+                        onClick={() => onNavigate('analytics')}
+                        className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-blue-500 hover:text-white transition-all flex items-center gap-3 group whitespace-nowrap"
+                    >
                         Go to Analytics <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </div>
