@@ -66,6 +66,7 @@ from models import Institution, Event, Participant, Team, Submission, Judge, Sco
 from services.email_service import send_notification_email, get_registration_template
 from auth_utils import get_password_hash, verify_password, create_access_token, decode_access_token
 import upgrade_routes
+import integration_routes
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -248,6 +249,7 @@ app.include_router(submission_routes.router)
 app.include_router(judge_routes.router)
 app.include_router(event_routes.router)
 app.include_router(dashboard_routes.router)
+app.include_router(integration_routes.router)
 
 
 @app.get("/api/user/{user_id}/badges")

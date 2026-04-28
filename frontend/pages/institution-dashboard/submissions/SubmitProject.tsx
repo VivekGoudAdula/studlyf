@@ -14,9 +14,26 @@ const SubmitProject = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Submitting:', formData);
-        // API call to /api/submissions
-        alert('Submission added successfully!');
+        try {
+            const response = await fetch('/api/v1/institution/submissions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (response.ok) {
+                alert('Project submitted successfully!');
+                setFormData({
+                    team_name: '',
+                    project_title: '',
+                    description: '',
+                    github_link: '',
+                    demo_link: '',
+                    status: 'Submitted'
+                });
+            }
+        } catch (error) {
+            console.error("Submission failed:", error);
+        }
     };
 
     return (

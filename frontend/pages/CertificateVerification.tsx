@@ -1,19 +1,41 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Calendar, User, Award, CheckCircle2, Download, Share2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Calendar, User, Award, CheckCircle2, Download, Share2, X } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 
 const CertificateVerification: React.FC = () => {
-  const [isVerified] = useState(true);
+  const { id } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [certData, setCertData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const certData = {
-    id: "CERT-2026-X892-A1B2",
-    recipient: "Vivek Goud",
-    event: "National Innovation Hackathon 2026",
-    role: "Winner (1st Place)",
-    date: "April 25, 2026",
-    issuer: "Institution Dashboard Authority",
-    verify_url: "https://studlyf.com/verify/CERT-2026-X892-A1B2"
-  };
+  useEffect(() => {
+    const verify = async () => {
+        try {
+            const res = await fetch(`/api/v1/institution/verify-certificate/${id}`);
+            if (!res.ok) throw new Error("Certificate not found");
+            const data = await res.json();
+            setCertData(data);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+    if (id) verify();
+  }, [id]);
+
+  if (loading) return <div className="h-screen flex items-center justify-center font-bold italic text-gray-400">Verifying Institutional Record...</div>;
+  
+  if (error || !certData) return (
+    <div className="min-h-screen bg-red-50 flex items-center justify-center p-8">
+        <div className="bg-white p-12 rounded-[2.5rem] shadow-xl text-center max-w-md border-4 border-red-100">
+            <X size={48} className="text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-black text-gray-900 mb-2">Verification Failed</h1>
+            <p className="text-gray-500">This certificate record could not be found or has been revoked by the institution.</p>
+        </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
@@ -43,7 +65,7 @@ const CertificateVerification: React.FC = () => {
                     <h2 className="text-3xl font-black text-gray-900">{certData.recipient}</h2>
                   </div>
                   <p className="text-gray-600 text-sm leading-relaxed max-w-md">
-                    Has successfully participated in and achieved the rank of <span className="font-bold text-gray-900">{certData.role}</span> in the 
+                    Has successfully participated in and achieved the rank of <span className="font-bold text-gray-900">{certData.rank}</span> in the 
                     <span className="font-bold text-blue-600 italic"> {certData.event}</span>.
                   </p>
                   <div className="grid grid-cols-2 gap-8 pt-8 border-t border-gray-100">
@@ -53,7 +75,7 @@ const CertificateVerification: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold uppercase text-gray-400 mb-1">Issuer ID</p>
-                      <p className="text-sm font-mono font-bold text-gray-800">{certData.id}</p>
+                      <p className="text-sm font-mono font-bold text-gray-800">{id}</p>
                     </div>
                   </div>
                 </div>

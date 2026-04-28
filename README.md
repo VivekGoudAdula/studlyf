@@ -31,10 +31,12 @@ A comprehensive competition management platform for colleges and organizations.
 - **Smart Management**: Automation for team formation, deadline enforcement, and blind judging.
 - **Real-time Analytics**: Live statistics, registration heatmaps, and demographic tracking.
 
-### 5. 🏆 Leaderboard & Certification System
-- **Live Rankings**: Finalist ticker and high-fidelity podium for competition winners.
-- **QR-Verified Smart Certificates**: PDF generation with unique QR codes for instant employer verification.
-- **Advanced Reporting**: Demographic and performance analytics with CSV/PDF export.
+### 5. 🏆 Leaderboard & Certification System (Fully Dynamic)
+- **Automated Aggregation Engine**: The leaderboard dynamically averages real-time judges' scores (Innovation, Technicality, Impact, Presentation) the moment an event is finalized.
+- **Live Rankings & Ticker**: A real-time finalist ticker and high-fidelity podium display that automatically updates without manual entry.
+- **QR-Verified Smart Certificates**: Automated PDF generation with unique, cryptographically verifiable IDs (`/verify/cert/{id}`) triggered instantly upon event finalization.
+- **Advanced Reporting Analytics**: Live registration timelines and departmental participation breakdowns with CSV/PDF export capabilities.
+- **Multi-Member Team Support**: Certificates are individually generated for every member of a winning team, intelligently adapting between "Ranked" and "Participation" modes based on the event type (Hackathon vs. Workshop).
 
 ---
 ## ⚠️ Known Issues & Limitations (For GitHub)

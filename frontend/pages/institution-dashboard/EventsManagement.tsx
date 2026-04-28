@@ -34,35 +34,32 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ onViewEvent, onCrea
     const [statusFilter, setStatusFilter] = useState('All');
     const [typeFilter, setTypeFilter] = useState('All');
 
-    const [events] = useState<Event[]>([
-        {
-            id: '1',
-            name: 'Global AI Hackathon 2024',
-            status: 'Live',
-            type: 'Hackathon',
-            startDate: '2024-05-15',
-            participants: 1240,
-            image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80'
-        },
-        {
-            id: '2',
-            name: 'Cloud Architecture Challenge',
-            status: 'Draft',
-            type: 'Design Challenge',
-            startDate: '2024-06-01',
-            participants: 0,
-            image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80'
-        },
-        {
-            id: '3',
-            name: 'Data Science Masters',
-            status: 'Ended',
-            type: 'Coding Competition',
-            startDate: '2024-04-10',
-            participants: 850,
-            image: 'https://images.unsplash.com/photo-1551288049-bbbda536339a?auto=format&fit=crop&w=800&q=80'
-        }
-    ]);
+    const [events, setEvents] = useState<Event[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const response = await fetch('/api/v1/institution/events');
+                if (!response.ok) throw new Error("Fetch failed");
+                const data = await response.json();
+                setEvents(data.map((e: any) => ({
+                    id: e._id,
+                    name: e.title,
+                    status: e.status || 'Live',
+                    type: e.category || 'Hackathon',
+                    startDate: new Date(e.start_date).toLocaleDateString(),
+                    participants: e.participant_count || 0,
+                    image: e.image_url || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80'
+                })));
+            } catch (err) {
+                console.error("Dynamic events fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchEvents();
+    }, []);
 
     const filteredEvents = events.filter(event => {
         const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
