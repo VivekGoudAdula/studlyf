@@ -30,6 +30,7 @@ const sidebarItems = [
     { id: 'leaderboard', label: 'Leaderboard', icon: Plus },
     { id: 'analytics', label: 'Reports & Analytics', icon: LayoutDashboard },
     { id: 'judges', label: 'Judge Management', icon: Users },
+    { id: 'downloads', label: 'Downloads', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

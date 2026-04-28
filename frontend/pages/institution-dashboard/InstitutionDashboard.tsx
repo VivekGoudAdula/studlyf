@@ -11,6 +11,8 @@ import EventDetails from './EventDetails';
 import SettingsPage from './SettingsPage';
 import SubmissionList from './submissions/SubmissionList';
 import JudgeDashboard from './judge/JudgeDashboard';
+import ParticipantsManagement from './ParticipantsManagement';
+import TeamsManagement from './TeamsManagement';
 import LeaderboardPage from './LeaderboardPage';
 import ReportsPage from './ReportsPage';
 
@@ -33,6 +35,10 @@ const InstitutionDashboard: React.FC = () => {
                 />;
             case 'event-details':
                 return <EventDetails eventId={selectedEventId} onBack={() => setActiveTab('events')} />;
+            case 'participants':
+                return <ParticipantsManagement />;
+            case 'teams':
+                return <TeamsManagement />;
             case 'submissions':
                 return <SubmissionList />;
             case 'judges':
