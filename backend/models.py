@@ -208,9 +208,11 @@ class Institution(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     name: str
     email: str
-    domain: str
-    logo_url: Optional[str] = None
+    phone: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    cached_stats: dict = {}
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -219,20 +221,30 @@ class Event(BaseModel):
     institution_id: str
     title: str
     description: str
+
+    # Classification
     category: str  # Hackathon, Coding Competition, Design Challenge
     event_type: str  # Online, Offline, Hybrid
     status: str = "DRAFT"
+
+    # Timeline
     start_date: datetime
     end_date: datetime
     registration_deadline: datetime
     submission_deadline: Optional[datetime] = None
+
+    # Participation
     participation_mode: str = "BOTH"  # INDIVIDUAL, TEAM, BOTH
     max_participants: Optional[int] = None
     min_team_size: int = 1
     max_team_size: int = 5
+
+    # Prizes & Rules
     prize_pool: Optional[str] = None
     number_of_prizes: Optional[int] = None
     rules_guidelines: Optional[str] = None
+
+    # Features
     has_submission: bool = True
     requires_github: bool = False
     requires_demo_video: bool = False
@@ -240,6 +252,8 @@ class Event(BaseModel):
     has_judging: bool = True
     is_blind_judging: bool = False
     judging_criteria: List[dict] = []
+
+    # Metadata
     created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -309,15 +323,12 @@ class Score(BaseModel):
 class LeaderboardEntry(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     event_id: str
-    participation_type: str = "TEAM" # TEAM or INDIVIDUAL
     team_id: Optional[str] = None
     participant_id: Optional[str] = None
-    team_name: Optional[str] = None
-    recipient_name: Optional[str] = None
     total_score: float
     rank: int
-    project_name: Optional[str] = None
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    points: int = 0
+    final_status: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class EventResult(BaseModel):
@@ -325,6 +336,7 @@ class EventResult(BaseModel):
     event_id: str
     winner_ids: List[str] = [] # IDs of winning teams/participants
     final_rankings: List[dict] = [] # Full snapshot of rankings
+    prize_distribution: List[dict] = [] # Mapping of rank to prize amount
     announcement_timestamp: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -332,13 +344,15 @@ class Certificate(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     event_id: str
     user_id: str
+    team_id: Optional[str] = None
     participant_name: str
     team_name: Optional[str] = None
     rank: Optional[int] = None
     issued_date: datetime = Field(default_factory=datetime.utcnow)
     verification_code: str
     verification_url: str
-    status: str = "ISSUED"
+    qr_code: Optional[str] = None
+    immutable_flag: bool = True
 
 class AuditLog(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
@@ -347,11 +361,12 @@ class AuditLog(BaseModel):
     resource_type: str
     resource_id: str
     details: dict = {}
+    ip_address: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 class DashboardStats(BaseModel):
     total_participants: int = 0
-    active_events: int = 0
+    active_events: int = 0 
     total_submissions: int = 0
     upcoming_deadlines: int = 0
     engagement_rate: float = 0.0
