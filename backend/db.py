@@ -19,27 +19,23 @@ class DatabaseManager:
     def __init__(self):
         self.url = os.getenv("MONGO_URL")
         self.db_name = os.getenv("DB_NAME", "studlyf_db")
-        self.client = None
-        self.db = None
-
+        
         if not self.url:
             raise ValueError("CRITICAL: MONGO_URL is not set in environment variables.")
 
-    async def connect(self):
-        """Initialize connection with tuning and health checks."""
-        if self.client:
-            return
+        # Initialize client and db immediately for module-level collection access
+        self.client = AsyncIOMotorClient(
+            self.url,
+            serverSelectionTimeoutMS=5000,
+            tlsCAFile=certifi.where() if self.url.lower().startswith("mongodb+srv://") else None
+        )
+        self.db = self.client[self.db_name]
 
+    async def connect(self):
+        """Verify connectivity and run health checks."""
         try:
-            self.client = AsyncIOMotorClient(
-                self.url,
-                serverSelectionTimeoutMS=5000,
-                tlsCAFile=certifi.where() if self.url.lower().startswith("mongodb+srv://") else None
-            )
-            
             # Verify connectivity
             await self.client.admin.command('ping')
-            self.db = self.client[self.db_name]
             logger.info(f"Connected to MongoDB: {self.db_name}")
             
             # Initialize core indexes
