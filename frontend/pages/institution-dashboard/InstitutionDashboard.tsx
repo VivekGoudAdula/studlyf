@@ -15,6 +15,7 @@ import ParticipantsManagement from './ParticipantsManagement';
 import TeamsManagement from './TeamsManagement';
 import LeaderboardPage from './LeaderboardPage';
 import ReportsPage from './ReportsPage';
+import DownloadsPage from './DownloadsPage';
 import Footer from '../../components/institution/Footer';
 
 const InstitutionDashboard: React.FC = () => {
@@ -48,6 +49,8 @@ const InstitutionDashboard: React.FC = () => {
                 return <LeaderboardPage />;
             case 'analytics':
                 return <ReportsPage />;
+            case 'downloads':
+                return <DownloadsPage />;
             case 'settings':
                 return <SettingsPage />;
             case 'dashboard':
