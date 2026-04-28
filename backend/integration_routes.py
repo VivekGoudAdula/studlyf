@@ -44,6 +44,12 @@ async def refresh_leaderboard(event_id: str):
 @router.get("/leaderboard/{event_id}")
 async def fetch_leaderboard(event_id: str):
     """Retrieves live event standings based on dynamic judge scoring."""
+    if event_id == "active_event":
+        # Resolve to latest event
+        event = await events_col.find_one({"status": "Live"}, sort=[("created_at", -1)])
+        if not event: event = await events_col.find_one({}, sort=[("created_at", -1)])
+        if event: event_id = str(event["_id"])
+
     rankings = await leaderboard_col.find({"event_id": event_id}).sort("rank", 1).to_list(None)
     for r in rankings: r["_id"] = str(r["_id"])
     return rankings
@@ -468,7 +474,15 @@ async def export_leaderboard_pdf(event_id: str):
     from db import scores_col, submissions_col, teams_col
     import os
 
-    event = await events_col.find_one({"_id": ObjectId(event_id)})
+    # Resolve active_event placeholder
+    if event_id == "active_event":
+        event = await events_col.find_one({"status": "Live"}, sort=[("created_at", -1)])
+        if not event: event = await events_col.find_one({}, sort=[("created_at", -1)])
+        if event: event_id = str(event["_id"])
+        else: raise HTTPException(status_code=404, detail="No active events found to export.")
+    else:
+        event = await events_col.find_one({"_id": ObjectId(event_id)})
+    
     event_title = event.get("title", "Event") if event else "Event"
 
     # Aggregate scores

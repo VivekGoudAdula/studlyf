@@ -4418,6 +4418,41 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+# --- OTP AUTH ENDPOINTS ---
+@app.post("/api/auth/request-otp")
+async def request_otp(data: dict = Body(...)):
+    email = data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    from services.otp_service import generate_and_send_otp
+    success = await generate_and_send_otp(email)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send OTP. Check SMTP settings.")
+    
+    return {"status": "success", "message": "OTP sent to your email"}
+
+@app.post("/api/auth/verify-otp")
+async def verify_otp_route(data: dict = Body(...)):
+    email = data.get("email")
+    otp = data.get("otp")
+    name = data.get("name", "Institution")
+    if not email or not otp:
+        raise HTTPException(status_code=400, detail="Email and OTP are required")
+    
+    from services.otp_service import verify_otp, send_welcome_email
+    is_valid, message = await verify_otp(email, otp)
+    
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=message)
+    
+    # Send a professional welcome email in the background
+    import asyncio
+    asyncio.create_task(send_welcome_email(email, name))
+    
+    return {"status": "success", "message": "Email verified successfully"}
+
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/signup")
 async def signup(user_data: UserSignup):
