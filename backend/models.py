@@ -208,6 +208,8 @@ class Institution(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     name: str
     email: str
+    domain: str
+    logo_url: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
@@ -323,8 +325,12 @@ class Score(BaseModel):
 class LeaderboardEntry(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     event_id: str
+    participation_type: str = "TEAM" # TEAM or INDIVIDUAL
     team_id: Optional[str] = None
     participant_id: Optional[str] = None
+    team_name: Optional[str] = None
+    recipient_name: Optional[str] = None
+    project_name: Optional[str] = None
     total_score: float
     rank: int
     points: int = 0
@@ -351,6 +357,7 @@ class Certificate(BaseModel):
     issued_date: datetime = Field(default_factory=datetime.utcnow)
     verification_code: str
     verification_url: str
+    status: str = "ISSUED"
     qr_code: Optional[str] = None
     immutable_flag: bool = True
 
