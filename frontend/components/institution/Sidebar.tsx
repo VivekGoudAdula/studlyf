@@ -11,7 +11,6 @@ import {
     Plus,
     LogOut,
     UserCheck,
-    Users
 } from 'lucide-react';
 import { auth } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
