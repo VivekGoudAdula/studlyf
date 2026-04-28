@@ -134,12 +134,23 @@ class Score(BaseModel):
 class LeaderboardEntry(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     event_id: str
+    participation_type: str = "TEAM" # TEAM or INDIVIDUAL
     team_id: Optional[str] = None
     participant_id: Optional[str] = None
     total_score: float
     rank: int
     points: int = 0
     final_status: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class EventResult(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    event_id: str
+    winner_ids: List[str] = [] # IDs of winning teams/participants
+    final_rankings: List[dict] = [] # Full snapshot of rankings
+    prize_distribution: List[dict] = [] # Mapping of rank to prize amount
+    announcement_timestamp: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

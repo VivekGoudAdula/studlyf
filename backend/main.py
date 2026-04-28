@@ -4911,6 +4911,123 @@ async def register_for_event(event_id: str, participant: Participant):
         print(f"Registration Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/teams/create")
+async def create_team(team: Team):
+    """
+    TEAM FORMATION: Creates a new team for an event.
+    Enforces min/max team size from the event configuration.
+    """
+    from bson import ObjectId
+    try:
+        # 1. Verify event exists and is LIVE
+        event = await events_col.find_one({"_id": ObjectId(team.event_id)})
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # 2. Check team size limits
+        member_count = len(team.members)
+        if member_count < event.get("min_team_size", 1):
+            raise HTTPException(status_code=400, detail=f"Team must have at least {event.get('min_team_size')} members.")
+        if member_count > event.get("max_team_size", 5):
+            raise HTTPException(status_code=400, detail=f"Team cannot exceed {event.get('max_team_size')} members.")
+
+        # 3. Verify all members are registered participants for THIS event
+        for member in team.members:
+            p = await participants_col.find_one({"user_id": member["user_id"], "event_id": team.event_id})
+            if not p:
+                raise HTTPException(status_code=400, detail=f"User {member['user_id']} is not registered for this event.")
+            if p.get("team_id"):
+                raise HTTPException(status_code=400, detail=f"User {member['user_id']} is already in another team.")
+
+        # 4. Save Team
+        team_doc = team.dict(exclude={"id"})
+        result = await teams_col.insert_one(team_doc)
+        team_id = str(result.inserted_id)
+
+        # 5. Update Participants with team_id
+        for member in team.members:
+            await participants_col.update_one(
+                {"user_id": member["user_id"], "event_id": team.event_id},
+                {"$set": {"team_id": team_id, "updated_at": datetime.utcnow()}}
+            )
+
+        return {"status": "success", "team_id": team_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/teams/{team_id}/join")
+async def join_team(team_id: str, user_id: str = Body(embed=True)):
+    """
+    TEAM JOINING: Adds a participant to an existing team.
+    """
+    from bson import ObjectId
+    try:
+        team = await teams_col.find_one({"_id": ObjectId(team_id)})
+        if not team:
+            raise HTTPException(status_code=404, detail="Team not found")
+
+        event = await events_col.find_one({"_id": ObjectId(team["event_id"])})
+        
+        # Check size limit
+        if len(team["members"]) >= event.get("max_team_size", 5):
+            raise HTTPException(status_code=400, detail="Team is already full.")
+
+        # Check if user is registered for this event
+        p = await participants_col.find_one({"user_id": user_id, "event_id": team["event_id"]})
+        if not p:
+            raise HTTPException(status_code=400, detail="You must register for the event before joining a team.")
+        if p.get("team_id"):
+            raise HTTPException(status_code=400, detail="You are already in a team.")
+
+        # Update Team
+        new_member = {"user_id": user_id, "role": "MEMBER"}
+        await teams_col.update_one(
+            {"_id": ObjectId(team_id)},
+            {"$push": {"members": new_member}, "$set": {"updated_at": datetime.utcnow()}}
+        )
+
+        # Update Participant
+        await participants_col.update_one(
+            {"user_id": user_id, "event_id": team["event_id"]},
+            {"$set": {"team_id": team_id, "updated_at": datetime.utcnow()}}
+        )
+
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/api/participants/{p_id}/status", dependencies=[Depends(require_role(["Admin"]))])
+async def update_participant_status(p_id: str, status: str = Body(embed=True), current_user: dict = Depends(get_current_user)):
+    """
+    ADMIN: Verifies or rejects a participant registration.
+    """
+    from bson import ObjectId
+    try:
+        await participants_col.update_one(
+            {"_id": ObjectId(p_id)},
+            {"$set": {"registration_status": status, "updated_at": datetime.utcnow()}}
+        )
+        await log_admin_action(current_user["email"], "PARTICIPANT_STATUS_UPDATE", f"Updated participant {p_id} to {status}")
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/api/teams/{team_id}/status", dependencies=[Depends(require_role(["Admin"]))])
+async def update_team_status(team_id: str, status: str = Body(embed=True), current_user: dict = Depends(get_current_user)):
+    """
+    ADMIN: Approves, rejects, or disqualifies a team.
+    """
+    from bson import ObjectId
+    try:
+        await teams_col.update_one(
+            {"_id": ObjectId(team_id)},
+            {"$set": {"status": status, "updated_at": datetime.utcnow()}}
+        )
+        await log_admin_action(current_user["email"], "TEAM_STATUS_UPDATE", f"Updated team {team_id} to {status}")
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/events/{event_id}/notify", dependencies=[Depends(require_role(["Admin"]))])
 async def notify_event_participants(event_id: str, message: str, current_user: dict = Depends(get_current_user)):
     """

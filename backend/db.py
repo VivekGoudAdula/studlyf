@@ -118,5 +118,6 @@ scores_col = db["scores"]
 evaluation_criteria_col = db["evaluation_criteria"] # Evaluation System
 notifications_col = db["notifications"]
 leaderboard_col = db["leaderboard"]
+results_col = db["results"]
 event_judges_col = db["event_judges"]
 workflow_states_col = db["workflow_states"] # State Machine (Applied, Shortlisted, etc.)
