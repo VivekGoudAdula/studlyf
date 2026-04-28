@@ -27,12 +27,14 @@ Generates clinical-grade technical MCQ and task-based assessments based on speci
 
 ### 4. 🏫 Institution Dashboard System
 A comprehensive competition management platform for colleges and organizations.
+- **Secure Onboarding (OTP)**: Two-step institutional registration flow featuring a high-security OTP verification system with professional email templates.
 - **Backbone Infrastructure**: High-security backend with JWT, RBAC, and Audit Logging.
 - **Smart Management**: Automation for team formation, deadline enforcement, and blind judging.
 - **Real-time Analytics**: Live statistics, registration heatmaps, and demographic tracking.
 
 ### 5. 🏆 Leaderboard & Certification System (Fully Dynamic)
 - **Automated Aggregation Engine**: The leaderboard dynamically averages real-time judges' scores (Innovation, Technicality, Impact, Presentation) the moment an event is finalized.
+- **Master Export Engine**: Bulk export capabilities for PDF and CSV, supporting specific event IDs or a "Master Institutional Standings" across all events.
 - **Live Rankings & Ticker**: A real-time finalist ticker and high-fidelity podium display that automatically updates without manual entry.
 - **QR-Verified Smart Certificates**: Automated PDF generation with unique, cryptographically verifiable IDs (`/verify/cert/{id}`) triggered instantly upon event finalization.
 - **Advanced Reporting Analytics**: Live registration timelines and departmental participation breakdowns with CSV/PDF export capabilities.
