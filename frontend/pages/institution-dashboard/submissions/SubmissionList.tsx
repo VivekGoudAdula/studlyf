@@ -12,35 +12,9 @@ const SubmissionList = () => {
     useEffect(() => {
         const fetchSubmissions = async () => {
             try {
-                // const response = await fetch('/api/submissions');
-                // const data = await response.json();
-                // setSubmissions(data);
-                
-                // Mock data
-                setSubmissions([
-                    {
-                        _id: '1',
-                        team_name: 'Alpha Coders',
-                        project_title: 'AI Study Planner',
-                        submission_date: '2026-04-25',
-                        status: 'Under Review',
-                        score: 85,
-                        github_link: 'https://github.com/example',
-                        demo_link: 'https://youtube.com/demo',
-                        description: 'A comprehensive study planner powered by AI to optimize student schedules.'
-                    },
-                    {
-                        _id: '2',
-                        team_name: 'Byte Builders',
-                        project_title: 'EcoTrack App',
-                        submission_date: '2026-04-26',
-                        status: 'Submitted',
-                        score: 0,
-                        github_link: 'https://github.com/example2',
-                        demo_link: 'https://youtube.com/demo2',
-                        description: 'An app to track and reduce carbon footprint using real-time data.'
-                    }
-                ]);
+                const response = await fetch('/api/v1/institution/submissions');
+                const data = await response.json();
+                setSubmissions(data);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching submissions:', error);
@@ -60,8 +34,18 @@ const SubmissionList = () => {
     };
 
     const handleStatusChange = async (id, newStatus) => {
-        // API call to update status
-        setSubmissions(submissions.map(s => s._id === id ? { ...s, status: newStatus } : s));
+        try {
+            const response = await fetch(`/api/v1/institution/submissions/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (response.ok) {
+                setSubmissions(submissions.map(s => s._id === id ? { ...s, status: newStatus } : s));
+            }
+        } catch (error) {
+            console.error("Failed to update status");
+        }
     };
 
     return (

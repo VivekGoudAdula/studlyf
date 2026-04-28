@@ -1,36 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Calendar, Star, Info, ChevronRight, Zap } from 'lucide-react';
 
-const alerts = [
-    {
-        id: 1,
-        title: 'New Submissions',
-        desc: '12 new projects submitted for AI Hackathon',
-        time: '2 mins ago',
-        type: 'success',
-        icon: Zap
-    },
-    {
-        id: 2,
-        title: 'Judge Feedback',
-        desc: 'Dr. Sarah completed evaluation for Team Alpha',
-        time: '1 hour ago',
-        type: 'info',
-        icon: Star
-    },
-    {
-        id: 3,
-        title: 'Upcoming Deadline',
-        desc: 'Registration closes in 24 hours for Cloud Comp',
-        time: 'Tomorrow',
-        type: 'warning',
-        icon: Calendar
-    }
-];
-
 const AlertsPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState('alerts');
+    const [alerts, setAlerts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAlerts = async () => {
+            try {
+                const res = await fetch('/api/v1/institution/notifications');
+                const data = await res.json();
+                setAlerts(data.map((a: any) => ({
+                    id: a._id,
+                    title: a.title,
+                    desc: a.message,
+                    time: a.time_ago || 'Just now',
+                    type: a.type || 'info',
+                    icon: a.type === 'success' ? Zap : a.type === 'warning' ? Calendar : Info
+                })));
+            } catch (err) {
+                console.error("Failed to load alerts");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAlerts();
+    }, []);
 
     return (
         <div className="bg-white/40 backdrop-blur-xl border border-white/20 rounded-[3rem] shadow-2xl shadow-slate-200/40 p-2 h-full flex flex-col">

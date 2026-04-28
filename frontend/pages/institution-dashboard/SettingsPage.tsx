@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     User, 
     Bell, 
@@ -17,6 +17,25 @@ import { motion } from 'framer-motion';
 
 const SettingsPage: React.FC = () => {
     const [activeSection, setActiveSection] = useState('profile');
+    const [profile, setProfile] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch('/api/v1/institution/profile/default_inst'); 
+                const data = await res.json();
+                setProfile(data);
+            } catch (err) {
+                console.error("Failed to load settings");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    if (loading) return <div className="h-96 flex items-center justify-center">Loading Settings...</div>;
 
     const sections = [
         { id: 'profile', label: 'Institutional Profile', icon: Building2 },
@@ -56,29 +75,29 @@ const SettingsPage: React.FC = () => {
                                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                     <Building2 size={16} className="text-slate-400" /> Institution Name
                                 </label>
-                                <input type="text" defaultValue="Stanford University" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
+                                <input type="text" defaultValue={profile.name} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                     <Globe size={16} className="text-slate-400" /> Website URL
                                 </label>
-                                <input type="text" defaultValue="https://stanford.edu" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
+                                <input type="text" defaultValue={profile.website} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                     <Mail size={16} className="text-slate-400" /> Contact Email
                                 </label>
-                                <input type="email" defaultValue="admin@stanford.edu" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
+                                <input type="email" defaultValue={profile.email} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                     <Phone size={16} className="text-slate-400" /> Phone Number
                                 </label>
-                                <input type="tel" defaultValue="+1 (650) 723-2300" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
+                                <input type="tel" defaultValue={profile.phone} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
                             </div>
                             <div className="md:col-span-2 space-y-3">
                                 <label className="text-sm font-bold text-slate-700">Bio / About Institution</label>
-                                <textarea rows={4} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all resize-none" defaultValue="A leading research university in the heart of Silicon Valley..." />
+                                <textarea rows={4} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all resize-none" defaultValue={profile.bio} />
                             </div>
                         </div>
                     </div>

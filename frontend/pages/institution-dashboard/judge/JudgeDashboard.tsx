@@ -3,11 +3,9 @@ import { Gavel, Star, MessageSquare, Save, Users, ChevronRight } from 'lucide-re
 import { motion } from 'framer-motion';
 
 const JudgeDashboard = () => {
-    const [assignedProjects, setAssignedProjects] = useState([
-        { id: '1', team: 'Alpha Coders', project: 'AI Study Planner', status: 'Pending' },
-        { id: '2', team: 'Byte Builders', project: 'EcoTrack App', status: 'Scored' },
-    ]);
+    const [assignedProjects, setAssignedProjects] = useState([]);
     const [activeProject, setActiveProject] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [scores, setScores] = useState({
         innovation: 0,
         technicality: 0,
@@ -16,14 +14,44 @@ const JudgeDashboard = () => {
     });
     const [comments, setComments] = useState('');
 
+    useEffect(() => {
+        const fetchAssigned = async () => {
+            try {
+                const response = await fetch('/api/v1/institution/judge/assigned/default_judge');
+                if (!response.ok) throw new Error("Failed to fetch");
+                const data = await response.json();
+                setAssignedProjects(data);
+            } catch (error) {
+                console.error("Dynamic data fetch error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAssigned();
+    }, []);
+
     const handleScoreChange = (criteria, value) => {
         setScores({ ...scores, [criteria]: value });
     };
 
-    const handleSaveScore = () => {
-        console.log('Saving scores for project:', activeProject.project, scores, comments);
-        alert('Score saved successfully!');
-        setActiveProject(null);
+    const handleSaveScore = async () => {
+        try {
+            const response = await fetch('/api/v1/institution/judge/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    submission_id: activeProject._id,
+                    scores,
+                    comments
+                })
+            });
+            if (response.ok) {
+                alert('Score saved successfully!');
+                setActiveProject(null);
+            }
+        } catch (error) {
+            console.error("Failed to save score:", error);
+        }
     };
 
     return (
@@ -37,30 +65,30 @@ const JudgeDashboard = () => {
                     </h2>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {assignedProjects.map((project) => (
-                        <button 
-                            key={project.id}
-                            onClick={() => setActiveProject(project)}
-                            className={`w-full p-4 rounded-2xl text-left transition-all ${
-                                activeProject?.id === project.id 
-                                    ? 'bg-purple-50 border-2 border-purple-200' 
-                                    : 'hover:bg-gray-50 border-2 border-transparent'
-                            }`}
-                        >
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="font-bold text-gray-900 line-clamp-1">{project.project}</span>
-                                {project.status === 'Scored' && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-500">{project.team}</span>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                    project.status === 'Scored' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                }`}>
-                                    {project.status}
-                                </span>
-                            </div>
-                        </button>
-                    ))}
+                        {assignedProjects.map((project) => (
+                            <button 
+                                key={project._id}
+                                onClick={() => setActiveProject(project)}
+                                className={`w-full p-4 rounded-2xl text-left transition-all ${
+                                    activeProject?._id === project._id 
+                                        ? 'bg-purple-50 border-2 border-purple-200' 
+                                        : 'hover:bg-gray-50 border-2 border-transparent'
+                                }`}
+                            >
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="font-bold text-gray-900 line-clamp-1">{project.project_title}</span>
+                                    {project.status === 'Scored' && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-gray-500">{project.team_name}</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                        project.status === 'Scored' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                    }`}>
+                                        {project.status}
+                                    </span>
+                                </div>
+                            </button>
+                        ))}
                 </div>
             </div>
 
@@ -76,13 +104,13 @@ const JudgeDashboard = () => {
                             <div>
                                 <div className="flex items-center gap-2 text-purple-600 font-bold text-sm mb-1 uppercase tracking-widest">
                                     <Users size={14} />
-                                    {activeProject.team}
+                                    {activeProject.team_name}
                                 </div>
-                                <h1 className="text-3xl font-bold text-gray-900">{activeProject.project}</h1>
+                                <h1 className="text-3xl font-bold text-gray-900">{activeProject.project_title}</h1>
                             </div>
                             <div className="flex items-center gap-2 p-2 bg-purple-50 text-purple-600 rounded-xl font-bold text-lg">
                                 <Star size={24} className="fill-purple-600" />
-                                {Object.values(scores).reduce((a, b) => a + b, 0) / 4 || 0}
+                                {Object.values(scores).reduce((a, b) => (a as any) + (b as any), 0) / 4 || 0}
                             </div>
                         </div>
 

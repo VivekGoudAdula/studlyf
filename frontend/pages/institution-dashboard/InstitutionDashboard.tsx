@@ -13,6 +13,8 @@ import SubmissionList from './submissions/SubmissionList';
 import JudgeDashboard from './judge/JudgeDashboard';
 import ParticipantsManagement from './ParticipantsManagement';
 import TeamsManagement from './TeamsManagement';
+import LeaderboardPage from './LeaderboardPage';
+import ReportsPage from './ReportsPage';
 
 const InstitutionDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -41,6 +43,10 @@ const InstitutionDashboard: React.FC = () => {
                 return <SubmissionList />;
             case 'judges':
                 return <JudgeDashboard />;
+            case 'leaderboard':
+                return <LeaderboardPage />;
+            case 'analytics':
+                return <ReportsPage />;
             case 'settings':
                 return <SettingsPage />;
             case 'dashboard':

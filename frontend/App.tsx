@@ -83,6 +83,8 @@ const ScrollToTop = () => {
   return null;
 };
 
+const CertificateVerification = lazy(() => import('./pages/CertificateVerification'));
+
 const App: React.FC = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -188,6 +190,7 @@ const App: React.FC = () => {
             <Route path="/login" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/ai-tools" element={<AITools />} />
+            <Route path="/verify/:id" element={<CertificateVerification />} />
 
             <Route path="/dashboard" element={
               <ProtectedRoute>

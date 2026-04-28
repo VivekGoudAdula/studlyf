@@ -1,47 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Briefcase, ClipboardList, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
 
-const stats = [
-    { 
-        label: 'Total Participants', 
-        value: '4,285', 
-        icon: Users, 
-        color: 'from-blue-500 to-indigo-600', 
-        bg: 'bg-blue-50',
-        text: 'text-blue-600',
-        trend: '+12.5%' 
-    },
-    { 
-        label: 'Active Events', 
-        value: '12', 
-        icon: Briefcase, 
-        color: 'from-purple-500 to-[#6C3BFF]', 
-        bg: 'bg-purple-50',
-        text: 'text-[#6C3BFF]',
-        trend: '+2' 
-    },
-    { 
-        label: 'Total Submissions', 
-        value: '1,850', 
-        icon: CheckCircle, 
-        color: 'from-emerald-500 to-teal-600', 
-        bg: 'bg-emerald-50',
-        text: 'text-emerald-600',
-        trend: '+18%' 
-    },
-    { 
-        label: 'Average Score', 
-        value: '84%', 
-        icon: TrendingUp, 
-        color: 'from-amber-500 to-orange-600', 
-        bg: 'bg-amber-50',
-        text: 'text-amber-600',
-        trend: '+5.2%' 
-    },
-];
-
 const StatsSection: React.FC = () => {
+    const [stats, setStats] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('/api/v1/institution/summary/default_inst');
+                const data = await res.json();
+                
+                const formattedStats = [
+                    { 
+                        label: 'Total Participants', 
+                        value: data.total_participants?.toLocaleString() || '0', 
+                        icon: Users, 
+                        bg: 'bg-blue-50',
+                        text: 'text-blue-600',
+                        trend: '+12.5%' 
+                    },
+                    { 
+                        label: 'Active Events', 
+                        value: data.active_events?.toString() || '0', 
+                        icon: Briefcase, 
+                        bg: 'bg-purple-50',
+                        text: 'text-[#6C3BFF]',
+                        trend: '+2' 
+                    },
+                    { 
+                        label: 'Total Submissions', 
+                        value: data.total_submissions?.toLocaleString() || '0', 
+                        icon: CheckCircle, 
+                        bg: 'bg-emerald-50',
+                        text: 'text-emerald-600',
+                        trend: '+18%' 
+                    },
+                    { 
+                        label: 'Average Score', 
+                        value: `${data.average_score || 0}%`, 
+                        icon: TrendingUp, 
+                        bg: 'bg-amber-50',
+                        text: 'text-amber-600',
+                        trend: '+5.2%' 
+                    },
+                ];
+                setStats(formattedStats);
+            } catch (err) {
+                console.error("Failed to load dynamic stats");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    if (loading) return <div className="grid grid-cols-4 gap-6 mb-10 h-32 animate-pulse bg-slate-50 rounded-3xl" />;
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
             {stats.map((stat, i) => (

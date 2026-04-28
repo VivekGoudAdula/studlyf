@@ -104,14 +104,19 @@ sdl_tasks_col = db["sdl_tasks"]
 sdl_comments_col = db["sdl_comments"]
 sdl_join_requests_col = db["sdl_join_requests"]
 
-# Institution Dashboard Ecosystem
+# Institution Dashboard Ecosystem (High-End Modular Architecture)
 institutions_col = db["institutions"]
 events_col = db["events"]
+rounds_col = db["rounds"]                # Dynamic Phases (Assessment, Submission, etc.)
+form_fields_col = db["form_fields"]      # Form Builder Layer
 participants_col = db["participants"]
 teams_col = db["teams"]
 submissions_col = db["submissions"]
+submission_data_col = db["submission_data"] # Flexibility Layer (Key-Value for PPT, GitHub)
 judges_col = db["judges"]
 scores_col = db["scores"]
+evaluation_criteria_col = db["evaluation_criteria"] # Evaluation System
 notifications_col = db["notifications"]
 leaderboard_col = db["leaderboard"]
 event_judges_col = db["event_judges"]
+workflow_states_col = db["workflow_states"] # State Machine (Applied, Shortlisted, etc.)

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MoreHorizontal, ExternalLink, Users, ArrowRight, Eye, MoreVertical } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -6,37 +6,34 @@ interface RecentListingsProps {
     onViewEvent?: (id: string) => void;
 }
 
-const listings = [
-    { 
-        id: '1', 
-        title: 'Global AI Hackathon 2024', 
-        type: 'Hackathon', 
-        applied: 1240, 
-        finalized: 12, 
-        status: 'Live',
-        date: 'May 15, 2024'
-    },
-    { 
-        id: '2', 
-        title: 'Cloud Engineering Masters', 
-        type: 'Competition', 
-        applied: 850, 
-        finalized: 0, 
-        status: 'Draft',
-        date: 'Jun 10, 2024'
-    },
-    { 
-        id: '3', 
-        title: 'UI/UX Design Challenge', 
-        type: 'Challenge', 
-        applied: 430, 
-        finalized: 45, 
-        status: 'Ended',
-        date: 'Apr 20, 2024'
-    }
-];
-
 const RecentListings: React.FC<RecentListingsProps> = ({ onViewEvent }) => {
+    const [listings, setListings] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchRecent = async () => {
+            try {
+                const res = await fetch('/api/v1/institution/events');
+                const data = await res.json();
+                // Take the 5 most recent events
+                setListings(data.slice(0, 5).map((e: any) => ({
+                    id: e._id,
+                    title: e.title,
+                    type: e.category || 'Hackathon',
+                    applied: e.participant_count || 0,
+                    status: e.status || 'Live',
+                    date: new Date(e.start_date).toLocaleDateString()
+                })));
+            } catch (err) {
+                console.error("Failed to load recent listings");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchRecent();
+    }, []);
+
+    if (loading) return <div className="h-64 bg-white/50 animate-pulse rounded-[3rem] border border-slate-100" />;
     return (
         <div className="bg-white/40 backdrop-blur-md p-2 rounded-[3rem] border border-white/20 shadow-2xl shadow-slate-200/40">
             <div className="bg-white rounded-[2.5rem] overflow-hidden">
