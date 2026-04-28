@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import AuthCard from './AuthCard';
@@ -18,6 +18,25 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+
+    const handleForgotPassword = async () => {
+        if (!email) {
+            setError('Please enter your email address first.');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        setMessage('');
+        try {
+            await sendPasswordResetEmail(auth, email);
+            setMessage('Password reset link sent to your email!');
+        } catch (err: any) {
+            setError(err.message || 'Failed to send reset email');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const redirectUser = async (user: any) => {
         if (user.email?.toLowerCase() === 'admin@studlyf.com') {
@@ -84,6 +103,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                         {error}
                     </div>
                 )}
+                {message && (
+                    <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100">
+                        {message}
+                    </div>
+                )}
 
                 <div>
                     <label className={labelClasses}>Email Address</label>
@@ -100,9 +124,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                 <div>
                     <div className="flex justify-between items-center mb-1.5">
                         <label className={labelClasses}>Password</label>
-                        <Link to="#" className="text-[10px] font-bold text-purple-600 hover:text-purple-700 uppercase tracking-wider">
+                        <button 
+                            type="button"
+                            onClick={handleForgotPassword}
+                            className="text-[10px] font-bold text-purple-600 hover:text-purple-700 uppercase tracking-wider"
+                        >
                             Forgot password?
-                        </Link>
+                        </button>
                     </div>
                     <input
                         type="password"

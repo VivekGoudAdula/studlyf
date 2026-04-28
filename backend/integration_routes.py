@@ -1,8 +1,8 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
-from .services.institutional_analytics_service import analytics_service
-from .services.institutional_certificate_service import certificate_service
-from .services.leaderboard_service import leaderboard_service
+from services.institutional_analytics_service import analytics_service
+from services.institutional_certificate_service import certificate_service
+from services.leaderboard_service import leaderboard_service
 from db import leaderboard_col, events_col, participants_col, certificates_col
 from bson import ObjectId
 from services.audit_service import log_admin_action
@@ -44,6 +44,12 @@ async def refresh_leaderboard(event_id: str):
 @router.get("/leaderboard/{event_id}")
 async def fetch_leaderboard(event_id: str):
     """Retrieves live event standings based on dynamic judge scoring."""
+    if event_id == "active_event":
+        # Resolve to latest event
+        event = await events_col.find_one({"status": "Live"}, sort=[("created_at", -1)])
+        if not event: event = await events_col.find_one({}, sort=[("created_at", -1)])
+        if event: event_id = str(event["_id"])
+
     rankings = await leaderboard_col.find({"event_id": event_id}).sort("rank", 1).to_list(None)
     for r in rankings: r["_id"] = str(r["_id"])
     return rankings
@@ -148,7 +154,7 @@ async def export_summary():
     import csv
     import io
     from fastapi.responses import StreamingResponse
-    from .services.institutional_analytics_service import analytics_service
+    from services.institutional_analytics_service import analytics_service
     
     data = await analytics_service.get_kpi_summary("default_inst")
     
@@ -468,12 +474,23 @@ async def export_leaderboard_pdf(event_id: str):
     from db import scores_col, submissions_col, teams_col
     import os
 
-    event = await events_col.find_one({"_id": ObjectId(event_id)})
-    event_title = event.get("title", "Event") if event else "Event"
-
-    # Aggregate scores
+    # Resolve placeholders
+    if event_id in ["active_event", "ALL"]:
+        event = await events_col.find_one({"status": "Live"}, sort=[("created_at", -1)])
+        if not event: event = await events_col.find_one({}, sort=[("created_at", -1)])
+        if event: 
+            event_id = str(event["_id"])
+            event_title = event.get("title", "Event") if event_id != "ALL" else "All Events Master Leaderboard"
+        else: 
+            raise HTTPException(status_code=404, detail="No events found to export.")
+    else:
+        event = await events_col.find_one({"_id": ObjectId(event_id)})
+        event_title = event.get("title", "Event")
+    
+    # Aggregate scores (if ALL, we match all scores, otherwise just the specific event)
+    match_query = {} if event_id == "ALL" else {"event_id": event_id}
     pipeline = [
-        {"$match": {"event_id": event_id}},
+        {"$match": match_query},
         {"$group": {"_id": "$submission_id", "avg_score": {"$avg": "$total_score"}}},
         {"$sort": {"avg_score": -1}}
     ]
@@ -559,3 +576,31 @@ async def get_submission_distribution():
             "count": r["count"]
         })
     return enriched
+@router.get("/export-participants")
+async def export_participants():
+    """Generates a CSV export of all registered participants."""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    
+    cursor = participants_col.find({})
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name", "Email", "Phone", "Event ID", "Status", "Joined Date"])
+    
+    async for p in cursor:
+        writer.writerow([
+            p.get("full_name") or p.get("name", "N/A"),
+            p.get("email", "N/A"),
+            p.get("phone", "N/A"),
+            p.get("event_id", "N/A"),
+            p.get("status", "N/A"),
+            p.get("created_at", "N/A")
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode()),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=participants_roster_{datetime.utcnow().strftime('%Y%m%d')}.csv"}
+    )

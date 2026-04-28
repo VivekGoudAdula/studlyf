@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from typing import List, Dict, Any
 from datetime import datetime
 from bson import ObjectId
-from .db import participants_col, submissions_col, leaderboard_col, events_col, institutions_col
+from db import participants_col, submissions_col, leaderboard_col, events_col, institutions_col
 
 router = APIRouter(prefix="/api/upgrades", tags=["Pro Upgrades"])
 

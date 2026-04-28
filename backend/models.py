@@ -377,3 +377,14 @@ class DashboardStats(BaseModel):
     total_submissions: int = 0
     upcoming_deadlines: int = 0
     engagement_rate: float = 0.0
+
+class Notification(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    event_id: Optional[str] = None
+    message: str
+    type: str = "update" # update, info, success, warning
+    trigger_type: str = "manual"
+    is_read: bool = False
+    delivery_status: str = "sent"
+    created_at: datetime = Field(default_factory=datetime.utcnow)

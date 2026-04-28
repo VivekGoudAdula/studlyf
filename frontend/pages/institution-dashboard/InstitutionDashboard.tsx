@@ -50,7 +50,7 @@ const InstitutionDashboard: React.FC = () => {
             case 'analytics':
                 return <ReportsPage />;
             case 'downloads':
-                return <DownloadsPage />;
+                return <DownloadsPage onNavigate={setActiveTab} />;
             case 'settings':
                 return <SettingsPage />;
             case 'dashboard':

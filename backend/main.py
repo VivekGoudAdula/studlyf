@@ -1,7 +1,7 @@
 import os
 import subprocess
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Header
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Header, Request, status, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
@@ -584,20 +584,18 @@ async def generate_assessment(req: AssessmentRequest):
 
 @app.get("/health")
 async def health_check():
+    try:
+        await db.client.admin.command("ping")
+        db_status = "connected"
+    except Exception:
+        db_status = "error"
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "database": "connected" if await db.command("ping") else "error",
+        "database": db_status,
         "allowed_origins": origins
     }
 
-@app.on_event("startup")
-async def startup_event():
-    try:
-        if await db.command("ping"):
-            print("backend connected successfully")
-    except Exception as e:
-        print(f"Database connection failed on startup: {e}")
 
 # Get Groq API key from environment
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "YOUR-GROQ-API-KEY")
@@ -4419,6 +4417,41 @@ class UserSignup(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+# --- OTP AUTH ENDPOINTS ---
+@app.post("/api/auth/request-otp")
+async def request_otp(data: dict = Body(...)):
+    email = data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    from services.otp_service import generate_and_send_otp
+    success = await generate_and_send_otp(email)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send OTP. Check SMTP settings.")
+    
+    return {"status": "success", "message": "OTP sent to your email"}
+
+@app.post("/api/auth/verify-otp")
+async def verify_otp_route(data: dict = Body(...)):
+    email = data.get("email")
+    otp = data.get("otp")
+    name = data.get("name", "Institution")
+    if not email or not otp:
+        raise HTTPException(status_code=400, detail="Email and OTP are required")
+    
+    from services.otp_service import verify_otp, send_welcome_email
+    is_valid, message = await verify_otp(email, otp)
+    
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=message)
+    
+    # Send a professional welcome email in the background
+    import asyncio
+    asyncio.create_task(send_welcome_email(email, name))
+    
+    return {"status": "success", "message": "Email verified successfully"}
 
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/signup")

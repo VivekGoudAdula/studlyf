@@ -1,5 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { auth } from '../../firebase';
+import { useNavigate } from 'react-router-dom';
+
+interface SidebarProps {
+    activeTab: string;
+    setActiveTab: (tab: string) => void;
+    onPostOpportunity: () => void;
+}
+
 import { 
     LayoutDashboard, 
     Briefcase, 
@@ -11,17 +20,9 @@ import {
     Plus,
     LogOut,
     UserCheck,
-    Users
+    Trophy,
+    BarChart3,
 } from 'lucide-react';
-import { auth } from '../../firebase';
-import { useNavigate } from 'react-router-dom';
-
-
-interface SidebarProps {
-    activeTab: string;
-    setActiveTab: (tab: string) => void;
-    onPostOpportunity: () => void;
-}
 
 const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -29,9 +30,9 @@ const sidebarItems = [
     { id: 'participants', label: 'Participants', icon: Users },
     { id: 'teams', label: 'Teams', icon: UserCircle },
     { id: 'submissions', label: 'Submissions', icon: ClipboardList },
-    { id: 'leaderboard', label: 'Leaderboard', icon: Plus },
-    { id: 'analytics', label: 'Reports & Analytics', icon: LayoutDashboard },
-    { id: 'judges', label: 'Judge Management', icon: Users },
+    { id: 'judges', label: 'Judge Management', icon: UserCheck },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+    { id: 'analytics', label: 'Reports & Analytics', icon: BarChart3 },
     { id: 'downloads', label: 'Downloads', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
@@ -72,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
                     <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left whitespace-nowrap ${
                             activeTab === item.id 
                                 ? 'bg-purple-50 text-[#6C3BFF]' 
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'

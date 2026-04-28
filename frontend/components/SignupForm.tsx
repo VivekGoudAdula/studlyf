@@ -37,7 +37,11 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
         }
     };
 
-    const handleSignup = async (e: React.FormEvent) => {
+    const [otp, setOtp] = useState('');
+    const [step, setStep] = useState(1); // 1: Info, 2: OTP
+    const [isVerified, setIsVerified] = useState(false);
+
+    const handleRequestOTP = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         if (password !== confirmPassword) {
@@ -46,11 +50,51 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
         }
         setLoading(true);
         try {
+            const response = await fetch('http://localhost:8000/api/auth/request-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || 'Failed to send OTP');
+            setStep(2);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOTP = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            const response = await fetch('http://localhost:8000/api/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp, name })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || 'Invalid OTP');
+            
+            setIsVerified(true);
+            // After verification, complete the actual signup
+            await completeSignup();
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const completeSignup = async () => {
+        try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             await updateProfile(user, { displayName: name });
             const finalRole = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'super_admin' : selectedRole;
-            console.log("[Signup] Attempting to save user to Firestore with role:", finalRole);
+            
             localStorage.setItem(`userRole_${user.uid}`, finalRole);
             await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
@@ -60,13 +104,15 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                 createdAt: new Date().toISOString(),
                 status: 'active',
             });
-            console.log("[Signup] Successfully saved user role to Firestore.");
             redirectByRole(finalRole);
         } catch (err: any) {
-            setError(err.message || 'Failed to create account');
-        } finally {
-            setLoading(false);
+            setError(err.message || 'Failed to complete registration');
         }
+    };
+
+    const handleSignup = (e: React.FormEvent) => {
+        if (step === 1) handleRequestOTP(e);
+        else handleVerifyOTP(e);
     };
 
     const handleSocialLogin = async (type: 'google' | 'github') => {
@@ -107,54 +153,93 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                     </div>
                 )}
 
-                <div>
-                    <label className={labelClasses}>Full Name</label>
-                    <input
-                        type="text"
-                        placeholder="John Doe"
-                        className={inputClasses}
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                </div>
+                {step === 1 ? (
+                    <>
+                        <div>
+                            <label className={labelClasses}>Full Name</label>
+                            <input
+                                type="text"
+                                placeholder="John Doe"
+                                className={inputClasses}
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                <div>
-                    <label className={labelClasses}>Email Address</label>
-                    <input
-                        type="email"
-                        placeholder="name@company.com"
-                        className={inputClasses}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
+                        <div>
+                            <label className={labelClasses}>Email Address</label>
+                            <input
+                                type="email"
+                                placeholder="name@company.com"
+                                className={inputClasses}
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <label className={labelClasses}>Password</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelClasses}>Password</label>
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    className={inputClasses}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClasses}>Confirm</label>
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    className={inputClasses}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="py-4"
+                    >
+                        <label className={labelClasses}>Verification Code (OTP)</label>
+                        <p className="text-[10px] text-gray-500 mb-3">We've sent a 6-digit code to <b>{email}</b></p>
                         <input
-                            type="password"
-                            placeholder="••••••••"
-                            className={inputClasses}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            type="text"
+                            placeholder="000000"
+                            className="w-full px-4 py-4 rounded-xl bg-gray-50 border-2 border-purple-100 focus:bg-white focus:border-purple-500 transition-all text-center text-2xl font-bold tracking-[0.5em] outline-none"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            maxLength={6}
                             required
                         />
-                    </div>
-                    <div>
-                        <label className={labelClasses}>Confirm</label>
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                            className={inputClasses}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                </div>
+                        <div className="mt-4 flex justify-between items-center px-1">
+                            <button 
+                                type="button"
+                                onClick={() => setStep(1)}
+                                className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors"
+                            >
+                                ← Change Email
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={handleRequestOTP}
+                                disabled={loading}
+                                className="text-[10px] font-bold text-purple-600 uppercase tracking-widest hover:underline disabled:opacity-50"
+                            >
+                                {loading ? 'Sending...' : 'Resend Code'}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Start Evolution button — same effects as Try Now */}
                 <style>{`
@@ -244,7 +329,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                     <span className="evo-orb evo-orb1" />
                     <span className="evo-orb evo-orb2" />
                     <span className="evo-orb evo-orb3" />
-                    <span className="evo-label">{loading ? 'Processing...' : 'Start Evolution'}</span>
+                    <span className="evo-label">{loading ? 'Processing...' : (step === 1 ? 'Start Evolution' : 'Verify & Register')}</span>
                 </button>
             </form>
 
