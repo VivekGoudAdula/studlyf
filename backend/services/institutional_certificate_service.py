@@ -5,7 +5,11 @@ import qrcode
 import uuid
 import hashlib
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
+try:
+    from weasyprint import HTML
+    HAS_WEASYPRINT = True
+except Exception:
+    HAS_WEASYPRINT = False
 from datetime import datetime
 from db import certificates_col, leaderboard_col, submissions_col, scores_col
 
@@ -41,9 +45,12 @@ class InstitutionalCertificateService:
         template = self.jinja_env.get_template('professional_certificate.html')
         html = template.render({**cert_data, "cert_id": cert_id, "v_code": v_code, "qr_blob": qr_blob})
         
-        output_path = f"artifacts/certs/certificate_{cert_id}.pdf"
-        os.makedirs("artifacts/certs", exist_ok=True)
-        HTML(string=html).write_pdf(output_path)
+        if HAS_WEASYPRINT:
+            output_path = f"artifacts/certs/certificate_{cert_id}.pdf"
+            os.makedirs("artifacts/certs", exist_ok=True)
+            HTML(string=html).write_pdf(output_path)
+        else:
+            print(f"WARNING: WeasyPrint not available. Certificate {cert_id} created in DB but PDF not generated locally.")
 
         # Persistent Record (Spec compliant)
         await certificates_col.insert_one({

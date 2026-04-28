@@ -1,8 +1,8 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
-from .services.institutional_analytics_service import analytics_service
-from .services.institutional_certificate_service import certificate_service
-from .services.leaderboard_service import leaderboard_service
+from services.institutional_analytics_service import analytics_service
+from services.institutional_certificate_service import certificate_service
+from services.leaderboard_service import leaderboard_service
 from db import leaderboard_col, events_col, participants_col, certificates_col
 from bson import ObjectId
 from services.audit_service import log_admin_action
@@ -148,7 +148,7 @@ async def export_summary():
     import csv
     import io
     from fastapi.responses import StreamingResponse
-    from .services.institutional_analytics_service import analytics_service
+    from services.institutional_analytics_service import analytics_service
     
     data = await analytics_service.get_kpi_summary("default_inst")
     
