@@ -88,7 +88,6 @@ const InstitutionDashboard: React.FC = () => {
                 </main>
             </div>
 
-
             {/* Modals */}
             <PostOpportunityModal 
                 isOpen={isPostModalOpen} 
