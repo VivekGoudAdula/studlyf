@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { Eye, EyeOff } from 'lucide-react';
 import AuthCard from './AuthCard';
 
 interface LoginFormProps {
@@ -19,6 +20,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleForgotPassword = async () => {
         if (!email) {
@@ -132,14 +134,23 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                             Forgot password?
                         </button>
                     </div>
-                    <input
-                        type="password"
-                        placeholder="admin123"
-                        className={inputClasses}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="admin123"
+                            className={inputClasses}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-2.5 text-gray-400 hover:text-purple-600 transition-colors"
+                        >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Log In button — same shimmer + orb effect as Try Now */}

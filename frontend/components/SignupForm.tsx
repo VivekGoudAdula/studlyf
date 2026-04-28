@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, db } from '../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { Eye, EyeOff } from 'lucide-react';
 import AuthCard from './AuthCard';
 
 interface SignupFormProps {
@@ -40,6 +41,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
     const [otp, setOtp] = useState('');
     const [step, setStep] = useState(1); // 1: Info, 2: OTP
     const [isVerified, setIsVerified] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleRequestOTP = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -182,25 +185,43 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className={labelClasses}>Password</label>
-                                <input
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className={inputClasses}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        className={inputClasses}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-2 text-gray-400 hover:text-purple-600 transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label className={labelClasses}>Confirm</label>
-                                <input
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className={inputClasses}
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    required
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        className={inputClasses}
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-2 text-gray-400 hover:text-purple-600 transition-colors"
+                                    >
+                                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </>
