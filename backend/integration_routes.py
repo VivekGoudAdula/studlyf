@@ -474,20 +474,23 @@ async def export_leaderboard_pdf(event_id: str):
     from db import scores_col, submissions_col, teams_col
     import os
 
-    # Resolve active_event placeholder
-    if event_id == "active_event":
+    # Resolve placeholders
+    if event_id in ["active_event", "ALL"]:
         event = await events_col.find_one({"status": "Live"}, sort=[("created_at", -1)])
         if not event: event = await events_col.find_one({}, sort=[("created_at", -1)])
-        if event: event_id = str(event["_id"])
-        else: raise HTTPException(status_code=404, detail="No active events found to export.")
+        if event: 
+            event_id = str(event["_id"])
+            event_title = event.get("title", "Event") if event_id != "ALL" else "All Events Master Leaderboard"
+        else: 
+            raise HTTPException(status_code=404, detail="No events found to export.")
     else:
         event = await events_col.find_one({"_id": ObjectId(event_id)})
+        event_title = event.get("title", "Event")
     
-    event_title = event.get("title", "Event") if event else "Event"
-
-    # Aggregate scores
+    # Aggregate scores (if ALL, we match all scores, otherwise just the specific event)
+    match_query = {} if event_id == "ALL" else {"event_id": event_id}
     pipeline = [
-        {"$match": {"event_id": event_id}},
+        {"$match": match_query},
         {"$group": {"_id": "$submission_id", "avg_score": {"$avg": "$total_score"}}},
         {"$sort": {"avg_score": -1}}
     ]
