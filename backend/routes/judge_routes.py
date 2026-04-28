@@ -23,6 +23,15 @@ async def score_submission(
     scores: dict = Body(...), 
     comments: str = Body(...)
 ):
+    # Integration Enhancement: Refresh leaderboard in background
+    import asyncio
+    from db import submissions_col
+    from services.leaderboard_service import leaderboard_service
+    async def _refresh():
+        sub = await submissions_col.find_one({"_id": ObjectId(submission_id)})
+        if sub: await leaderboard_service.calculate_event_leaderboard(sub.get("event_id"))
+    asyncio.create_task(_refresh())
+
     return await submit_score(submission_id, judge_id, scores, comments)
 
 @router.get("/scores/{submission_id}")

@@ -15,6 +15,8 @@ import ParticipantsManagement from './ParticipantsManagement';
 import TeamsManagement from './TeamsManagement';
 import LeaderboardPage from './LeaderboardPage';
 import ReportsPage from './ReportsPage';
+import DownloadsPage from './DownloadsPage';
+import Footer from '../../components/institution/Footer';
 
 const InstitutionDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -47,6 +49,8 @@ const InstitutionDashboard: React.FC = () => {
                 return <LeaderboardPage />;
             case 'analytics':
                 return <ReportsPage />;
+            case 'downloads':
+                return <DownloadsPage />;
             case 'settings':
                 return <SettingsPage />;
             case 'dashboard':
@@ -83,7 +87,7 @@ const InstitutionDashboard: React.FC = () => {
                     <Topbar />
                 </div>
 
-                <main className="p-10 pt-10 flex-1">
+                <main className="p-10 pt-10 pb-20 flex-1">
                     {renderContent()}
                 </main>
             </div>
@@ -93,6 +97,8 @@ const InstitutionDashboard: React.FC = () => {
                 isOpen={isPostModalOpen} 
                 onClose={() => setIsPostModalOpen(false)} 
             />
+
+            <Footer />
         </div>
     );
 };

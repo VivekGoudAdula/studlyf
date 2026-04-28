@@ -2,6 +2,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from .services.institutional_analytics_service import analytics_service
 from .services.institutional_certificate_service import certificate_service
+from .services.leaderboard_service import leaderboard_service
 from db import leaderboard_col, events_col, participants_col, certificates_col
 from bson import ObjectId
 from services.audit_service import log_admin_action
@@ -34,6 +35,11 @@ async def get_public_events():
         event["_id"] = str(event["_id"])
         events_list.append(event)
     return events_list
+
+@router.post("/leaderboard/{event_id}/refresh")
+async def refresh_leaderboard(event_id: str):
+    """Triggers dynamic recalculation of rankings based on latest scores."""
+    return await leaderboard_service.calculate_event_leaderboard(event_id)
 
 @router.get("/leaderboard/{event_id}")
 async def fetch_leaderboard(event_id: str):
@@ -80,6 +86,14 @@ async def finalize_event(event_id: str):
             {"$set": leaderboard_entry},
             upsert=True
         )
+
+    # [INTEGRATION ENHANCEMENT]
+    from services.leaderboard_service import leaderboard_service
+    from db import results_col
+    # Resolving undefined variable 'final_rankings' from original code by using the dynamic service
+    final_rankings = await leaderboard_service.calculate_event_leaderboard(event_id)
+    winner_ids = [r.get("team_id") or r.get("participant_id") for r in final_rankings[:3]]
+    await results_col.update_one({"event_id": event_id}, {"$set": {"winner_ids": winner_ids, "final_rankings": final_rankings}}, upsert=True)
 
     # 3. Mark event as ended
     await events_col.update_one(
