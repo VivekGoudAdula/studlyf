@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Medal, Star, TrendingUp, QrCode, Search } from 'lucide-react';
+import { Trophy, Medal, Star, TrendingUp, QrCode, Search, Download } from 'lucide-react';
 
 // Live Ticker Component (Dynamic Activity Feed)
 const LiveTicker: React.FC = () => {
@@ -92,6 +92,13 @@ const LeaderboardPage: React.FC = () => {
                             <p className="text-gray-500 mt-1">Dynamic rankings powered by institutional scoring.</p>
                         </div>
                         <div className="flex gap-2">
+                            <button 
+                                onClick={() => window.open('/api/v1/institution/leaderboard/active_event/export-pdf', '_blank')}
+                                className="flex items-center gap-2 px-6 py-3 bg-[#0f172a] text-white rounded-xl font-bold shadow-sm hover:scale-[1.02] transition-all"
+                            >
+                                <Download size={18} />
+                                Export as PDF
+                            </button>
                             <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 shadow-sm hover:border-blue-400 transition-all">
                                 <QrCode size={18} />
                                 Verify Results

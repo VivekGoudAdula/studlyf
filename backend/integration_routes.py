@@ -403,3 +403,145 @@ async def create_pro_event(event_data: dict):
         ]
     result = await events_col.insert_one(event_data)
     return {"event_id": str(result.inserted_id)}
+
+# ============================================================
+# EXPORT & DISTRIBUTION ENDPOINTS (Blueprint Requirements)
+# ============================================================
+
+@router.get("/export-summary")
+async def export_summary_csv():
+    """Generates a CSV export of the executive summary report."""
+    from fastapi.responses import StreamingResponse
+    from db import submissions_col, teams_col, scores_col
+    import csv
+    import io
+
+    events = await events_col.find({}).to_list(100)
+    total_participants = await participants_col.count_documents({})
+    total_teams = await teams_col.count_documents({})
+    total_submissions = await submissions_col.count_documents({})
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Metric", "Value"])
+    writer.writerow(["Total Events", len(events)])
+    writer.writerow(["Total Participants", total_participants])
+    writer.writerow(["Total Teams", total_teams])
+    writer.writerow(["Total Submissions", total_submissions])
+    writer.writerow([])
+    writer.writerow(["Event Title", "Status", "Start Date", "End Date", "Participants"])
+    for e in events:
+        p_count = await participants_col.count_documents({"event_id": str(e["_id"])})
+        writer.writerow([
+            e.get("title", "N/A"),
+            e.get("status", "N/A"),
+            str(e.get("start_date", "")),
+            str(e.get("end_date", "")),
+            p_count
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=institution_report_{datetime.utcnow().strftime('%Y%m%d')}.csv"}
+    )
+
+@router.get("/leaderboard/{event_id}/export-pdf")
+async def export_leaderboard_pdf(event_id: str):
+    """Generates a PDF export of the leaderboard for a specific event."""
+    from fastapi.responses import FileResponse
+    from db import scores_col, submissions_col, teams_col
+    import os
+
+    event = await events_col.find_one({"_id": ObjectId(event_id)})
+    event_title = event.get("title", "Event") if event else "Event"
+
+    # Aggregate scores
+    pipeline = [
+        {"$match": {"event_id": event_id}},
+        {"$group": {"_id": "$submission_id", "avg_score": {"$avg": "$total_score"}}},
+        {"$sort": {"avg_score": -1}}
+    ]
+    results = await scores_col.aggregate(pipeline).to_list(100)
+
+    # Build simple HTML table for PDF
+    rows_html = ""
+    for rank, r in enumerate(results, 1):
+        sub = await submissions_col.find_one({"_id": ObjectId(r["_id"])}) if r.get("_id") else None
+        team_name = "Individual"
+        if sub and sub.get("team_id"):
+            team = await teams_col.find_one({"_id": ObjectId(sub["team_id"])})
+            team_name = team.get("team_name", "Team") if team else "Team"
+        project = sub.get("project_title", "N/A") if sub else "N/A"
+        rows_html += f"<tr><td>{rank}</td><td>{team_name}</td><td>{project}</td><td>{round(r['avg_score'], 2)}</td></tr>"
+
+    html_content = f"""
+    <html><head><style>
+        body {{ font-family: Arial, sans-serif; padding: 40px; }}
+        h1 {{ color: #1e293b; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        th, td {{ border: 1px solid #e2e8f0; padding: 12px; text-align: left; }}
+        th {{ background: #1e293b; color: white; }}
+        tr:nth-child(even) {{ background: #f8fafc; }}
+    </style></head><body>
+        <h1>{event_title} — Final Leaderboard</h1>
+        <p>Generated: {datetime.utcnow().strftime('%B %d, %Y')}</p>
+        <table><tr><th>Rank</th><th>Team</th><th>Project</th><th>Score</th></tr>{rows_html}</table>
+    </body></html>"""
+
+    os.makedirs("artifacts/exports", exist_ok=True)
+    pdf_path = f"artifacts/exports/leaderboard_{event_id}.pdf"
+    try:
+        from weasyprint import HTML as WPHTML
+        WPHTML(string=html_content).write_pdf(pdf_path)
+    except ImportError:
+        # Fallback: return HTML if weasyprint not available
+        html_path = f"artifacts/exports/leaderboard_{event_id}.html"
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        return FileResponse(html_path, media_type="text/html", filename=f"leaderboard_{event_title}.html")
+
+    return FileResponse(pdf_path, media_type="application/pdf", filename=f"leaderboard_{event_title}.pdf")
+
+@router.get("/analytics/score-distribution")
+async def get_score_distribution():
+    """Returns score distribution data for histogram chart."""
+    from db import scores_col
+    pipeline = [
+        {"$bucket": {
+            "groupBy": "$total_score",
+            "boundaries": [0, 20, 40, 60, 80, 100],
+            "default": "100+",
+            "output": {"count": {"$sum": 1}}
+        }}
+    ]
+    try:
+        results = await scores_col.aggregate(pipeline).to_list(None)
+        labels = ["0-20", "20-40", "40-60", "60-80", "80-100"]
+        data = []
+        for i, label in enumerate(labels):
+            match = next((r for r in results if r["_id"] == i * 20), None)
+            data.append({"range": label, "count": match["count"] if match else 0})
+        return data
+    except Exception:
+        return [{"range": "0-20", "count": 0}, {"range": "20-40", "count": 0}, {"range": "40-60", "count": 0}, {"range": "60-80", "count": 0}, {"range": "80-100", "count": 0}]
+
+@router.get("/analytics/submission-distribution")
+async def get_submission_distribution():
+    """Returns submission count per event for bar chart."""
+    from db import submissions_col
+    pipeline = [
+        {"$group": {"_id": "$event_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    results = await submissions_col.aggregate(pipeline).to_list(None)
+    enriched = []
+    for r in results:
+        event = await events_col.find_one({"_id": ObjectId(r["_id"])}) if r.get("_id") else None
+        enriched.append({
+            "event": event.get("title", "Unknown") if event else "Unknown",
+            "count": r["count"]
+        })
+    return enriched
