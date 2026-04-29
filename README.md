@@ -105,7 +105,7 @@ Add the following to your `.env` file for the self-managed auth system:
 SECRET_KEY=your_generated_hex_key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
-DB_NAME=studlyf_db
+DB_NAME=your_db_name
 ```
 
 ### 2. 🏗️ Database Initialization
