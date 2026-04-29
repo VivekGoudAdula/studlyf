@@ -14,14 +14,13 @@ async def fetch_summary(institution_id: str):
     """Dynamically aggregates real-time metrics for the dashboard."""
     return await analytics_service.get_kpi_summary(institution_id)
 
-@router.get("/events")
-async def get_all_events():
-    """Retrieves all institutional events with participation counts."""
-    cursor = events_col.find({})
+@router.get("/events/{institution_id}")
+async def get_all_events(institution_id: str):
+    """Retrieves institutional events filtered by ID."""
+    cursor = events_col.find({"institution_id": institution_id})
     events_list = []
     async for event in cursor:
         event["_id"] = str(event["_id"])
-        # Add dynamic participant count
         event["participant_count"] = await participants_col.count_documents({"event_id": event["_id"]})
         events_list.append(event)
     return events_list
@@ -191,15 +190,13 @@ async def verify_certificate(certificate_id: str):
         "institution": "Certified Institution Network"
     }
 
-@router.get("/notifications")
-async def get_notifications():
+@router.get("/notifications/{institution_id}")
+async def get_notifications(institution_id: str):
     """Retrieves real-time institutional activity alerts."""
-    # In a real system, we would query a notifications collection.
-    # For now, we aggregate recent events and submissions as activity.
     activities = []
     
     # Recent Events
-    cursor = events_col.find().sort("created_at", -1).limit(3)
+    cursor = events_col.find({"institution_id": institution_id}).sort("created_at", -1).limit(3)
     async for e in cursor:
         activities.append({
             "_id": str(e["_id"]),
@@ -211,7 +208,7 @@ async def get_notifications():
     
     # Recent Submissions
     from db import submissions_col
-    cursor = submissions_col.find().sort("submitted_at", -1).limit(2)
+    cursor = submissions_col.find({"institution_id": institution_id}).sort("submitted_at", -1).limit(2)
     async for s in cursor:
         activities.append({
             "_id": str(s["_id"]),
@@ -223,15 +220,14 @@ async def get_notifications():
         
     return activities
 
-@router.get("/submissions")
-async def get_all_submissions():
-    """Retrieves all project submissions across all institutional events."""
+@router.get("/submissions/{institution_id}")
+async def get_all_submissions(institution_id: str):
+    """Retrieves all project submissions filtered by institution."""
     from db import submissions_col
-    cursor = submissions_col.find({})
+    cursor = submissions_col.find({"institution_id": institution_id})
     subs = []
     async for s in cursor:
         s["_id"] = str(s["_id"])
-        # Format for frontend
         s["submission_date"] = s.get("submitted_at", "2026-04-27")
         subs.append(s)
     return subs

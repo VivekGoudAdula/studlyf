@@ -50,6 +50,7 @@ import BSTPage from './pages/BSTPage';
 import HashTablePage from './pages/HashTablePage';
 import AITools from './pages/AITools';
 import InstitutionDashboard from './pages/institution-dashboard/InstitutionDashboard';
+import RoleFixer from './RoleFixer';
 
 
 // Unique Components
@@ -191,6 +192,7 @@ const App: React.FC = () => {
             <Route path="/signup" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/ai-tools" element={<AITools />} />
             <Route path="/verify/:id" element={<CertificateVerification />} />
+            <Route path="/fix-role" element={<RoleFixer />} />
 
             <Route path="/dashboard" element={
               <ProtectedRoute>

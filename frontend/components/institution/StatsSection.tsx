@@ -2,14 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Briefcase, ClipboardList, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
 
-const StatsSection: React.FC = () => {
+interface StatsSectionProps {
+    institutionId?: string;
+}
+
+const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_inst' }) => {
     const [stats, setStats] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await fetch('/api/v1/institution/summary/default_inst');
+                const res = await fetch(`/api/v1/institution/summary/${institutionId}`);
                 const data = await res.json();
                 
                 const formattedStats = [

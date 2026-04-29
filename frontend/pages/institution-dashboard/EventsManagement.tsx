@@ -25,11 +25,12 @@ interface Event {
 }
 
 interface EventsManagementProps {
+    institutionId?: string;
     onViewEvent: (id: string) => void;
     onCreateEvent: () => void;
 }
 
-const EventsManagement: React.FC<EventsManagementProps> = ({ onViewEvent, onCreateEvent }) => {
+const EventsManagement: React.FC<EventsManagementProps> = ({ institutionId = 'default_inst', onViewEvent, onCreateEvent }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [typeFilter, setTypeFilter] = useState('All');
@@ -40,7 +41,7 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ onViewEvent, onCrea
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const response = await fetch('/api/v1/institution/events');
+                const response = await fetch(`/api/v1/institution/events/${institutionId}`);
                 if (!response.ok) throw new Error("Fetch failed");
                 const data = await response.json();
                 setEvents(data.map((e: any) => ({

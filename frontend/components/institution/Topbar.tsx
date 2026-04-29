@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../AuthContext';
 import { Bell, Search, User, CreditCard, LogOut, Settings as SettingsIcon, Menu } from 'lucide-react';
 import { auth } from '../../firebase';
@@ -7,7 +7,13 @@ import { useNavigate } from 'react-router-dom';
 const Topbar: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [currentTime, setCurrentTime] = useState(new Date());
     const displayName = user?.displayName || 'User';
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -22,8 +28,11 @@ const Topbar: React.FC = () => {
         <div className="w-full flex items-center justify-between mb-10 animate-in slide-in-from-top duration-1000">
             {/* Left Side: Greeting */}
             <div className="hidden lg:block">
-                <h1 className="text-2xl font-['Outfit'] font-bold text-slate-900">
+                <h1 className="text-2xl font-['Outfit'] font-bold text-slate-900 flex items-center gap-3">
                     Welcome Back, <span className="text-[#6C3BFF]">{displayName}</span> 👋
+                    <span className="text-xs font-mono bg-slate-100 px-3 py-1 rounded-lg text-slate-500 ml-2">
+                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
                 </h1>
                 <p className="text-slate-400 text-sm font-medium mt-1">Here's your institutional overview for today.</p>
             </div>
