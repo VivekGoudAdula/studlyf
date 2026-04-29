@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
-import { auth } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../AuthContext';
 
 interface SidebarProps {
     activeTab: string;
@@ -40,14 +41,10 @@ const sidebarItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpportunity }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const handleLogout = async () => {
-        try {
-            await auth.signOut();
-            navigate('/login');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
+        logout();
     };
 
 
@@ -70,18 +67,26 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
 
             <nav className="flex-1 px-4 space-y-1">
                 {sidebarItems.map((item) => (
-                    <button
+                    <motion.button
                         key={item.id}
+                        whileHover={{ x: 5 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left whitespace-nowrap ${
                             activeTab === item.id 
-                                ? 'bg-purple-50 text-[#6C3BFF]' 
+                                ? 'bg-purple-50 text-[#6C3BFF] shadow-sm' 
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                     >
                         <item.icon size={20} className={activeTab === item.id ? 'text-[#6C3BFF]' : 'text-gray-400'} />
                         {item.label}
-                    </button>
+                        {activeTab === item.id && (
+                            <motion.div 
+                                layoutId="activePill"
+                                className="ml-auto w-1 h-5 bg-[#6C3BFF] rounded-full"
+                            />
+                        )}
+                    </motion.button>
                 ))}
             </nav>
 

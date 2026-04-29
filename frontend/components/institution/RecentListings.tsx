@@ -3,17 +3,18 @@ import { MoreHorizontal, ExternalLink, Users, ArrowRight, Eye, MoreVertical } fr
 import { motion } from 'framer-motion';
 
 interface RecentListingsProps {
+    institutionId?: string;
     onViewEvent?: (id: string) => void;
 }
 
-const RecentListings: React.FC<RecentListingsProps> = ({ onViewEvent }) => {
+const RecentListings: React.FC<RecentListingsProps> = ({ institutionId = 'default_inst', onViewEvent }) => {
     const [listings, setListings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchRecent = async () => {
             try {
-                const res = await fetch('/api/v1/institution/events');
+                const res = await fetch(`/api/v1/institution/events/${institutionId}`);
                 const data = await res.json();
                 // Take the 5 most recent events
                 setListings(data.slice(0, 5).map((e: any) => ({

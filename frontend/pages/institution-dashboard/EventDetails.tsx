@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import LeaderboardPage from './LeaderboardPage';
 import { useNavigate } from 'react-router-dom';
+import StageBuilder from './components/StageBuilder';
 
 interface EventDetailsProps {
     eventId: string | null;
@@ -30,7 +31,9 @@ interface EventDetailsProps {
 const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
     const [activeTab, setActiveTab] = useState('basic');
     const [event, setEvent] = useState<any>(null);
+    const [stages, setStages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -39,6 +42,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                 const res = await fetch(`/api/v1/institution/events/${eventId}/details`);
                 const data = await res.json();
                 setEvent(data);
+                setStages(data.stages || []);
             } catch (err) {
                 console.error("Failed to load event details");
             } finally {
@@ -67,27 +71,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
         switch (activeTab) {
             case 'stages':
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {(event.stages || [
-                            { name: 'Registration Deadline', date: event.registration_deadline, type: 'Deadline' },
-                            { name: 'Hackathon Start', date: event.start_date, type: 'Event' },
-                            { name: 'Submission Deadline', date: event.submission_deadline, type: 'Submission' }
-                        ]).map((stage, i) => (
-                            <div key={i} className="flex items-center gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                                <div className="w-12 h-12 bg-white rounded-xl flex flex-col items-center justify-center border border-slate-200 shadow-sm">
-                                    <span className="text-[10px] font-black text-purple-600 uppercase">Step</span>
-                                    <span className="text-lg font-black text-slate-900">{i+1}</span>
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-slate-900">{stage.name}</h4>
-                                    <p className="text-sm text-slate-500">{new Date(stage.date).toLocaleString()}</p>
-                                </div>
-                                <div className="px-4 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold uppercase tracking-widest">
-                                    {stage.type}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <StageBuilder stages={stages} onUpdate={setStages} />
                 );
             case 'prizes':
                 return (
@@ -276,8 +260,26 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                     <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all">
                         <X size={20} /> Cancel
                     </button>
-                    <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-[#6C3BFF] shadow-lg shadow-slate-200 transition-all">
-                        <Save size={20} /> Save Changes
+                    <button 
+                        disabled={saving}
+                        onClick={async () => {
+                            setSaving(true);
+                            try {
+                                await fetch(`/api/v1/institution/events/${eventId}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ ...event, stages })
+                                });
+                                alert("Changes saved successfully!");
+                            } catch (err) {
+                                alert("Failed to save changes.");
+                            } finally {
+                                setSaving(false);
+                            }
+                        }}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-[#6C3BFF] shadow-lg shadow-slate-200 transition-all disabled:opacity-50"
+                    >
+                        <Save size={20} /> {saving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </div>

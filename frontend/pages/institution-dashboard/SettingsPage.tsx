@@ -15,7 +15,11 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const SettingsPage: React.FC = () => {
+interface SettingsPageProps {
+    institutionId: string;
+}
+
+const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId }) => {
     const [activeSection, setActiveSection] = useState('profile');
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -23,7 +27,7 @@ const SettingsPage: React.FC = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const res = await fetch('/api/v1/institution/profile/default_inst'); 
+                const res = await fetch(`/api/v1/institution/profile/${institutionId}`); 
                 const data = await res.json();
                 setProfile(data);
             } catch (err) {

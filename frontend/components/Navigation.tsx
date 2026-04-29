@@ -3,11 +3,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { auth } from '../firebase';
-import { signOut } from 'firebase/auth';
 import { ShoppingCart } from 'lucide-react';
-
-
 
 const StudlyfLogo = ({ className = "h-8 sm:h-10" }: { className?: string }) => (
   <div className={`flex items-center ${className}`}>
@@ -70,7 +66,6 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
     </BentoCard>
     <BentoCard onClick={onItemClick} to="/job-prep/resume-builder" title="Resume Builder" desc="Create instant resumes." className="md:col-span-1 md:row-span-2 min-h-[160px] md:min-h-[180px]">
       <div className="mt-2 mx-auto w-3/4 h-full bg-white border border-gray-200 rounded-t-lg shadow-sm group-hover:shadow-md transition-all group-hover:scale-[1.02] group-hover:-translate-y-1 relative overflow-hidden p-2">
-        {/* Header */}
         <div className="flex gap-2 mb-2">
           <div className="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></div>
           <div className="space-y-1 w-full">
@@ -78,7 +73,6 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
             <div className="h-1 w-1/2 bg-gray-400 rounded-full"></div>
           </div>
         </div>
-        {/* Body Lines */}
         <div className="space-y-1.5">
           <div className="h-0.5 w-full bg-gray-200"></div>
           <div className="flex gap-1">
@@ -96,8 +90,6 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
             <div className="h-1 w-4/6 bg-gray-100 rounded"></div>
           </div>
         </div>
-
-        {/* Decor */}
         <div className="absolute bottom-0 right-0 w-8 h-8 bg-blue-500/10 rounded-tl-xl flex items-center justify-center">
           <div className="w-2 h-2 rounded-full bg-blue-500"></div>
         </div>
@@ -114,14 +106,12 @@ const JobPrepDropdown = ({ onItemClick }: { onItemClick: () => void }) => (
 
 
 const Navigation: React.FC = () => {
-  const { user, role } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMobileOverlay, setActiveMobileOverlay] = useState<string | null>(null);
-
-  const isDashboard = pathname.startsWith('/dashboard') || pathname.startsWith('/learn') || pathname.startsWith('/job-prep');
 
   const timeoutRef = useRef<number | null>(null);
 
@@ -142,14 +132,12 @@ const Navigation: React.FC = () => {
     <>
       <nav className="fixed top-0 z-[100] w-full px-2 py-4 sm:px-6 sm:py-6 lg:px-12">
         <div className="max-w-7xl mx-auto relative">
-          {/* Main Purple Nav Bar */}
           <motion.div
             initial={{ y: -40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             className="relative z-[110] h-14 sm:h-20 bg-[#7C3AED] rounded-[1.25rem] sm:rounded-[2rem] px-4 sm:px-8 lg:px-12 flex items-center justify-between shadow-2xl shadow-[#7C3AED]/40 border border-[#7C3AED]/50"
           >
             <div className="flex items-center lg:w-[250px] gap-4">
-              {/* Mobile Menu Toggle */}
               <button
                 onClick={toggleMobileMenu}
                 className="lg:hidden text-white p-1 hover:bg-white/10 rounded-lg transition-colors"
@@ -166,7 +154,6 @@ const Navigation: React.FC = () => {
               </Link>
             </div>
 
-            {/* Desktop Center Links */}
             <div className="flex-grow flex justify-center h-full">
               <div className="hidden lg:flex items-center space-x-16 h-full">
                 {['learn', 'jobprep'].map((id) => (
@@ -180,7 +167,6 @@ const Navigation: React.FC = () => {
                   </button>
                 ))}
 
-                {/* AI Tools Direct Link */}
                 <Link
                   to="/ai-tools"
                   className="flex items-center transition-all h-full uppercase tracking-[0.25em] font-bold text-[11px] text-white/80 hover:text-white"
@@ -190,11 +176,9 @@ const Navigation: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Action Button */}
             <div className="flex items-center lg:w-[250px] justify-end shrink-0 gap-6">
               {user ? (
                 <div className="flex items-center gap-3">
-                  {/* Cart Icon */}
                   <Link
                     to="/learn/cart"
                     className="relative p-2 hover:bg-white/10 rounded-lg transition-colors group"
@@ -217,12 +201,12 @@ const Navigation: React.FC = () => {
                     to="/dashboard"
                     className="hidden sm:flex flex-col items-end mr-1 group/profile hover:opacity-80 transition-opacity"
                   >
-                    <span className="text-[8px] text-white font-black uppercase tracking-widest leading-none mb-0.5 group-hover/profile:text-[#A78BFA] transition-colors">{user.displayName || 'MEMBER'}</span>
+                    <span className="text-[8px] text-white font-black uppercase tracking-widest leading-none mb-0.5 group-hover/profile:text-[#A78BFA] transition-colors">{user.full_name || 'MEMBER'}</span>
                     <span className="text-[7px] text-white/60 font-medium truncate max-w-[100px]">{user.email}</span>
                   </Link>
 
                   <motion.button
-                    onClick={() => signOut(auth)}
+                    onClick={() => logout()}
                     whileHover={{ scale: 0.96 }}
                     className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg sm:rounded-xl font-bold text-[8px] sm:text-[9px] uppercase tracking-[0.15em] sm:tracking-[0.25em] border border-white/20 backdrop-blur-md"
                   >
@@ -250,11 +234,9 @@ const Navigation: React.FC = () => {
 
           </motion.div>
 
-          {/* Mobile Overlay Trays (Slide down from navbar) */}
           <AnimatePresence>
             {activeMobileOverlay && (
               <>
-                {/* Backdrop overlay */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -313,7 +295,6 @@ const Navigation: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {/* Desktop Dropdown Menus */}
           <AnimatePresence>
             {activeMenu && (
               <>
@@ -335,7 +316,6 @@ const Navigation: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {/* Mobile Drawer Overlay */}
           <AnimatePresence>
             {mobileMenuOpen && (
               <>
@@ -422,7 +402,7 @@ const Navigation: React.FC = () => {
                               Dashboard
                             </Link>
                             <button
-                              onClick={() => { signOut(auth); setMobileMenuOpen(false); }}
+                              onClick={() => { logout(); setMobileMenuOpen(false); }}
                               className="w-full py-4 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-xs font-bold uppercase tracking-[0.25em] hover:bg-red-500 hover:text-white transition-colors"
                             >
                               Logout

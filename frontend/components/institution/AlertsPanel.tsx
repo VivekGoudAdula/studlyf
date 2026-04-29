@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Calendar, Star, Info, ChevronRight, Zap } from 'lucide-react';
 
-const AlertsPanel: React.FC = () => {
+interface AlertsPanelProps {
+    institutionId?: string;
+}
+
+const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst' }) => {
     const [activeTab, setActiveTab] = useState('alerts');
     const [alerts, setAlerts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -10,7 +14,7 @@ const AlertsPanel: React.FC = () => {
     useEffect(() => {
         const fetchAlerts = async () => {
             try {
-                const res = await fetch('/api/v1/institution/notifications');
+                const res = await fetch(`/api/v1/institution/notifications/${institutionId}`);
                 const data = await res.json();
                 setAlerts(data.map((a: any) => ({
                     id: a._id,

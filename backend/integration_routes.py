@@ -9,19 +9,30 @@ from services.audit_service import log_admin_action
 
 router = APIRouter(prefix="/api/v1/institution", tags=["Institutional Integration"])
 
+@router.post("/profile")
+async def create_institution_profile(profile: dict):
+    """Saves a new institution profile to MongoDB."""
+    from db import institutions_col
+    profile["created_at"] = datetime.utcnow()
+    await institutions_col.update_one(
+        {"institution_id": profile["institution_id"]},
+        {"$set": profile},
+        upsert=True
+    )
+    return {"status": "success"}
+
 @router.get("/summary/{institution_id}")
 async def fetch_summary(institution_id: str):
     """Dynamically aggregates real-time metrics for the dashboard."""
     return await analytics_service.get_kpi_summary(institution_id)
 
-@router.get("/events")
-async def get_all_events():
-    """Retrieves all institutional events with participation counts."""
-    cursor = events_col.find({})
+@router.get("/events/{institution_id}")
+async def get_all_events(institution_id: str):
+    """Retrieves institutional events filtered by ID."""
+    cursor = events_col.find({"institution_id": institution_id})
     events_list = []
     async for event in cursor:
         event["_id"] = str(event["_id"])
-        # Add dynamic participant count
         event["participant_count"] = await participants_col.count_documents({"event_id": event["_id"]})
         events_list.append(event)
     return events_list
@@ -191,15 +202,13 @@ async def verify_certificate(certificate_id: str):
         "institution": "Certified Institution Network"
     }
 
-@router.get("/notifications")
-async def get_notifications():
+@router.get("/notifications/{institution_id}")
+async def get_notifications(institution_id: str):
     """Retrieves real-time institutional activity alerts."""
-    # In a real system, we would query a notifications collection.
-    # For now, we aggregate recent events and submissions as activity.
     activities = []
     
     # Recent Events
-    cursor = events_col.find().sort("created_at", -1).limit(3)
+    cursor = events_col.find({"institution_id": institution_id}).sort("created_at", -1).limit(3)
     async for e in cursor:
         activities.append({
             "_id": str(e["_id"]),
@@ -211,7 +220,7 @@ async def get_notifications():
     
     # Recent Submissions
     from db import submissions_col
-    cursor = submissions_col.find().sort("submitted_at", -1).limit(2)
+    cursor = submissions_col.find({"institution_id": institution_id}).sort("submitted_at", -1).limit(2)
     async for s in cursor:
         activities.append({
             "_id": str(s["_id"]),
@@ -223,15 +232,14 @@ async def get_notifications():
         
     return activities
 
-@router.get("/submissions")
-async def get_all_submissions():
-    """Retrieves all project submissions across all institutional events."""
+@router.get("/submissions/{institution_id}")
+async def get_all_submissions(institution_id: str):
+    """Retrieves all project submissions filtered by institution."""
     from db import submissions_col
-    cursor = submissions_col.find({})
+    cursor = submissions_col.find({"institution_id": institution_id})
     subs = []
     async for s in cursor:
         s["_id"] = str(s["_id"])
-        # Format for frontend
         s["submission_date"] = s.get("submitted_at", "2026-04-27")
         subs.append(s)
     return subs
@@ -349,7 +357,52 @@ async def get_complex_event_details(event_id: str):
     event = await events_col.find_one({"_id": ObjectId(event_id)})
     if event:
         event["_id"] = str(event["_id"])
+        # Ensure stages is always a list
+        if "stages" not in event:
+            event["stages"] = []
     return event
+
+@router.patch("/events/{event_id}")
+async def update_event_details(event_id: str, update_data: dict):
+    """Updates general event information."""
+    from db import events_col
+    if "_id" in update_data: del update_data["_id"]
+    await events_col.update_one({"_id": ObjectId(event_id)}, {"$set": update_data})
+    return {"status": "success"}
+
+@router.post("/events/{event_id}/stages")
+async def add_event_stage(event_id: str, stage: dict):
+    """Adds a new stage to an event's workflow."""
+    from db import events_col
+    import uuid
+    stage["id"] = str(uuid.uuid4())
+    stage["created_at"] = datetime.utcnow()
+    await events_col.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$push": {"stages": stage}}
+    )
+    return {"status": "success", "stage_id": stage["id"]}
+
+@router.put("/events/{event_id}/stages/{stage_id}")
+async def update_event_stage(event_id: str, stage_id: str, stage_update: dict):
+    """Updates a specific stage within an event."""
+    from db import events_col
+    # MongoDB positional update for array
+    await events_col.update_one(
+        {"_id": ObjectId(event_id), "stages.id": stage_id},
+        {"$set": {"stages.$": stage_update}}
+    )
+    return {"status": "success"}
+
+@router.delete("/events/{event_id}/stages/{stage_id}")
+async def delete_event_stage(event_id: str, stage_id: str):
+    """Removes a stage from an event's workflow."""
+    from db import events_col
+    await events_col.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$pull": {"stages": {"id": stage_id}}}
+    )
+    return {"status": "success"}
 
 @router.patch("/events/{event_id}/advance-stage")
 async def advance_participants(event_id: str, participant_ids: list, next_stage: str):
