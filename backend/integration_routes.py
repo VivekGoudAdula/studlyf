@@ -1,5 +1,8 @@
 from datetime import datetime
+import asyncio
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException
+from services.email_service import send_notification_email
 from services.institutional_analytics_service import analytics_service
 from services.institutional_certificate_service import certificate_service
 from services.leaderboard_service import leaderboard_service
@@ -13,13 +16,33 @@ router = APIRouter(prefix="/api/v1/institution", tags=["Institutional Integratio
 async def create_institution_profile(profile: dict):
     """Saves a new institution profile to MongoDB."""
     from db import institutions_col
-    profile["created_at"] = datetime.utcnow()
+    inst_id = str(profile.get("institution_id", "unknown")).strip()
+    
+    # CRITICAL: Remove MongoDB's internal _id to avoid immutable field errors
+    if "_id" in profile:
+        del profile["_id"]
+        
+    profile["institution_id"] = inst_id 
+    profile["updated_at"] = datetime.utcnow()
+    
     await institutions_col.update_one(
-        {"institution_id": profile["institution_id"]},
+        {"institution_id": inst_id},
         {"$set": profile},
         upsert=True
     )
     return {"status": "success"}
+
+@router.get("/profile/{institution_id}")
+async def get_institution_profile(institution_id: str):
+    """Retrieves the full profile of an institution including team and social links."""
+    from db import institutions_col
+    profile = await institutions_col.find_one({"institution_id": institution_id})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    # Clean ID
+    if "_id" in profile:
+        profile["_id"] = str(profile["_id"])
+    return profile
 
 @router.get("/summary/{institution_id}")
 async def fetch_summary(institution_id: str):
@@ -36,6 +59,133 @@ async def get_all_events(institution_id: str):
         event["participant_count"] = await participants_col.count_documents({"event_id": event["_id"]})
         events_list.append(event)
     return events_list
+
+@router.get("/events/{event_id}/participants")
+async def get_event_participants(event_id: str):
+    """Retrieves all students registered for a specific event."""
+    cursor = participants_col.find({"event_id": event_id})
+    students = []
+    async for student in cursor:
+        student["_id"] = str(student["_id"])
+        students.append(student)
+    return students
+
+@router.get("/events/{event_id}/qualified-bundle")
+async def get_qualified_bundle(event_id: str, stage_name: str, threshold: float = 90.0):
+    """
+    Advanced Filtering: Bundles teams into Approved, Rejected, or Pending 
+    based on a multi-criteria scoring matrix.
+    """
+    from db import scores_col, teams_col, submissions_col
+    
+    event = await events_col.find_one({"_id": ObjectId(event_id)})
+    if not event: raise HTTPException(status_code=404, detail="Event not found")
+    
+    # 1. Aggregate scores for all criteria
+    pipeline = [
+        {"$match": {"event_id": event_id}},
+        {"$group": {
+            "_id": "$team_id",
+            "total_avg_score": {"$avg": "$total_score"},
+            "criteria_breakdown": {"$first": "$criteria_scores"}, # Assuming judge scores are stored here
+            "judge_count": {"$sum": 1}
+        }}
+    ]
+    results = await scores_col.aggregate(pipeline).to_list(None)
+    
+    approved = []
+    rejected = []
+    pending = []
+    
+    # Total assigned judges count for 'Pending' logic
+    total_judges = len(event.get("judges", []))
+    
+    for res in results:
+        team = await teams_col.find_one({"_id": ObjectId(res["_id"])})
+        if not team: continue
+        
+        team_data = {
+            "team_id": str(team["_id"]),
+            "team_name": team["name"],
+            "score": round(res["total_avg_score"], 2),
+            "judges_completed": res["judge_count"],
+            "is_fully_evaluated": res["judge_count"] >= total_judges
+        }
+        
+        if res["judge_count"] < total_judges:
+            pending.append(team_data)
+        elif res["total_avg_score"] >= threshold:
+            approved.append(team_data)
+        else:
+            rejected.append(team_data)
+            
+    # Also find teams with 0 scores (Pending)
+    scored_team_ids = [res["_id"] for res in results]
+    cursor = teams_col.find({"event_id": event_id, "_id": {"$nin": scored_team_ids}})
+    async for team in cursor:
+        pending.append({
+            "team_id": str(team["_id"]),
+            "team_name": team["name"],
+            "score": 0,
+            "judges_completed": 0,
+            "is_fully_evaluated": false
+        })
+
+    return {
+        "summary": {
+            "approved": len(approved),
+            "rejected": len(rejected),
+            "pending": len(pending)
+        },
+        "approved": approved,
+        "rejected": rejected,
+        "pending": pending
+    }
+
+@router.post("/events/{event_id}/bulk-notify")
+async def send_bulk_selection_emails(event_id: str, data: dict):
+    """
+    Sends personalized emails to a 'bundle' of selected teams.
+    Injects dynamic team names.
+    """
+    team_ids = data.get("team_ids", [])
+    next_stage = data.get("next_stage", "Next Round")
+    
+    event = await events_col.find_one({"_id": ObjectId(event_id)})
+    from db import teams_col, users_col
+    
+    success_count = 0
+    for tid in team_ids:
+        team = await teams_col.find_one({"_id": ObjectId(tid)})
+        if team:
+            # Send to all members of the team
+            for member_email in team.get("members", []):
+                subject = f"Selection Alert: {team['name']} is moving to {next_stage}!"
+                body = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; color: #333;">
+                        <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 20px;">
+                            <h2 style="color: #6C3BFF;">Congratulations Team {team['name']}!</h2>
+                            <p>You have successfully qualified for the <strong>{next_stage}</strong> of <strong>{event['title']}</strong>.</p>
+                            <p>Our judges were impressed with your performance!</p>
+                            <br>
+                            <p><strong>What's Next?</strong><br>Check your dashboard for new submission requirements and deadlines.</p>
+                            <br>
+                            <p>Best Regards,<br>{event['title']} Organizing Team</p>
+                        </div>
+                    </body>
+                </html>
+                """
+                asyncio.create_task(send_notification_email(member_email, subject, body))
+            
+            # Update team status in participants_col if needed
+            await participants_col.update_many(
+                {"event_id": event_id, "team_id": tid},
+                {"$set": {"current_stage": next_stage}}
+            )
+            success_count += 1
+            
+    return {"status": "success", "sent_to": success_count}
 
 @router.get("/events/public")
 async def get_public_events():
@@ -64,6 +214,90 @@ async def fetch_leaderboard(event_id: str):
     rankings = await leaderboard_col.find({"event_id": event_id}).sort("rank", 1).to_list(None)
     for r in rankings: r["_id"] = str(r["_id"])
     return rankings
+
+@router.get("/leaderboard/{event_id}/export-pdf")
+async def export_leaderboard_pdf(event_id: str):
+    """
+    Generates a professional PDF report with ranked results 
+    and detailed dimension-based breakdowns.
+    """
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from io import BytesIO
+    from db import leaderboard_col, events_col
+    
+    if event_id == "active_event":
+        event = await events_col.find_one({"status": "Live"}, sort=[("created_at", -1)])
+        if not event: event = await events_col.find_one({}, sort=[("created_at", -1)])
+        if event: event_id = str(event["_id"])
+
+    # 1. Fetch Data
+    event = await events_col.find_one({"_id": ObjectId(event_id)})
+    rankings = await leaderboard_col.find({"event_id": event_id}).sort("rank", 1).to_list(None)
+    
+    # 2. Create PDF Buffer
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    # 3. Header
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#6C3BFF'),
+        spaceAfter=20,
+        alignment=1 # Center
+    )
+    elements.append(Paragraph(f"{event.get('title', 'Event Results')}", title_style))
+    elements.append(Paragraph(f"Official Leaderboard & Performance Report", styles['Heading3']))
+    elements.append(Spacer(1, 20))
+    
+    # 4. Table Data
+    data = [["Rank", "Team Name", "Score Breakdown", "Final Score"]]
+    for r in rankings:
+        # Format criteria breakdown as a string
+        breakdown_str = ""
+        if r.get("criteria_scores"):
+            breakdown_str = "\n".join([f"{k}: {v}" for k, v in r["criteria_scores"].items()])
+        else:
+            breakdown_str = "Verified Overall Score"
+        
+        data.append([
+            f"#{r['rank']}",
+            r['team_name'],
+            breakdown_str,
+            str(r['total_score'])
+        ])
+    
+    # 5. Table Styling
+    t = Table(data, colWidths=[50, 150, 200, 80])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6C3BFF')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(t)
+    
+    # 6. Build
+    doc.build(elements)
+    
+    # 7. Return PDF
+    buffer.seek(0)
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=results.pdf"}
+    )
 
 @router.post("/finalize-event/{event_id}")
 async def finalize_event(event_id: str):
@@ -156,18 +390,52 @@ async def generate_event_certificates(event_id: str, rankings: list):
     
     if cert_entries:
         await certificates_col.insert_many(cert_entries)
+        
+        # [REAL-TIME NOTIFICATION] Notify Recipients via Email
+        for cert in cert_entries:
+            # We need the recipient's email. Since it's not in the cert_entry, 
+            # we try to find it from the user's record or use a fallback.
+            recipient_email = None
+            # Heuristic: try to find user by name or look up in participants
+            participant = await participants_col.find_one({"full_name": cert["recipient_name"], "event_id": event_id})
+            if participant:
+                recipient_email = participant.get("email")
+            
+            if recipient_email:
+                subject = f"Congratulations! Your Certificate for {cert['event_title']} is ready"
+                rank_text = f"Rank: {cert['rank']}" if cert['rank'] else ""
+                body = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; color: #333;">
+                        <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+                            <h2 style="color: #D4AF37;">Congratulations, {cert['recipient_name']}!</h2>
+                            <p>You have been awarded a certificate for your achievement in <strong>{cert['event_title']}</strong>.</p>
+                            <p><strong>Category:</strong> {cert['category']}</p>
+                            {f"<p><strong>Rank:</strong> {cert['rank']}</p>" if cert['rank'] else ""}
+                            <br>
+                            <p>Your official certificate has been issued and is available in your Studlyf profile.</p>
+                            <p>Verification Code: <strong>{cert['verification_code']}</strong></p>
+                            <br>
+                            <p>Great job on your hard work!</p>
+                            <br>
+                            <p>Best Regards,<br>Studlyf Team</p>
+                        </div>
+                    </body>
+                </html>
+                """
+                asyncio.create_task(send_notification_email(recipient_email, subject, body))
     
     return {"status": "Event finalized and leaderboard generated successfully"}
 
-@router.get("/export-summary")
-async def export_summary():
+@router.get("/export-summary/{institution_id}")
+async def export_institution_summary_csv(institution_id: str):
     """Generates a CSV export of the institutional performance summary."""
     import csv
     import io
     from fastapi.responses import StreamingResponse
     from services.institutional_analytics_service import analytics_service
     
-    data = await analytics_service.get_kpi_summary("default_inst")
+    data = await analytics_service.get_kpi_summary(institution_id)
     
     output = io.StringIO()
     writer = csv.writer(output)
@@ -179,7 +447,7 @@ async def export_summary():
     return StreamingResponse(
         io.BytesIO(output.getvalue().encode()),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=institution_report.csv"}
+        headers={"Content-Disposition": f"attachment; filename=institution_report_{institution_id}.csv"}
     )
 
 @router.get("/verify-certificate/{certificate_id}")
@@ -255,6 +523,41 @@ async def create_submission(submission_data: dict):
     
     submission_data["submitted_at"] = datetime.utcnow()
     result = await submissions_col.insert_one(submission_data)
+    
+    # [REAL-TIME NOTIFICATION] Notify Institution
+    inst_id = submission_data.get("institution_id")
+    if inst_id:
+        from db import institutions_col, events_col
+        institution = await institutions_col.find_one({"institution_id": inst_id})
+        if institution:
+            notif_settings = institution.get("notifications", {})
+            admin_alerts = notif_settings.get("admin_alerts", {})
+            if admin_alerts.get("new_submissions", False):
+                inst_email = institution.get("email")
+                if inst_email:
+                    event = await events_col.find_one({"_id": ObjectId(submission_data.get("event_id"))})
+                    event_title = event.get("title", "Event") if event else "Event"
+                    
+                    inst_subject = f"New Submission: {event_title}"
+                    inst_body = f"""
+                    <html>
+                        <body style="font-family: Arial, sans-serif; color: #333;">
+                            <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+                                <h2 style="color: #10B981;">New Project Submitted!</h2>
+                                <p>Hello Admin,</p>
+                                <p>A team has just submitted their project for <strong>{event_title}</strong>.</p>
+                                <p><strong>Team Name:</strong> {submission_data.get('team_name', 'N/A')}</p>
+                                <p><strong>Project Title:</strong> {submission_data.get('project_title', 'N/A')}</p>
+                                <br>
+                                <p>You can review the submission in your dashboard.</p>
+                                <br>
+                                <p>Best Regards,<br>Studlyf Institution Network</p>
+                            </div>
+                        </body>
+                    </html>
+                    """
+                    asyncio.create_task(send_notification_email(inst_email, inst_subject, inst_body))
+
     return {"status": "success", "id": str(result.inserted_id)}
 
 @router.get("/judge/assigned/{judge_id}")
@@ -272,54 +575,168 @@ async def get_assigned_projects(judge_id: str):
 
 @router.post("/judge/score")
 async def save_judge_score(score_data: dict):
-    """Saves a judge's evaluation for a project."""
-    from db import scores_col, submissions_col
+    """
+    Saves a judge's evaluation with support for multiple criteria 
+    (Innovation, UI, etc.) and auto-calculates total.
+    """
+    from db import scores_col, submissions_col, teams_col
     from datetime import datetime
     
-    score_data["evaluated_at"] = datetime.utcnow()
-    await scores_col.insert_one(score_data)
+    # 1. Logic: Extract criteria and calculate total safely
+    criteria_scores = score_data.get("criteria_scores", {})
+    total_score = sum(criteria_scores.values()) if criteria_scores else score_data.get("total_score", 0)
     
-    # Update submission status
+    evaluation_entry = {
+        "event_id": score_data.get("event_id"),
+        "team_id": score_data.get("team_id"),
+        "submission_id": score_data.get("submission_id"),
+        "judge_email": score_data.get("judge_email"),
+        "criteria_scores": criteria_scores,
+        "total_score": total_score,
+        "feedback": score_data.get("feedback", ""),
+        "evaluated_at": datetime.utcnow()
+    }
+    
+    await scores_col.insert_one(evaluation_entry)
+    
+    # 2. Update submission status
     await submissions_col.update_one(
         {"_id": ObjectId(score_data["submission_id"])},
         {"$set": {"status": "Scored"}}
     )
-    await log_admin_action("judge@institution.com", "SUBMISSION_SCORED", f"Scored submission {score_data['submission_id']}.")
-    return {"status": "success"}
+    
+    # 3. NOTIFY ADMIN (If enabled)
+    from db import events_col, institutions_col
+    event = await events_col.find_one({"_id": ObjectId(score_data["event_id"])})
+    if event:
+        institution = await institutions_col.find_one({"institution_id": event["institution_id"]})
+        if institution:
+            notif_settings = institution.get("notifications", {}).get("admin_alerts", {})
+            if notif_settings.get("judge_evaluations", True):
+                inst_email = institution.get("email")
+                if inst_email:
+                    team = await teams_col.find_one({"_id": ObjectId(score_data["team_id"])})
+                    team_name = team["name"] if team else "a team"
+                    
+                    subject = f"Judge Action: {team_name} Scored ({total_score}/100)"
+                    body = f"""
+                    <html>
+                        <body style="font-family: Arial, sans-serif; color: #333;">
+                            <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 20px;">
+                                <h2 style="color: #6C3BFF;">Evaluation Complete</h2>
+                                <p>Hello Admin,</p>
+                                <p>A judge has finished evaluating <strong>{team_name}</strong> for the event: <strong>{event['title']}</strong>.</p>
+                                <div style="background: #f8f9ff; padding: 15px; border-radius: 10px; border-left: 4px solid #6C3BFF;">
+                                    <p style="margin: 0;"><strong>Final Score:</strong> {total_score} / 100</p>
+                                </div>
+                                <br>
+                                <p>The team has been updated in your <strong>Selection Command Center</strong>.</p>
+                                <br>
+                                <p>Best Regards,<br>Studlyf Evaluation Network</p>
+                            </div>
+                        </body>
+                    </html>
+                    """
+                    asyncio.create_task(send_notification_email(inst_email, subject, body))
 
-@router.get("/analytics/timeline")
-async def get_analytics_timeline():
-    """Retrieves the 30-day registration timeline."""
-    return await analytics_service.get_registration_timeline("default_inst")
+    await log_admin_action(score_data.get("judge_email", "judge@eval.com"), "SUBMISSION_SCORED", f"Scored team {score_data.get('team_id')}")
+    return {"status": "success", "total_score": total_score}
 
-@router.get("/analytics/departments")
-async def get_analytics_departments():
+@router.get("/analytics/{institution_id}/timeline")
+async def get_analytics_timeline(institution_id: str):
+    """Retrieves the 30-day registration timeline for a specific institution."""
+    return await analytics_service.get_registration_timeline(institution_id)
+
+@router.get("/analytics/{institution_id}/departments")
+async def get_analytics_departments(institution_id: str):
     """Retrieves the departmental participation breakdown."""
-    return await analytics_service.get_departmental_breakdown("default_inst")
+    return await analytics_service.get_departmental_breakdown(institution_id)
 
-@router.patch("/submissions/{submission_id}/status")
-async def update_submission_status(submission_id: str, status_update: dict):
-    """Updates the review status of a project submission."""
+@router.get("/analytics/{institution_id}/score-distribution")
+async def get_score_distribution(institution_id: str):
+    """Retrieves score frequency distribution from real data."""
+    from db import scores_col, submissions_col
+    
+    # Simple aggregation to count scores in buckets
+    pipeline = [
+        # Match scores for submissions belonging to this institution
+        {"$lookup": {
+            "from": "submissions",
+            "localField": "submission_id",
+            "foreignField": "_id",
+            "as": "submission"
+        }},
+        {"$unwind": "$submission"},
+        {"$match": {"submission.institution_id": institution_id}},
+        {"$project": {
+            "bucket": {
+                "$switch": {
+                    "branches": [
+                        {"case": {"$lte": ["$total_score", 20]}, "then": "0-20"},
+                        {"case": {"$lte": ["$total_score", 40]}, "then": "21-40"},
+                        {"case": {"$lte": ["$total_score", 60]}, "then": "41-60"},
+                        {"case": {"$lte": ["$total_score", 80]}, "then": "61-80"}
+                    ],
+                    "default": "81-100"
+                }
+            }
+        }},
+        {"$group": {"_id": "$bucket", "count": {"$sum": 1}}},
+        {"$project": {"range": "$_id", "count": 1, "_id": 0}}
+    ]
+    
+    results = await scores_col.aggregate(pipeline).to_list(None)
+    
+    # Ensure all ranges are present even if count is 0
+    ranges = ["0-20", "21-40", "41-60", "61-80", "81-100"]
+    final_results = []
+    for r in ranges:
+        match = next((item for item in results if item["range"] == r), None)
+        final_results.append(match if match else {"range": r, "count": 0})
+        
+    return final_results
+
+@router.get("/analytics/{institution_id}/submission-distribution")
+async def get_submission_distribution(institution_id: str):
+    """Retrieves submissions per event from real data."""
     from db import submissions_col
-    await submissions_col.update_one(
-        {"_id": ObjectId(submission_id)},
-        {"$set": {"status": status_update["status"]}}
-    )
-    await log_admin_action("admin@institution.com", "SUBMISSION_STATUS_UPDATED", f"Updated submission {submission_id} to {status_update['status']}")
-    return {"status": "success"}
+    
+    pipeline = [
+        {"$match": {"institution_id": institution_id}},
+        {"$lookup": {
+            "from": "events",
+            "localField": "event_id",
+            "foreignField": "_id",
+            "as": "event_info"
+        }},
+        {"$unwind": "$event_info"},
+        {"$group": {"_id": "$event_info.title", "count": {"$sum": 1}}},
+        {"$project": {"event": "$_id", "count": 1, "_id": 0}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5}
+    ]
+    
+    return await submissions_col.aggregate(pipeline).to_list(None)
+
+@router.get("/export-summary/{institution_id}")
+async def export_institution_summary(institution_id: str):
+    """Generates and returns an executive summary report for the institution."""
+    return {"message": "Export feature coming soon", "institution_id": institution_id}
 
 @router.get("/profile/{institution_id}")
 async def get_institution_profile(institution_id: str):
     """Retrieves the official institutional profile data."""
     from db import institutions_col
-    profile = await institutions_col.find_one({"institution_id": institution_id})
+    inst_id = institution_id.strip()
+    profile = await institutions_col.find_one({"institution_id": inst_id})
     if not profile:
         return {
-            "name": "Certified Institution Network",
+            "name": "Certified",
             "website": "https://institution.edu",
             "email": "admin@institution.com",
             "phone": "+1 (555) 000-1234",
-            "bio": "A premier educational institution dedicated to fostering innovation."
+            "bio": "A premier educational institution dedicated to fostering innovation.",
+            "logo_url": ""
         }
     profile["_id"] = str(profile["_id"])
     return profile
@@ -330,7 +747,7 @@ async def update_submission_status(submission_id: str, status_update: dict):
     from db import submissions_col
     update_fields = {
         "status": status_update["status"],
-        "internal_notes": status_update.get("notes", ""),
+        "internal_notes": status_update.get("notes", status_update.get("internal_notes", "")),
         "pr_links": status_update.get("pr_links", []),
         "processed_at": datetime.utcnow().isoformat()
     }
@@ -442,6 +859,75 @@ async def advance_participants(event_id: str, participant_ids: list, next_stage:
     await log_admin_action("admin@institution.com", "STAGE_ADVANCED", f"Advanced {len(participant_ids)} users to {next_stage} in {event_title}")
     return {"status": "success", "notified_count": len(participant_ids)}
 
+@router.post("/events/{event_id}/judges")
+async def add_event_judge(event_id: str, judge_data: dict):
+    """
+    Adds a judge to an event and sends an invitation email.
+    """
+    event = await events_col.find_one({"_id": ObjectId(event_id)})
+    if not event: raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Check if judge already exists
+    current_judges = event.get("judges", [])
+    if any(j.get("email") == judge_data.get("email") for j in current_judges):
+        return {"status": "exists", "message": "Judge already assigned"}
+    
+    judge_entry = {
+        "id": str(ObjectId()),
+        "name": judge_data.get("name"),
+        "email": judge_data.get("email"),
+        "expertise": judge_data.get("expertise"),
+        "status": "INVITED",
+        "assigned_at": datetime.utcnow().isoformat()
+    }
+    
+    await events_col.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$push": {"judges": judge_entry}}
+    )
+    
+    # TRIGGER EMAIL
+    subject = f"Invitation: Judge for {event['title']}"
+    body = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+                <h2 style="color: #6C3BFF;">Judging Invitation</h2>
+                <p>Hello <strong>{judge_entry['name']}</strong>,</p>
+                <p>You have been invited by <strong>{event.get('institution_name', 'The Institution')}</strong> to be a judge for the event: <strong>{event['title']}</strong>.</p>
+                <p>Your expertise in <strong>{judge_entry['expertise']}</strong> is highly valued for this role.</p>
+                <br>
+                <p>Please log in to the Studlyf Judge Portal using your email to review submissions.</p>
+                <br>
+                <p>Best Regards,<br>Studlyf Institution Network</p>
+            </div>
+        </body>
+    </html>
+    """
+    asyncio.create_task(send_notification_email(judge_entry['email'], subject, body))
+    
+    return {"status": "success", "judge": judge_entry}
+
+@router.delete("/events/{event_id}/judges/{judge_email}")
+async def remove_event_judge(event_id: str, judge_email: str):
+    """Removes a judge from an event."""
+    await events_col.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$pull": {"judges": {"email": judge_email}}}
+    )
+    return {"status": "success"}
+
+@router.post("/events/{event_id}/criteria")
+async def update_judging_criteria(event_id: str, criteria_data: List[dict]):
+    """
+    Updates the scoring rubrics for an event.
+    """
+    await events_col.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$set": {"judging_criteria": criteria_data, "updated_at": datetime.utcnow()}}
+    )
+    return {"status": "success"}
+
 @router.get("/events/{event_id}/quizzes")
 async def get_event_quizzes(event_id: str):
     """Retrieves all assessments/quizzes linked to a specific event."""
@@ -481,44 +967,7 @@ async def create_pro_event(event_data: dict):
 # EXPORT & DISTRIBUTION ENDPOINTS (Blueprint Requirements)
 # ============================================================
 
-@router.get("/export-summary")
-async def export_summary_csv():
-    """Generates a CSV export of the executive summary report."""
-    from fastapi.responses import StreamingResponse
-    from db import submissions_col, teams_col, scores_col
-    import csv
-    import io
-
-    events = await events_col.find({}).to_list(100)
-    total_participants = await participants_col.count_documents({})
-    total_teams = await teams_col.count_documents({})
-    total_submissions = await submissions_col.count_documents({})
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["Metric", "Value"])
-    writer.writerow(["Total Events", len(events)])
-    writer.writerow(["Total Participants", total_participants])
-    writer.writerow(["Total Teams", total_teams])
-    writer.writerow(["Total Submissions", total_submissions])
-    writer.writerow([])
-    writer.writerow(["Event Title", "Status", "Start Date", "End Date", "Participants"])
-    for e in events:
-        p_count = await participants_col.count_documents({"event_id": str(e["_id"])})
-        writer.writerow([
-            e.get("title", "N/A"),
-            e.get("status", "N/A"),
-            str(e.get("start_date", "")),
-            str(e.get("end_date", "")),
-            p_count
-        ])
-
-    output.seek(0)
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=institution_report_{datetime.utcnow().strftime('%Y%m%d')}.csv"}
-    )
+# Removed duplicate unscoped export route
 
 @router.get("/leaderboard/{event_id}/export-pdf")
 async def export_leaderboard_pdf(event_id: str):
@@ -588,55 +1037,15 @@ async def export_leaderboard_pdf(event_id: str):
 
     return FileResponse(pdf_path, media_type="application/pdf", filename=f"leaderboard_{event_title}.pdf")
 
-@router.get("/analytics/score-distribution")
-async def get_score_distribution():
-    """Returns score distribution data for histogram chart."""
-    from db import scores_col
-    pipeline = [
-        {"$bucket": {
-            "groupBy": "$total_score",
-            "boundaries": [0, 20, 40, 60, 80, 100],
-            "default": "100+",
-            "output": {"count": {"$sum": 1}}
-        }}
-    ]
-    try:
-        results = await scores_col.aggregate(pipeline).to_list(None)
-        labels = ["0-20", "20-40", "40-60", "60-80", "80-100"]
-        data = []
-        for i, label in enumerate(labels):
-            match = next((r for r in results if r["_id"] == i * 20), None)
-            data.append({"range": label, "count": match["count"] if match else 0})
-        return data
-    except Exception:
-        return [{"range": "0-20", "count": 0}, {"range": "20-40", "count": 0}, {"range": "40-60", "count": 0}, {"range": "60-80", "count": 0}, {"range": "80-100", "count": 0}]
-
-@router.get("/analytics/submission-distribution")
-async def get_submission_distribution():
-    """Returns submission count per event for bar chart."""
-    from db import submissions_col
-    pipeline = [
-        {"$group": {"_id": "$event_id", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-        {"$limit": 10}
-    ]
-    results = await submissions_col.aggregate(pipeline).to_list(None)
-    enriched = []
-    for r in results:
-        event = await events_col.find_one({"_id": ObjectId(r["_id"])}) if r.get("_id") else None
-        enriched.append({
-            "event": event.get("title", "Unknown") if event else "Unknown",
-            "count": r["count"]
-        })
-    return enriched
-@router.get("/export-participants")
-async def export_participants():
-    """Generates a CSV export of all registered participants."""
+# Removed duplicate unscoped analytics routes
+@router.get("/export-participants/{institution_id}")
+async def export_institution_participants(institution_id: str):
+    """Generates a CSV export of all registered participants for the institution."""
     from fastapi.responses import StreamingResponse
     import csv
     import io
     
-    cursor = participants_col.find({})
+    cursor = participants_col.find({"institution_id": institution_id})
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["Name", "Email", "Phone", "Event ID", "Status", "Joined Date"])
@@ -655,5 +1064,5 @@ async def export_participants():
     return StreamingResponse(
         io.BytesIO(output.getvalue().encode()),
         media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=participants_roster_{datetime.utcnow().strftime('%Y%m%d')}.csv"}
+        headers={"Content-Disposition": f"attachment; filename=participants_{institution_id}.csv"}
     )

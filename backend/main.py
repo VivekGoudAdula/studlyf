@@ -26,6 +26,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main_service")
 
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -249,11 +250,8 @@ def fix_progress(prog, default_status="locked"):
     # Merge defaults with actual data
     return {**defaults, **fix_id(prog)}
 
-# (Middleware and App config remains here)
-
 from routes import submission_routes, judge_routes, event_routes, dashboard_routes
 
-app = FastAPI()
 
 @app.on_event("startup")
 async def startup_db_client():
@@ -5003,20 +5001,30 @@ async def register_for_event(event_id: str, participant: Participant):
         result = await participants_col.insert_one(p_doc)
         
         # 6. TRIGGER EMAIL
+        inst_id = event.get("institution_id")
+        custom_msg = ""
+        institution = None
+        if inst_id:
+            institution = await institutions_col.find_one({"institution_id": inst_id})
+            if institution:
+                custom_msg = institution.get("email_custom_message", "")
+
         user_name = participant.college_name or "Participant"
         subject = f"Registration Confirmed: {event['title']}"
-        body = get_registration_template(user_name, event['title'])
+        body = get_registration_template(user_name, event['title'], custom_msg)
         
         user_record = await users_col.find_one({"user_id": participant.user_id})
         target_email = user_record["email"] if user_record and "email" in user_record else participant.user_id
 
         asyncio.create_task(send_notification_email(target_email, subject, body))
 
+        # 7. DASHBOARD UPDATE (Implicit via real-time fetch)
+        # Note: We removed admin email notifications for registrations as per 'Dashboard-First' policy.
+        
         # Audit Log
         await log_admin_action(target_email, "EVENT_REGISTRATION", f"Registered for event: {event_id}")
 
         # Update Institution Stats in Background
-        inst_id = event.get("institution_id")
         if inst_id:
             asyncio.create_task(recalculate_institution_stats(inst_id))
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Star, TrendingUp, QrCode, Search, Download } from 'lucide-react';
 
 // Live Ticker Component (Dynamic Activity Feed)
@@ -54,6 +54,7 @@ interface LeaderboardEntry {
 const LeaderboardPage: React.FC = () => {
     const [rankings, setRankings] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchRankings = async () => {
@@ -157,44 +158,98 @@ const LeaderboardPage: React.FC = () => {
                     </div>
 
                     {/* Overall Standings Table */}
-                    <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <h3 className="font-bold text-gray-900">Overall Standings</h3>
+                    <div className="bg-white rounded-[3rem] border border-gray-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+                        <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <h3 className="font-black text-gray-900 uppercase tracking-widest text-sm">Overall Standings</h3>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                                 <input type="text" placeholder="Search team..." className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-100 transition-all w-48" />
                             </div>
                         </div>
-                        <table className="w-full text-left">
-                            <tbody>
-                                {rankings.length === 0 ? (
-                                    <tr><td className="p-20 text-center text-gray-400">No results published yet.</td></tr>
-                                ) : (
-                                    rankings.map((r) => (
-                                        <tr key={r.rank} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors group">
-                                            <td className="p-6 w-16 text-center">
-                                                <span className="text-xl font-black text-gray-300 group-hover:text-blue-500 transition-colors">#{r.rank}</span>
-                                            </td>
-                                            <td className="p-6">
-                                                <div className="font-bold text-gray-900">{r.team_name || 'Unnamed Team'}</div>
-                                                <div className="text-xs text-gray-400">{r.project_title || 'No project title'}</div>
-                                            </td>
-                                            <td className="p-6">
-                                                <div className="text-xs font-bold text-gray-500 uppercase">Total Score</div>
-                                                <div className="text-lg font-black text-gray-800">{r.total_score}</div>
-                                            </td>
-                                            <td className="p-6 text-right">
-                                                <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                                                    r.prize && r.prize !== '-' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
-                                                }`}>
-                                                    {r.prize || 'Verified'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-gray-100 bg-slate-50/30">
+                                        <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Rank</th>
+                                        <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Team & Project</th>
+                                        <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Score Breakdown</th>
+                                        <th className="px-10 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Final Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rankings.length === 0 ? (
+                                        <tr><td className="p-24 text-center text-gray-400 font-medium">Synchronizing live data...</td></tr>
+                                    ) : (
+                                        rankings.map((r: any) => (
+                                            <React.Fragment key={r.rank}>
+                                                <tr 
+                                                    onClick={() => setExpandedTeam(expandedTeam === r.team_name ? null : r.team_name)}
+                                                    className={`border-b border-gray-50 last:border-0 hover:bg-slate-50/80 transition-all cursor-pointer group ${expandedTeam === r.team_name ? 'bg-slate-50' : ''}`}
+                                                >
+                                                    <td className="px-10 py-8 w-16">
+                                                        <span className="text-2xl font-black text-slate-300 group-hover:text-blue-500 transition-colors">#{r.rank}</span>
+                                                    </td>
+                                                    <td className="px-10 py-8">
+                                                        <div className="font-black text-gray-900 text-lg tracking-tight">{r.team_name}</div>
+                                                        <div className="text-xs font-medium text-gray-400 mt-1">{r.project_title || 'Unlisted Project'}</div>
+                                                    </td>
+                                                    <td className="px-10 py-8">
+                                                        <div className="flex gap-2">
+                                                            {r.criteria_scores ? Object.entries(r.criteria_scores).slice(0, 3).map(([key, val]: any) => (
+                                                                <div key={key} className="px-3 py-1 bg-white border border-slate-100 rounded-lg shadow-sm">
+                                                                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{key}</div>
+                                                                    <div className="text-xs font-black text-blue-600">{val}</div>
+                                                                </div>
+                                                            )) : (
+                                                                <span className="text-xs text-slate-300 italic font-medium">Click for details</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-10 py-8 text-right">
+                                                        <div className="text-3xl font-black text-slate-900 tracking-tighter">{r.total_score}</div>
+                                                        <div className="text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em] mt-1">Verified</div>
+                                                    </td>
+                                                </tr>
+                                                <AnimatePresence>
+                                                    {expandedTeam === r.team_name && (
+                                                        <tr>
+                                                            <td colSpan={4} className="bg-white border-b border-gray-100">
+                                                                <motion.div 
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="p-10 bg-slate-50/50 grid grid-cols-1 md:grid-cols-4 gap-8">
+                                                                        {r.criteria_scores ? Object.entries(r.criteria_scores).map(([key, val]: any) => (
+                                                                            <div key={key} className="space-y-3">
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{key}</label>
+                                                                                    <span className="text-sm font-black text-blue-600">{val}</span>
+                                                                                </div>
+                                                                                <div className="h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                                                                                    <motion.div 
+                                                                                        initial={{ width: 0 }}
+                                                                                        animate={{ width: `${(val/25)*100}%` }}
+                                                                                        className="h-full bg-blue-500 rounded-full"
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        )) : (
+                                                                            <div className="col-span-4 text-center py-6 text-slate-400 italic">No dimension scores found for this entry.</div>
+                                                                        )}
+                                                                    </div>
+                                                                </motion.div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </AnimatePresence>
+                                            </React.Fragment>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </main>

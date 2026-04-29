@@ -210,10 +210,39 @@ class Institution(BaseModel):
     email: str
     domain: str
     logo_url: Optional[str] = None
+    banner_url: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
+    
+    # Unstop-style Enhancements
+    social: Optional[dict] = {
+        "linkedin": "",
+        "twitter": "",
+        "instagram": "",
+        "website": ""
+    }
+    team: Optional[List[dict]] = [] # [{name, email, role}]
+    notifications: Optional[dict] = {
+        "admin_alerts": {
+            "new_registrations": False,
+            "new_submissions": False,
+            "judge_acceptances": True,
+            "judge_evaluations": True
+        },
+        "student_emails": {
+            "welcome_on_reg": True,
+            "submission_receipt": True,
+            "result_announcements": True
+        },
+        "judge_comms": {
+            "invitations": True,
+            "evaluation_reminders": True
+        }
+    }
+    email_custom_message: Optional[str] = ""
+    
     cached_stats: dict = {}
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -245,6 +274,14 @@ class Event(BaseModel):
     prize_pool: Optional[str] = None
     number_of_prizes: Optional[int] = None
     rules_guidelines: Optional[str] = None
+    
+    # Judging & Evaluation
+    judges: List[dict] = [] # [{name, email, expertise, status: 'INVITED'|'ACCEPTED'}]
+    judging_criteria: List[dict] = [] # [{name, max_points}]
+    
+    # Workflow Stages (Unstop-Style)
+    stages: List[dict] = [] 
+    # [{name, type, deadline, passing_criteria: {min_score, submission_required}}]
 
     # Features
     has_submission: bool = True

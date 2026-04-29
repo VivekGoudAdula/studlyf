@@ -18,3 +18,4 @@ passlib[bcrypt]
 bcrypt
 slowapi
 qrcode[pil]
+reportlab

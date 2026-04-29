@@ -34,11 +34,21 @@ A comprehensive competition management platform for colleges and organizations.
 - **Smart Management**: Automation for team formation, deadline enforcement, and blind judging.
 - **Real-time Analytics**: Live statistics, registration heatmaps, and demographic tracking.
 
-### 5. 🏆 Leaderboard & Certification System (Fully Dynamic)
-- **Automated Aggregation Engine**: The leaderboard dynamically averages real-time judges' scores (Innovation, Technicality, Impact, Presentation) the moment an event is finalized.
+### 5. 🏢 Institutional Command Center
+A high-fidelity evaluation and selection pipeline for organizations to manage multi-stage competitions.
+- **Dynamic Rubric Builder**: Admins can define custom scoring dimensions (e.g., Sustainability, Code Quality, UI/UX) and set specific point weightages per event.
+- **"Blind" Judge Dashboard**: A dedicated evaluator portal that isolates judges, showing only their assigned teams with a dynamic, criteria-based scorecard.
+- **Selection Command Center**: A real-time selection engine featuring a dynamic threshold slider to automate the filtering of teams into **Approved**, **Rejected**, and **Pending** bundles.
+- **Bulk Personalized Notifications**: One-click selection engine that dispatches personalized email alerts, automatically injecting team names and specific results.
+- **Leaderboard Pro**: An interactive results board with transparent score breakdowns, enabling students to see their performance across every evaluated dimension.
+- **Institutional PDF Export**: Real-time generation of professional, institutional-grade result reports featuring ranked leaderboards and detailed scoring audit trails.
+- **Automated Stage Promotion**: Logic-driven pipeline that moves qualified teams through N-number of rounds based on admin-defined passing criteria.
+
+### 6. 🏆 Leaderboard & Certification System (Fully Dynamic)
+- **Automated Aggregation Engine**: The leaderboard dynamically averages real-time judges' scores the moment an evaluation is finalized.
 - **Master Export Engine**: Bulk export capabilities for PDF and CSV, supporting specific event IDs or a "Master Institutional Standings" across all events.
 - **Live Rankings & Ticker**: A real-time finalist ticker and high-fidelity podium display that automatically updates without manual entry.
-- **QR-Verified Smart Certificates**: Automated PDF generation with unique, cryptographically verifiable IDs (`/verify/cert/{id}`) triggered instantly upon event finalization.
+- **QR-Verified Smart Certificates**: Automated PDF generation with unique, cryptographically verifiable IDs triggered instantly upon event finalization.
 - **Advanced Reporting Analytics**: Live registration timelines and departmental participation breakdowns with CSV/PDF export capabilities.
 - **Multi-Member Team Support**: Certificates are individually generated for every member of a winning team, intelligently adapting between "Ranked" and "Participation" modes based on the event type (Hackathon vs. Workshop).
 

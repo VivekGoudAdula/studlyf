@@ -11,13 +11,41 @@ interface Participant {
     status: string;
 }
 
-const ParticipantsManagement: React.FC = () => {
+const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institutionId = 'default_inst' }) => {
     const [participants, setParticipants] = useState<Participant[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
     const [newParticipant, setNewParticipant] = useState({ name: '', email: '', phone: '', event: 'Hackathon', team: '' });
     const [searchTerm, setSearchTerm] = useState('');
     const [filterEvent, setFilterEvent] = useState('All Events');
     const [filterStatus, setFilterStatus] = useState('All Statuses');
+
+    React.useEffect(() => {
+        const fetchParticipants = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`/api/v1/institution/participants/${institutionId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setParticipants(data.map((p: any) => ({
+                        id: p._id,
+                        name: p.full_name || p.name,
+                        email: p.email,
+                        phone: p.phone || 'N/A',
+                        event: p.event_title || p.event_id,
+                        team: p.team_name || 'Individual',
+                        regDate: new Date(p.registered_at).toLocaleDateString(),
+                        status: p.status || 'Registered'
+                    })));
+                }
+            } catch (err) {
+                console.error("Failed to fetch participants");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchParticipants();
+    }, [institutionId]);
 
     // Action Handlers
     const handleApprove = (id: number) => {

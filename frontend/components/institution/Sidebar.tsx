@@ -23,6 +23,7 @@ import {
     UserCheck,
     Trophy,
     BarChart3,
+    Award
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -35,6 +36,7 @@ const sidebarItems = [
     { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
     { id: 'analytics', label: 'Reports & Analytics', icon: BarChart3 },
     { id: 'downloads', label: 'Downloads', icon: Download },
+    { id: 'certificates', label: 'Certificates', icon: Award },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -52,7 +54,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
         <div className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 pt-8">
             <div className="p-6 flex items-center gap-3">
                 <img src="/images/studlyf.png" alt="Studlyf" className="h-10" />
-                <span className="font-['Outfit'] font-black text-xl tracking-tight text-[#0f172a]">INSTITUTION</span>
             </div>
 
             <div className="px-4 mb-6">
