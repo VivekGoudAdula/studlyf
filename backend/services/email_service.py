@@ -44,17 +44,19 @@ async def send_notification_email(to_email: str, subject: str, body_html: str):
         print(f"[EMAIL ERROR] Failed to send email: {e}")
         return False
 
-def get_registration_template(user_name: str, event_name: str):
+def get_registration_template(user_name: str, event_name: str, custom_message: str = ""):
+    message_html = f"<p>{custom_message}</p><br>" if custom_message else ""
     return f"""
     <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
             <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
-                <h2 style="color: #4F46E5;">Registration Confirmed!</h2>
+                <h2 style="color: #6C3BFF;">Registration Confirmed!</h2>
                 <p>Hello <strong>{user_name}</strong>,</p>
                 <p>You have successfully registered for <strong>{event_name}</strong>.</p>
+                {message_html}
                 <p>We are excited to see what you build! Stay tuned for further updates regarding the schedule and submission guidelines.</p>
                 <br>
-                <p>Best Regards,<br>Studlyf Team</p>
+                <p>Best Regards,<br>Studlyf Institution Network</p>
             </div>
         </body>
     </html>

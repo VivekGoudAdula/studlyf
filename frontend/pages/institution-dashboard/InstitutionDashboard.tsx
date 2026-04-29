@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +18,7 @@ import ParticipantsManagement from './ParticipantsManagement';
 import TeamsManagement from './TeamsManagement';
 import LeaderboardPage from './LeaderboardPage';
 import ReportsPage from './ReportsPage';
+import CertificatesPage from './CertificatesPage';
 import DownloadsPage from './DownloadsPage';
 import Footer from '../../components/institution/Footer';
 
@@ -24,6 +26,7 @@ const InstitutionDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [profileRefreshTrigger, setProfileRefreshTrigger] = useState(0);
 
     const { user } = useAuth();
     const institutionId = user?.user_id || 'default_inst';
@@ -31,6 +34,10 @@ const InstitutionDashboard: React.FC = () => {
     const handleViewEvent = (eventId: string) => {
         setSelectedEventId(eventId);
         setActiveTab('event-details');
+    };
+
+    const handleProfileUpdate = () => {
+        setProfileRefreshTrigger(prev => prev + 1);
     };
 
     const renderContent = () => {
@@ -57,8 +64,10 @@ const InstitutionDashboard: React.FC = () => {
                 return <ReportsPage institutionId={institutionId} />;
             case 'downloads':
                 return <DownloadsPage institutionId={institutionId} onNavigate={setActiveTab} />;
+            case 'certificates':
+                return <CertificatesPage institutionId={institutionId} />;
             case 'settings':
-                return <SettingsPage institutionId={institutionId} />;
+                return <SettingsPage institutionId={institutionId} onProfileUpdate={handleProfileUpdate} />;
             case 'dashboard':
             default:
                 return (
@@ -66,12 +75,19 @@ const InstitutionDashboard: React.FC = () => {
                         {/* Center Column */}
                         <div className="flex-1">
                             <StatsSection institutionId={institutionId} />
-                            <RecentListings institutionId={institutionId} onViewEvent={handleViewEvent} />
+                            <RecentListings 
+                                institutionId={institutionId} 
+                                onViewEvent={handleViewEvent} 
+                                onViewAll={() => setActiveTab('events')}
+                            />
                         </div>
 
                         {/* Right Sidebar */}
                         <div className="w-full lg:w-80 xl:w-96">
-                            <AlertsPanel institutionId={institutionId} />
+                            <AlertsPanel 
+                                institutionId={institutionId} 
+                                onUpgrade={() => setActiveTab('settings')}
+                            />
                         </div>
                     </div>
                 );
@@ -94,7 +110,10 @@ const InstitutionDashboard: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 ml-64 flex flex-col min-h-screen relative z-10">
                 <div className="px-8 pt-10">
-                    <Topbar />
+                    <Topbar 
+                        key={profileRefreshTrigger} 
+                        onNavigateToSettings={() => setActiveTab('settings')} 
+                    />
                 </div>
 
                 <main className="p-10 pt-10 pb-20 flex-1 overflow-hidden">

@@ -57,7 +57,9 @@ class DatabaseManager:
             await self.db.users.create_index("user_id", unique=True)
             await self.db.users.create_index("email", unique=True)
             await self.db.institutions.create_index("name", unique=True)
-        except Exception:
+            await self.db.institutions.create_index("institution_id", unique=True)
+        except Exception as e:
+            logger.warning(f"Index creation warning: {e}")
             pass
 
     def __getitem__(self, collection_name: str):
