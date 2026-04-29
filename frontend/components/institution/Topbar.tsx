@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../AuthContext';
 import { Bell, Search, User, CreditCard, LogOut, Settings as SettingsIcon, Menu } from 'lucide-react';
-import { auth } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 
 const Topbar: React.FC = () => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [currentTime, setCurrentTime] = useState(new Date());
-    const displayName = user?.displayName || 'User';
+    const displayName = user?.full_name || user?.displayName || 'User';
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -17,7 +16,7 @@ const Topbar: React.FC = () => {
 
     const handleLogout = async () => {
         try {
-            await auth.signOut();
+            await logout();
             navigate('/login');
         } catch (error) {
             console.error('Error signing out:', error);

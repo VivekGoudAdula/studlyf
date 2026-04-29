@@ -3,12 +3,10 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { auth } from '../firebase';
-import { signOut } from 'firebase/auth';
 
 
 const PartnerDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeView, setActiveView] = useState<'dashboard' | 'talent' | 'analytics' | 'settings'>('dashboard');
@@ -253,7 +251,10 @@ const PartnerDashboard: React.FC = () => {
                   ))}
                 </nav>
                 <button
-                  onClick={() => signOut(auth)}
+                  onClick={async () => {
+                    await logout();
+                    navigate('/login');
+                  }}
                   className="mt-auto w-full py-4 bg-red-50 text-red-500 rounded-xl text-[10px] font-bold uppercase tracking-widest"
                 >
                   Sign Out

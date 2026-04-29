@@ -2,8 +2,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from './AuthContext';
-import { db } from './firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 const RoleFixer: React.FC = () => {
@@ -19,19 +17,24 @@ const RoleFixer: React.FC = () => {
         }
         setLoading(true);
         try {
-            const userRef = doc(db, 'users', user.uid);
-            await updateDoc(userRef, {
-                role: 'institution'
+            const res = await fetch('/api/v1/auth/promote-to-institution', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ user_id: user.user_id })
             });
             
-            // Clear local storage hint
-            localStorage.setItem(`userRole_${user.uid}`, 'institution');
-            
-            setMessage("Success! Your role has been updated to 'Institution'. Redirecting...");
-            setTimeout(() => {
-                navigate('/institution-dashboard');
-                window.location.reload(); // Force a full reload to refresh AuthContext
-            }, 2000);
+            if (res.ok) {
+                setMessage("Success! Your role has been updated to 'Institution'. Redirecting...");
+                setTimeout(() => {
+                    navigate('/institution-dashboard');
+                    window.location.reload(); 
+                }, 2000);
+            } else {
+                throw new Error("Failed to update role via server.");
+            }
         } catch (err: any) {
             setMessage("Error updating role: " + err.message);
         } finally {

@@ -1,4 +1,4 @@
-import random
+import secrets
 import time
 from services.email_service import send_notification_email
 
@@ -7,9 +7,11 @@ otp_store = {}
 
 async def generate_and_send_otp(email: str):
     """
-    Generates a 6-digit OTP, stores it with an expiry, and sends it via Gmail SMTP.
+    Generates a secure 6-digit OTP, stores it with an expiry, and sends it via Gmail SMTP.
     """
-    otp = str(random.randint(100000, 999999))
+    email = email.strip().lower()
+    # Use secrets for cryptographically secure random numbers
+    otp = str(secrets.randbelow(900000) + 100000)
     expiry = time.time() + 300  # 5 minutes expiry
     
     otp_store[email] = {"otp": otp, "expiry": expiry}
@@ -53,6 +55,7 @@ async def verify_otp(email: str, otp: str):
     """
     Validates the provided OTP against the stored value.
     """
+    email = email.strip().lower()
     if email not in otp_store:
         return False, "OTP not requested for this email"
     
@@ -65,6 +68,8 @@ async def verify_otp(email: str, otp: str):
     if stored_data["otp"] == otp:
         del otp_store[email]
         return True, "Verified"
+    
+    return False, "Invalid verification code"
     
 async def send_welcome_email(email: str, name: str):
     """

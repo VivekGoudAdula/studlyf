@@ -127,6 +127,8 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Title</label>
                                                     <input 
                                                         type="text" 
+                                                        value={formData.title}
+                                                        onChange={(e) => setFormData({...formData, title: e.target.value})}
                                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-purple-50 focus:border-[#6C3BFF] outline-none transition-all font-medium"
                                                         placeholder="e.g. AI Innovation Hackathon 2024"
                                                     />
@@ -155,6 +157,8 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
                                                     <textarea 
                                                         rows={5}
+                                                        value={formData.description}
+                                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
                                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-purple-50 outline-none transition-all font-medium resize-none"
                                                         placeholder="Describe your event, its purpose, and what participants can expect..."
                                                     />
@@ -229,16 +233,32 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                     <Users size={14} /> Team Size (Min-Max)
                                                 </label>
                                                 <div className="flex items-center gap-4">
-                                                    <input type="number" defaultValue="1" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-center font-bold" />
+                                                    <input 
+                                                        type="number" 
+                                                        value={formData.minTeamSize} 
+                                                        onChange={(e) => setFormData({...formData, minTeamSize: e.target.value})}
+                                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-center font-bold" 
+                                                    />
                                                     <span className="text-slate-300">to</span>
-                                                    <input type="number" defaultValue="4" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-center font-bold" />
+                                                    <input 
+                                                        type="number" 
+                                                        value={formData.maxTeamSize} 
+                                                        onChange={(e) => setFormData({...formData, maxTeamSize: e.target.value})}
+                                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-center font-bold" 
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                    <Star size={14} /> Max Registrations
+                                                    <Trophy size={14} /> Max Registrations
                                                 </label>
-                                                <input type="number" placeholder="No limit" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-center font-bold" />
+                                                <input 
+                                                    type="number" 
+                                                    placeholder="No limit" 
+                                                    value={formData.maxParticipants}
+                                                    onChange={(e) => setFormData({...formData, maxParticipants: e.target.value})}
+                                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-center font-bold" 
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -264,7 +284,37 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                 Save Draft
                             </button>
                             <button 
-                                onClick={step === steps.length ? onClose : nextStep}
+                                onClick={async () => {
+                                    if (step === steps.length) {
+                                        // Final Publish Logic
+                                        const finalData = {
+                                            ...formData,
+                                            status: 'Live',
+                                            institution_id: 'default_inst', // Will be dynamic in real use
+                                            stages: [
+                                                { id: 'st1', name: 'Registration', type: 'Registration', startDate: formData.startDate, endDate: formData.deadline, status: 'Active', visibility: 'Public' },
+                                                { id: 'st2', name: 'Project Submission', type: 'Submission', startDate: formData.deadline, endDate: formData.endDate, status: 'Upcoming', visibility: 'Public', config: { fields: [] } },
+                                                { id: 'st3', name: 'Judging Phase', type: 'Review', startDate: formData.endDate, endDate: formData.endDate, status: 'Upcoming', visibility: 'Shortlisted Only', config: { judgeIds: [] } }
+                                            ]
+                                        };
+                                        
+                                        try {
+                                            const res = await fetch('/api/v1/institution/events/create-professional', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(finalData)
+                                            });
+                                            if (res.ok) {
+                                                alert("Event published successfully!");
+                                                onClose();
+                                            }
+                                        } catch (err) {
+                                            alert("Failed to publish event.");
+                                        }
+                                    } else {
+                                        nextStep();
+                                    }
+                                }}
                                 className="px-12 py-4 bg-[#6C3BFF] text-white rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-purple-200 hover:scale-105 active:scale-95 transition-all"
                             >
                                 {step === steps.length ? 'Publish Event' : 'Save & Continue'}

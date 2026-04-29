@@ -26,7 +26,7 @@ const InstitutionDashboard: React.FC = () => {
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
     const { user } = useAuth();
-    const institutionId = user?.uid || 'default_inst';
+    const institutionId = user?.user_id || 'default_inst';
 
     const handleViewEvent = (eventId: string) => {
         setSelectedEventId(eventId);

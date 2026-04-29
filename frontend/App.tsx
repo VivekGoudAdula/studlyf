@@ -51,6 +51,8 @@ import HashTablePage from './pages/HashTablePage';
 import AITools from './pages/AITools';
 import InstitutionDashboard from './pages/institution-dashboard/InstitutionDashboard';
 import RoleFixer from './RoleFixer';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 
 // Unique Components
@@ -193,6 +195,8 @@ const App: React.FC = () => {
             <Route path="/ai-tools" element={<AITools />} />
             <Route path="/verify/:id" element={<CertificateVerification />} />
             <Route path="/fix-role" element={<RoleFixer />} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
 
             <Route path="/dashboard" element={
               <ProtectedRoute>

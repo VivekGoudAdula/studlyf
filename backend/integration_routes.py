@@ -9,6 +9,18 @@ from services.audit_service import log_admin_action
 
 router = APIRouter(prefix="/api/v1/institution", tags=["Institutional Integration"])
 
+@router.post("/profile")
+async def create_institution_profile(profile: dict):
+    """Saves a new institution profile to MongoDB."""
+    from db import institutions_col
+    profile["created_at"] = datetime.utcnow()
+    await institutions_col.update_one(
+        {"institution_id": profile["institution_id"]},
+        {"$set": profile},
+        upsert=True
+    )
+    return {"status": "success"}
+
 @router.get("/summary/{institution_id}")
 async def fetch_summary(institution_id: str):
     """Dynamically aggregates real-time metrics for the dashboard."""
@@ -345,7 +357,52 @@ async def get_complex_event_details(event_id: str):
     event = await events_col.find_one({"_id": ObjectId(event_id)})
     if event:
         event["_id"] = str(event["_id"])
+        # Ensure stages is always a list
+        if "stages" not in event:
+            event["stages"] = []
     return event
+
+@router.patch("/events/{event_id}")
+async def update_event_details(event_id: str, update_data: dict):
+    """Updates general event information."""
+    from db import events_col
+    if "_id" in update_data: del update_data["_id"]
+    await events_col.update_one({"_id": ObjectId(event_id)}, {"$set": update_data})
+    return {"status": "success"}
+
+@router.post("/events/{event_id}/stages")
+async def add_event_stage(event_id: str, stage: dict):
+    """Adds a new stage to an event's workflow."""
+    from db import events_col
+    import uuid
+    stage["id"] = str(uuid.uuid4())
+    stage["created_at"] = datetime.utcnow()
+    await events_col.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$push": {"stages": stage}}
+    )
+    return {"status": "success", "stage_id": stage["id"]}
+
+@router.put("/events/{event_id}/stages/{stage_id}")
+async def update_event_stage(event_id: str, stage_id: str, stage_update: dict):
+    """Updates a specific stage within an event."""
+    from db import events_col
+    # MongoDB positional update for array
+    await events_col.update_one(
+        {"_id": ObjectId(event_id), "stages.id": stage_id},
+        {"$set": {"stages.$": stage_update}}
+    )
+    return {"status": "success"}
+
+@router.delete("/events/{event_id}/stages/{stage_id}")
+async def delete_event_stage(event_id: str, stage_id: str):
+    """Removes a stage from an event's workflow."""
+    from db import events_col
+    await events_col.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$pull": {"stages": {"id": stage_id}}}
+    )
+    return {"status": "success"}
 
 @router.patch("/events/{event_id}/advance-stage")
 async def advance_participants(event_id: str, participant_ids: list, next_stage: str):

@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
-import { auth } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../AuthContext';
 
 interface SidebarProps {
     activeTab: string;
@@ -40,14 +41,10 @@ const sidebarItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpportunity }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const handleLogout = async () => {
-        try {
-            await auth.signOut();
-            navigate('/login');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
+        logout();
     };
 
 
