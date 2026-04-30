@@ -22,38 +22,45 @@ import asyncio
 
 async def send_notification_email(to_email: str, subject: str, body_html: str):
     """
-    Sends a professional HTML email notification using a non-blocking thread.
+    Sends an email notification using SMTP_SSL (Port 465) for maximum compatibility.
     """
-    if not SMTP_USER or not SMTP_PASSWORD:
-        print("[EMAIL ERROR] SMTP credentials not found in .env")
+    # Dynamically read env vars to ensure we catch any dashboard updates
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", 465))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASSWORD")
+    email_from = os.getenv("EMAIL_FROM_NAME", "Studlyf Notifications")
+
+    if not smtp_user or not smtp_pass:
+        logger.error("[EMAIL ERROR] SMTP_USER or SMTP_PASSWORD is not set in environment variables.")
         return False
 
     def send_sync_email():
         try:
-            # Use port 465 for SSL which is often more reliable on cloud providers
-            port = int(os.getenv("SMTP_PORT", 465))
-            logger.info(f"[EMAIL] Attempting SSL send via {SMTP_SERVER}:{port} as {SMTP_USER}")
+            logger.info(f"[EMAIL] Attempting to send to {to_email} via {smtp_server}:{smtp_port}")
             
             msg = MIMEMultipart()
-            msg['From'] = f"{EMAIL_FROM_NAME} <{SMTP_USER}>"
+            msg['From'] = f"{email_from} <{smtp_user}>"
             msg['To'] = to_email
             msg['Subject'] = subject
             msg.attach(MIMEText(body_html, 'html'))
 
-            # Use SMTP_SSL for port 465
-            if port == 465:
-                server = smtplib.SMTP_SSL(SMTP_SERVER, port, timeout=10)
+            # Force SSL for 465, else use STARTTLS
+            if smtp_port == 465:
+                server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15)
             else:
-                server = smtplib.SMTP(SMTP_SERVER, port, timeout=10)
+                server = smtplib.SMTP(smtp_server, smtp_port, timeout=15)
                 server.starttls()
                 
-            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.login(smtp_user, smtp_pass)
             server.send_message(msg)
             server.quit()
-            logger.info(f"[EMAIL SUCCESS] Notification sent to {to_email}")
+            logger.info(f"[EMAIL SUCCESS] Email delivered to {to_email}")
             return True
         except Exception as e:
-            logger.error(f"[EMAIL ERROR] Failed to send email to {to_email}: {str(e)}")
+            logger.error(f"[EMAIL ERROR] {str(e)}")
+            if "Network is unreachable" in str(e) and smtp_port != 465:
+                logger.warning("[EMAIL TIP] Port 587 is blocked. Please change SMTP_PORT to 465 in Render settings.")
             return False
 
     return await asyncio.to_thread(send_sync_email)
