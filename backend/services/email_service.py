@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("email_service")
 
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Studlyf Notifications")
@@ -30,15 +30,23 @@ async def send_notification_email(to_email: str, subject: str, body_html: str):
 
     def send_sync_email():
         try:
-            logger.info(f"[EMAIL] Attempting to send via {SMTP_SERVER}:{SMTP_PORT} as {SMTP_USER}")
+            # Use port 465 for SSL which is often more reliable on cloud providers
+            port = int(os.getenv("SMTP_PORT", 465))
+            logger.info(f"[EMAIL] Attempting SSL send via {SMTP_SERVER}:{port} as {SMTP_USER}")
+            
             msg = MIMEMultipart()
             msg['From'] = f"{EMAIL_FROM_NAME} <{SMTP_USER}>"
             msg['To'] = to_email
             msg['Subject'] = subject
             msg.attach(MIMEText(body_html, 'html'))
 
-            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
-            server.starttls()
+            # Use SMTP_SSL for port 465
+            if port == 465:
+                server = smtplib.SMTP_SSL(SMTP_SERVER, port, timeout=10)
+            else:
+                server = smtplib.SMTP(SMTP_SERVER, port, timeout=10)
+                server.starttls()
+                
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
             server.quit()
