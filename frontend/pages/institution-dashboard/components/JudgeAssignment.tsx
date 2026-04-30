@@ -7,7 +7,8 @@ import {
     Star, 
     Mail, 
     Shield,
-    CheckCircle2
+    CheckCircle2,
+    Search
 } from 'lucide-react';
 
 interface Judge {
@@ -30,6 +31,12 @@ const JudgeAssignment: React.FC<JudgeAssignmentProps> = ({ assignedJudgeIds, onU
         { id: 'j3', name: 'Elena Rodriguez', email: 'elena@design.io', expertise: ['UI/UX', 'Product'], assigned: false },
         { id: 'j4', name: 'Alex Thompson', email: 'alex@security.net', expertise: ['Cybersecurity'], assigned: false },
     ]);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredJudges = availableJudges.filter(judge => 
+        judge.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        judge.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const toggleJudge = (id: string) => {
         if (assignedJudgeIds.includes(id)) {
@@ -41,8 +48,19 @@ const JudgeAssignment: React.FC<JudgeAssignmentProps> = ({ assignedJudgeIds, onU
 
     return (
         <div className="space-y-6">
+            <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-600 transition-colors" size={16} />
+                <input 
+                    type="text" 
+                    placeholder="Search by name or email..." 
+                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-purple-50 focus:border-purple-600 outline-none transition-all placeholder:text-slate-400 text-sm font-medium"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {availableJudges.map((judge) => {
+                {filteredJudges.map((judge) => {
                     const isAssigned = assignedJudgeIds.includes(judge.id);
                     return (
                         <div 
