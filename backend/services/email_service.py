@@ -23,31 +23,53 @@ import asyncio
 
 async def send_notification_email(to_email: str, subject: str, body_html: str):
     """
-    Sends an email notification using SMTP_SSL (Port 465) for maximum compatibility.
+    Sends an email notification. 
+    Priority: 1. Resend API (HTTP - most reliable), 2. SMTP SSL (Port 465)
     """
-    # Dynamically read env vars to ensure we catch any dashboard updates
+    resend_key = os.getenv("RESEND_API_KEY")
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
     smtp_port = int(os.getenv("SMTP_PORT", 465))
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASSWORD")
     email_from = os.getenv("EMAIL_FROM_NAME", "Studlyf Notifications")
 
+    # --- PRIMARY: RESEND API (Bypasses all network blocks) ---
+    if resend_key:
+        try:
+            import requests
+            logger.info(f"[EMAIL] Attempting Resend API for {to_email}")
+            response = requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {resend_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": "onboarding@resend.dev" if not email_from else f"{email_from} <onboarding@resend.dev>",
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body_html,
+                },
+                timeout=10
+            )
+            if response.status_code in [200, 201]:
+                logger.info(f"[EMAIL SUCCESS] Delivered via Resend API to {to_email}")
+                return True
+            else:
+                logger.warning(f"[RESEND FAILED] Status {response.status_code}: {response.text}. Falling back to SMTP...")
+        except Exception as e:
+            logger.error(f"[RESEND ERROR] {str(e)}. Falling back to SMTP...")
+
+    # --- FALLBACK: SMTP SSL (Port 465) ---
     if not smtp_user or not smtp_pass:
-        logger.error("[EMAIL ERROR] SMTP_USER or SMTP_PASSWORD is not set in environment variables.")
+        logger.error("[EMAIL ERROR] No Resend Key and no SMTP credentials found.")
         return False
 
     def send_sync_email():
-        max_retries = 3
+        max_retries = 2
         for attempt in range(max_retries):
             try:
-                logger.info(f"[EMAIL] Attempt {attempt + 1}/{max_retries} to {to_email} via {smtp_server}:{smtp_port}")
-                
-                msg = MIMEMultipart()
-                msg['From'] = f"{email_from} <{smtp_user}>"
-                msg['To'] = to_email
-                msg['Subject'] = subject
-                msg.attach(MIMEText(body_html, 'html'))
-
+                logger.info(f"[EMAIL] SMTP Fallback Attempt {attempt + 1}/{max_retries} to {to_email}")
                 # Force SSL for 465, else use STARTTLS
                 if smtp_port == 465:
                     server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15)
@@ -56,19 +78,20 @@ async def send_notification_email(to_email: str, subject: str, body_html: str):
                     server.starttls()
                     
                 server.login(smtp_user, smtp_pass)
+                server.send_message(msg := MIMEMultipart())
+                msg['From'] = f"{email_from} <{smtp_user}>"
+                msg['To'] = to_email
+                msg['Subject'] = subject
+                msg.attach(MIMEText(body_html, 'html'))
                 server.send_message(msg)
                 server.quit()
-                logger.info(f"[EMAIL SUCCESS] Email delivered to {to_email}")
+                logger.info(f"[EMAIL SUCCESS] Delivered via SMTP to {to_email}")
                 return True
             except Exception as e:
-                logger.error(f"[EMAIL ATTEMPT {attempt + 1} FAILED] {str(e)}")
+                logger.error(f"[SMTP ATTEMPT {attempt + 1} FAILED] {str(e)}")
                 if attempt < max_retries - 1:
-                    wait_time = 2 * (attempt + 1)
-                    logger.info(f"Retrying in {wait_time}s...")
-                    time.sleep(wait_time)
-                else:
-                    logger.error(f"[FINAL EMAIL FAILURE] All {max_retries} attempts failed for {to_email}")
-                    return False
+                    time.sleep(2)
+        return False
 
     return await asyncio.to_thread(send_sync_email)
 
