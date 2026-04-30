@@ -51,7 +51,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
     const queryParams = new URLSearchParams(location.search);
     const selectedRole = queryParams.get('role') || 'student';
 
-    const handleRequestOTP = async (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         
         // Institution Email Check
@@ -67,31 +67,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
         setLoading(true);
         setError('');
         try {
-            const res = await fetch(`${API_BASE_URL}/api/auth/request-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setStep(2);
-                setResendCooldown(60); // 60 seconds cooldown
-                setSuccessMsg('Verification code sent to your email.');
-            } else {
-                setError(data.detail || 'Failed to send OTP.');
-            }
-        } catch (err) {
-            setError('Connection failed.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyAndSignup = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
             // 0. Client-side Strength Check
             const strength = getPasswordStrength(password);
             if (strength < 4) {
@@ -100,21 +75,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                 return;
             }
 
-            // 1. Verify OTP
-            const verifyRes = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, otp, name: fullName })
-            });
-
-            if (!verifyRes.ok) {
-                const data = await verifyRes.json();
-                setError(data.detail || 'Invalid verification code.');
-                setLoading(false);
-                return;
-            }
-
-            // 2. Complete Signup in MongoDB
+            // 1. Complete Signup in MongoDB directly
             const signupRes = await fetch(`${API_BASE_URL}/api/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -156,7 +117,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        onSubmit={handleRequestOTP}
+                        onSubmit={handleSignup}
                         className="space-y-4"
                     >
                         {error && <div className="p-3 bg-red-50 text-red-500 text-xs rounded-lg border border-red-100">{error}</div>}
@@ -238,73 +199,13 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                             disabled={loading}
                             className="w-full py-4 bg-purple-600 text-white rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 mt-2 flex items-center justify-center gap-2"
                         >
-                            {loading ? 'Sending Code...' : 'Verify Email'}
+                            {loading ? 'Creating Account...' : 'Sign Up Now'}
                             <ArrowRight size={16} />
                         </button>
                     </motion.form>
                 )}
 
-                {step === 2 && (
-                    <motion.form
-                        key="step2"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        onSubmit={handleVerifyAndSignup}
-                        className="space-y-6 text-center"
-                    >
-                        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                            <p className="text-[10px] uppercase font-black text-purple-600 tracking-widest mb-1">Check your inbox</p>
-                            <p className="text-xs text-gray-600">We sent a verification code to <b>{email}</b></p>
-                        </div>
-
-                        {error && <div className="p-3 bg-red-50 text-red-500 text-xs rounded-lg border border-red-100">{error}</div>}
-
-                        <input
-                            type="text"
-                            placeholder="0 0 0 0 0 0"
-                            className="w-full text-center text-3xl font-black tracking-[0.6em] py-5 bg-white border-2 border-purple-100 rounded-2xl focus:border-purple-500 transition-all outline-none shadow-sm placeholder:text-gray-200 text-gray-900"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
-                            maxLength={6}
-                            required
-                        />
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-4 bg-purple-600 text-white rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-purple-700 transition-all shadow-lg shadow-purple-200"
-                        >
-                            {loading ? 'Finalizing...' : 'Complete Registration'}
-                        </button>
-
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-col items-center gap-1">
-                                <button 
-                                    type="button"
-                                    disabled={resendCooldown > 0 || loading}
-                                    onClick={handleRequestOTP}
-                                    className={`text-[10px] font-bold uppercase tracking-widest transition-all ${resendCooldown > 0 ? 'text-gray-300' : 'text-purple-600 hover:text-purple-700 underline underline-offset-4'}`}
-                                >
-                                    Resend Verification Code
-                                </button>
-                                {resendCooldown > 0 && (
-                                    <span className="text-[9px] font-black text-gray-300 uppercase tracking-tighter">
-                                        Wait {resendCooldown}s
-                                    </span>
-                                )}
-                            </div>
-
-                            <button 
-                                type="button"
-                                onClick={() => setStep(1)}
-                                className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600"
-                            >
-                                Back to Details
-                            </button>
-                        </div>
-                    </motion.form>
-                )}
+                {/* Step 2 (OTP) is removed */}
 
                 {step === 3 && (
                     <motion.div
@@ -317,7 +218,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                             <CheckCircle2 size={40} />
                         </div>
                         <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900 mb-2">Registration Complete</h2>
-                        <p className="text-gray-500 text-sm mb-8">Your identity has been verified and stored securely in our MongoDB cluster.</p>
+                        <p className="text-gray-500 text-sm mb-8">Your account has been created securely in our MongoDB cluster.</p>
                         <div className="flex items-center justify-center gap-2 text-purple-600 font-bold text-[10px] uppercase tracking-widest">
                             <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
                             Redirecting to Login...
