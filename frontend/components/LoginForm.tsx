@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import AuthCard from './AuthCard';
 import { useAuth } from '../AuthContext';
@@ -14,6 +14,9 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = false }) => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const selectedRole = queryParams.get('role') || 'student';
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -71,7 +74,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                     <label className={labelClasses}>Email Address</label>
                     <input
                         type="email"
-                        placeholder="admin@studlyf.com"
+                        placeholder={selectedRole === 'institution' ? "admin@institution.edu" : "shiva@gmail.com"}
                         className={inputClasses}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}

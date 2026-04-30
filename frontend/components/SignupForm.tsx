@@ -167,7 +167,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                                 <User className="absolute left-3 top-3.5 text-gray-300" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Nagasiva Kumari"
+                                    placeholder={selectedRole === 'institution' ? "Administrator" : "Shiva"}
                                     className={inputClasses + " pl-10"}
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
@@ -177,12 +177,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                         </div>
 
                         <div>
-                            <label className={labelClasses}>Work Email</label>
+                            <label className={labelClasses}>{selectedRole === 'institution' ? "Work Email" : "Student Email"}</label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-3.5 text-gray-300" size={18} />
                                 <input
                                     type="email"
-                                    placeholder="naga@institution.org"
+                                    placeholder={selectedRole === 'institution' ? "admin@institution.edu" : "shiva@gmail.com"}
                                     className={inputClasses + " pl-10"}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
