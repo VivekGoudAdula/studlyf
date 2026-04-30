@@ -40,7 +40,7 @@ A comprehensive competition management platform for colleges and organizations.
   - **Dynamic Rubric Builder**: Admins can define custom scoring dimensions (e.g., Sustainability, Code Quality, UI/UX) and set specific point weightages per event.
   - **"Blind" Judge Dashboard**: A dedicated evaluator portal that isolates judges, showing only their assigned teams with a dynamic, criteria-based scorecard.
   - **Selection Command Center**: A real-time selection engine featuring a dynamic threshold slider to automate the filtering of teams into **Approved**, **Rejected**, and **Pending** bundles.
-  - **Integrated Search Navigation**: A sophisticated global search bar that allows admins to jump instantly between Dashboard, Settings, and Analytics via internal tab-routing.
+  - **Integrated Search Navigation**: A sophisticated global search bar with instant "Quick Actions." Admins can jump directly to Account Settings, Reports, or Participants via internal tab-routing, with results dynamically filtered and keyed for high-performance React rendering.
   - **Bulk Personalized Notifications**: One-click selection engine that dispatches personalized email alerts, automatically injecting team names and specific results.
   - **Leaderboard Pro**: An interactive results board with transparent score breakdowns, enabling students to see their performance across every evaluated dimension.
   - **Institutional PDF Export**: Real-time generation of professional, institutional-grade result reports featuring ranked leaderboards and detailed scoring audit trails.
