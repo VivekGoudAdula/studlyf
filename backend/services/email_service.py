@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 load_dotenv(root_env)
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("email_service")
+
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER = os.getenv("SMTP_USER")
@@ -26,20 +30,22 @@ async def send_notification_email(to_email: str, subject: str, body_html: str):
 
     def send_sync_email():
         try:
+            logger.info(f"[EMAIL] Attempting to send via {SMTP_SERVER}:{SMTP_PORT} as {SMTP_USER}")
             msg = MIMEMultipart()
             msg['From'] = f"{EMAIL_FROM_NAME} <{SMTP_USER}>"
             msg['To'] = to_email
             msg['Subject'] = subject
             msg.attach(MIMEText(body_html, 'html'))
 
-            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
             server.quit()
+            logger.info(f"[EMAIL SUCCESS] Notification sent to {to_email}")
             return True
         except Exception as e:
-            print(f"[EMAIL ERROR] Failed to send email: {e}")
+            logger.error(f"[EMAIL ERROR] Failed to send email to {to_email}: {str(e)}")
             return False
 
     return await asyncio.to_thread(send_sync_email)
