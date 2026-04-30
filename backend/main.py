@@ -35,6 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"message": "Studlyf API is operational", "docs": "/docs"}
+
 @app.get("/health")
 async def health_check():
     db_status = "connected"

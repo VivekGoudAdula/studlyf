@@ -1,5 +1,6 @@
 import smtplib
 import os
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
@@ -36,32 +37,38 @@ async def send_notification_email(to_email: str, subject: str, body_html: str):
         return False
 
     def send_sync_email():
-        try:
-            logger.info(f"[EMAIL] Attempting to send to {to_email} via {smtp_server}:{smtp_port}")
-            
-            msg = MIMEMultipart()
-            msg['From'] = f"{email_from} <{smtp_user}>"
-            msg['To'] = to_email
-            msg['Subject'] = subject
-            msg.attach(MIMEText(body_html, 'html'))
-
-            # Force SSL for 465, else use STARTTLS
-            if smtp_port == 465:
-                server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15)
-            else:
-                server = smtplib.SMTP(smtp_server, smtp_port, timeout=15)
-                server.starttls()
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"[EMAIL] Attempt {attempt + 1}/{max_retries} to {to_email} via {smtp_server}:{smtp_port}")
                 
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-            server.quit()
-            logger.info(f"[EMAIL SUCCESS] Email delivered to {to_email}")
-            return True
-        except Exception as e:
-            logger.error(f"[EMAIL ERROR] {str(e)}")
-            if "Network is unreachable" in str(e) and smtp_port != 465:
-                logger.warning("[EMAIL TIP] Port 587 is blocked. Please change SMTP_PORT to 465 in Render settings.")
-            return False
+                msg = MIMEMultipart()
+                msg['From'] = f"{email_from} <{smtp_user}>"
+                msg['To'] = to_email
+                msg['Subject'] = subject
+                msg.attach(MIMEText(body_html, 'html'))
+
+                # Force SSL for 465, else use STARTTLS
+                if smtp_port == 465:
+                    server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15)
+                else:
+                    server = smtplib.SMTP(smtp_server, smtp_port, timeout=15)
+                    server.starttls()
+                    
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+                server.quit()
+                logger.info(f"[EMAIL SUCCESS] Email delivered to {to_email}")
+                return True
+            except Exception as e:
+                logger.error(f"[EMAIL ATTEMPT {attempt + 1} FAILED] {str(e)}")
+                if attempt < max_retries - 1:
+                    wait_time = 2 * (attempt + 1)
+                    logger.info(f"Retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"[FINAL EMAIL FAILURE] All {max_retries} attempts failed for {to_email}")
+                    return False
 
     return await asyncio.to_thread(send_sync_email)
 
