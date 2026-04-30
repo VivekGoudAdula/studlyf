@@ -6,8 +6,8 @@ import { useAuth } from '../../AuthContext';
 
 interface SidebarProps {
     activeTab: string;
-    setActiveTab: (tab: string) => void;
-    onPostOpportunity: () => void;
+    onTabChange: (tab: string) => void;
+    onPost: () => void;
 }
 
 import { 
@@ -41,7 +41,7 @@ const sidebarItems = [
 ];
 
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpportunity }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onPost }) => {
     const navigate = useNavigate();
     const { logout } = useAuth();
 
@@ -51,18 +51,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
 
 
     return (
-        <div className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 pt-8">
-            <div className="p-6 flex items-center gap-3">
+        <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col shrink-0 pt-4">
+            <div className="p-8 pb-4 flex items-center gap-3">
                 <img src="/images/studlyf.png" alt="Studlyf" className="h-10" />
             </div>
 
             <div className="px-4 mb-6">
                 <button 
-                    onClick={onPostOpportunity}
+                    onClick={onPost}
                     className="w-full py-3 bg-gradient-to-r from-[#6C3BFF] to-[#9F6BFF] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-200 hover:scale-[1.02] transition-all"
                 >
                     <Plus size={20} />
-                    Post New Event
+                    Post
                 </button>
             </div>
 
@@ -72,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpport
                         key={item.id}
                         whileHover={{ x: 5 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setActiveTab(item.id)}
+                        onClick={() => onTabChange(item.id)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left whitespace-nowrap ${
                             activeTab === item.id 
                                 ? 'bg-purple-50 text-[#6C3BFF] shadow-sm' 

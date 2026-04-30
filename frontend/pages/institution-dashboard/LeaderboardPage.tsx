@@ -2,45 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Star, TrendingUp, QrCode, Search, Download } from 'lucide-react';
 
-// Live Ticker Component (Dynamic Activity Feed)
-const LiveTicker: React.FC = () => {
-  const [updates, setUpdates] = useState<string[]>([]);
 
-  useEffect(() => {
-    const fetchUpdates = async () => {
-      try {
-        const res = await fetch('/api/v1/institution/notifications');
-        const data = await res.json();
-        setUpdates(data.map((n: any) => n.message));
-      } catch (err) {
-        setUpdates(["System operational", "Awaiting live updates..."]);
-      }
-    };
-    fetchUpdates();
-  }, []);
-
-  if (updates.length === 0) return null;
-
-  return (
-    <div className="bg-[#0f172a] py-3 overflow-hidden border-b border-white/10 relative z-10">
-      <div className="flex whitespace-nowrap animate-marquee gap-12">
-        {updates.map((update, i) => (
-          <div key={i} className="flex items-center gap-2 text-[11px] font-black text-white/80 uppercase tracking-[0.2em]">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
-            {update}
-          </div>
-        ))}
-        {/* Repeat for seamless loop */}
-        {updates.map((update, i) => (
-          <div key={`dup-${i}`} className="flex items-center gap-2 text-[11px] font-black text-white/80 uppercase tracking-[0.2em]">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
-            {update}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 interface LeaderboardEntry {
     rank: number;
@@ -78,7 +40,7 @@ const LeaderboardPage: React.FC = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-[#fafafa]">
-            <LiveTicker />
+
             
             <main className="p-8 overflow-y-auto">
                 <div className="max-w-6xl mx-auto">
@@ -254,16 +216,7 @@ const LeaderboardPage: React.FC = () => {
                 </div>
             </main>
 
-            <style>{`
-                @keyframes marquee {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
-                }
-                .animate-marquee {
-                    display: flex;
-                    animation: marquee 20s linear infinite;
-                }
-            `}</style>
+
         </div>
     );
 };

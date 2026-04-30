@@ -1,0 +1,390 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../AuthContext';
+import { Bell, Search, LogOut, Settings as SettingsIcon, Zap, Info, Clock, Building2, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../../apiConfig';
+
+const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNavigateToSettings?: () => void }> = ({ onNavigate, onNavigateToSettings }) => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const displayName = user?.full_name || user?.displayName || 'User';
+    const institutionId = user?.user_id || 'default_inst';
+    
+    const [notifCount, setNotifCount] = useState(0);
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
+    const [imgError, setImgError] = useState(false);
+    const notifRef = useRef<HTMLDivElement>(null);
+    
+    // New Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Click Outside to Close Notifs
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+                setIsNotifOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Keyboard Shortcut (Cmd+K)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            const query = searchQuery.toLowerCase().trim();
+            
+            // 1. Direct Page Navigation Map (Updated to use onNavigate callback)
+            const navMap: {[key: string]: string} = {
+                'settings': 'settings',
+                'analytics': 'analytics',
+                'reports': 'analytics',
+                'teams': 'teams',
+                'leaderboard': 'leaderboard',
+                'events': 'events',
+                'dashboard': 'dashboard',
+            };
+
+            if (navMap[query]) {
+                // If we are already on the dashboard, just switch the tab
+                if (onNavigate) {
+                    onNavigate(navMap[query]);
+                }
+                
+                // Also update the URL to the base dashboard to keep it clean
+                navigate('/institution-dashboard');
+                
+                setSearchQuery('');
+                return;
+            }
+
+            // 2. Fallback to first search result
+            if (searchResults.length > 0) {
+                navigate(searchResults[0].link);
+                setSearchQuery('');
+                setSearchResults([]);
+            }
+        }
+    };
+
+    // Dynamic Notifications Logic
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            if (!institutionId || institutionId === 'default_inst') return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setNotifications(data);
+                    setNotifCount(data.length);
+                }
+            } catch (err) { console.error("Failed to load notifications", err); }
+        };
+        fetchNotifications();
+    }, [institutionId]);
+
+    // Dynamic Search Logic
+    useEffect(() => {
+        const performSearch = async () => {
+            if (searchQuery.length < 2) {
+                setSearchResults([]);
+                return;
+            }
+            setIsSearching(true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/search?q=${searchQuery}&institution_id=${institutionId}`);
+                let data = [];
+                if (res.ok) {
+                    data = await res.json();
+                }
+
+                // Add static pages to results for quick navigation
+                const pages = [
+                    { id: 'settings', title: 'Account Settings', type: 'Page', link: '#' },
+                    { id: 'analytics', title: 'Reports & Analytics', type: 'Page', link: '#' },
+                    { id: 'events', title: 'Events Management', icon: 'Briefcase', type: 'Page', link: '#' },
+                    { id: 'participants', title: 'Participants', type: 'Page', link: '#' },
+                    { id: 'dashboard', title: 'Main Dashboard', type: 'Page', link: '#' },
+                ];
+
+                const matchedPages = pages.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+                setSearchResults([...matchedPages, ...data]);
+            } catch (err) {
+                console.error("Search failed", err);
+            } finally {
+                setIsSearching(false);
+            }
+        };
+        const timer = setTimeout(performSearch, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!institutionId || institutionId === 'default_inst') return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`);
+                if (res.ok) setProfile(await res.json());
+            } catch (err) { console.error(err); }
+        };
+        fetchProfile();
+    }, [institutionId]);
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
+
+    const handleMarkAllAsRead = async () => {
+        if (!institutionId || institutionId === 'default_inst') return;
+        try {
+            // Optimistic Update
+            setNotifications([]);
+            setNotifCount(0);
+            
+            // Backend call to clear (DELETE method as defined in your integration_routes)
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!res.ok) {
+                // If it fails, we could optionally re-fetch, but for now we'll keep it clean
+                console.error("Failed to clear notifications on backend");
+            }
+        } catch (err) {
+            console.error("Mark all as read failed", err);
+        }
+    };
+
+    return (
+        <div className="w-full relative z-[100] font-['Outfit'] px-8 pt-6">
+            <motion.div 
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="w-full bg-[#6C3BFF] h-20 rounded-[2.5rem] shadow-2xl shadow-purple-200 flex items-center px-8 relative overflow-hidden group"
+            >
+                {/* 1. Left (Empty to match old layout) */}
+                <div className="w-12 shrink-0 hidden lg:block" />
+
+                {/* 2. Search (Centered & Visible) */}
+                <div className="flex-1 max-w-xl mx-auto relative z-10 hidden md:block">
+                    <div className="relative group/search">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-white/60 group-focus-within/search:text-white transition-colors" size={18} />
+                        <input 
+                            ref={searchInputRef}
+                            type="text" 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleSearchKeyDown}
+                            placeholder="Search events, students, or reports..." 
+                            className="w-full pl-16 pr-6 py-4 bg-white/25 backdrop-blur-3xl border border-white/40 rounded-[2rem] text-white placeholder:text-white/60 outline-none focus:bg-white/30 focus:border-white/60 transition-all font-['Outfit'] font-medium text-sm shadow-xl"
+                        />
+                        {/* CTRL K Badge Removed */}
+
+                        {/* Search Results Dropdown */}
+                        <AnimatePresence>
+                            {searchQuery.length >= 2 && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    className="absolute top-full left-0 right-0 mt-4 bg-white rounded-[2rem] shadow-2xl overflow-hidden p-3 border border-slate-100"
+                                >
+                                    {searchResults.length > 0 ? (
+                                        <div className="space-y-1">
+                                            {searchResults.map((result, idx) => (
+                                                <button 
+                                                    key={`${result.id}-${idx}`}
+                                                    onClick={() => {
+                                                        if (result.type === 'Page' && onNavigate) {
+                                                            onNavigate(result.id);
+                                                            setSearchQuery('');
+                                                            setSearchResults([]);
+                                                        } else {
+                                                            navigate(result.link);
+                                                            setSearchQuery('');
+                                                            setSearchResults([]);
+                                                        }
+                                                    }}
+                                                    className="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all text-left group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-[#6C3BFF]">
+                                                            <Zap size={18} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-slate-900 text-sm">{result.title}</p>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{result.type}</p>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown className="-rotate-90 text-slate-300 group-hover:text-[#6C3BFF] transition-colors" size={16} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-10 text-center text-slate-400 italic text-sm">
+                                            No matching results found...
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+
+                {/* 3. Right Side: Notifs & Profile (Far Right) */}
+                <div className="flex items-center gap-4 relative z-10 shrink-0">
+                    {/* Notifications */}
+                    {/* Notifications with Dynamic Dropdown */}
+                    <div className="relative" ref={notifRef}>
+                        <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                                console.log("Notification Bell Clicked! Current State:", !isNotifOpen);
+                                setIsNotifOpen(!isNotifOpen);
+                            }}
+                            className="relative p-3.5 bg-white/10 border border-white/10 rounded-2xl text-white hover:bg-white/20 transition-all group overflow-visible"
+                        >
+                            <Bell size={20} className={`${isNotifOpen ? 'fill-white' : ''} transition-all`} />
+                            {notifCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 border-2 border-[#6C3BFF] rounded-full flex items-center justify-center text-[9px] font-black text-white animate-pulse">
+                                    {notifCount}
+                                </span>
+                            )}
+                        </motion.button>
+
+                        <AnimatePresence>
+                            {isNotifOpen && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20, scale: 0.9, filter: 'blur(10px)' }}
+                                    animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+                                    exit={{ opacity: 0, y: 20, scale: 0.9, filter: 'blur(10px)' }}
+                                    className="absolute right-0 mt-5 w-80 bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(108,59,255,0.3)] border border-white overflow-hidden z-[999]"
+                                >
+                                    <div className="p-7 border-b border-slate-50 flex items-center justify-between bg-gradient-to-r from-purple-50/50 to-transparent">
+                                        <div>
+                                            <p className="font-black text-slate-900 uppercase tracking-[0.2em] text-[10px]">Command Center</p>
+                                            <p className="text-[10px] text-[#6C3BFF] font-bold mt-0.5">Real-time Activity</p>
+                                        </div>
+                                        <div className="px-3 py-1.5 bg-[#6C3BFF] text-white rounded-full text-[10px] font-black shadow-lg shadow-purple-200">
+                                            {notifCount} LIVE
+                                        </div>
+                                    </div>
+
+                                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar p-3">
+                                        {notifications.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {notifications.map((n, idx) => (
+                                                    <motion.div 
+                                                        key={n.id || idx}
+                                                        initial={{ x: -20, opacity: 0 }}
+                                                        animate={{ x: 0, opacity: 1 }}
+                                                        transition={{ delay: idx * 0.05 }}
+                                                        className="p-4 hover:bg-purple-50/50 rounded-3xl transition-all cursor-pointer group/item border border-transparent hover:border-purple-100"
+                                                    >
+                                                        <div className="flex gap-4">
+                                                            <div className="w-11 h-11 bg-white rounded-2xl shadow-sm border border-slate-50 flex items-center justify-center text-slate-400 group-hover/item:bg-[#6C3BFF] group-hover/item:text-white group-hover/item:scale-110 transition-all duration-300">
+                                                                <Zap size={18} />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-bold text-slate-900 leading-tight group-hover/item:text-[#6C3BFF] transition-colors">
+                                                                    {n.message || 'New system update available'}
+                                                                </p>
+                                                                <div className="flex items-center gap-2 mt-2">
+                                                                    <Clock size={10} className="text-slate-300" />
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{n.time || 'Just now'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-16 text-center">
+                                                <motion.div 
+                                                    animate={{ 
+                                                        y: [0, -10, 0],
+                                                        rotate: [0, 5, -5, 0]
+                                                    }}
+                                                    transition={{ repeat: Infinity, duration: 4 }}
+                                                    className="w-24 h-24 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-6 text-[#6C3BFF]/20"
+                                                >
+                                                    <Bell size={40} />
+                                                </motion.div>
+                                                <p className="text-slate-900 font-black text-sm uppercase tracking-widest">Protocol Clear</p>
+                                                <p className="text-slate-400 text-[11px] mt-2 font-medium px-10">No pending institutional alerts at this timestamp.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {notifications.length > 0 && (
+                                        <button 
+                                            onClick={handleMarkAllAsRead}
+                                            className="w-full p-5 bg-slate-50 hover:bg-slate-100 text-[10px] font-black text-[#6C3BFF] uppercase tracking-[0.3em] transition-all border-t border-slate-100"
+                                        >
+                                            Mark all as read
+                                        </button>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Profile Section with Logo */}
+                    <div 
+                        onClick={onNavigateToSettings}
+                        className="flex items-center gap-3 p-1.5 pr-5 bg-white/10 border border-white/10 rounded-[2rem] hover:bg-white/20 transition-all cursor-pointer group"
+                    >
+                        {/* Logo replaces the 'N' */}
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#6C3BFF] font-black shadow-lg overflow-hidden shrink-0 border border-white/20">
+                             {profile?.logo_url && !imgError ? (
+                                <img src={profile.logo_url} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+                             ) : (
+                                displayName.charAt(0).toUpperCase()
+                             )}
+                        </div>
+                        <div className="hidden sm:block max-w-[140px] overflow-hidden text-left">
+                            <p className="text-sm font-bold text-white leading-tight truncate font-['Outfit']">
+                                {profile?.name || displayName}
+                            </p>
+                            <p className="text-[10px] font-black text-purple-200/50 uppercase tracking-widest font-['Outfit']">Admin</p>
+                        </div>
+                        
+                        <div className="h-8 w-px bg-white/10 mx-2 hidden sm:block" />
+                        
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleLogout();
+                            }}
+                            className="p-2 text-purple-200 hover:text-white transition-colors"
+                        >
+                            <LogOut size={18} />
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
+export default InstitutionNavbar;

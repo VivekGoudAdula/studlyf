@@ -16,7 +16,7 @@ const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_in
             try {
                 setLoading(true);
                 const { API_BASE_URL } = await import('../../apiConfig');
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/summary/${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/stats/${institutionId}`);
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
                 setStats(data);
@@ -45,7 +45,7 @@ const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_in
         },
         { 
             label: 'Active Events', 
-            value: stats?.total_events?.toString() || '0', 
+            value: stats?.active_events?.toString() || '0', 
             icon: Briefcase, 
             bg: 'bg-purple-50',
             text: 'text-purple-600'
@@ -59,7 +59,7 @@ const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_in
         },
         { 
             label: 'Average Score', 
-            value: `${stats?.average_score || 0}%`, 
+            value: stats?.average_score || '0%', 
             icon: TrendingUp, 
             bg: 'bg-amber-50',
             text: 'text-amber-600'
