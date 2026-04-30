@@ -14,35 +14,35 @@ SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Studlyf Notifications")
 
+import asyncio
+
 async def send_notification_email(to_email: str, subject: str, body_html: str):
     """
-    Sends a professional HTML email notification.
+    Sends a professional HTML email notification using a non-blocking thread.
     """
     if not SMTP_USER or not SMTP_PASSWORD:
         print("[EMAIL ERROR] SMTP credentials not found in .env")
         return False
 
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = f"{EMAIL_FROM_NAME} <{SMTP_USER}>"
-        msg['To'] = to_email
-        msg['Subject'] = subject
+    def send_sync_email():
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"{EMAIL_FROM_NAME} <{SMTP_USER}>"
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body_html, 'html'))
 
-        msg.attach(MIMEText(body_html, 'html'))
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            return True
+        except Exception as e:
+            print(f"[EMAIL ERROR] Failed to send email: {e}")
+            return False
 
-        # Use synchronous smtplib in an executor if needed, 
-        # but for now we'll keep it simple
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        
-        print(f"[EMAIL SUCCESS] Notification sent to {to_email}")
-        return True
-    except Exception as e:
-        print(f"[EMAIL ERROR] Failed to send email: {e}")
-        return False
+    return await asyncio.to_thread(send_sync_email)
 
 def get_registration_template(user_name: str, event_name: str, custom_message: str = ""):
     message_html = f"<p>{custom_message}</p><br>" if custom_message else ""

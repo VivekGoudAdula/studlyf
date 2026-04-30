@@ -4417,19 +4417,19 @@ class UserLogin(BaseModel):
     password: str
 
 # --- OTP AUTH ENDPOINTS ---
+from fastapi import BackgroundTasks
+
 @app.post("/api/auth/request-otp")
-async def request_otp(data: dict = Body(...)):
+async def request_otp(background_tasks: BackgroundTasks, data: dict = Body(...)):
     email = data.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     
     from services.otp_service import generate_and_send_otp
-    success = await generate_and_send_otp(email)
+    # We trigger the generation and sending in the background to return to the user ASAP
+    background_tasks.add_task(generate_and_send_otp, email)
     
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to send OTP. Check SMTP settings.")
-    
-    return {"status": "success", "message": "OTP sent to your email"}
+    return {"status": "success", "message": "Verification process initiated. Check your email shortly."}
 
 @app.post("/api/auth/verify-otp")
 async def verify_otp_route(data: dict = Body(...)):
