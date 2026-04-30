@@ -25,6 +25,7 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../../apiConfig';
 
 interface SettingsPageProps {
     institutionId: string;
@@ -72,7 +73,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
         const fetchProfile = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/v1/institution/profile/${institutionId}`); 
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`); 
                 const data = await res.json();
                 setProfile(prev => ({
                     ...prev,
@@ -159,7 +160,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
             const { _id, ...cleanProfile } = profile;
             const payload = { ...cleanProfile, institution_id: institutionId };
             
-            const res = await fetch('/api/v1/institution/profile', {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

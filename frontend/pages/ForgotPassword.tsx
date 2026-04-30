@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft, Send, CheckCircle2 } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 import AuthLayout from '../components/AuthLayout';
 import AuthCard from '../components/AuthCard';
 
@@ -19,7 +19,7 @@ const ForgotPasswordPage: React.FC = () => {
         setError('');
         
         try {
-            const res = await fetch('http://localhost:8000/api/auth/forgot-password', {
+            const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })

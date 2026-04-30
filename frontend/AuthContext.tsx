@@ -1,5 +1,5 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { API_BASE_URL } from './apiConfig';
 
 export type UserRole = 'super_admin' | 'admin' | 'mentor' | 'hiring_partner' | 'student' | 'institution';
 
@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         try {
-            const response = await fetch('http://localhost:8000/api/auth/me', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

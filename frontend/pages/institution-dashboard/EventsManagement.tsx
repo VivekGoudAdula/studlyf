@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../apiConfig';
 import { 
     Search, 
     Filter, 
@@ -41,7 +42,7 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ institutionId = 'de
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const response = await fetch(`/api/v1/institution/events/${institutionId}`);
+                const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`);
                 if (!response.ok) throw new Error("Fetch failed");
                 const data = await response.json();
                 setEvents(data.map((e: any) => ({

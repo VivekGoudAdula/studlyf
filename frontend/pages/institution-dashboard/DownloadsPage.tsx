@@ -8,6 +8,7 @@ import {
     CheckCircle, 
     Loader2 
 } from 'lucide-react';
+import { API_BASE_URL } from '../../apiConfig';
 
 interface DownloadsPageProps {
     onNavigate: (tab: string) => void;
@@ -47,7 +48,7 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onNavigate }) => {
         setLoading(file.id);
         try {
             // Simulate/Trigger download
-            window.open(`http://localhost:8000${file.endpoint}`, '_blank');
+            window.open(`${API_BASE_URL}${file.endpoint}`, '_blank');
             // We use window.open for simplicity in this demo, but typically would be a fetch blob
         } catch (error) {
             console.error("Download failed", error);

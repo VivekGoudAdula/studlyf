@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Building2, CheckCircle2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 import AuthCard from './AuthCard';
 
 interface SignupFormProps {
@@ -66,7 +67,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://localhost:8000/api/auth/request-otp', {
+            const res = await fetch(`${API_BASE_URL}/api/auth/request-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -100,7 +101,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
             }
 
             // 1. Verify OTP
-            const verifyRes = await fetch('http://localhost:8000/api/auth/verify-otp', {
+            const verifyRes = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp, name: fullName })
@@ -114,7 +115,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
             }
 
             // 2. Complete Signup in MongoDB
-            const signupRes = await fetch('http://localhost:8000/api/auth/signup', {
+            const signupRes = await fetch(`${API_BASE_URL}/api/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

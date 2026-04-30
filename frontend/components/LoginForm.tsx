@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import AuthCard from './AuthCard';
 import { useAuth } from '../AuthContext';
+import { API_BASE_URL } from '../apiConfig';
 
 interface LoginFormProps {
     onSwitchToSignup: () => void;
@@ -25,7 +26,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
         setError('');
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/api/auth/login', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
