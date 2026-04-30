@@ -22,7 +22,8 @@ import {
     MessageSquare,
     Plus,
     Trash2,
-    ShieldCheck
+    ShieldCheck,
+    Gavel
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../apiConfig';
@@ -142,15 +143,54 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
         }));
     };
 
-    const removeTeamMember = (index: number) => {
-        const newTeam = [...profile.team];
-        newTeam.splice(index, 1);
-        setProfile(prev => ({ ...prev, team: newTeam }));
-    };
-
     const updateMember = (index: number, field: string, value: string) => {
         const newTeam = [...profile.team];
         newTeam[index] = { ...newTeam[index], [field]: value };
+        setProfile(prev => ({ ...prev, team: newTeam }));
+    };
+
+    const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result as string;
+            const lines = content.split('\n');
+            const newMembers: any[] = [];
+            
+            // Assume format: Name, Email, Role
+            // Skip header if it exists
+            const startIdx = (lines[0].toLowerCase().includes('name') || lines[0].toLowerCase().includes('email')) ? 1 : 0;
+
+            for (let i = startIdx; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length >= 2) {
+                    newMembers.push({
+                        name: parts[0],
+                        email: parts[1],
+                        role: parts[2] || 'Coordinator'
+                    });
+                }
+            }
+            
+            if (newMembers.length > 0) {
+                setProfile(prev => ({
+                    ...prev,
+                    team: [...(prev.team || []), ...newMembers]
+                }));
+            }
+        };
+        reader.readAsText(file);
+    };
+
+
+    const removeTeamMember = (index: number) => {
+        const newTeam = [...profile.team];
+        newTeam.splice(index, 1);
         setProfile(prev => ({ ...prev, team: newTeam }));
     };
 
@@ -392,12 +432,27 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                                 <h3 className="text-xl font-black text-slate-900 tracking-tight">Institutional Team</h3>
                                 <p className="text-sm text-slate-500 mt-1">Manage staff members and their administrative roles.</p>
                             </div>
-                            <button 
-                                onClick={addTeamMember}
-                                className="flex items-center gap-2 px-6 py-3 bg-[#6C3BFF] text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#5A2EE5] transition-all shadow-lg shadow-purple-100"
-                            >
-                                <Plus size={16} /> Add Member
-                            </button>
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => document.getElementById('bulk-member-upload')?.click()}
+                                    className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-600 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all"
+                                >
+                                    <Upload size={16} /> Bulk Upload
+                                </button>
+                                <input 
+                                    id="bulk-member-upload"
+                                    type="file"
+                                    accept=".csv,.xlsx,.xls"
+                                    className="hidden"
+                                    onChange={handleBulkUpload}
+                                />
+                                <button 
+                                    onClick={addTeamMember}
+                                    className="flex items-center gap-2 px-6 py-3 bg-[#6C3BFF] text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#5A2EE5] transition-all shadow-lg shadow-purple-100"
+                                >
+                                    <Plus size={16} /> Add Member
+                                </button>
+                            </div>
                         </div>
 
                         <div className="space-y-4">
@@ -594,10 +649,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
 
                             <div className="mt-16 pt-10 border-t border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-2 h-2 rounded-full ${saving ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
-                                    <p className="text-xs font-black text-slate-300 uppercase tracking-widest">
-                                        {saving ? 'Transmitting Data...' : 'Server Connection Active'}
-                                    </p>
+                                    {saving && (
+                                        <>
+                                            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                            <p className="text-xs font-black text-slate-300 uppercase tracking-widest">
+                                                Transmitting Data...
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
                                 <button 
                                     onClick={handleSave}

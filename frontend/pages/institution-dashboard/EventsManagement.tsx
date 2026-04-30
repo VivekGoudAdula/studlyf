@@ -135,9 +135,9 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ institutionId = 'de
                             onChange={(e) => setTypeFilter(e.target.value)}
                         >
                             <option>All Types</option>
-                            <option>Hackathon</option>
-                            <option>Competition</option>
-                            <option>Challenge</option>
+                            {Array.from(new Set(events.map(e => e.type))).map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
