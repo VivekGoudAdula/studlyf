@@ -484,33 +484,37 @@ async def verify_certificate(certificate_id: str):
 
 @router.get("/notifications/{institution_id}")
 async def get_notifications(institution_id: str):
-    """Retrieves real-time institutional activity alerts."""
-    activities = []
-    
-    # Recent Events
-    cursor = events_col.find({"institution_id": institution_id}).sort("created_at", -1).limit(3)
-    async for e in cursor:
-        activities.append({
-            "_id": str(e["_id"]),
-            "title": "New Event Created",
-            "message": f"{e['title']} has been added to the portal.",
-            "type": "info",
-            "time_ago": "Recently"
-        })
-    
-    # Recent Submissions
-    from db import submissions_col
-    cursor = submissions_col.find({"institution_id": institution_id}).sort("submitted_at", -1).limit(2)
-    async for s in cursor:
-        activities.append({
-            "_id": str(s["_id"]),
-            "title": "New Submission",
-            "message": f"Team {s.get('team_name')} submitted {s.get('project_title')}",
-            "type": "success",
-            "time_ago": "Just now"
-        })
+    """Retrieves real-time institutional activity alerts from persistent storage."""
+    from db import notifications_col
+    try:
+        # Fetch latest 10 unread notifications
+        cursor = notifications_col.find({
+            "institution_id": institution_id,
+            "is_read": {"$ne": True}
+        }).sort("created_at", -1).limit(10)
         
-    return activities
+        notifs = []
+        async for n in cursor:
+            n["_id"] = str(n["_id"])
+            notifs.append(n)
+        return notifs
+    except Exception as e:
+        logger.error(f"[NOTIF ERROR] {str(e)}")
+        return []
+
+@router.post("/notifications/{institution_id}/mark-read")
+async def mark_notifications_read(institution_id: str):
+    """Permanently marks all unread notifications for an institution as read in DB."""
+    from db import notifications_col
+    try:
+        await notifications_col.update_many(
+            {"institution_id": institution_id, "is_read": {"$ne": True}},
+            {"$set": {"is_read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "success", "message": "All notifications marked as read"}
+    except Exception as e:
+        logger.error(f"[NOTIF ERROR] Mark read failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update notifications")
 
 @router.get("/submissions/{institution_id}")
 async def get_all_submissions(institution_id: str):
@@ -955,6 +959,21 @@ async def create_pro_event(event_data: dict):
             {"name": "Finals", "type": "OFFLINE"}
         ]
     result = await events_col.insert_one(event_data)
+    
+    # Production Trigger: Create a notification record for the dashboard
+    from db import notifications_col
+    try:
+        await notifications_col.insert_one({
+            "institution_id": event_data.get("institution_id", "default_inst"),
+            "title": "Event Published",
+            "message": f"'{event_data.get('title')}' is now live on the portal.",
+            "type": "info",
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"[NOTIF ERROR] Trigger failed: {str(e)}")
+
     return {"event_id": str(result.inserted_id)}
 
 # ============================================================

@@ -299,7 +299,8 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                         };
                                         
                                         try {
-                                            const res = await fetch('/api/v1/institution/events/create-professional', {
+                                            const { API_BASE_URL } = await import('../../apiConfig');
+                                            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/create-professional`, {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify(finalData)

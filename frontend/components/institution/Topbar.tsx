@@ -52,9 +52,23 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
         }
     };
 
-    const handleMarkAsRead = () => {
-        setNotifications([]);
-        setNotifCount(0);
+    const handleMarkAsRead = async () => {
+        if (!institutionId || institutionId === 'undefined') return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}/mark-read`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (res.ok) {
+                setNotifications([]);
+                setNotifCount(0);
+            }
+        } catch (err) {
+            console.error("[Topbar] Mark as read failed:", err);
+            // Fallback: Clear locally if API fails to keep UI responsive
+            setNotifications([]);
+            setNotifCount(0);
+        }
     };
 
     useEffect(() => {
