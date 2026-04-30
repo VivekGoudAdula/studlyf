@@ -11,6 +11,8 @@ interface Participant {
     status: string;
 }
 
+import { API_BASE_URL } from '../../apiConfig';
+
 const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institutionId = 'default_inst' }) => {
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institut
         const fetchParticipants = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/v1/institution/participants/${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/participants/${institutionId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setParticipants(data.map((p: any) => ({

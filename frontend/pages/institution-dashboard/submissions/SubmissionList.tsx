@@ -11,7 +11,11 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+    const [isAssigning, setIsAssigning] = useState<string | null>(null); // Submission ID being assigned
+    const [judges, setJudges] = useState<any[]>([]);
     const [filterStatus, setFilterStatus] = useState('All');
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState('All');
 
     useEffect(() => {
         const fetchSubmissions = async () => {
@@ -65,6 +69,18 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
         }
     };
 
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(filteredSubmissions.map(s => s._id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelect = (id: string) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
     if (loading) return (
         <div className="space-y-6">
             <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
@@ -81,9 +97,16 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight">Submissions Management</h1>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">Project Evaluation Hub</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">Total {submissions.length} Submissions • Round 01</p>
                 </div>
                 <div className="flex gap-3">
+                    {selectedIds.length > 0 && (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-xl border border-purple-100 animate-in fade-in zoom-in duration-300">
+                            <span className="text-[10px] font-black text-[#6C3BFF] uppercase tracking-widest">{selectedIds.length} Selected</span>
+                            <button className="px-3 py-1.5 bg-[#6C3BFF] text-white text-[9px] font-black uppercase rounded-lg hover:bg-purple-700 transition-all">Bulk Approve</button>
+                            <button className="px-3 py-1.5 bg-white text-slate-400 text-[9px] font-black uppercase rounded-lg border border-slate-100 hover:text-red-500 transition-all">Bulk Reject</button>
+                        </div>
+                    )}
                     <div className="relative group">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#6C3BFF] transition-colors" size={16} />
                         <input 
@@ -92,29 +115,41 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                             className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-50 focus:border-[#6C3BFF] transition-all w-64 text-sm"
                         />
                     </div>
-                    <select 
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-50 focus:border-[#6C3BFF] transition-all text-sm font-bold text-slate-600"
-                    >
-                        <option>All Status</option>
-                        <option>Submitted</option>
-                        <option>Under Review</option>
-                        <option>Scored</option>
-                        <option>Approved</option>
-                        <option>Rejected</option>
-                    </select>
                 </div>
+            </div>
+
+            {/* Unstop Tabs */}
+            <div className="flex items-center gap-8 border-b border-slate-100 px-4">
+                {['All', 'Under Review', 'Shortlisted', 'Evaluated'].map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`text-[10px] font-black uppercase tracking-[0.2em] pb-4 relative transition-all ${activeTab === tab ? 'text-[#6C3BFF]' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        {tab}
+                        {activeTab === tab && (
+                            <motion.div layoutId="subTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#6C3BFF] rounded-full" />
+                        )}
+                    </button>
+                ))}
             </div>
 
             <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/20">
                 <table className="w-full text-left">
                     <thead>
                         <tr className="bg-slate-50/50">
+                            <th className="px-8 py-5 w-10">
+                                <input 
+                                    type="checkbox" 
+                                    onChange={handleSelectAll}
+                                    checked={selectedIds.length === filteredSubmissions.length && filteredSubmissions.length > 0}
+                                    className="w-4 h-4 rounded border-slate-300 text-[#6C3BFF] focus:ring-[#6C3BFF]"
+                                />
+                            </th>
                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Team & Project</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Judge</th>
                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Engagement</th>
+                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Score</th>
                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
@@ -125,16 +160,38 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="hover:bg-slate-50/30 transition-colors group"
+                                className={`hover:bg-slate-50/30 transition-colors group ${selectedIds.includes(sub._id) ? 'bg-purple-50/50' : ''}`}
                             >
+                                <td className="px-8 py-6">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={selectedIds.includes(sub._id)}
+                                        onChange={() => handleSelect(sub._id)}
+                                        className="w-4 h-4 rounded border-slate-300 text-[#6C3BFF] focus:ring-[#6C3BFF]"
+                                    />
+                                </td>
                                 <td className="px-8 py-6">
                                     <div className="flex flex-col">
                                         <span className="font-bold text-slate-900 group-hover:text-[#6C3BFF] transition-colors">{sub.project_title}</span>
                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{sub.team_name}</span>
                                     </div>
                                 </td>
-                                <td className="px-8 py-6 text-sm text-slate-600 font-medium">
-                                    {new Date(sub.submission_date || sub.submitted_at).toLocaleDateString()}
+                                <td className="px-8 py-6">
+                                    {sub.judge_id ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-[#6C3BFF] text-[8px] font-black uppercase">
+                                                {sub.judge_name?.charAt(0) || 'J'}
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-600">{sub.judge_name || 'Assigned'}</span>
+                                        </div>
+                                    ) : (
+                                        <button 
+                                            onClick={() => setIsAssigning(sub._id)}
+                                            className="text-[9px] font-black text-[#6C3BFF] uppercase tracking-widest hover:underline"
+                                        >
+                                            + Assign Judge
+                                        </button>
+                                    )}
                                 </td>
                                 <td className="px-8 py-6 text-center">
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(sub.status)}`}>
@@ -142,14 +199,10 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                                     </span>
                                 </td>
                                 <td className="px-8 py-6">
-                                    <div className="flex items-center justify-center gap-3">
-                                        <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                            <div 
-                                                className="bg-[#6C3BFF] h-full transition-all duration-1000" 
-                                                style={{ width: `${sub.score || 0}%` }}
-                                            />
-                                        </div>
-                                        <span className="text-xs font-black text-slate-700">{sub.score || 0}</span>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <span className={`text-xs font-black ${sub.score >= 80 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                            {sub.score || '—'}
+                                        </span>
                                     </div>
                                 </td>
                                 <td className="px-8 py-6 text-right">
@@ -162,25 +215,17 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                                             <Eye size={18} />
                                         </button>
                                         <button 
-                                            onClick={() => handleStatusChange(sub._id, 'Approved')}
-                                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                            title="Approve"
+                                            className="p-2 text-slate-400 hover:text-[#6C3BFF] hover:bg-purple-50 rounded-lg transition-all"
+                                            title="Move to Final"
                                         >
-                                            <CheckCircle size={18} />
-                                        </button>
-                                        <button 
-                                            onClick={() => handleStatusChange(sub._id, 'Rejected')}
-                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                            title="Reject"
-                                        >
-                                            <XCircle size={18} />
+                                            <TrendingUp size={18} />
                                         </button>
                                     </div>
                                 </td>
                             </motion.tr>
                         )) : (
                             <tr>
-                                <td colSpan={5} className="px-8 py-20 text-center text-slate-400 uppercase font-black tracking-[0.2em] text-xs">
+                                <td colSpan={6} className="px-8 py-20 text-center text-slate-400 uppercase font-black tracking-[0.2em] text-xs">
                                     No submissions found
                                 </td>
                             </tr>
@@ -272,6 +317,61 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                                     Reject
                                 </button>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+            {/* Judge Selection Modal */}
+            <AnimatePresence>
+                {isAssigning && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl border border-white/20"
+                        >
+                            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Assign Evaluator</h2>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">Select a judge for this submission</p>
+                            
+                            <div className="space-y-3 mb-8 max-h-60 overflow-y-auto no-scrollbar">
+                                {judges.length > 0 ? judges.map((j) => (
+                                    <button 
+                                        key={j._id}
+                                        onClick={async () => {
+                                            const res = await fetch(`/api/v1/institution/submissions/${isAssigning}/assign-judge`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ judge_id: j._id })
+                                            });
+                                            if (res.ok) {
+                                                setSubmissions(submissions.map(s => s._id === isAssigning ? { ...s, judge_id: j._id, judge_name: j.full_name, status: 'Under Review' } : s));
+                                                setIsAssigning(null);
+                                            }
+                                        }}
+                                        className="w-full flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-purple-50 border border-slate-100 hover:border-purple-200 transition-all text-left group"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#6C3BFF] font-black shadow-sm group-hover:shadow-md transition-all">
+                                            {j.full_name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-900 group-hover:text-[#6C3BFF] transition-colors">{j.full_name}</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{j.specialization || 'General Judge'}</p>
+                                        </div>
+                                    </button>
+                                )) : (
+                                    <div className="p-10 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No judges available</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button 
+                                onClick={() => setIsAssigning(null)}
+                                className="w-full py-4 bg-slate-100 text-slate-400 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
+                            >
+                                Cancel
+                            </button>
                         </motion.div>
                     </div>
                 )}

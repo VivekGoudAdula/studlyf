@@ -40,6 +40,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
         { id: 'team', label: 'Team & Admins', icon: Users },
         { id: 'notifications', label: 'Email Notifications', icon: Mail },
         { id: 'communications', label: 'Custom Communications', icon: MessageSquare },
+        { id: 'onboarding', label: 'Member Onboarding', icon: Plus },
         { id: 'plan', label: 'Plan & Billing', icon: CreditCard },
     ];
 
@@ -65,6 +66,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
             updates: false
         }
     });
+
+    const [bulkList, setBulkList] = useState<{name: string, email: string, phone: string}[]>([]);
+    const [onboardingRole, setOnboardingRole] = useState('student');
+    const [isOnboarding, setIsOnboarding] = useState(false);
+    
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -159,8 +165,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
             const lines = content.split('\n');
             const newMembers: any[] = [];
             
-            // Assume format: Name, Email, Role
-            // Skip header if it exists
             const startIdx = (lines[0].toLowerCase().includes('name') || lines[0].toLowerCase().includes('email')) ? 1 : 0;
 
             for (let i = startIdx; i < lines.length; i++) {
@@ -208,7 +212,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
             
             if (res.ok) {
                 setSaveSuccess(true);
-                // Ensure dashboard reflects changes
                 setTimeout(() => {
                     if (onProfileUpdate) onProfileUpdate();
                 }, 500);
@@ -251,9 +254,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
             case 'profile':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                        {/* Banner & Logo Section */}
                         <div className="relative mb-20">
-                            {/* Banner */}
                             <div 
                                 onClick={handleBannerClick}
                                 className="w-full h-48 rounded-[3rem] bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer overflow-hidden group relative"
@@ -273,7 +274,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                                 </div>
                             </div>
 
-                            {/* Logo Overlap */}
                             <div className="absolute -bottom-12 left-10 group" onClick={handleLogoClick}>
                                 <div className="w-32 h-32 rounded-[2rem] bg-white border-8 border-white shadow-2xl flex items-center justify-center overflow-hidden relative cursor-pointer group-hover:scale-105 transition-transform">
                                     {profile.logo_url ? (
@@ -295,7 +295,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                             </div>
                         </div>
 
-                        {/* Form Fields */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
                             {[
                                 { id: 'name', label: 'Institution Name', icon: Building2, placeholder: 'e.g., Stanford University' },
@@ -318,7 +317,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                                 </div>
                             ))}
 
-                            {/* Social Links */}
                             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-50 mt-4">
                                 {[
                                     { id: 'linkedin', label: 'LinkedIn', placeholder: 'linkedin.com/school/...' },
@@ -356,7 +354,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
             case 'notifications':
                 return (
                     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-                        {/* Section 1: Internal Operational Alerts */}
                         <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 shadow-inner">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-4">
@@ -390,7 +387,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                             ))}
                         </div>
 
-                        {/* Section 2: Judge Communications */}
                         <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 shadow-inner">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-4">
@@ -491,6 +487,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                                             >
                                                 <option value="Admin">Admin</option>
                                                 <option value="Coordinator">Coordinator</option>
+                                                <option value="Evaluator">Evaluator</option>
                                                 <option value="Editor">Editor</option>
                                                 <option value="Viewer">Viewer</option>
                                             </select>
@@ -514,32 +511,154 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                 );
             case 'communications':
                 return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-slate-900">Custom Communications</h2>
+                        </div>
+                        <div className="p-12 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 text-center">
+                            <MessageSquare className="mx-auto text-slate-300 mb-4" size={48} />
+                            <h3 className="text-lg font-bold text-slate-900 font-['Outfit']">Premium Feature</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm">
+                                Custom email templates and SMS notifications are available for Premium institutions.
+                            </p>
+                        </div>
+                    </div>
+                );
+            case 'onboarding':
+                return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                        <div className="p-10 bg-[#6C3BFF] rounded-[3rem] text-white relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-10 opacity-10">
-                                <MessageSquare size={120} />
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">Member Onboarding</h2>
+                                <p className="text-slate-500 text-sm mt-1">Bulk invite judges or students via CSV upload</p>
                             </div>
-                            <div className="relative z-10">
-                                <h3 className="text-2xl font-black tracking-tight">Professional Outreach</h3>
-                                <p className="text-purple-100 mt-2 max-w-md">Customize the messages your students receive upon successful registration or submission.</p>
+                            <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl">
+                                {['student', 'judge'].map(r => (
+                                    <button
+                                        key={r}
+                                        onClick={() => setOnboardingRole(r)}
+                                        className={`px-6 py-2.5 rounded-xl text-xs font-black capitalize tracking-widest transition-all ${onboardingRole === r ? 'bg-white text-[#6C3BFF] shadow-sm' : 'text-slate-400'}`}
+                                    >
+                                        {r}s
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <ShieldCheck size={14} className="text-[#6C3BFF]" /> Registration Success Message
-                                </label>
-                                <textarea 
-                                    rows={6}
-                                    placeholder="Enter a custom message that students will see in their confirmation email..."
-                                    value={profile.email_custom_message}
-                                    onChange={(e) => setProfile({...profile, email_custom_message: e.target.value})}
-                                    className="w-full px-6 py-5 bg-white border border-slate-100 rounded-[2rem] focus:ring-4 focus:ring-purple-50 focus:border-[#6C3BFF] outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 resize-none shadow-sm"
-                                />
-                                <p className="text-[10px] text-slate-400 font-medium px-4 italic">* This message will be appended to the official Studlyf confirmation template.</p>
+                        {/* Upload Area */}
+                        <div className="p-12 bg-purple-50/50 rounded-[3rem] border-2 border-dashed border-purple-200 text-center relative group transition-all hover:bg-purple-50">
+                            <input 
+                                type="file" 
+                                accept=".csv" 
+                                className="absolute inset-0 opacity-0 cursor-pointer z-20" 
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                            const text = event.target?.result as string;
+                                            const rows = text.split('\n').slice(1);
+                                            const parsed = rows.map(row => {
+                                                const parts = row.split(',');
+                                                return { name: parts[0]?.trim(), email: parts[1]?.trim(), phone: parts[2]?.trim() };
+                                            }).filter(p => p.email && p.email.includes('@'));
+                                            setBulkList(prev => [...prev, ...parsed]);
+                                        };
+                                        reader.readAsText(file);
+                                    }
+                                }}
+                            />
+                            <div className="space-y-4 relative z-10">
+                                <div className="w-20 h-20 bg-white rounded-[2rem] shadow-2xl shadow-purple-200 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500">
+                                    <Upload className="text-[#6C3BFF]" size={32} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 font-['Outfit']">Drop CSV File Here</h3>
+                                    <p className="text-slate-400 text-xs mt-2 font-medium">
+                                        Columns required: <span className="text-[#6C3BFF] font-bold">Name, Email, Phone</span>
+                                    </p>
+                                </div>
                             </div>
                         </div>
+
+                        {/* List Preview */}
+                        {bulkList.length > 0 && (
+                            <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/20 animate-in zoom-in-95 duration-500">
+                                <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-[#6C3BFF] rounded-full flex items-center justify-center text-white text-xs font-black">
+                                            {bulkList.length}
+                                        </div>
+                                        <h3 className="font-bold text-slate-900 font-['Outfit']">Detected Members</h3>
+                                    </div>
+                                    <button 
+                                        onClick={() => setBulkList([])}
+                                        className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest px-4 py-2 hover:bg-red-50 rounded-xl transition-all"
+                                    >
+                                        Clear List
+                                    </button>
+                                </div>
+                                <div className="max-h-[400px] overflow-y-auto no-scrollbar">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50/50">
+                                                <th className="px-8 py-4">Full Name</th>
+                                                <th className="px-8 py-4">Email Address</th>
+                                                <th className="px-8 py-4 text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {bulkList.map((m, i) => (
+                                                <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-8 py-5 text-sm font-bold text-slate-900">{m.name || 'N/A'}</td>
+                                                    <td className="px-8 py-5 text-sm font-medium text-slate-500">{m.email}</td>
+                                                    <td className="px-8 py-5 text-right">
+                                                        <button 
+                                                            onClick={() => setBulkList(prev => prev.filter((_, idx) => idx !== i))}
+                                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-white hover:shadow-md rounded-xl transition-all"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="p-8 bg-slate-50/50 border-t border-slate-50">
+                                    <button 
+                                        disabled={isOnboarding}
+                                        onClick={async () => {
+                                            try {
+                                                setIsOnboarding(true);
+                                                const res = await fetch(`${API_BASE_URL}/api/v1/institution/members/bulk`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        institution_id: institutionId,
+                                                        role: onboardingRole,
+                                                        members: bulkList
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    const result = await res.json();
+                                                    alert(`Successfully onboarded ${result.added} ${onboardingRole}s!`);
+                                                    setBulkList([]);
+                                                }
+                                            } catch (err) {
+                                                alert("Bulk onboarding failed");
+                                            } finally {
+                                                setIsOnboarding(false);
+                                            }
+                                        }}
+                                        className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-[#6C3BFF] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-purple-100"
+                                    >
+                                        {isOnboarding ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} className="fill-white" />}
+                                        {isOnboarding ? 'Processing...' : `Onboard All ${onboardingRole}s Now`}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             case 'plan':

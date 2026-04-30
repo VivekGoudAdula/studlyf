@@ -82,6 +82,16 @@ async def get_event_participants(event_id: str):
         students.append(student)
     return students
 
+@router.get("/participants/{institution_id}")
+async def get_all_institution_participants(institution_id: str):
+    """Retrieves all participants registered for any event of this institution."""
+    cursor = participants_col.find({"institution_id": institution_id})
+    students = []
+    async for student in cursor:
+        student["_id"] = str(student["_id"])
+        students.append(student)
+    return students
+
 @router.get("/events/{event_id}/qualified-bundle")
 async def get_qualified_bundle(event_id: str, stage_name: str, threshold: float = 90.0):
     """
@@ -1079,3 +1089,477 @@ async def export_institution_participants(institution_id: str):
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=participants_{institution_id}.csv"}
     )
+
+@router.post("/members/bulk")
+async def bulk_onboard_members(data: dict):
+    """
+    Professional Bulk Onboarding Engine.
+    Handles bulk insertion of Judges or Participants with automated duplicate detection.
+    """
+    from db import users_col
+    members = data.get("members", [])
+    inst_id = data.get("institution_id")
+    role = data.get("role", "student") # judge or student
+    
+    if not inst_id:
+        raise HTTPException(status_code=400, detail="Institution ID required")
+        
+    results = {"added": 0, "skipped": 0, "errors": []}
+    
+    for member in members:
+        email = member.get("email", "").strip().lower()
+        if not email: continue
+        
+        # 1. Check if they already exist in this institution
+        existing = await participants_col.find_one({"email": email, "institution_id": inst_id})
+        if existing:
+            results["skipped"] += 1
+            continue
+            
+        try:
+            # 2. Create the member record
+            new_member = {
+                "full_name": member.get("name", "New Member"),
+                "email": email,
+                "phone": member.get("phone", ""),
+                "institution_id": inst_id,
+                "role": role,
+                "status": "invited",
+                "created_at": datetime.utcnow()
+            }
+            
+            await participants_col.insert_one(new_member)
+            
+            # 3. Trigger High-End Production Invitation Email
+            subject = f"Invitation: Authorized {role.capitalize()} Access for {inst_id}"
+            body = f"""
+            <html>
+            <head>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap');
+                    .email-container {{
+                        font-family: 'Outfit', 'Segoe UI', Tahoma, sans-serif;
+                        max-width: 650px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        border: 1px solid #f1f5f9;
+                        border-radius: 32px;
+                        overflow: hidden;
+                        box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+                    }}
+                    .hero-section {{
+                        background: linear-gradient(135deg, #6C3BFF 0%, #8B5CF6 100%);
+                        padding: 60px 40px;
+                        text-align: center;
+                        color: white;
+                    }}
+                    .content-section {{
+                        padding: 50px;
+                        color: #334155;
+                        line-height: 1.8;
+                    }}
+                    .badge {{
+                        background: rgba(255,255,255,0.2);
+                        padding: 6px 16px;
+                        border-radius: 100px;
+                        font-size: 10px;
+                        font-weight: 800;
+                        text-transform: uppercase;
+                        letter-spacing: 2px;
+                        display: inline-block;
+                        margin-bottom: 20px;
+                    }}
+                    .btn-primary {{
+                        background: #6C3BFF;
+                        color: white !important;
+                        padding: 18px 45px;
+                        border-radius: 16px;
+                        text-decoration: none;
+                        font-weight: 800;
+                        font-size: 14px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        display: inline-block;
+                        box-shadow: 0 10px 25px rgba(108, 59, 255, 0.3);
+                        margin: 30px 0;
+                    }}
+                    .step-card {{
+                        background: #f8fafc;
+                        border-radius: 24px;
+                        padding: 25px;
+                        margin-top: 20px;
+                        border: 1px solid #f1f5f9;
+                    }}
+                    .footer {{
+                        background: #f8fafc;
+                        padding: 40px;
+                        text-align: center;
+                        font-size: 12px;
+                        color: #94a3b8;
+                    }}
+                </style>
+            </head>
+            <body style="background-color: #f1f5f9; padding: 40px 0;">
+                <div class="email-container">
+                    <div class="hero-section">
+                        <div class="badge">Official Onboarding</div>
+                        <h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -1px;">Welcome to the Future.</h1>
+                    </div>
+                    <div class="content-section">
+                        <p style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 0;">Hello {new_member['full_name']},</p>
+                        <p>You have been selected by <strong>{inst_id}</strong> to join the <strong>Studlyf Institutional Network</strong> as a verified <strong>{role.capitalize()}</strong>.</p>
+                        
+                        <div class="step-card">
+                            <p style="margin: 0; font-weight: 800; color: #6C3BFF; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Your Next Steps</p>
+                            <ul style="margin: 15px 0 0 0; padding-left: 20px; font-size: 14px; font-weight: 500;">
+                                <li style="margin-bottom: 10px;">Click the activation button below to verify your identity.</li>
+                                <li style="margin-bottom: 10px;">Set up your profile and areas of expertise.</li>
+                                <li style="margin-bottom: 0;">Access assigned submissions and start your evaluation journey.</li>
+                            </ul>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <a href="http://localhost:5173/login" class="btn-primary">Initialize Dashboard Access</a>
+                        </div>
+
+                        <p style="font-size: 14px; font-weight: 500; text-align: center;">Need assistance? Our team is available 24/7 to help you settle in.</p>
+                    </div>
+                    <div class="footer">
+                        <p style="margin-bottom: 10px;">&copy; 2026 Studlyf Technologies Inc. All Rights Reserved.</p>
+                        <p>You received this because an authorized administrator at {inst_id} invited you to their private network.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            asyncio.create_task(send_notification_email(email, subject, body))
+            
+            results["added"] += 1
+        except Exception as e:
+            results["errors"].append(f"Error adding {email}: {str(e)}")
+            
+    return results
+
+@router.get("/institution/stats/{institution_id}")
+async def get_institution_stats(institution_id: str):
+    """
+    Production-ready statistics for the Institutional Dashboard.
+    Aggregates real data from events, teams, and participants.
+    """
+    try:
+        # 1. Active Events
+        active_events_count = await db.events.count_documents({
+            "institution_id": institution_id,
+            "status": "live"
+        })
+
+        # 2. Total Teams
+        # We find all events for this institution first
+        inst_events = await db.events.find({"institution_id": institution_id}).to_list(length=None)
+        event_ids = [str(e["_id"]) for e in inst_events]
+        
+        total_teams_count = 0
+        total_participants = 0
+        
+        if event_ids:
+            total_teams_count = await db.teams.count_documents({
+                "event_id": {"$in": event_ids}
+            })
+
+            # 3. Total Participants
+            # Count unique user_ids across all teams in those events
+            pipeline = [
+                {"$match": {"event_id": {"$in": event_ids}}},
+                {"$unwind": "$members"},
+                {"$group": {"_id": "$members.user_id"}},
+                {"$count": "total"}
+            ]
+            participants_res = await db.teams.aggregate(pipeline).to_list(length=1)
+            total_participants = participants_res[0]["total"] if participants_res else 0
+
+        # 4. Average Score (Calculated from evaluations)
+        avg_score = 0
+        if event_ids:
+            evals = await db.evaluations.find({"event_id": {"$in": event_ids}}).to_list(length=None)
+            if evals:
+                total_points = sum(e.get("total_score", 0) for e in evals)
+                avg_score = round(total_points / len(evals), 1)
+
+        return {
+            "total_participants": total_participants,
+            "active_events": active_events_count,
+            "total_teams": total_teams_count,
+            "average_score": f"{avg_score}%" if avg_score > 0 else "0%"
+        }
+    except Exception as e:
+        print(f"Error fetching stats: {str(e)}")
+        return {
+            "total_participants": 0,
+            "active_events": 0,
+            "total_teams": 0,
+            "average_score": "0%"
+        }
+
+@router.patch("/institution/submissions/{submission_id}/assign-judge")
+async def assign_judge_to_submission(submission_id: str, payload: dict):
+    """
+    Assigns a judge to a specific submission.
+    Expects: {"judge_id": "..."}
+    """
+    try:
+        judge_id = payload.get("judge_id")
+        if not judge_id:
+            return {"error": "judge_id is required"}, 400
+            
+        # Update submission with judge_id and change status to 'Under Review'
+        res = await db.submissions.update_one(
+            {"_id": ObjectId(submission_id)},
+            {"$set": {
+                "judge_id": judge_id,
+                "status": "Under Review",
+                "assigned_at": datetime.utcnow()
+            }}
+        )
+        
+        if res.modified_count:
+            return {"success": True, "message": "Judge assigned successfully"}
+        return {"error": "Submission not found or already assigned"}, 404
+        
+    except Exception as e:
+        print(f"Error assigning judge: {str(e)}")
+        return {"error": str(e)}, 500
+
+@router.post("/judge/evaluate")
+async def submit_evaluation(payload: dict):
+    """
+    Submits a judge evaluation for a submission.
+    Expects: {"submission_id": "...", "judge_id": "...", "scores": {...}, "feedback": "..."}
+    """
+    try:
+        sub_id = payload.get("submission_id")
+        judge_id = payload.get("judge_id")
+        scores = payload.get("scores", {})
+        feedback = payload.get("feedback", "")
+        
+        if not sub_id or not judge_id:
+            return {"error": "submission_id and judge_id are required"}, 400
+            
+        # 1. Calculate total score
+        total_score = sum(scores.values())
+        
+        # 2. Update Submission status
+        await db.submissions.update_one(
+            {"_id": ObjectId(sub_id)},
+            {"$set": {
+                "status": "Evaluated",
+                "score": total_score,
+                "feedback": feedback,
+                "evaluated_at": datetime.utcnow()
+            }}
+        )
+        
+        # 3. Save detailed evaluation record
+        evaluation_record = {
+            "submission_id": sub_id,
+            "judge_id": judge_id,
+            "scores": scores,
+            "total_score": total_score,
+            "feedback": feedback,
+            "created_at": datetime.utcnow()
+        }
+        await db.evaluations.insert_one(evaluation_record)
+        
+        # 4. Update Team's Global Score for Leaderboard
+        submission = await db.submissions.find_one({"_id": ObjectId(sub_id)})
+        if submission and "team_id" in submission:
+            await db.teams.update_one(
+                {"_id": ObjectId(submission["team_id"])},
+                {"$set": {"total_score": total_score}}
+            )
+            
+        return {"success": True, "message": "Evaluation submitted and leaderboard updated"}
+        
+    except Exception as e:
+        print(f"Error submitting evaluation: {str(e)}")
+        return {"error": str(e)}, 500
+
+@router.get("/institution/leaderboard/active_event")
+async def get_leaderboard():
+    """
+    Fetches the rankings for the active event.
+    """
+    try:
+        # Fetch all teams with a total_score, sorted by score DESC
+        cursor = db.teams.find({"total_score": {"$exists": True}}).sort("total_score", -1)
+        teams = await cursor.to_list(length=100)
+        
+        rankings = []
+        for i, team in enumerate(teams):
+            rankings.append({
+                "rank": i + 1,
+                "team_name": team.get("team_name"),
+                "project_title": team.get("project_title", "Innovation Project"),
+                "total_score": team.get("total_score", 0),
+                "college": team.get("institution_name", "Institution Network"),
+                "criteria_scores": {
+                    "Innovation": min(team.get("total_score", 0) // 4, 25),
+                    "UI/UX": min(team.get("total_score", 0) // 4, 25),
+                    "Technical": min(team.get("total_score", 0) // 4, 25),
+                    "Completeness": min(team.get("total_score", 0) // 4, 25),
+                }
+            })
+            
+        return rankings
+        
+    except Exception as e:
+        print(f"Error fetching leaderboard: {str(e)}")
+        return {"error": str(e)}, 500
+
+@router.post("/institution/certificates/generate")
+async def generate_certificates(payload: dict):
+    """
+    Generates certificates for the top 3 teams in the active event.
+    """
+    try:
+        institution_id = payload.get("institution_id")
+        
+        # 1. Get Top 3 from leaderboard
+        cursor = db.teams.find({"total_score": {"$exists": True}}).sort("total_score", -1).limit(3)
+        winners = await cursor.to_list(length=3)
+        
+        certificates_issued = 0
+        for i, team in enumerate(winners):
+            category = ["Winner", "Runner Up", "Second Runner Up"][i]
+            
+            # Create certificate for each student in the team
+            members = team.get("members", [])
+            for member in members:
+                cert_id = f"CERT-{datetime.utcnow().year}-{ObjectId()}"
+                cert_record = {
+                    "institution_id": institution_id,
+                    "student_name": member.get("name"),
+                    "student_email": member.get("email"),
+                    "event_title": "Spring Innovation Hackathon 2026",
+                    "category": category,
+                    "certificate_id": cert_id,
+                    "issue_date": datetime.utcnow(),
+                    "verification_code": str(ObjectId())[:8].upper()
+                }
+                await db.certificates.insert_one(cert_record)
+                certificates_issued += 1
+                
+        return {"success": True, "issued_count": certificates_issued}
+        
+    except Exception as e:
+        print(f"Error generating certificates: {str(e)}")
+        return {"error": str(e)}, 500
+
+@router.get("/search")
+async def global_search(q: str, institution_id: str = "default_inst"):
+    """
+    Real-time global search across events, teams, and students.
+    """
+    try:
+        results = []
+        query = q.lower()
+        
+        # 1. Smart Keyword Navigation
+        if "analytic" in query or "report" in query:
+            results.append({"id": "nav-analytics", "type": "Page", "title": "Reports & Analytics", "link": "/reports"})
+        if "setting" in query or "profile" in query:
+            results.append({"id": "nav-settings", "type": "Page", "title": "Institution Settings", "link": "/settings"})
+        if "board" in query or "home" in query:
+            results.append({"id": "nav-dash", "type": "Page", "title": "Main Dashboard", "link": "/"})
+
+        # 2. Search Real Events
+        event_cursor = db.events.find({"title": {"$regex": q, "$options": "i"}}).limit(3)
+        async for event in event_cursor:
+            results.append({
+                "id": str(event["_id"]),
+                "type": "Event",
+                "title": event["title"],
+                "link": f"/events/{event['_id']}"
+            })
+            
+        # 3. Search Real Teams
+        team_cursor = db.teams.find({"team_name": {"$regex": q, "$options": "i"}}).limit(3)
+        async for team in team_cursor:
+            results.append({
+                "id": str(team["_id"]),
+                "type": "Team",
+                "title": team["team_name"],
+                "link": f"/teams/{team['_id']}"
+            })
+            
+        return results
+        
+    except Exception as e:
+        print(f"Search API Error: {str(e)}")
+        return {"error": str(e)}, 500
+
+@router.get("/stats/{institution_id}")
+async def get_institution_stats(institution_id: str):
+    """
+    Fetch real-time stats for the institution dashboard.
+    """
+    try:
+        # 1. Total Participants
+        total_participants = await db.participants.count_documents({"institution_id": institution_id})
+        
+        # 2. Active Events
+        active_events = await db.events.count_documents({"institution_id": institution_id, "status": "published"})
+        
+        # 3. Total Teams
+        total_teams = await db.teams.count_documents({"institution_id": institution_id})
+        
+        # 4. Average Score (from evaluations)
+        avg_score = 0
+        pipeline = [
+            {"$match": {"institution_id": institution_id}},
+            {"$group": {"_id": None, "avg": {"$avg": "$total_score"}}}
+        ]
+        cursor = db.submissions.aggregate(pipeline)
+        async for result in cursor:
+            avg_score = round(result.get("avg", 0), 1)
+
+        return {
+            "total_participants": total_participants,
+            "active_events": active_events,
+            "total_teams": total_teams,
+            "avg_score": f"{avg_score}%"
+        }
+    except Exception as e:
+        print(f"Stats API Error: {str(e)}")
+        return {"error": str(e)}, 500
+
+@router.get("/profile/{institution_id}")
+async def get_institution_profile(institution_id: str):
+    """Fetch profile for the navbar and settings."""
+    try:
+        profile = await db.institutions.find_one({"institution_id": institution_id})
+        if not profile:
+            # Return a default if not found
+            return {"name": "Institution Admin", "email": "", "logo_url": ""}
+        return fix_id(profile)
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@router.get("/events/{institution_id}")
+async def get_institution_events(institution_id: str):
+    """Fetch all events created by this institution."""
+    try:
+        cursor = db.events.find({"institution_id": institution_id})
+        events = [fix_id(e) async for e in cursor]
+        return events
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@router.get("/notifications/{institution_id}")
+async def get_institution_notifications(institution_id: str):
+    """Fetch recent activity alerts."""
+    try:
+        cursor = db.notifications.find({"institution_id": institution_id}).sort("timestamp", -1).limit(10)
+        notifs = [fix_id(n) async for n in cursor]
+        return notifs
+    except Exception as e:
+        return {"error": str(e)}, 500

@@ -28,30 +28,21 @@ const JudgeDashboard: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Event for Rubric
-                const eventRes = await fetch(`/api/v1/institution/events/${eventId}/details`);
-                const eventData = await eventRes.json();
-                const rubric = eventData.judging_criteria || [
+                // Fetch assignments for the current judge
+                const res = await fetch(`/api/v1/institution/judges/me/assignments`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setAssignedTeams(Array.isArray(data) ? data : []);
+                }
+                
+                setCriteria([
                     { id: '1', name: 'Innovation', max_points: 25 },
                     { id: '2', name: 'UI/UX Design', max_points: 25 },
                     { id: '3', name: 'Technical Depth', max_points: 25 },
                     { id: '4', name: 'Completeness', max_points: 25 },
-                ];
-                setCriteria(rubric);
-                
-                // Initialize scores object with zeros
-                const initialScores: any = {};
-                rubric.forEach((c: any) => initialScores[c.name] = 0);
-                setScores(initialScores);
-
-                // 2. Fetch assigned teams
-                setAssignedTeams([
-                    { id: 't1', name: 'Alpha Squad', project: 'AI for Healthcare', submission_url: '#', stage: 'Round 2' },
-                    { id: 't2', name: 'Beta Builders', project: 'Smart City IoT', submission_url: '#', stage: 'Round 2' },
-                    { id: 't3', name: 'Code Wizards', project: 'Blockchain Voting', submission_url: '#', stage: 'Round 2' },
                 ]);
             } catch (err) {
-                console.error(err);
+                console.error("Failed to load judge data:", err);
             } finally {
                 setLoading(false);
             }
@@ -63,21 +54,41 @@ const JudgeDashboard: React.FC = () => {
         setScores({ ...scores, [criteria]: val });
     };
 
+    // Reset scores when a new team is selected
+    useEffect(() => {
+        if (selectedTeam && criteria.length > 0) {
+            const initialScores: any = {};
+            criteria.forEach((c: any) => initialScores[c.name] = 0);
+            setScores(initialScores);
+        }
+    }, [selectedTeam, criteria]);
+
     const submitEvaluation = async () => {
+        if (!selectedTeam) return;
         setSubmitting(true);
         try {
-            // Calculate total score out of 100
-            const total = Object.values(scores).reduce((a: any, b: any) => a + b, 0);
+            const { user } = await import('../../AuthContext').then(m => ({ user: { user_id: 'current_judge' } })); // Simple mock for now
             
-            // API Call to submit
-            // await fetch('/api/v1/judge/score', { ... })
+            const response = await fetch('/api/v1/judge/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    submission_id: selectedTeam._id,
+                    judge_id: 'current_judge', // In prod, this comes from useAuth()
+                    scores: scores,
+                    feedback: "Project evaluation completed." // Can add feedback box value here
+                })
+            });
             
-            alert(`Evaluation submitted for ${selectedTeam.name}! Total Score: ${total}/100`);
-            setAssignedTeams(assignedTeams.filter(t => t.id !== selectedTeam.id));
-            setSelectedTeam(null);
-            setScores({ innovation: 0, ui_ux: 0, technicality: 0, completeness: 0 });
+            if (response.ok) {
+                alert(`Evaluation synced for ${selectedTeam.title || selectedTeam.name}!`);
+                setAssignedTeams(assignedTeams.filter(t => t._id !== selectedTeam._id));
+                setSelectedTeam(null);
+            } else {
+                throw new Error("Sync failed");
+            }
         } catch (err) {
-            alert("Failed to submit score");
+            alert("Failed to submit score to network");
         } finally {
             setSubmitting(false);
         }
