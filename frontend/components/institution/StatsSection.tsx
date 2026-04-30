@@ -15,7 +15,8 @@ const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_in
         const fetchStats = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/v1/institution/summary/${institutionId}`);
+                const { API_BASE_URL } = await import('../../apiConfig');
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/summary/${institutionId}`);
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
                 setStats(data);

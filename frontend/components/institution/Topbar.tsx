@@ -52,6 +52,11 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
         }
     };
 
+    const handleMarkAsRead = () => {
+        setNotifications([]);
+        setNotifCount(0);
+    };
+
     useEffect(() => {
         fetchProfile();
         fetchNotifications();
@@ -172,8 +177,11 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
                                 </div>
 
                                 {notifications.length > 0 && (
-                                    <button className="w-full py-4 bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#6C3BFF] transition-colors">
-                                        Clear All Notifications
+                                    <button 
+                                        onClick={handleMarkAsRead}
+                                        className="w-full py-4 bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#6C3BFF] transition-colors"
+                                    >
+                                        Mark all as read
                                     </button>
                                 )}
                             </motion.div>
