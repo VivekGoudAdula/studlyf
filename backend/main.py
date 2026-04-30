@@ -35,6 +35,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+async def health_check():
+    db_status = "connected"
+    try:
+        from db import db
+        await db.client.admin.command('ping')
+    except Exception:
+        db_status = "disconnected"
+        
+    return {
+        "status": "ok", 
+        "database": db_status,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 # In-memory stores for OTP and Reset Tokens
 otp_store = {}
 reset_tokens = {} # email: {token, expiry}
@@ -311,13 +326,7 @@ origins = [
 origins = [o.rstrip('/') for o in origins if o]
 origins = list(set(origins))
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS already configured at the top
 
 from fastapi.responses import JSONResponse
 from fastapi import Request
@@ -4417,19 +4426,26 @@ class UserLogin(BaseModel):
     password: str
 
 # --- OTP AUTH ENDPOINTS ---
-from fastapi import BackgroundTasks
-
 @app.post("/api/auth/request-otp")
-async def request_otp(background_tasks: BackgroundTasks, data: dict = Body(...)):
-    email = data.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-    
-    from services.otp_service import generate_and_send_otp
-    # We trigger the generation and sending in the background to return to the user ASAP
-    background_tasks.add_task(generate_and_send_otp, email)
-    
-    return {"status": "success", "message": "Verification process initiated. Check your email shortly."}
+async def request_otp(data: dict = Body(...)):
+    try:
+        email = data.get("email")
+        logger.info(f"[AUTH] OTP requested for: {email}")
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        from services.otp_service import generate_and_send_otp
+        # Fire and forget the OTP generation to ensure the user gets an instant UI response
+        import asyncio
+        asyncio.create_task(generate_and_send_otp(email))
+        
+        return {"status": "success", "message": "OTP sending initiated"}
+    except Exception as e:
+        logger.error(f"[AUTH ERROR] request_otp failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/auth/verify-otp")
 async def verify_otp_route(data: dict = Body(...)):

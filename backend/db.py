@@ -43,7 +43,7 @@ class DatabaseManager:
             
         except Exception as e:
             logger.error(f"Database Connection Failed: {e}")
-            raise
+            # Do not raise, allow app to start for diagnostics
 
     async def disconnect(self):
         """Graceful shutdown."""
