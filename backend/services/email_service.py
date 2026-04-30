@@ -27,13 +27,41 @@ async def send_notification_email(to_email: str, subject: str, body_html: str):
     Priority: 1. Resend API (HTTP - most reliable), 2. SMTP SSL (Port 465)
     """
     resend_key = os.getenv("RESEND_API_KEY")
+    brevo_key = os.getenv("BREVO_API_KEY")
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
     smtp_port = int(os.getenv("SMTP_PORT", 465))
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASSWORD")
     email_from = os.getenv("EMAIL_FROM_NAME", "Studlyf Notifications")
 
-    # --- PRIMARY: RESEND API (Bypasses all network blocks) ---
+    # --- PRIMARY: BREVO API (Best for free tier without domain) ---
+    if brevo_key:
+        try:
+            import requests
+            logger.info(f"[EMAIL] Attempting Brevo API for {to_email}")
+            response = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "sender": {"name": email_from, "email": smtp_user if smtp_user else "notifications@studlyf.com"},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": body_html,
+                },
+                timeout=10
+            )
+            if response.status_code in [200, 201, 202]:
+                logger.info(f"[EMAIL SUCCESS] Delivered via Brevo API to {to_email}")
+                return True
+            else:
+                logger.warning(f"[BREVO FAILED] Status {response.status_code}: {response.text}. Trying Resend...")
+        except Exception as e:
+            logger.error(f"[BREVO ERROR] {str(e)}")
+
+    # --- SECONDARY: RESEND API ---
     if resend_key:
         try:
             import requests
@@ -78,11 +106,13 @@ async def send_notification_email(to_email: str, subject: str, body_html: str):
                     server.starttls()
                     
                 server.login(smtp_user, smtp_pass)
-                server.send_message(msg := MIMEMultipart())
+                
+                msg = MIMEMultipart()
                 msg['From'] = f"{email_from} <{smtp_user}>"
-                msg['To'] = to_email
+                msg['to'] = to_email
                 msg['Subject'] = subject
                 msg.attach(MIMEText(body_html, 'html'))
+                
                 server.send_message(msg)
                 server.quit()
                 logger.info(f"[EMAIL SUCCESS] Delivered via SMTP to {to_email}")
