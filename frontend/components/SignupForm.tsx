@@ -218,10 +218,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                             <CheckCircle2 size={40} />
                         </div>
                         <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900 mb-2">Registration Complete</h2>
-                        <p className="text-gray-500 text-sm mb-8">Your account has been created securely in our MongoDB cluster.</p>
+                        <p className="text-gray-500 text-sm mb-8">Welcome aboard! Your account is ready.</p>
                         <div className="flex items-center justify-center gap-2 text-purple-600 font-bold text-[10px] uppercase tracking-widest">
-                            <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-                            Redirecting to Login...
+                            Please wait a moment...
                         </div>
                     </motion.div>
                 )}
