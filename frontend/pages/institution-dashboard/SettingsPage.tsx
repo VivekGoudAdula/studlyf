@@ -22,7 +22,8 @@ import {
     MessageSquare,
     Plus,
     Trash2,
-    ShieldCheck
+    ShieldCheck,
+    Gavel
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../apiConfig';
