@@ -4,6 +4,7 @@ import { useAuth } from '../../AuthContext';
 import { Bell, Search, User, CreditCard, LogOut, Settings as SettingsIcon, Menu, Info, Zap, Clock, X, Filter, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../../apiConfig';
 
 const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToSettings }) => {
     const { user, logout } = useAuth();
@@ -22,7 +23,7 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
     const fetchProfile = async () => {
         if (!institutionId || institutionId === 'undefined') return;
         try {
-            const res = await fetch(`/api/v1/institution/profile/${institutionId}`);
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`);
             if (res.ok) {
                 const data = await res.json();
                 if (data.logo_url) {
@@ -39,7 +40,7 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
     const fetchNotifications = async () => {
         if (!institutionId || institutionId === 'undefined') return;
         try {
-            const res = await fetch(`/api/v1/institution/notifications/${institutionId}`);
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`);
             if (res.ok) {
                 const data = await res.json();
                 const list = Array.isArray(data) ? data : [];

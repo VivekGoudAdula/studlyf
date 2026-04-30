@@ -38,7 +38,19 @@ async def get_institution_profile(institution_id: str):
     from db import institutions_col
     profile = await institutions_col.find_one({"institution_id": institution_id})
     if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        # Fallback for new institutions
+        return {
+            "institution_id": institution_id,
+            "name": "Institutional Portal",
+            "website": "https://institution.edu",
+            "email": "admin@institution.com",
+            "phone": "+1 (555) 000-0000",
+            "bio": "A premier educational institution dedicated to excellence.",
+            "logo_url": "",
+            "social": {"linkedin": "", "twitter": "", "instagram": ""},
+            "notifications": {"registrations": false, "submissions": true, "evaluations": true, "updates": false}
+        }
+    
     # Clean ID
     if "_id" in profile:
         profile["_id"] = str(profile["_id"])
@@ -722,24 +734,6 @@ async def get_submission_distribution(institution_id: str):
 async def export_institution_summary(institution_id: str):
     """Generates and returns an executive summary report for the institution."""
     return {"message": "Export feature coming soon", "institution_id": institution_id}
-
-@router.get("/profile/{institution_id}")
-async def get_institution_profile(institution_id: str):
-    """Retrieves the official institutional profile data."""
-    from db import institutions_col
-    inst_id = institution_id.strip()
-    profile = await institutions_col.find_one({"institution_id": inst_id})
-    if not profile:
-        return {
-            "name": "Certified",
-            "website": "https://institution.edu",
-            "email": "admin@institution.com",
-            "phone": "+1 (555) 000-1234",
-            "bio": "A premier educational institution dedicated to fostering innovation.",
-            "logo_url": ""
-        }
-    profile["_id"] = str(profile["_id"])
-    return profile
 
 @router.patch("/submissions/{submission_id}/status")
 async def update_submission_status(submission_id: str, status_update: dict):

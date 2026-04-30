@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../apiConfig';
 import { 
     ArrowLeft, 
     Save, 
@@ -54,18 +55,18 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
             if (!eventId) return;
             try {
                 // Fetch Event
-                const eventRes = await fetch(`/api/v1/institution/events/${eventId}/details`);
+                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`);
                 const eventData = await eventRes.json();
                 setEvent(eventData);
                 setStages(eventData.stages || []);
 
                 // Fetch Institution for Team Members
                 if (eventData.institution_id) {
-                    const instRes = await fetch(`/api/v1/institution/profile/${eventData.institution_id}`);
+                    const instRes = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${eventData.institution_id}`);
                     const instData = await instRes.json();
                     setInstitution(instData);
 
-                    const partRes = await fetch(`/api/v1/institution/events/${eventId}/participants`);
+                    const partRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/participants`);
                     const partData = await partRes.json();
                     setParticipants(partData);
                 }
@@ -641,7 +642,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                         onClick={async () => {
                             setSaving(true);
                             try {
-                                await fetch(`/api/v1/institution/events/${eventId}`, {
+                                await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}`, {
                                     method: 'PATCH',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ ...event, stages })
