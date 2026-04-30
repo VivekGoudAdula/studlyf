@@ -54,8 +54,7 @@ async def health_check():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
-# In-memory stores for OTP and Reset Tokens
-otp_store = {}
+# In-memory stores for Reset Tokens
 reset_tokens = {} # email: {token, expiry}
 
 # --- SECURITY DEPENDENCIES (RBAC) ---
@@ -4429,42 +4428,8 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
-# --- OTP AUTH ENDPOINTS ---
-@app.post("/api/auth/request-otp")
-async def request_otp(data: dict = Body(...)):
-    try:
-        email = data.get("email")
-        logger.info(f"[AUTH] OTP requested for: {email}")
-        
-        if not email:
-            raise HTTPException(status_code=400, detail="Email is required")
-        
-        from services.otp_service import generate_and_send_otp
-        # Fire and forget the OTP generation to ensure the user gets an instant UI response
-        import asyncio
-        asyncio.create_task(generate_and_send_otp(email))
-        
-        return {"status": "success", "message": "OTP sending initiated"}
-    except Exception as e:
-        logger.error(f"[AUTH ERROR] request_otp failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/auth/verify-otp")
-async def verify_otp_route(data: dict = Body(...)):
-    email = data.get("email")
-    otp = data.get("otp")
-    name = data.get("name", "Institution")
-    if not email or not otp:
-        raise HTTPException(status_code=400, detail="Email and OTP are required")
-    
-    from services.otp_service import verify_otp, send_welcome_email
-    is_valid, message = await verify_otp(email, otp)
-    if is_valid:
-        return {"status": "success", "message": "OTP Verified"}
-    else:
-        raise HTTPException(status_code=400, detail=message)
+# In-memory stores for Reset Tokens
+reset_tokens = {} # email: {token, expiry}
 
 @app.post("/api/auth/forgot-password")
 async def forgot_password(data: dict = Body(...)):
