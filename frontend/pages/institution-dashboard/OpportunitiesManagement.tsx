@@ -154,21 +154,29 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                     e.category !== 'Job' && e.category !== 'Internship'
                 );
 
-                setEvents(filteredData.map((e: any) => ({
-                    id: e._id,
-                    name: e.title,
-                    status: e.status || 'Draft',
-                    type: e.category || 'Hackathons',
-                    startDate: new Date(e.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }),
-                    endDate: e.end_date ? new Date(e.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
-                    participants: e.participant_count || 0,
-                    registrations: e.registration_count || 'N/A',
-                    candidate: '--',
-                    image: e.image_url || '',
-                    visibility: e.visibility || 'Public',
-                    registrationStatus: e.registration_status || 'Open',
-                    lastSaved: 'about 2 hours ago'
-                })));
+                setEvents(filteredData.map((e: any) => {
+                    const rawStatus = (e.status || 'Draft').toLowerCase();
+                    let displayStatus = 'Draft';
+                    if (rawStatus === 'live' || rawStatus === 'published') displayStatus = 'Live';
+                    else if (rawStatus === 'completed') displayStatus = 'Completed';
+                    else if (rawStatus === 'upcoming') displayStatus = 'Upcoming';
+
+                    return {
+                        id: e._id,
+                        name: e.title,
+                        status: displayStatus,
+                        type: e.category || 'Hackathons',
+                        startDate: e.start_date ? new Date(e.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
+                        endDate: e.end_date ? new Date(e.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
+                        participants: e.participant_count || 0,
+                        registrations: e.registration_count || 'N/A',
+                        candidate: '--',
+                        image: e.image_url || '',
+                        visibility: e.visibility || 'Public',
+                        registrationStatus: e.registration_status || 'Open',
+                        lastSaved: 'about 2 hours ago'
+                    };
+                }));
             } catch (err) {
                 console.error("Dynamic opportunities fetch error:", err);
             } finally {
@@ -299,7 +307,11 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {filteredEvents.map((event, idx) => (
-                                        <tr key={event.id} className="hover:bg-slate-50/50 transition-all group">
+                                        <tr 
+                                            key={event.id} 
+                                            onClick={() => onViewEvent(event.id)}
+                                            className="hover:bg-slate-50/50 transition-all group cursor-pointer"
+                                        >
                                             <td className="px-6 py-8 text-sm font-bold text-slate-400 text-center">{idx + 1}</td>
                                             <td className="px-6 py-8">
                                                 <div className="space-y-1">
@@ -339,7 +351,13 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                                             <td className="px-6 py-8 text-center text-sm font-black text-slate-700">{event.registrations}</td>
                                             <td className="px-6 py-8">
                                                 <div className="flex items-center justify-center gap-2 relative">
-                                                    <button className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onViewEvent(event.id);
+                                                        }}
+                                                        className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                                                    >
                                                         <Edit2 size={14} />
                                                     </button>
                                                     <div className="relative group/menu">

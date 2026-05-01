@@ -41,7 +41,7 @@ const InstitutionDashboard: React.FC = () => {
     const [profileRefreshTrigger, setProfileRefreshTrigger] = useState(0);
 
     const { user } = useAuth();
-    const institutionId = user?.user_id || 'default_inst';
+    const institutionId = user?.institution_id || user?.user_id || 'default_inst';
 
     const handleViewEvent = (eventId: string) => {
         setSelectedEventId(eventId);
@@ -209,7 +209,7 @@ const InstitutionDashboard: React.FC = () => {
             <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
                 {/* Navbar: In the flow, so it cannot overlap the sidebar logo */}
                 <InstitutionNavbar 
-                    institutionId={institutionId} 
+                    refreshKey={profileRefreshTrigger}
                     onNavigate={setActiveTab}
                     onNavigateToSettings={() => setActiveTab('settings')}
                 />

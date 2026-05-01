@@ -514,7 +514,7 @@ export function generatePdfHtml(data: ResumeData, template: string = 'classic') 
         : "";
 
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>
-        body { font-family: 'Times New Roman', Times, serif; line-height: 1.5; color: black; margin: 0; padding: 40px; }
+        body { font-family: 'Poppins', sans-serif; line-height: 1.5; color: black; margin: 0; padding: 40px; }
         * { box-sizing: border-box; }
         @page { size: A4; margin: 0; }
         h1, h2, div, p, span, ul, li { margin: 0; padding: 0; }
