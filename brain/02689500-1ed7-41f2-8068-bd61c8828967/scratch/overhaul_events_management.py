@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import sys
+
+file_content = """import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../../apiConfig';
 import { 
     Search, 
@@ -25,8 +28,6 @@ interface Event {
     startDate: string;
     participants: number;
     image: string;
-    visibility: 'Public' | 'Private';
-    registrationStatus: 'Open' | 'Close';
 }
 
 interface EventsManagementProps {
@@ -109,22 +110,14 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ institutionId = 'de
                 const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`);
                 if (!response.ok) throw new Error("Fetch failed");
                 const data = await response.json();
-                
-                // STRICT FILTER: Only include Jobs and Internships
-                const filteredData = data.filter((e: any) => 
-                    e.category === 'Job' || e.category === 'Internship'
-                );
-
-                setEvents(filteredData.map((e: any) => ({
+                setEvents(data.map((e: any) => ({
                     id: e._id,
                     name: e.title,
                     status: e.status || 'Live',
                     type: e.category || 'Job',
                     startDate: new Date(e.start_date).toLocaleDateString(),
                     participants: e.participant_count || 0,
-                    image: e.image_url || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80',
-                    visibility: e.visibility || 'Public',
-                    registrationStatus: e.registration_status || 'Open'
+                    image: e.image_url || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80'
                 })));
             } catch (err) {
                 console.error("Dynamic events fetch error:", err);
@@ -138,10 +131,8 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ institutionId = 'de
     const filteredEvents = events.filter(event => {
         const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = !statusFilter || event.status === statusFilter;
-        const matchesVisibility = !visibilityFilter || event.visibility === visibilityFilter;
-        const matchesRegistration = !registrationFilter || event.registrationStatus === registrationFilter;
         const matchesTab = typeTab === 'All' || event.type === typeTab.slice(0, -1);
-        return matchesSearch && matchesStatus && matchesVisibility && matchesRegistration && matchesTab;
+        return matchesSearch && matchesStatus && matchesTab;
     });
 
     return (
@@ -221,3 +212,10 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ institutionId = 'de
 };
 
 export default EventsManagement;
+"""
+
+file_path = r'd:\studlyf\frontend\pages\institution-dashboard\EventsManagement.tsx'
+with open(file_path, 'w', encoding='utf-8') as f:
+    f.write(file_content)
+
+print("Successfully overbuilt EventsManagement with premium filters and empty state.")

@@ -1,13 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Briefcase, CheckCircle, TrendingUp } from 'lucide-react';
+import { Users, Briefcase, Trophy, ClipboardCheck, Lock } from 'lucide-react';
 
 interface StatsSectionProps {
     institutionId?: string;
+    onUpgrade?: () => void;
+    onContact?: () => void;
+    onNavigate?: (tab: string) => void;
 }
 
-const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_inst' }) => {
+const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_inst', onUpgrade, onContact, onNavigate }) => {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -16,7 +18,7 @@ const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_in
             try {
                 setLoading(true);
                 const { API_BASE_URL } = await import('../../apiConfig');
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/stats/${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/institution/dashboard/stats?institution_id=${institutionId}`);
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
                 setStats(data);
@@ -30,65 +32,105 @@ const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_in
     }, [institutionId]);
 
     if (loading) return (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
-            {[1,2,3,4].map(i => <div key={i} className="h-40 bg-slate-50 rounded-[2rem] animate-pulse" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+            {[1,2,3,4].map(i => <div key={i} className="h-44 bg-slate-50 rounded-3xl animate-pulse" />)}
         </div>
     );
 
-    const statCards = [
-        { 
-            label: 'Total Participants', 
-            value: stats?.total_participants?.toLocaleString() || '0', 
-            icon: Users, 
-            bg: 'bg-blue-50',
-            text: 'text-blue-600'
-        },
-        { 
-            label: 'Active Events', 
-            value: stats?.active_events?.toString() || '0', 
-            icon: Briefcase, 
-            bg: 'bg-purple-50',
-            text: 'text-purple-600'
-        },
-        { 
-            label: 'Total Teams', 
-            value: stats?.total_teams?.toLocaleString() || '0', 
-            icon: CheckCircle, 
-            bg: 'bg-emerald-50',
-            text: 'text-emerald-600'
-        },
-        { 
-            label: 'Average Score', 
-            value: stats?.average_score || '0%', 
-            icon: TrendingUp, 
-            bg: 'bg-amber-50',
-            text: 'text-amber-600'
-        },
-    ];
-
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
-            {statCards.map((stat, i) => (
-                <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    whileHover={{ y: -5 }}
-                    className="relative group bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 overflow-hidden"
-                >
-                    <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                                <stat.icon size={24} className={stat.text} />
-                            </div>
-                        </div>
-                        
-                        <h3 className="text-4xl font-black text-slate-900 font-['Outfit'] mb-1 tracking-tight">{stat.value}</h3>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{stat.label}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8 font-['Outfit']">
+            {/* Total Candidates - Primary Blue Card */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-[#0A2E5C] p-6 rounded-3xl flex flex-col justify-between text-white min-h-[180px] shadow-xl shadow-blue-900/10"
+            >
+                <div className="flex justify-between items-start">
+                    <span className="text-4xl font-black">{stats?.total_participants || 0}</span>
+                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                        <Users size={20} className="text-blue-300" />
                     </div>
-                </motion.div>
-            ))}
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-widest opacity-80">Total Candidates</p>
+            </motion.div>
+
+            {/* Active J&I */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                onClick={() => onNavigate?.('events')}
+                className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between min-h-[180px] cursor-pointer hover:shadow-md hover:border-blue-100 transition-all group"
+            >
+                <div className="flex justify-between items-start">
+                    <span className="text-4xl font-black text-slate-900">{stats?.active_ji || 0}</span>
+                    <div className="w-10 h-10 bg-pink-50 rounded-xl flex items-center justify-center">
+                        <Briefcase size={20} className="text-pink-500" />
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <p className="text-[11px] font-bold text-slate-900 uppercase tracking-widest border-b border-slate-50 pb-2">Active J&I</p>
+                    <div className="flex justify-between items-center text-[10px] font-medium text-slate-400">
+                        <span>Total</span>
+                        <span className="font-bold text-slate-900">{stats?.active_ji || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] font-medium text-slate-400">
+                        <span>Registrations</span>
+                        <span className="font-bold text-slate-900">{stats?.ji_registrations || 0}</span>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Active Opportunities */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                onClick={() => onNavigate?.('opportunities')}
+                className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between min-h-[180px] cursor-pointer hover:shadow-md hover:border-amber-100 transition-all group"
+            >
+                <div className="flex justify-between items-start">
+                    <span className="text-4xl font-black text-slate-900">{stats?.active_events || 0}</span>
+                    <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                        <Trophy size={20} className="text-amber-500" />
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <p className="text-[11px] font-bold text-slate-900 uppercase tracking-widest border-b border-slate-50 pb-2">Active Opportunities</p>
+                    <div className="flex justify-between items-center text-[10px] font-medium text-slate-400">
+                        <span>Total</span>
+                        <span className="font-bold text-slate-900">{stats?.active_events || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] font-medium text-slate-400">
+                        <span>Registrations</span>
+                        <span className="font-bold text-slate-900">{stats?.opp_registrations || 0}</span>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Active Assessments */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between min-h-[180px]"
+            >
+                <div className="flex justify-between items-start">
+                    <span className="text-4xl font-black text-slate-300">0</span>
+                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                        <ClipboardCheck size={20} className="text-orange-500" />
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Active Assessments</p>
+                    <button 
+                        onClick={onContact}
+                        className="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all border border-blue-100"
+                    >
+                        <Lock size={12} /> Upgrade to unlock
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 };

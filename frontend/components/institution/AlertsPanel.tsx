@@ -179,29 +179,7 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst
                 </AnimatePresence>
             </div>
 
-            {/* Bottom Upgrade Section */}
-            <div className="p-8 pt-0">
-                <div className="bg-[#6C3BFF] p-6 rounded-[2rem] relative overflow-hidden group shadow-xl shadow-purple-200/50">
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Star size={16} className="text-white fill-white" />
-                            <h4 className="text-white font-black text-xs uppercase tracking-widest">Premium Plan</h4>
-                        </div>
-                        <p className="text-purple-100/70 text-[10px] font-medium leading-relaxed mb-5">
-                            Access advanced reporting and automated judge distribution.
-                        </p>
-                        <button 
-                            onClick={onUpgrade}
-                            className="w-full bg-white text-[#6C3BFF] py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-purple-50 transition-all shadow-lg"
-                        >
-                            Upgrade Now
-                        </button>
-                    </div>
-                    {/* Abstract Shapes */}
-                    <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-                    <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-purple-400/20 rounded-full blur-3xl" />
-                </div>
-            </div>
+            {/* Bottom Section Removed to match high-fidelity design */}
         </div>
     );
 };

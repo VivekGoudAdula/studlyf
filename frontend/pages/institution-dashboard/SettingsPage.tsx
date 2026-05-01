@@ -23,7 +23,12 @@ import {
     Plus,
     Trash2,
     ShieldCheck,
-    Gavel
+    Gavel,
+    CreditCard as BillingIcon,
+    HelpCircle,
+    ChevronDown,
+    ChevronUp,
+    ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../apiConfig';
@@ -36,12 +41,13 @@ interface SettingsPageProps {
 const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpdate }) => {
     const [activeSection, setActiveSection] = useState('profile');
     const sections = [
-        { id: 'profile', label: 'Institutional Profile', icon: Building2 },
-        { id: 'team', label: 'Team & Admins', icon: Users },
+        { id: 'profile', label: 'My Account', icon: Building2 },
+        { id: 'team', label: 'Your Team', icon: Users },
+        { id: 'blocked', label: 'Blocked Candidates & Org.', icon: ShieldAlert },
         { id: 'notifications', label: 'Email Notifications', icon: Mail },
         { id: 'communications', label: 'Custom Communications', icon: MessageSquare },
         { id: 'onboarding', label: 'Member Onboarding', icon: Plus },
-        { id: 'plan', label: 'Plan & Billing', icon: CreditCard },
+        { id: 'plan', label: 'Plans & Subscription', icon: CreditCard },
     ];
 
     const [profile, setProfile] = useState<any>({
@@ -78,18 +84,34 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
 
     useEffect(() => {
         const fetchProfile = async () => {
+            // Safety timeout: Never stay stuck in loading for more than 5 seconds
+            const timeout = setTimeout(() => {
+                setLoading(false);
+            }, 5000);
+
             try {
                 setLoading(true);
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`); 
-                const data = await res.json();
-                setProfile(prev => ({
-                    ...prev,
-                    ...data,
-                    notifications: data.notifications || prev.notifications
-                }));
+                // Reset to initial state to clear "memory" / stale data
+                setProfile({
+                    name: '', website: '', email: '', phone: '', bio: '', logo_url: '', banner_url: '',
+                    email_custom_message: '', team: [], social: { linkedin: '', twitter: '', instagram: '' },
+                    notifications: { registrations: false, submissions: true, evaluations: true, updates: false }
+                });
+
+                // Cache bust: Add timestamp to force fresh data
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`); 
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfile(prev => ({
+                        ...prev,
+                        ...data,
+                        notifications: data.notifications || prev.notifications
+                    }));
+                }
             } catch (err) {
-                console.error("Failed to load settings");
+                console.error("Failed to load settings. Using initial state.");
             } finally {
+                clearTimeout(timeout);
                 setLoading(false);
             }
         };
@@ -582,6 +604,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                         </div>
 
                         {/* List Preview */}
+
+                        {/* List Preview */}
                         {bulkList.length > 0 && (
                             <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/20 animate-in zoom-in-95 duration-500">
                                 <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
@@ -661,48 +685,242 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                         )}
                     </div>
                 );
+            case 'blocked':
+                return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight">Blocked Candidates & Organizations</h2>
+                            <p className="text-sm text-slate-500">Manage entities that are restricted from your events.</p>
+                        </div>
+                        <div className="p-12 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 text-center">
+                            <ShieldAlert size={48} className="mx-auto text-slate-200 mb-4" />
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No blocked entities found</p>
+                        </div>
+                    </div>
+                );
             case 'plan':
                 return (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="p-10 bg-gradient-to-br from-[#6C3BFF] to-[#9F6BFF] rounded-[3rem] text-white shadow-2xl shadow-purple-200 relative overflow-hidden group">
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <Crown size={28} className="text-amber-300" />
-                                        <span className="text-xs font-black uppercase tracking-[0.2em] opacity-80">Current Plan</span>
-                                    </div>
-                                    <h3 className="text-4xl font-black mb-2 tracking-tight">Institutional Pro</h3>
-                                    <p className="text-purple-100 font-medium opacity-70">Billed Annually • Expires in 245 Days</p>
-                                    
-                                    <div className="mt-10 space-y-4">
-                                        {['Unlimited Opportunities', 'Advanced Analytics', 'White-labeled Certificates', 'Priority Support'].map((feat, i) => (
-                                            <div key={i} className="flex items-center gap-3 text-sm font-bold">
-                                                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                                                    <CheckCircle2 size={12} className="text-white" />
-                                                </div>
-                                                {feat}
-                                            </div>
-                                        ))}
-                                    </div>
+                    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 font-['Outfit']">
+                        <div className="space-y-1 border-b border-slate-100 pb-8">
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Plans & Subscription</h2>
+                            <p className="text-sm text-slate-400 font-medium">Compare plans and explore the benefits.</p>
+                        </div>
+
+                        <div className="text-center space-y-2 py-8">
+                            <h3 className="text-4xl font-black text-slate-800">Available Plans</h3>
+                            <p className="text-sm text-slate-400 font-medium tracking-wide">Flexible options tailored to your specific hiring needs</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 px-4">
+                            {/* Basic Plan */}
+                            <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] flex flex-col hover:shadow-xl transition-all">
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Basic Plan</h4>
+                                    <p className="text-4xl font-black text-slate-800">Free</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Auto renews every 30 days</p>
                                 </div>
-                                {/* Abstract background elements */}
-                                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                                <button className="w-full py-4 bg-slate-100 text-slate-400 rounded-full font-black text-sm uppercase tracking-widest mb-10 cursor-default">Current Plan</button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            '2 Jobs/Internship listings',
+                                            '7 days registration window per listing',
+                                            'Upto 30 applications view access per listing',
+                                            'Access listing upto 15 days after registration window ends',
+                                            '10 interviews credits',
+                                            '0 assessments credits'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-500 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
 
-                            <div className="p-10 bg-slate-50 border border-slate-100 rounded-[3rem] flex flex-col justify-between">
-                                <div>
-                                    <h4 className="text-xl font-black text-slate-900 tracking-tight">Enterprise Upgrade</h4>
-                                    <p className="text-sm text-slate-500 mt-2 leading-relaxed">Need custom domain integration, bulk data export, or multiple sub-admin accounts?</p>
+                            {/* Pack of 3 */}
+                            <div className="p-8 bg-white border-2 border-blue-500 rounded-[2.5rem] shadow-2xl shadow-blue-50 flex flex-col relative scale-[1.03] z-10">
+                                <div className="absolute top-6 right-6 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-md">Recommended</div>
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Pack of 3</h4>
+                                    <p className="text-4xl font-black text-slate-800">₹4,999</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Valid for 30 days</p>
                                 </div>
-                                <div className="mt-8">
-                                    <button className="w-full py-5 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:border-[#6C3BFF] hover:text-[#6C3BFF] transition-all flex items-center justify-center gap-3">
-                                        Contact Sales <ArrowRight size={16} />
-                                    </button>
+                                <button className="w-full py-4 bg-blue-600 text-white rounded-full font-black text-sm uppercase tracking-widest mb-10 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                                    <Zap size={18} className="fill-white" /> Upgrade
+                                </button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            '3 Jobs/Internship listings',
+                                            '30 days registration window per listing',
+                                            'Unlimited Application views',
+                                            'Access listing upto 15 days after registration window ends',
+                                            '50 interviews credits',
+                                            '100 assessments credits'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-600 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-500 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
+                            </div>
+
+                            {/* Pack of 7 */}
+                            <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] flex flex-col hover:shadow-xl transition-all">
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Pack of 7</h4>
+                                    <p className="text-4xl font-black text-slate-800">₹9,999</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Valid for 90 days</p>
+                                </div>
+                                <button className="w-full py-4 bg-blue-600 text-white rounded-full font-black text-sm uppercase tracking-widest mb-10 hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
+                                    <Zap size={18} className="fill-white" /> Upgrade
+                                </button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            'Upto 7 Jobs/Internship',
+                                            '30 days registration window per listing',
+                                            'Unlimited Application views',
+                                            'Access listing upto 15 days after registration window ends',
+                                            '100 interviews credits',
+                                            '200 assessments credits'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-500 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Enterprise */}
+                            <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] flex flex-col hover:shadow-xl transition-all">
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Enterprise</h4>
+                                    <p className="text-4xl font-black text-slate-800">Custom</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Custom duration</p>
+                                </div>
+                                <button className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-full font-black text-sm uppercase tracking-widest mb-10 hover:bg-slate-50 transition-all shadow-sm">Contact Us</button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            'Host custom jobs/listing',
+                                            'Custom duration for registration window',
+                                            'Unlimited Application views',
+                                            'Access listing upto 30 days after registration window ends',
+                                            'Custom interviews credits',
+                                            'Custom assessments credits',
+                                            'Download access'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-500 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* FAQ Section */}
+                        <div className="pt-24 space-y-12 pb-12">
+                            <h3 className="text-4xl font-black text-slate-800 text-center font-['Outfit']">Frequently asked questions</h3>
+                            <div className="max-w-4xl mx-auto space-y-3">
+                                {[
+                                    {
+                                        q: "What is the difference between the Free and Paid Plans?",
+                                        a: "The Free Plan offers limited job/internship listings, a shorter listing duration, and lower candidate access limits. The Paid Plan extends these limits, allowing for more live listings, longer listing durations, and increased access to candidate data."
+                                    },
+                                    {
+                                        q: "How do I upgrade to a Paid Plan?",
+                                        a: "You can upgrade by purchasing a plan directly on Studylf. You can buy either Pack of 3, Pack of 7 or reach out to us via the Contact Us button under the custom plan."
+                                    },
+                                    {
+                                        q: "If I downgrade from a Paid Plan, what happens to my existing Job/Internship listings?",
+                                        a: "Existing public listings remain live until they reach their registration limit or end date. However, you won’t be able to create new public listings if you exceed the Basic Plan limit."
+                                    },
+                                    {
+                                        q: "How long can I keep a job/internship listing live?",
+                                        a: "Free Plan users can keep listings live for up to 7 days from the registration start date, while Paid Plan users can extend them as per the registration timeline defined for their plan."
+                                    },
+                                    {
+                                        q: "Can I extend a Job/Internship listing after purchasing a Paid Plan?",
+                                        a: "Yes, if you purchase a Paid Plan after listing a job, you can extend the registration period upto the defined limit within that plan."
+                                    },
+                                    {
+                                        q: "What happens if I try to list more than the allowed number of opportunities?",
+                                        a: "You will be able to list jobs and internships beyond the defined limit, however these listings would be approved only in private mode and won't be visible to candidates on the Studylf platform."
+                                    },
+                                    {
+                                        q: "How does the candidate Match Score impact my access to registration data?",
+                                        a: "The Candidate Compatibility Score is for reference only and does not impact your access to candidate data."
+                                    },
+                                    {
+                                        q: "Can I still access candidate data after my Paid Plan expires?",
+                                        a: "Yes, recruiters can access candidate data for 15 days once the opportunity is over. Post that you won't be able to access the candidate data for the specific opportunity."
+                                    },
+                                    {
+                                        q: "How many interviews can I schedule and complete?",
+                                        a: "Under Basic plan, recruiters can schedule upto 10 interviews across their live listing, while Paid Plan users can schedule interviews as per the interview credits alloted to them (1 interview credit = 1 interview schedule access)."
+                                    },
+                                    {
+                                        q: "Can I reset/reschedule an interview after the interview is completed?",
+                                        a: "Once an interview is marked completed (at least one evaluator and candidate joined), it is counted as complete. Once the interview is marked complete, you can reschedule it using your available credits."
+                                    },
+                                    {
+                                        q: "Can I reset/reschedule an upcoming interview?",
+                                        a: "You can reschedule/reset upcoming interviews. No new interview credit will be consumed in such scenario."
+                                    },
+                                    {
+                                        q: "How many candidates can complete an assessment?",
+                                        a: "You can invite as many candidates to participate/complete an assessment as per the available assessment credits in your plan (1 assessment credit = 1 candidate attempt)."
+                                    },
+                                    {
+                                        q: "Can I reset a candidate's assessment attempt?",
+                                        a: "Except for enterprise plan users, you cannot reset candidate's assessment attempt."
+                                    },
+                                    {
+                                        q: "Why should I subscribe to auto renewal my plan?",
+                                        a: "You can subscribe to Pack of 3 and Pack of 7 plans directly on Studylf. This ensures your team has uninterruppted access to the desired features at times. You can cancel the plan subscription aynytime from the payment page."
+                                    },
+                                    {
+                                        q: "What is the Enterprise Plan, and how do I get it?",
+                                        a: "The Enterprise Plan offers exclusive features and can be purchased by contacting recruit@studylf.com."
+                                    },
+                                    {
+                                        q: "Can I get refund of my payment?",
+                                        a: "Currently we do not allow refund once the payment is completed."
+                                    }
+                                ].map((item, i) => (
+                                    <div key={i} className="overflow-hidden">
+                                        <details className="group">
+                                            <summary className="flex items-center justify-between p-4 bg-[#F4F9FF] rounded-xl cursor-pointer list-none transition-all hover:bg-[#EBF5FF]">
+                                                <p className="text-sm font-bold text-slate-700 leading-relaxed">{item.q}</p>
+                                                <div className="flex-shrink-0 text-slate-400 font-light text-2xl group-open:hidden">+</div>
+                                                <div className="flex-shrink-0 text-slate-400 font-light text-2xl hidden group-open:block">−</div>
+                                            </summary>
+                                            <div className="px-5 py-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                                                    {item.a}
+                                                </p>
+                                            </div>
+                                        </details>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
                 );
+
             default:
                 return null;
         }
