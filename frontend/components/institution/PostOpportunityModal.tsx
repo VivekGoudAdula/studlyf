@@ -62,6 +62,8 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
     const [showGenderFilter, setShowGenderFilter] = useState(false);
     const [isAddingQuestion, setIsAddingQuestion] = useState(false);
     const [isSupportDrawerOpen, setIsSupportDrawerOpen] = useState(false);
+    const [isEliminatory, setIsEliminatory] = useState(false);
+    const [showMoreBasic, setShowMoreBasic] = useState(false);
     const [selectedFieldType, setSelectedFieldType] = useState<string | null>(null);
     const [newFieldConfig, setNewFieldConfig] = useState({
         label: '',
@@ -187,7 +189,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
             setLoading(true);
             try {
                 const { API_BASE_URL } = await import('../../apiConfig');
-                const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/create`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/create-professional`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...formData, institution_id: institutionId })
@@ -195,9 +197,13 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                 if (response.ok) {
                     alert("Opportunity Created Successfully!");
                     onClose();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Failed to create opportunity: ${errorData.detail || response.statusText || 'Unknown Error'}`);
                 }
             } catch (err) {
                 console.error("Submission failed", err);
+                alert("Network error: Failed to connect to the server.");
             } finally {
                 setLoading(false);
             }
@@ -868,8 +874,35 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                     <Lock size={14} className="text-slate-200" />
                                                 </div>
                                             </div>
-                                            <button className="w-full py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2 hover:text-slate-600 transition-all">
-                                                Show more <ChevronDown size={14} />
+                                            {showMoreBasic && (
+                                                <>
+                                                    <div className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-slate-400 font-bold">🏫</div>
+                                                            <span className="text-sm font-bold text-slate-700">College Name</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Required</span>
+                                                            <Lock size={14} className="text-slate-200" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-slate-400 font-bold">📱</div>
+                                                            <span className="text-sm font-bold text-slate-700">Mobile Number</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Required</span>
+                                                            <Lock size={14} className="text-slate-200" />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                            <button 
+                                                onClick={() => setShowMoreBasic(!showMoreBasic)}
+                                                className="w-full py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2 hover:text-slate-600 transition-all"
+                                            >
+                                                {showMoreBasic ? 'Show less' : 'Show more'} {showMoreBasic ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                             </button>
                                         </div>
                                     </div>
@@ -899,7 +932,11 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                     { label: 'Highest Qualification', icon: '🎓' },
                                                     { label: 'Portfolio/Work Samples', icon: '🎨' }
                                                 ].map(pill => (
-                                                    <button key={pill.label} className="px-5 py-2.5 bg-white border border-slate-200 rounded-full text-[11px] font-bold text-slate-600 hover:border-[#6C3BFF] hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+                                                    <button 
+                                                        key={pill.label} 
+                                                        onClick={() => addField(pill.label, 'text')}
+                                                        className="px-5 py-2.5 bg-white border border-slate-200 rounded-full text-[11px] font-bold text-slate-600 hover:border-[#6C3BFF] hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                                                    >
                                                         <Plus size={14} /> {pill.label}
                                                     </button>
                                                 ))}
@@ -917,8 +954,11 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                         <p className="text-[10px] text-slate-400 font-medium mt-0.5">Filter out candidates based on specific criteria</p>
                                                     </div>
                                                 </div>
-                                                <div className="w-12 h-6 bg-slate-200 rounded-full p-1 cursor-pointer">
-                                                    <div className="w-4 h-4 bg-white rounded-full shadow-sm" />
+                                                <div 
+                                                    onClick={() => setIsEliminatory(!isEliminatory)}
+                                                    className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-all ${isEliminatory ? 'bg-[#6C3BFF]' : 'bg-slate-200'}`}
+                                                >
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-all ${isEliminatory ? 'translate-x-6' : 'translate-x-0'}`} />
                                                 </div>
                                             </div>
                                             <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
@@ -1098,15 +1138,41 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                     <div className="space-y-6">
                                         <div>
                                             <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Field Label *</label>
-                                            <input type="text" placeholder="Enter question label" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-[#6C3BFF]/20 outline-none font-medium text-sm" />
+                                            <input 
+                                                type="text" 
+                                                value={newFieldConfig.label}
+                                                onChange={(e) => setNewFieldConfig({ ...newFieldConfig, label: e.target.value })}
+                                                placeholder="Enter question label" 
+                                                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-[#6C3BFF]/20 outline-none font-medium text-sm" 
+                                            />
                                         </div>
                                         {(selectedFieldType === "radio" || selectedFieldType === "checkbox" || selectedFieldType === "dropdown") && (
                                             <div className="space-y-4">
                                                 <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Options</label>
                                                 {newFieldConfig.options.map((opt, i) => (
                                                     <div key={i} className="flex gap-3">
-                                                        <input type="text" placeholder={`Option ${i+1}`} className="flex-1 px-5 py-3 bg-white border border-slate-100 rounded-xl focus:border-[#6C3BFF] outline-none text-sm" />
-                                                        {i > 0 && <button className="text-slate-300 hover:text-red-500 transition-all">✕</button>}
+                                                        <input 
+                                                            type="text" 
+                                                            value={opt}
+                                                            onChange={(e) => {
+                                                                const updatedOptions = [...newFieldConfig.options];
+                                                                updatedOptions[i] = e.target.value;
+                                                                setNewFieldConfig({ ...newFieldConfig, options: updatedOptions });
+                                                            }}
+                                                            placeholder={`Option ${i+1}`} 
+                                                            className="flex-1 px-5 py-3 bg-white border border-slate-100 rounded-xl focus:border-[#6C3BFF] outline-none text-sm" 
+                                                        />
+                                                        {i > 0 && (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const updatedOptions = newFieldConfig.options.filter((_, idx) => idx !== i);
+                                                                    setNewFieldConfig({ ...newFieldConfig, options: updatedOptions });
+                                                                }}
+                                                                className="text-slate-300 hover:text-red-500 transition-all"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ))}
                                                 <button onClick={() => setNewFieldConfig({...newFieldConfig, options: [...newFieldConfig.options, ""]})} className="text-[11px] font-black text-[#6C3BFF] uppercase tracking-widest flex items-center gap-2">
@@ -1136,7 +1202,19 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                         </div>
                         <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
                             <button onClick={() => { setSelectedFieldType(null); if(!selectedFieldType) setIsAddingQuestion(false); }} className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Cancel</button>
-                            {selectedFieldType && <button onClick={() => { setIsAddingQuestion(false); setSelectedFieldType(null); }} className="px-8 py-2.5 bg-[#6C3BFF] text-white rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-purple-200 transition-all">Save</button>}
+                            {selectedFieldType && (
+                                <button 
+                                    onClick={() => { 
+                                        addField(newFieldConfig.label || selectedFieldType, selectedFieldType);
+                                        setIsAddingQuestion(false); 
+                                        setSelectedFieldType(null); 
+                                        setNewFieldConfig({ label: '', hint: '', errorMessage: '', options: [''], maxSize: 50, checkboxText: '' });
+                                    }} 
+                                    className="px-8 py-2.5 bg-[#6C3BFF] text-white rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-purple-200 transition-all"
+                                >
+                                    Save
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 </div>

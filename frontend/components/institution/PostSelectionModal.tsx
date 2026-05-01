@@ -45,14 +45,6 @@ const PostSelectionModal: React.FC<PostSelectionModalProps> = ({ isOpen, onClose
             icon: <Trophy size={20} />,
             color: 'bg-amber-50 text-amber-600',
             hasSub: true
-        },
-        {
-            id: 'dashboard',
-            title: 'Go to organizer dashboard',
-            desc: 'Manage listings, Festivals, and more',
-            icon: <LayoutDashboard size={20} />,
-            color: 'bg-slate-50 text-slate-600',
-            hasSub: true
         }
     ];
 
