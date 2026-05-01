@@ -88,26 +88,55 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
     // Dynamic Notifications Logic
     useEffect(() => {
         const fetchNotifications = async () => {
-            if (!institutionId || institutionId === 'default_inst') return;
+            if (!institutionId || institutionId === 'default_inst') {
+                console.warn("[NOTIF] Skip: No valid ID", institutionId);
+                return;
+            }
             try {
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`);
+                console.log("[NOTIF] Fetching for:", institutionId);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}?t=${Date.now()}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                });
                 if (res.ok) {
                     const data = await res.json();
+                    console.log("[NOTIF] Data received:", data);
                     setNotifications(data);
                     setNotifCount(data.length);
+                } else {
+                    console.error("[NOTIF] Error:", res.status);
                 }
-            } catch (err) { console.error("Failed to load notifications", err); }
+            } catch (err) { console.error("[NOTIF] Failed", err); }
         };
         fetchNotifications();
+        
+        // Poll every 30 seconds for new alerts
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
     }, [institutionId]);
+
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
 
     // Dynamic Search Logic
     useEffect(() => {
         const performSearch = async () => {
+            // Define all pages
+            const pages = [
+                { id: 'dashboard', title: 'Main Dashboard', type: 'Page', link: '#' },
+                { id: 'events', title: 'Events Management', type: 'Page', link: '#' },
+                { id: 'participants', title: 'Participants', type: 'Page', link: '#' },
+                { id: 'submissions', title: 'Submissions', type: 'Page', link: '#' },
+                { id: 'judges', title: 'Judge Management', type: 'Page', link: '#' },
+                { id: 'analytics', title: 'Reports & Analytics', type: 'Page', link: '#' },
+                { id: 'downloads', title: 'Data Downloads', type: 'Page', link: '#' },
+                { id: 'settings', title: 'Account Settings', type: 'Page', link: '#' },
+            ];
+
             if (searchQuery.length < 2) {
-                setSearchResults([]);
+                // When query is small/empty, show all default pages
+                setSearchResults(pages);
                 return;
             }
+
             setIsSearching(true);
             try {
                 const res = await fetch(`${API_BASE_URL}/api/v1/institution/search?q=${searchQuery}&institution_id=${institutionId}`);
@@ -115,15 +144,6 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                 if (res.ok) {
                     data = await res.json();
                 }
-
-                // Add static pages to results for quick navigation
-                const pages = [
-                    { id: 'settings', title: 'Account Settings', type: 'Page', link: '#' },
-                    { id: 'analytics', title: 'Reports & Analytics', type: 'Page', link: '#' },
-                    { id: 'events', title: 'Events Management', icon: 'Briefcase', type: 'Page', link: '#' },
-                    { id: 'participants', title: 'Participants', type: 'Page', link: '#' },
-                    { id: 'dashboard', title: 'Main Dashboard', type: 'Page', link: '#' },
-                ];
 
                 const matchedPages = pages.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
                 setSearchResults([...matchedPages, ...data]);
@@ -135,7 +155,7 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
         };
         const timer = setTimeout(performSearch, 300);
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery, institutionId]);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -199,16 +219,18 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                             ref={searchInputRef}
                             type="text" 
                             value={searchQuery}
+                            onFocus={() => setIsSearchFocused(true)}
+                            onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleSearchKeyDown}
                             placeholder="Search events, students, or reports..." 
                             className="w-full pl-16 pr-6 py-4 bg-white/25 backdrop-blur-3xl border border-white/40 rounded-[2rem] text-white placeholder:text-white/60 outline-none focus:bg-white/30 focus:border-white/60 transition-all font-['Outfit'] font-medium text-sm shadow-xl"
                         />
                         {/* CTRL K Badge Removed */}
-
+ 
                         {/* Search Results Dropdown */}
                         <AnimatePresence>
-                            {searchQuery.length >= 2 && (
+                            {isSearchFocused && (
                                 <motion.div 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
