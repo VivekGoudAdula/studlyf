@@ -13,6 +13,7 @@ import PostSelectionModal from '../../components/institution/PostSelectionModal'
 import ContactConsultationDrawer from '../../components/institution/ContactConsultationDrawer';
 import CreditBalanceModal from '../../components/institution/CreditBalanceModal';
 import DashboardTour from '../../components/institution/DashboardTour';
+import PostJobModal from '../../components/institution/PostJobModal';
 
 import EventsManagement from './EventsManagement';
 import OpportunitiesManagement from './OpportunitiesManagement';
@@ -32,6 +33,7 @@ const InstitutionDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [isJobModalOpen, setIsJobModalOpen] = useState(false);
     const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
     const [isConsultationOpen, setIsConsultationOpen] = useState(false);
     const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
@@ -55,6 +57,8 @@ const InstitutionDashboard: React.FC = () => {
         const opportunityTypes = ['opportunity', 'hackathon', 'competition', 'quiz', 'webinar'];
         if (opportunityTypes.includes(type)) {
             setIsPostModalOpen(true);
+        } else if (type === 'job') {
+            setIsJobModalOpen(true);
         } else if (type === 'dashboard') {
             setActiveTab('dashboard');
         }
@@ -237,6 +241,12 @@ const InstitutionDashboard: React.FC = () => {
             <PostOpportunityModal 
                 isOpen={isPostModalOpen} 
                 onClose={() => setIsPostModalOpen(false)}
+                institutionId={institutionId}
+            />
+
+            <PostJobModal 
+                isOpen={isJobModalOpen} 
+                onClose={() => setIsJobModalOpen(false)}
                 institutionId={institutionId}
             />
 
