@@ -141,7 +141,8 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
         const fetchProfile = async () => {
             if (!institutionId || institutionId === 'default_inst') return;
             try {
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`);
+                // Cache bust: Add timestamp to force fresh data
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`);
                 if (res.ok) setProfile(await res.json());
             } catch (err) { console.error(err); }
         };
@@ -214,15 +215,15 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                                                 <button 
                                                     key={`${result.id}-${idx}`}
                                                     onClick={() => {
-                                                        if (result.type === 'Page' && onNavigate) {
+                                                        if (result.id === 'settings' && onNavigateToSettings) {
+                                                            onNavigateToSettings();
+                                                        } else if (result.type === 'Page' && onNavigate) {
                                                             onNavigate(result.id);
-                                                            setSearchQuery('');
-                                                            setSearchResults([]);
                                                         } else {
                                                             navigate(result.link);
-                                                            setSearchQuery('');
-                                                            setSearchResults([]);
                                                         }
+                                                        setSearchQuery('');
+                                                        setSearchResults([]);
                                                     }}
                                                     className="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all text-left group"
                                                 >

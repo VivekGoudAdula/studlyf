@@ -34,15 +34,11 @@ A comprehensive competition management platform for colleges and organizations.
 - **Smart Management**: Automation for team formation, deadline enforcement, and blind judging.
 - **Real-time Analytics**: Live statistics, registration heatmaps, and demographic tracking.
 
-### 5. 🏢 Institutional Command Center
-A high-fidelity evaluation and selection pipeline for organizations to manage multi-stage competitions.
-- **Dynamic Rubric Builder**: Admins can define custom scoring dimensions (e.g., Sustainability, Code Quality, UI/UX) and set specific point weightages per event.
-- **"Blind" Judge Dashboard**: A dedicated evaluator portal that isolates judges, showing only their assigned teams with a dynamic, criteria-based scorecard.
-- **Selection Command Center**: A real-time selection engine featuring a dynamic threshold slider to automate the filtering of teams into **Approved**, **Rejected**, and **Pending** bundles.
-- **Bulk Personalized Notifications**: One-click selection engine that dispatches personalized email alerts, automatically injecting team names and specific results.
-- **Leaderboard Pro**: An interactive results board with transparent score breakdowns, enabling students to see their performance across every evaluated dimension.
-- **Institutional PDF Export**: Real-time generation of professional, institutional-grade result reports featuring ranked leaderboards and detailed scoring audit trails.
-- **Automated Stage Promotion**: Logic-driven pipeline that moves qualified teams through N-number of rounds based on admin-defined passing criteria.
+  - **Interactive Command Center & Onboarding**:
+    - **High-Fidelity Opportunities Management**: A sophisticated, data-driven table UI for managing competitions, hackathons, and scholarships with advanced filtering by visibility, registration status, and categories.
+    - **Premium Onboarding (Dashboard Tour)**: A guided tour featuring smooth animations, clear indicator arrows, and a premium dark-themed interface to onboard new institutional administrators.
+    - **Total Brand Synchronisation**: Deep integration of the Studlyf brand purple palette across all interactive elements, including custom card gradients and 3D icons.
+    - **Smart Deletion Workflow**: Robust CRUD capabilities with professional confirmation modals and automatic success toast notifications.
 
 ### 6. 🏆 Leaderboard & Certification System (Fully Dynamic)
 - **Automated Aggregation Engine**: The leaderboard dynamically averages real-time judges' scores the moment an evaluation is finalized.
