@@ -83,39 +83,44 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            // Safety timeout: Never stay stuck in loading for more than 5 seconds
-            const timeout = setTimeout(() => {
-                setLoading(false);
-            }, 5000);
+        let isMounted = true;
+        
+        // Safety Timeout: Force stop loading after 5 seconds
+        const safetyTimer = setTimeout(() => {
+            if (isMounted) setLoading(false);
+        }, 5000);
 
+        const fetchProfile = async () => {
             try {
                 setLoading(true);
-                // Reset to initial state to clear "memory" / stale data
-                setProfile({
-                    name: '', website: '', email: '', phone: '', bio: '', logo_url: '', banner_url: '',
-                    email_custom_message: '', team: [], social: { linkedin: '', twitter: '', instagram: '' },
-                    notifications: { registrations: false, submissions: true, evaluations: true, updates: false }
-                });
-
-                // Cache bust: Add timestamp to force fresh data
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`); 
-                if (res.ok) {
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }); 
+                if (res.ok && isMounted) {
                     const data = await res.json();
                     setProfile(prev => ({
                         ...prev,
                         ...data,
+                        // Ensure images are mapped even if backend uses CamelCase
+                        logo_url: data.logo_url || data.logoUrl || prev.logo_url,
+                        banner_url: data.banner_url || data.bannerUrl || prev.banner_url,
                         notifications: data.notifications || prev.notifications
                     }));
                 }
             } catch (err) {
-                console.error("Failed to load settings. Using initial state.");
+                console.error("Failed to load settings.");
             } finally {
-                clearTimeout(timeout);
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                    clearTimeout(safetyTimer);
+                }
             }
         };
         fetchProfile();
+        return () => { 
+            isMounted = false; 
+            clearTimeout(safetyTimer);
+        };
     }, [institutionId]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

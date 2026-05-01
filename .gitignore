@@ -17,3 +17,7 @@ service-account.json
 # Test Scripts
 backend/debug_firestore.py
 backend/test_stats.py
+
+# AI Logs & Scratch
+brain/
+.gemini/

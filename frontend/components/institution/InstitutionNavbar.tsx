@@ -141,9 +141,15 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
         const fetchProfile = async () => {
             if (!institutionId || institutionId === 'default_inst') return;
             try {
-                // Cache bust: Add timestamp to force fresh data
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`);
-                if (res.ok) setProfile(await res.json());
+                // Cache bust: Force fresh data from server
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfile(data);
+                    setImgError(false); // Reset error state on fresh fetch
+                }
             } catch (err) { console.error(err); }
         };
         fetchProfile();
