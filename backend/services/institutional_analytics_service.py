@@ -9,12 +9,23 @@ class InstitutionalAnalyticsService:
     Exclusively uses dynamic database aggregations.
     """
     async def get_kpi_summary(self, institution_id: str):
-        total_events = await events_col.count_documents({"institution_id": institution_id})
+        # Count Live vs Draft events
+        active_events = await events_col.count_documents({
+            "institution_id": institution_id, 
+            "status": {"$in": ["Live", "published", "active"]}
+        })
+        
+        # J&I specifically
+        active_ji = await events_col.count_documents({
+            "institution_id": institution_id, 
+            "category": {"$in": ["Job", "Internship"]},
+            "status": {"$in": ["Live", "published", "active"]}
+        })
+
+        # Registrations are total participants
         total_participants = await participants_col.count_documents({"institution_id": institution_id})
-        total_teams = await teams_col.count_documents({"institution_id": institution_id})
         
         # Calculate Average Score across all events for this institution
-        # We join leaderboard with events to filter by institution
         pipeline = [
             {"$lookup": {
                 "from": "events",
@@ -30,9 +41,11 @@ class InstitutionalAnalyticsService:
         avg_score = score_res[0]["avg"] if score_res else 0
 
         return {
-            "total_events": total_events,
             "total_participants": total_participants,
-            "total_teams": total_teams,
+            "active_events": active_events,
+            "active_ji": active_ji,
+            "opp_registrations": total_participants, # Simplified for now
+            "ji_registrations": 0, # Placeholder if separate tracking needed
             "average_score": round(avg_score, 2),
             "timestamp": datetime.utcnow().isoformat()
         }

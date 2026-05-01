@@ -38,7 +38,7 @@ async def get_institution_stats(institution_id: str):
         active_opps = await db.events.count_documents({
             "institution_id": institution_id,
             "category": {"$nin": ["Job", "Internship"]},
-            "status": "Live"
+            "status": {"$in": ["Live", "DRAFT", "Active"]}
         })
         
         # Registrations for Opportunities

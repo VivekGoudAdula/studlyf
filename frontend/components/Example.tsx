@@ -24,7 +24,7 @@ const Example = () => {
             {headline}
           </h3>
         )}
-        <p className="text-base sm:text-lg font-normal text-justify leading-relaxed text-white/90" style={{ fontFamily: 'Times New Roman, Times, serif', fontWeight: 400 }}>
+        <p className="text-base sm:text-lg font-normal text-justify leading-relaxed text-white/90" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}>
           {text}
         </p>
       </div>

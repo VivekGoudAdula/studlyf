@@ -26,10 +26,22 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main_service")
 
-# Configure CORS
+# Configure CORS - Unified for Production & Local Dev
+origins = [
+    "https://studlyff.vercel.app",
+    "https://www.studlyf.in",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8000"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -303,31 +315,6 @@ async def get_user_badges(user_id: str):
 
 # Base URL for backend links (portfolios, resumes)
 BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
-
-# Configure CORS
-# In production, set FRONTEND_URL environment variable to https://studlyff.vercel.app
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studlyff.vercel.app")
-
-origins = [
-    FRONTEND_URL,
-    "https://studlyff.vercel.app",
-    "https://www.studlyf.in",
-    "www.studlyf.in",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "http://localhost:3002",
-    "http://127.0.0.1:3002",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000"
-]
-
-# Clean up and ensure uniqueness
-origins = [o.rstrip('/') for o in origins if o]
-origins = list(set(origins))
 
 # CORS already configured at the top
 
@@ -4423,6 +4410,7 @@ class UserSignup(BaseModel):
     full_name: str
     role: str = "Participant"
     institution_id: Optional[str] = None
+    institution_name: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
@@ -4542,15 +4530,53 @@ async def signup(user_data: UserSignup):
         logger.error(f"Hashing failed: {e}")
         raise HTTPException(status_code=400, detail="Could not process password. Please try another one.")
     user_id = str(uuid.uuid4())
-    user_doc = {
-        "user_id": user_id,
-        "email": email_clean,
-        "password": hashed_password,
-        "full_name": user_data.full_name,
-        "role": user_data.role,
-        "institution_id": user_data.institution_id,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
+    inst_id = None
+    if user_data.role == "institution":
+        from db import institutions_col
+        # Only proceed if institution_name is provided
+        if user_data.institution_name:
+            # Try to find existing institution by name (case-insensitive)
+            existing_profile = await institutions_col.find_one({"name": {"$regex": f"^{user_data.institution_name}$", "$options": "i"}})
+            if existing_profile:
+                inst_id = existing_profile["institution_id"]
+            else:
+                inst_id = str(uuid.uuid4())
+                profile_doc = {
+                    "institution_id": inst_id,
+                    "name": user_data.institution_name,
+                    "email": email_clean,
+                    "logo_url": "",
+                    "website": "",
+                    "phone": "",
+                    "bio": "A premier educational institution.",
+                    "social": {"linkedin": "", "twitter": "", "instagram": ""},
+                    "notifications": {"registrations": False, "submissions": True, "evaluations": True, "updates": False},
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                await institutions_col.insert_one(profile_doc)
+        else:
+            # Fallback: always generate a new institution_id if missing
+            inst_id = str(uuid.uuid4())
+        user_doc = {
+            "user_id": user_id,
+            "email": email_clean,
+            "password": hashed_password,
+            "full_name": user_data.full_name,
+            "role": user_data.role,
+            "institution_id": inst_id,
+            "institution_name": user_data.institution_name,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    else:
+        user_doc = {
+            "user_id": user_id,
+            "email": email_clean,
+            "password": hashed_password,
+            "full_name": user_data.full_name,
+            "role": user_data.role,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
     await users_col.insert_one(user_doc)
     
     # Audit Log
@@ -4588,6 +4614,9 @@ async def login(credentials: UserLogin):
             "email": user["email"],
             "full_name": user.get("full_name"),
             "role": user["role"],
+            "user_id": user["user_id"],
+            "institution_id": user.get("institution_id"),
+            "institution_name": user.get("institution_name"),
             "last_login": login_time
         }
     }
@@ -4602,7 +4631,9 @@ async def get_me(user_payload: dict = Depends(get_current_user)):
         "email": user["email"],
         "full_name": user.get("full_name"),
         "role": user["role"],
-        "user_id": user["user_id"]
+        "user_id": user["user_id"],
+        "institution_id": user.get("institution_id"),
+        "institution_name": user.get("institution_name")
     }
 
 class UserRoleUpdate(BaseModel):

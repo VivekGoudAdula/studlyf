@@ -21,6 +21,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [otp, setOtp] = useState('');
+    const [institutionName, setInstitutionName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
     
@@ -83,7 +84,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                     email,
                     password,
                     full_name: fullName,
-                    role: selectedRole
+                    role: selectedRole,
+                    institution_name: selectedRole === 'institution' ? institutionName : undefined
                 })
             });
 
@@ -122,6 +124,22 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, transparent = 
                     >
                         {error && <div className="p-3 bg-red-50 text-red-500 text-xs rounded-lg border border-red-100">{error}</div>}
                         
+                        {selectedRole === 'institution' && (
+                            <div>
+                                <label className={labelClasses}>Institution Name</label>
+                                <div className="relative">
+                                    <Building2 className="absolute left-3 top-3.5 text-gray-300" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. IIT Delhi"
+                                        className={inputClasses + " pl-10"}
+                                        value={institutionName}
+                                        onChange={(e) => setInstitutionName(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
                         <div>
                             <label className={labelClasses}>Full Name</label>
                             <div className="relative">

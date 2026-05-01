@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException
@@ -6,9 +6,12 @@ from services.email_service import send_notification_email
 from services.institutional_analytics_service import analytics_service
 from services.institutional_certificate_service import certificate_service
 from services.leaderboard_service import leaderboard_service
-from db import leaderboard_col, events_col, participants_col, certificates_col
+from db import leaderboard_col, events_col, participants_col, certificates_col, notifications_col, institutions_col, users_col, teams_col, submissions_col, scores_col, results_col, audit_logs_col
 from bson import ObjectId
 from services.audit_service import log_admin_action
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/institution", tags=["Institutional Integration"])
 
@@ -35,7 +38,6 @@ async def create_institution_profile(profile: dict):
 @router.get("/profile/{institution_id}")
 async def get_institution_profile(institution_id: str):
     """Retrieves the full profile of an institution including team and social links."""
-    from db import institutions_col
     profile = await institutions_col.find_one({"institution_id": institution_id})
     if not profile:
         # Fallback for new institutions
@@ -48,7 +50,7 @@ async def get_institution_profile(institution_id: str):
             "bio": "A premier educational institution dedicated to excellence.",
             "logo_url": "",
             "social": {"linkedin": "", "twitter": "", "instagram": ""},
-            "notifications": {"registrations": false, "submissions": true, "evaluations": true, "updates": false}
+            "notifications": {"registrations": False, "submissions": True, "evaluations": True, "updates": False}
         }
     
     # Clean ID
@@ -150,7 +152,7 @@ async def get_qualified_bundle(event_id: str, stage_name: str, threshold: float 
             "team_name": team["name"],
             "score": 0,
             "judges_completed": 0,
-            "is_fully_evaluated": false
+            "is_fully_evaluated": False
         })
 
     return {
@@ -495,7 +497,6 @@ async def verify_certificate(certificate_id: str):
 @router.get("/notifications/{institution_id}")
 async def get_notifications(institution_id: str):
     """Retrieves real-time institutional activity alerts from persistent storage."""
-    from db import notifications_col
     try:
         # Fetch latest 10 unread notifications
         cursor = notifications_col.find({
@@ -515,7 +516,6 @@ async def get_notifications(institution_id: str):
 @router.post("/notifications/{institution_id}/mark-read")
 async def mark_notifications_read(institution_id: str):
     """Permanently marks all unread notifications for an institution as read in DB."""
-    from db import notifications_col
     try:
         await notifications_col.update_many(
             {"institution_id": institution_id, "is_read": {"$ne": True}},

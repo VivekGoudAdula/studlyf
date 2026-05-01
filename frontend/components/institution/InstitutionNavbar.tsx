@@ -6,11 +6,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../apiConfig';
 
-const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNavigateToSettings?: () => void }> = ({ onNavigate, onNavigateToSettings }) => {
+const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: string) => void, onNavigateToSettings?: () => void }> = ({ refreshKey, onNavigate, onNavigateToSettings }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const displayName = user?.full_name || user?.displayName || 'User';
-    const institutionId = user?.user_id || 'default_inst';
+    const displayName = user?.institution_name || user?.full_name || user?.displayName || 'Institutional Portal';
+    const institutionId = user?.institution_id || user?.user_id || 'default_inst';
     
     const [notifCount, setNotifCount] = useState(0);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -173,7 +173,7 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
             } catch (err) { console.error(err); }
         };
         fetchProfile();
-    }, [institutionId]);
+    }, [institutionId, refreshKey]);
 
     const handleLogout = async () => {
         await logout();
@@ -247,6 +247,9 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                                                             onNavigateToSettings();
                                                         } else if (result.type === 'Page' && onNavigate) {
                                                             onNavigate(result.id);
+                                                        } else if (result.type === 'Event' || result.type === 'Student') {
+                                                            // Logic for deep links
+                                                            navigate(result.link);
                                                         } else {
                                                             navigate(result.link);
                                                         }
