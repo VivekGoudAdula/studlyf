@@ -1,121 +1,93 @@
-import React from 'react';
-import { MoreHorizontal, ExternalLink, Users, ArrowRight, Eye, MoreVertical } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { ChevronRight } from 'lucide-react';
 
 interface RecentListingsProps {
-    onViewEvent?: (id: string) => void;
+    institutionId: string;
+    onViewEvent?: (eventId: string) => void;
+    onViewAll?: () => void;
 }
 
-const listings = [
-    { 
-        id: '1', 
-        title: 'Global AI Hackathon 2024', 
-        type: 'Hackathon', 
-        applied: 1240, 
-        finalized: 12, 
-        status: 'Live',
-        date: 'May 15, 2024'
-    },
-    { 
-        id: '2', 
-        title: 'Cloud Engineering Masters', 
-        type: 'Competition', 
-        applied: 850, 
-        finalized: 0, 
-        status: 'Draft',
-        date: 'Jun 10, 2024'
-    },
-    { 
-        id: '3', 
-        title: 'UI/UX Design Challenge', 
-        type: 'Challenge', 
-        applied: 430, 
-        finalized: 45, 
-        status: 'Ended',
-        date: 'Apr 20, 2024'
-    }
-];
+const RecentListings: React.FC<RecentListingsProps> = ({ institutionId, onViewEvent, onViewAll }) => {
+    const [events, setEvents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-const RecentListings: React.FC<RecentListingsProps> = ({ onViewEvent }) => {
+    useEffect(() => {
+        const fetchRecent = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`/api/v1/institution/events/${institutionId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setEvents(Array.isArray(data) ? data : []);
+                }
+            } catch (err) {
+                console.error("Failed to fetch recent listings");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchRecent();
+    }, [institutionId]);
+
     return (
-        <div className="bg-white/40 backdrop-blur-md p-2 rounded-[3rem] border border-white/20 shadow-2xl shadow-slate-200/40">
-            <div className="bg-white rounded-[2.5rem] overflow-hidden">
-                <div className="p-8 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-black text-slate-900 font-['Outfit']">Recent Events</h2>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Activity Overview</p>
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm min-h-[550px] flex flex-col font-['Outfit']">
+            <div className="p-8">
+                <h3 className="text-xl font-bold text-slate-700">Recent Listing</h3>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto no-scrollbar px-8 pb-8">
+                {events.length > 0 ? (
+                    <div className="space-y-4">
+                        {events.slice(0, 5).map((event, idx) => (
+                            <motion.div 
+                                key={event._id || idx}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                                onClick={() => onViewEvent?.(event._id)}
+                                className="group p-4 bg-slate-50 hover:bg-white hover:shadow-xl hover:shadow-purple-100/50 rounded-2xl border border-transparent hover:border-purple-100 transition-all cursor-pointer flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-purple-500 font-bold group-hover:scale-110 transition-transform">
+                                        {event.category?.charAt(0) || 'E'}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-900 group-hover:text-[#6C3BFF] transition-colors line-clamp-1">{event.title}</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{event.category}</p>
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-white rounded-lg text-slate-300 group-hover:text-[#6C3BFF] group-hover:bg-purple-50 transition-all">
+                                    <ChevronRight size={16} />
+                                </div>
+                            </motion.div>
+                        ))}
+                        <button 
+                            onClick={onViewAll}
+                            className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-[#6C3BFF] transition-all"
+                        >
+                            View All Opportunities
+                        </button>
                     </div>
-                    <button className="flex items-center gap-2 text-sm font-bold text-[#6C3BFF] hover:underline px-4 py-2 bg-purple-50 rounded-xl transition-all">
-                        View All <ArrowRight size={16} />
-                    </button>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-slate-50/50">
-                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Event Name</th>
-                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Type</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Registrations</th>
-                                <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {listings.map((item) => (
-                                <motion.tr 
-                                    key={item.id} 
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="hover:bg-slate-50/50 transition-colors group"
-                                >
-                                    <td className="px-8 py-6">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-900 mb-1 group-hover:text-[#6C3BFF] transition-colors">{item.title}</span>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{item.date}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                                            {item.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-8 py-6 text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Users size={14} className="text-[#6C3BFF]" />
-                                            <span className="font-black text-slate-700">{item.applied.toLocaleString()}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6 text-center">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                            item.status === 'Live' 
-                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                                : item.status === 'Draft'
-                                                ? 'bg-amber-50 text-amber-600 border-amber-100'
-                                                : 'bg-slate-50 text-slate-400 border-slate-100'
-                                        }`}>
-                                            {item.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button 
-                                                onClick={() => onViewEvent?.(item.id)}
-                                                className="p-2.5 bg-slate-50 text-slate-400 hover:text-[#6C3BFF] hover:bg-purple-50 rounded-xl transition-all"
-                                                title="View Details"
-                                            >
-                                                <Eye size={18} />
-                                            </button>
-                                            <button className="p-2.5 bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all">
-                                                <MoreVertical size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </motion.tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative w-64 h-64 mb-6"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 to-transparent rounded-full blur-3xl" />
+                            <img 
+                                src="https://img.freepik.com/free-vector/no-data-concept-illustration_114360-536.jpg" 
+                                alt="No results" 
+                                className="w-full h-full object-contain relative z-10 mix-blend-multiply"
+                            />
+                        </motion.div>
+                        <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em]">
+                            No matching opportunities found
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -14,14 +14,15 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
 
 # Password hashing configuration
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Switched to pbkdf2_sha256 for better compatibility and removing 72-byte limits
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
     """Verify a plain password against a hashed one."""
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    """Generate a hashed version of a password."""
+    """Generate a hashed version of a password using PBKDF2-SHA256."""
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

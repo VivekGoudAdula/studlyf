@@ -25,8 +25,8 @@ import {
     Megaphone,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { auth } from '../../../firebase';
-import { signOut } from 'firebase/auth';
+import { useAuth } from '../../../AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -52,7 +52,9 @@ const contentItems = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse }) => {
+    const navigate = useNavigate();
     const location = useLocation();
+    const { user, logout } = useAuth();
 
     return (
         <motion.aside
@@ -121,17 +123,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse }) => {
             {/* User Profile & Logout */}
             <div className="p-4 border-t border-white/5 space-y-2">
                 <div className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${isCollapsed ? 'justify-center' : 'bg-white/5'}`}>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 border border-white/10 flex-shrink-0" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 border border-white/10 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
+                        {user?.full_name?.[0] || 'A'}
+                    </div>
                     {!isCollapsed && (
                         <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold text-white truncate">Super Admin</span>
-                            <span className="text-xs text-white/50 truncate">admin@studlyf.com</span>
+                            <span className="text-sm font-semibold text-white truncate">{user?.full_name || 'Super Admin'}</span>
+                            <span className="text-xs text-white/50 truncate">{user?.email || 'admin@studlyf.com'}</span>
                         </div>
                     )}
                 </div>
 
                 <button
-                    onClick={() => signOut(auth)}
+                    onClick={async () => {
+                        await logout();
+                        navigate('/login');
+                    }}
                     className={`w-full flex items-center gap-3 p-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200 ${isCollapsed ? 'justify-center' : ''}`}
                     title="Logout"
                 >

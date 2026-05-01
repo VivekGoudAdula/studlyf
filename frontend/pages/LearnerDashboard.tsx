@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../apiConfig';
 import { useAuth } from '../AuthContext';
-import { auth, githubProvider } from '../firebase';
-import { signOut, signInWithPopup, GithubAuthProvider, linkWithPopup } from 'firebase/auth';
 import DashboardFooter from '../components/DashboardFooter';
 import { downloadCertPDF } from '../utils/downloadCertPDF';
 import { generatePdfHtml } from './ResumeBuilder';
@@ -51,7 +49,7 @@ const CircularProgress = ({ value, size = 180, strokeWidth = 12, color = "#7C3AE
 };
 
 const LearnerDashboard: React.FC = () => {
-  const { user, role } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<'profile' | 'knowledge' | 'leaderboard' | 'certificates' | 'resume'>('profile');
   const [activeTab, setActiveTab] = useState<'overall' | 'dev' | 'ai'>('overall');
@@ -59,60 +57,36 @@ const LearnerDashboard: React.FC = () => {
   const [certificates, setCertificates] = useState<any[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
   const [resumeData, setResumeData] = useState<any>(null);
   const [badges, setBadges] = useState<any[]>([]);
 
   useEffect(() => {
-    if (user?.uid) {
-      fetch(`${API_BASE_URL}/api/certificates/${user.uid}`)
+    if (user?.user_id) {
+      fetch(`${API_BASE_URL}/api/certificates/${user.user_id}`)
         .then(res => res.json())
         .then(data => setCertificates(data))
         .catch(console.error);
     }
-    const savedData = localStorage.getItem(`github_data_${user?.uid}`);
+    const savedData = localStorage.getItem(`github_data_${user?.user_id}`);
     if (savedData) {
       setGithubData(JSON.parse(savedData));
     }
 
-    // Check if we have a token to analyze if data is missing
-    const token = sessionStorage.getItem('github_token');
-    if (token && !savedData) {
-      handleAnalyze(token);
-    }
     // Fetch resume
-    if (user?.uid) {
-      fetch(`${API_BASE_URL}/api/resume/${user.uid}`)
+    if (user?.user_id) {
+      fetch(`${API_BASE_URL}/api/resume/${user.user_id}`)
         .then(res => res.json())
         .then(data => setResumeData(data))
         .catch(console.error);
       
       // Fetch badges
-      fetch(`${API_BASE_URL}/api/user/${user.uid}/badges`)
+      fetch(`${API_BASE_URL}/api/user/${user.user_id}/badges`)
         .then(res => res.json())
         .then(data => setBadges(data.badges || []))
         .catch(console.error);
     }
   }, [user]);
-
-  const handleConnectGitHub = async () => {
-    try {
-      setAnalyzing(true);
-      setError(null);
-      const result = await signInWithPopup(auth, githubProvider);
-      const credential = GithubAuthProvider.credentialFromResult(result);
-      const token = credential?.accessToken;
-
-      if (token) {
-        sessionStorage.setItem('github_token', token);
-        await handleAnalyze(token);
-      }
-    } catch (err: any) {
-      setError(err.message);
-      setAnalyzing(false);
-    }
-  };
 
   const handleAnalyze = async (token: string) => {
     try {
@@ -125,7 +99,7 @@ const LearnerDashboard: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setGithubData(data.data);
-        localStorage.setItem(`github_data_${user?.uid}`, JSON.stringify(data.data));
+        localStorage.setItem(`github_data_${user?.user_id}`, JSON.stringify(data.data));
       } else {
         setError(data.error || "Analysis protocol failed.");
       }
@@ -250,7 +224,7 @@ const LearnerDashboard: React.FC = () => {
                   <div className="flex gap-3">
                     <button
                       onClick={() => {
-                        const uid = user?.uid || 'guest';
+                        const uid = user?.user_id || 'guest';
                         const url = `${API_BASE_URL}/api/certificates/${uid}/${cert.certificate_id}/html`;
                         (window as any).__certPreviewUrl = url;
                         (window as any).__certPreviewOpen = true;
@@ -265,7 +239,7 @@ const LearnerDashboard: React.FC = () => {
                     <button
                       onClick={async () => {
                         setDownloadingCertId(cert.certificate_id);
-                        await downloadCertPDF(user?.uid || 'guest', cert.certificate_id, cert.course_title);
+                        await downloadCertPDF(user?.user_id || 'guest', cert.certificate_id, cert.course_title);
                         setDownloadingCertId(null);
                       }}
                       disabled={downloadingCertId === cert.certificate_id}
@@ -299,7 +273,7 @@ const LearnerDashboard: React.FC = () => {
                         const parts = certSrc.split('/');
                         const htmlIdx = parts.indexOf('html');
                         const certId = htmlIdx > 0 ? parts[htmlIdx - 1] : '';
-                        const userId = htmlIdx > 1 ? parts[htmlIdx - 2] : user?.uid || 'guest';
+                        const userId = htmlIdx > 1 ? parts[htmlIdx - 2] : user?.user_id || 'guest';
                         setDownloadingCertId('modal');
                         await downloadCertPDF(userId, certId, 'Certificate');
                         setDownloadingCertId(null);
@@ -349,10 +323,9 @@ const LearnerDashboard: React.FC = () => {
               <div className="flex gap-4 flex-col sm:flex-row mt-4">
                 <button
                   onClick={async () => {
-                    if (!user?.uid) return alert('Kindly login first');
+                    if (!user?.user_id) return alert('Kindly login first');
                     try {
-                      // 1. Fetch from 'resumes' collection
-                      const res = await fetch(`${API_BASE_URL}/api/resume/${user.uid}`);
+                      const res = await fetch(`${API_BASE_URL}/api/resume/${user.user_id}`);
                       if (!res.ok) {
                         alert("No saved resume found. Please create one first.");
                         return;
@@ -361,7 +334,6 @@ const LearnerDashboard: React.FC = () => {
                       const config = data.config;
                       const html = generatePdfHtml(config, config.tpl);
 
-                      // 2. Open print dialog
                       const fr = document.createElement("iframe");
                       fr.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;";
                       document.body.appendChild(fr);
@@ -415,7 +387,7 @@ const LearnerDashboard: React.FC = () => {
                     {githubData?.avatar_url ? (
                       <img src={githubData.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
                     ) : (
-                      user?.displayName?.split(' ').map(n => n[0]).join('') || 'AL'
+                      user?.full_name?.split(' ').map(n => n[0]).join('') || 'AL'
                     )}
                     <div className="absolute -bottom-1 -right-1 w-8 h-8 sm:w-10 sm:h-10 bg-green-500 border-4 border-white rounded-full flex items-center justify-center z-10">
                       <span className="text-white text-[8px] sm:text-[10px]">✓</span>
@@ -426,10 +398,7 @@ const LearnerDashboard: React.FC = () => {
 
                 <div className="flex-grow text-center lg:text-left">
                   <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
-                    <h2 className="text-3xl sm:text-5xl font-black tracking-tighter uppercase text-[#111827]">{user?.displayName || 'Elite Protocol'}</h2>
-                    <button className="text-gray-200 hover:text-[#7C3AED] transition-colors">
-                      <svg className="w-5 h-5 sm:w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </button>
+                    <h2 className="text-3xl sm:text-5xl font-black tracking-tighter uppercase text-[#111827]">{user?.full_name || 'Elite Protocol'}</h2>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 text-[#475569]">
@@ -438,14 +407,8 @@ const LearnerDashboard: React.FC = () => {
                       <p className="text-xs sm:text-sm font-bold truncate">{user?.email}</p>
                     </div>
                     <div>
-                      <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">GitHub Authority</label>
-                      <button
-                        onClick={handleConnectGitHub}
-                        className="text-xs sm:text-sm font-bold text-[#7C3AED] hover:underline flex items-center justify-center lg:justify-start gap-2 group/gh"
-                      >
-                        {githubData?.username ? `github.com/${githubData.username}` : (analyzing ? 'Synchronizing...' : 'Not Connected')}
-                        <svg className={`w-3 h-3 ${analyzing ? 'animate-spin' : 'group-hover/gh:translate-x-0.5 transition-transform'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      </button>
+                      <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">Status</label>
+                      <p className="text-xs sm:text-sm font-bold uppercase text-[#7C3AED]">Verified Student</p>
                     </div>
                     <div>
                       <label className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">Graduation Horizon</label>
@@ -460,16 +423,6 @@ const LearnerDashboard: React.FC = () => {
                     className="w-full py-4 sm:py-5 bg-[#FFFFFF] border border-gray-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] hover:border-[#7C3AED]/30 transition-all flex items-center justify-center gap-3 shadow-sm"
                   >
                     {resumeData ? `${resumeData.config?.tpl || 'Professional'} Resume` : 'Create Skill Resume'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const token = sessionStorage.getItem('github_token');
-                      if (token) handleAnalyze(token);
-                    }}
-                    disabled={analyzing}
-                    className="w-full py-4 sm:py-5 bg-[#7C3AED] text-white rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#6D28D9] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#7C3AED]/20 disabled:opacity-50"
-                  >
-                    {analyzing ? 'Analyzing...' : 'Re-analyze'}
                   </button>
                 </div>
               </div>
@@ -498,7 +451,6 @@ const LearnerDashboard: React.FC = () => {
                       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-tight">{badge.description || badge.reason}</p>
                     </motion.div>
                   ))}
-                  {/* Placeholder for next achievement */}
                   <div className="bg-gray-50/50 border border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-60">
                     <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4 grayscale">
                       🚀
@@ -567,57 +519,6 @@ const LearnerDashboard: React.FC = () => {
                 </div>
               </div>
             </section>
-
-            {/* Resume Integration Section */}
-            <section className="bg-white border border-gray-100 rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 mb-12 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 text-6xl opacity-10 group-hover:scale-110 transition-transform">📄</div>
-              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                <div className="w-20 h-20 bg-[#F5F3FF] rounded-2xl flex items-center justify-center text-3xl shrink-0">
-                  {resumeData ? '✅' : '📝'}
-                </div>
-                <div className="flex-grow text-center md:text-left">
-                  <h3 className="text-xl font-black uppercase text-[#111827] mb-2">
-                    {resumeData ? '1' : '0'} Resumes Stored
-                  </h3>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest leading-relaxed">
-                    {resumeData
-                      ? `Your ${resumeData.config?.tpl} template resume is synced and ready for deployment.`
-                      : "No resume detected in your profile protocol. Initialize your professional identity now."}
-                  </p>
-                </div>
-                <div className="flex gap-4 shrink-0">
-                  {resumeData && (
-                    <button
-                      onClick={async () => {
-                        const html = generatePdfHtml(resumeData.config, resumeData.config.tpl);
-                        const fr = document.createElement("iframe");
-                        fr.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;";
-                        document.body.appendChild(fr);
-                        if (fr.contentWindow) {
-                          fr.contentWindow.document.open();
-                          fr.contentWindow.document.write(html);
-                          fr.contentWindow.document.close();
-                          fr.onload = () => {
-                            fr.contentWindow?.focus();
-                            fr.contentWindow?.print();
-                            setTimeout(() => document.body.removeChild(fr), 2000);
-                          };
-                        }
-                      }}
-                      className="py-3 px-6 bg-[#F5F3FF] text-[#7C3AED] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#7C3AED] hover:text-white transition-all shadow-sm"
-                    >
-                      Download PDF
-                    </button>
-                  )}
-                  <Link
-                    to="/job-prep/resume-builder"
-                    className="py-3 px-6 bg-[#111827] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#7C3AED] transition-all shadow-lg"
-                  >
-                    {resumeData ? 'Edit Resume' : 'Build Resume'}
-                  </Link>
-                </div>
-              </div>
-            </section>
           </>
         );
     }
@@ -663,14 +564,13 @@ const LearnerDashboard: React.FC = () => {
 
           <button
             key="logout"
-            onClick={() => signOut(auth)}
+            onClick={() => logout()}
             className="w-full text-left px-5 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center gap-4 group text-red-400 hover:text-red-500 hover:bg-red-50"
           >
             <span className="text-base">🚪</span>
             Logout
           </button>
         </nav>
-
       </aside>
 
       {/* Mobile Bottom Navigation */}
@@ -698,9 +598,6 @@ const LearnerDashboard: React.FC = () => {
 
       <main className="flex-grow overflow-y-auto bg-gray-50/30">
         <div className="p-4 sm:p-6 lg:p-12">
-
-
-
           <AnimatePresence mode="wait">
             <motion.div
               key={activeView}

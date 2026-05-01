@@ -1,15 +1,13 @@
 import os
 import subprocess
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Header
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Header, Request, status, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 import pdfplumber
 import docx
 import tempfile
-import os
-import json
 import re
 import uuid
 import traceback
@@ -18,54 +16,102 @@ import requests
 from services.ai_tools_scraper import fetch_ai_tools
 from jinja2 import Environment, FileSystemLoader, Template
 from datetime import datetime, timezone
-import firebase_admin
-from firebase_admin import credentials, firestore, auth
-import shutil
-import json
-import asyncio
+import secrets
+import time
 
-# Load from root .env specifically
-root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
-print(f"Loading .env from: {root_env}")
-load_dotenv(root_env, override=True) # Use override=True to ensure it takes precedence over existing env vars
+app = FastAPI()
 
-# Initialize Firebase Admin
-try:
-    if not firebase_admin._apps:
-        # 1. First, check for JSON content in environment variables (for Production)
-        service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+# Setup logging
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("main_service")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+async def root():
+    return {"message": "Studlyf API is operational", "docs": "/docs"}
+
+@app.get("/health")
+async def health_check():
+    db_status = "connected"
+    try:
+        from db import db
+        await db.client.admin.command('ping')
+    except Exception:
+        db_status = "disconnected"
         
-        if service_account_json:
-            import json
-            # Parse the string into a dictionary
-            cred_dict = json.loads(service_account_json)
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-            print("Firebase initialized via Environment Variable")
-            
-        # 2. Fallback: Look for the service-account.json file path (for Local Dev)
-        else:
-            cred_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "service-account.json")
-            if os.path.exists(cred_path):
-                cred = credentials.Certificate(cred_path)
-                firebase_admin.initialize_app(cred)
-                print(f"Firebase initialized via File: {cred_path}")
-            else:
-                # 3. Final Fallback: Default project ID
-                firebase_admin.initialize_app(options={'projectId': 'studlyf-3baff'})
-                print("Firebase initialized via Project ID fallback")
-    
-    firestore_db = firestore.client()
-except Exception as e:
-    print(f"Firebase Admin Init Warning: {e}. Firestore features may be limited.")
-    firestore_db = None
+    return {
+        "status": "ok", 
+        "database": db_status,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
 
+# In-memory stores for Reset Tokens
+reset_tokens = {} # email: {token, expiry}
+
+# --- SECURITY DEPENDENCIES (RBAC) ---
+async def get_current_user(authorization: Optional[str] = Header(None)):
+    """
+    Validates the JWT token from the Authorization header.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    
+    token = authorization.split(" ")[1]
+    from auth_utils import decode_access_token
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    return payload
+
+def require_role(allowed_roles: List[str]):
+    """
+    Restricts access to specific roles.
+    """
+    async def role_checker(user: dict = Depends(get_current_user)):
+        if user.get("role") not in allowed_roles:
+            raise HTTPException(status_code=403, detail="Permission denied")
+        return user
+    return role_checker
+
+# --- ADMIN SECURITY MIDDLEWARE ---
+async def admin_required(x_admin_email: str = Header(None)):
+    """Simple middleware to protect admin routes"""
+    allowed_admins = ["admin@studlyf.com", "saieshwarerelli10@gmail.com"]
+    if not x_admin_email or x_admin_email.lower() not in allowed_admins:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Forbidden: {x_admin_email} does not have super-admin privileges."
+        )
+    return x_admin_email
 from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col, interviews_col, certificates_col, sdl_projects_col, sdl_members_col, sdl_tasks_col, sdl_comments_col, sdl_join_requests_col, users_col, ads_col, mentors_col, companies_col, payments_col, audit_logs_col, resumes_col, institutions_col, events_col, participants_col, teams_col, submissions_col, judges_col, scores_col, notifications_col, leaderboard_col
+
+@app.post("/api/v1/auth/promote-to-institution")
+async def promote_to_institution(data: dict):
+    """Updates a user's role to institution in MongoDB."""
+    user_id = data.get("user_id")
+    if not user_id: raise HTTPException(status_code=400, detail="Missing user_id")
+    
+    await users_col.update_one(
+        {"user_id": user_id},
+        {"$set": {"role": "institution"}}
+    )
+    return {"status": "success"}
 
 from models import Institution, Event, Participant, Team, Submission, Judge, Score, Notification, LeaderboardEntry, Certificate
 from services.email_service import send_notification_email, get_registration_template
 from auth_utils import get_password_hash, verify_password, create_access_token, decode_access_token
 import upgrade_routes
+import integration_routes
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -97,7 +143,7 @@ async def award_badge(user_id: str, badge_id: str, name: str, description: str, 
     # Find user profile
     user_profile = await users_col.find_one({"user_id": user_id})
     if not user_profile:
-        # Create profile if exists in Firebase auth but not mongo yet
+        # Create profile in mongo
         user_profile = {
             "user_id": user_id,
             "badges": [],
@@ -222,11 +268,8 @@ def fix_progress(prog, default_status="locked"):
     # Merge defaults with actual data
     return {**defaults, **fix_id(prog)}
 
-# (Middleware and App config remains here)
-
 from routes import submission_routes, judge_routes, event_routes, dashboard_routes
 
-app = FastAPI()
 
 @app.on_event("startup")
 async def startup_db_client():
@@ -248,6 +291,7 @@ app.include_router(submission_routes.router)
 app.include_router(judge_routes.router)
 app.include_router(event_routes.router)
 app.include_router(dashboard_routes.router)
+app.include_router(integration_routes.router)
 
 
 @app.get("/api/user/{user_id}/badges")
@@ -285,13 +329,7 @@ origins = [
 origins = [o.rstrip('/') for o in origins if o]
 origins = list(set(origins))
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS already configured at the top
 
 from fastapi.responses import JSONResponse
 from fastapi import Request
@@ -584,20 +622,18 @@ async def generate_assessment(req: AssessmentRequest):
 
 @app.get("/health")
 async def health_check():
+    try:
+        await db.client.admin.command("ping")
+        db_status = "connected"
+    except Exception:
+        db_status = "error"
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "database": "connected" if await db.command("ping") else "error",
+        "database": db_status,
         "allowed_origins": origins
     }
 
-@app.on_event("startup")
-async def startup_event():
-    try:
-        if await db.command("ping"):
-            print("backend connected successfully")
-    except Exception as e:
-        print(f"Database connection failed on startup: {e}")
 
 # Get Groq API key from environment
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "YOUR-GROQ-API-KEY")
@@ -2781,31 +2817,10 @@ async def admin_required(x_admin_email: str = Header(None)):
 
 @app.get("/api/admin/stats", dependencies=[Depends(admin_required)])
 async def get_admin_stats():
-    """Aggregate real-time stats for the admin dashboard"""
+    """Aggregate real-time stats for the admin dashboard using MongoDB"""
     try:
-        # 1. Total Students (from Firestore)
-        student_count = 0
-        hired_count = 0
-        if firestore_db:
-            try:
-                users_ref = firestore_db.collection('users')
-                # Count ALL users in Firestore
-                all_users_list = list(users_ref.stream())
-                student_count = len(all_users_list)
-                
-                # Count actual 'Placed' students for conversions
-                hired_count = len([u for u in all_users_list if u.to_dict().get('status') == 'Placed'])
-                
-                # Fallback: if 0 in Firestore, count from Firebase Auth
-                if student_count == 0:
-                    try:
-                        auth_users = auth.list_users().users
-                        student_count = len(auth_users)
-                    except Exception as ae:
-                        print(f"Auth List Error: {ae}")
-            except Exception as e: 
-                print(f"Firestore Query Error: {e}")
-        
+        student_count = await users_col.count_documents({"role": "student"})
+        hired_count = await users_col.count_documents({"status": "Placed"})
         # 2. Active Courses (from MongoDB)
         course_count = await courses_col.count_documents({})
         
@@ -2871,17 +2886,13 @@ async def get_admin_stats():
 
 @app.get("/api/admin/students", dependencies=[Depends(admin_required)])
 async def get_admin_students():
-    """Fetch all students from Firestore"""
-    if not firestore_db:
-        return []
+    """Fetch all students from MongoDB"""
     try:
-        users_ref = firestore_db.collection('users')
-        docs = users_ref.limit(100).stream()
+        cursor = users_col.find({"role": "student"}).limit(100)
         students = []
-        for doc in docs:
-            d = doc.to_dict()
-            d['uid'] = doc.id
-            students.append(d)
+        async for doc in cursor:
+            doc["_id"] = str(doc["_id"])
+            students.append(doc)
         return students
     except Exception as e:
         print(f"Error fetching students: {e}")
@@ -2889,24 +2900,25 @@ async def get_admin_students():
 
 @app.post("/api/admin/register-student", dependencies=[Depends(admin_required)])
 async def register_student(data: dict, x_admin_email: str = Header(...)):
-    """Manually register a student into Firestore"""
+    """Manually register a student into MongoDB"""
     try:
         email = data.get("email")
         name = data.get("name")
         college = data.get("college", "")
         role = data.get("role", "student")
         
-        if not firestore_db: raise HTTPException(status_code=500, detail="Firestore Not Enabled")
-        
-        user_ref = firestore_db.collection('users').document(email)
-        user_ref.set({
-            "email": email,
-            "displayName": name,
-            "college": college,
-            "role": role,
-            "createdAt": datetime.utcnow().isoformat(),
-            "status": "active"
-        })
+        await users_col.update_one(
+            {"email": email},
+            {"$set": {
+                "email": email,
+                "full_name": name,
+                "college": college,
+                "role": role,
+                "created_at": datetime.utcnow().isoformat(),
+                "status": "active"
+            }},
+            upsert=True
+        )
         await log_admin_action(x_admin_email, "Registered Student", f"Email: {email}, Name: {name}")
         return {"status": "success", "email": email}
     except Exception as e:
@@ -2914,16 +2926,16 @@ async def register_student(data: dict, x_admin_email: str = Header(...)):
 
 @app.post("/api/admin/restrict-student", dependencies=[Depends(admin_required)])
 async def restrict_student(data: dict, x_admin_email: str = Header(...)):
-    """Toggle restricted status for a student"""
+    """Toggle restricted status for a student in MongoDB"""
     try:
-        student_id = data.get("student_id")
+        email = data.get("student_id") # Assuming email is used as student_id
         restricted = data.get("restricted", False)
         
-        if not firestore_db: raise HTTPException(status_code=500, detail="Firestore Not Enabled")
-        
-        user_ref = firestore_db.collection('users').document(student_id)
-        user_ref.update({"restricted": restricted})
-        await log_admin_action(x_admin_email, "Restricted Student" if restricted else "Unrestricted Student", f"Target Student ID: {student_id}")
+        await users_col.update_one(
+            {"email": email},
+            {"$set": {"restricted": restricted}}
+        )
+        await log_admin_action(x_admin_email, "Restricted Student" if restricted else "Unrestricted Student", f"Target Student: {email}")
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -3352,12 +3364,8 @@ async def get_admin_insights():
             "actionLabel": "Review Content"
         })
         
-        # 3. Market Achievement (Real from Database)
-        hired_count = 0
-        if firestore_db:
-             try:
-                 hired_count = len(list(firestore_db.collection('users').where(filter=FieldFilter('status', '==', 'Placed')).stream()))
-             except: pass
+        # 3. Market Achievement (Real from MongoDB)
+        hired_count = await users_col.count_documents({"status": "Placed"})
         
         if hired_count > 0:
              insights.append({
@@ -4420,21 +4428,123 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+# In-memory stores for Reset Tokens
+reset_tokens = {} # email: {token, expiry}
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(data: dict = Body(...)):
+    email = data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    # Check if user exists
+    user = await users_col.find_one({"email": email})
+    if not user:
+        # For security, don't reveal if user exists. Just say "If email exists, reset link sent"
+        return {"status": "success", "message": "If this email is registered, a reset link has been sent."}
+    
+    # Generate secure token
+    token = secrets.token_urlsafe(32)
+    reset_tokens[token] = {"email": email, "expiry": time.time() + 3600} # 1 hour expiry
+    
+    # Send email
+    from services.email_service import send_notification_email
+    reset_link = f"http://localhost:3000/reset-password?token={token}"
+    body = f"""
+    <html>
+        <body style="font-family: sans-serif; padding: 20px;">
+            <h2 style="color: #7C3AED;">Password Reset Request</h2>
+            <p>You requested a password reset for your Studlyf account.</p>
+            <p>Click the button below to set a new password. This link expires in 1 hour.</p>
+            <div style="margin: 30px 0;">
+                <a href="{reset_link}" style="background: #7C3AED; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold;">Reset Password</a>
+            </div>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+        </body>
+    </html>
+    """
+    await send_notification_email(email, "Password Reset - Studlyf", body)
+    
+    return {"status": "success", "message": "Reset link sent"}
+
+@app.post("/api/auth/reset-password")
+async def reset_password(data: dict = Body(...)):
+    token = data.get("token")
+    new_password = data.get("password")
+    
+    if not token or not new_password:
+        raise HTTPException(status_code=400, detail="Token and new password are required")
+    
+    if token not in reset_tokens:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    token_data = reset_tokens[token]
+    if time.time() > token_data["expiry"]:
+        del reset_tokens[token]
+        raise HTTPException(status_code=400, detail="Token has expired")
+    
+    email = token_data["email"]
+    
+    # Update password in MongoDB
+    from auth_utils import get_password_hash
+    hashed_password = get_password_hash(new_password)
+    
+    await users_col.update_one(
+        {"email": email},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    # Clean up token
+    del reset_tokens[token]
+    
+    return {"status": "success", "message": "Password has been reset successfully"}
+
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/signup")
 async def signup(user_data: UserSignup):
     """
     JWT SIGNUP: Creates a new user with a hashed password and logs the action.
     """
-    existing_user = await users_col.find_one({"email": user_data.email})
+    # Ensure unique email and consistent casing
+    email_clean = user_data.email.strip().lower()
+    existing_user = await users_col.find_one({"email": email_clean})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    hashed_password = get_password_hash(user_data.password)
+    # Restrict Institution Emails to professional domains
+    if user_data.role == "institution":
+        personal_domains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com"]
+        domain = user_data.email.split("@")[-1].lower()
+        if domain in personal_domains:
+            raise HTTPException(
+                status_code=400, 
+                detail="Institutions must register with an official organization email (e.g., @college.edu or @company.com). Personal Gmail/Yahoo accounts are not permitted for this role."
+            )
+    
+    if len(user_data.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+    
+    # Strong Password Enforcement
+    if not any(c.isupper() for c in user_data.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not any(c.isdigit() for c in user_data.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one number")
+    if not any(not c.isalnum() for c in user_data.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one special character")
+    
+    # Password length check
+    if len(user_data.password) > 50:
+        raise HTTPException(status_code=400, detail="Password is too long (maximum 50 characters).")
+    
+    try:
+        hashed_password = get_password_hash(user_data.password)
+    except Exception as e:
+        logger.error(f"Hashing failed: {e}")
+        raise HTTPException(status_code=400, detail="Could not process password. Please try another one.")
     user_id = str(uuid.uuid4())
     user_doc = {
         "user_id": user_id,
-        "email": user_data.email,
+        "email": email_clean,
         "password": hashed_password,
         "full_name": user_data.full_name,
         "role": user_data.role,
@@ -4444,7 +4554,7 @@ async def signup(user_data: UserSignup):
     await users_col.insert_one(user_doc)
     
     # Audit Log
-    await log_admin_action(user_data.email, "USER_SIGNUP", f"New user created with role: {user_data.role}")
+    await log_admin_action(email_clean, "USER_SIGNUP", f"New user created with role: {user_data.role}")
     
     return {"status": "success", "message": "User created successfully"}
 
@@ -4453,7 +4563,8 @@ async def login(credentials: UserLogin):
     """
     JWT LOGIN: Verifies credentials, returns a JWT token, and records the login timestamp.
     """
-    user = await users_col.find_one({"email": credentials.email})
+    email_clean = credentials.email.strip().lower()
+    user = await users_col.find_one({"email": email_clean})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
@@ -4481,30 +4592,18 @@ async def login(credentials: UserLogin):
         }
     }
 
-# --- SECURITY DEPENDENCIES (RBAC) ---
-async def get_current_user(authorization: Optional[str] = Header(None)):
-    """
-    Validates the JWT token from the Authorization header.
-    """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid token")
-    
-    token = authorization.split(" ")[1]
-    payload = decode_access_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    
-    return payload
-
-def require_role(allowed_roles: List[str]):
-    """
-    Restricts access to specific roles.
-    """
-    async def role_checker(user: dict = Depends(get_current_user)):
-        if user.get("role") not in allowed_roles:
-            raise HTTPException(status_code=403, detail="Permission denied")
-        return user
-    return role_checker
+@app.get("/api/auth/me")
+async def get_me(user_payload: dict = Depends(get_current_user)):
+    """Returns the current user profile from the token."""
+    user = await users_col.find_one({"user_id": user_payload["user_id"]})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "email": user["email"],
+        "full_name": user.get("full_name"),
+        "role": user["role"],
+        "user_id": user["user_id"]
+    }
 
 class UserRoleUpdate(BaseModel):
     role: str
@@ -4887,26 +4986,153 @@ async def register_for_event(event_id: str, participant: Participant):
         result = await participants_col.insert_one(p_doc)
         
         # 6. TRIGGER EMAIL
+        inst_id = event.get("institution_id")
+        custom_msg = ""
+        institution = None
+        if inst_id:
+            institution = await institutions_col.find_one({"institution_id": inst_id})
+            if institution:
+                custom_msg = institution.get("email_custom_message", "")
+
         user_name = participant.college_name or "Participant"
         subject = f"Registration Confirmed: {event['title']}"
-        body = get_registration_template(user_name, event['title'])
+        body = get_registration_template(user_name, event['title'], custom_msg)
         
         user_record = await users_col.find_one({"user_id": participant.user_id})
         target_email = user_record["email"] if user_record and "email" in user_record else participant.user_id
 
         asyncio.create_task(send_notification_email(target_email, subject, body))
 
+        # 7. DASHBOARD UPDATE (Implicit via real-time fetch)
+        # Note: We removed admin email notifications for registrations as per 'Dashboard-First' policy.
+        
         # Audit Log
         await log_admin_action(target_email, "EVENT_REGISTRATION", f"Registered for event: {event_id}")
 
         # Update Institution Stats in Background
-        inst_id = event.get("institution_id")
         if inst_id:
             asyncio.create_task(recalculate_institution_stats(inst_id))
 
         return {"status": "success", "registration_id": str(result.inserted_id)}
     except Exception as e:
         print(f"Registration Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/teams/create")
+async def create_team(team: Team):
+    """
+    TEAM FORMATION: Creates a new team for an event.
+    Enforces min/max team size from the event configuration.
+    """
+    from bson import ObjectId
+    try:
+        # 1. Verify event exists and is LIVE
+        event = await events_col.find_one({"_id": ObjectId(team.event_id)})
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # 2. Check team size limits
+        member_count = len(team.members)
+        if member_count < event.get("min_team_size", 1):
+            raise HTTPException(status_code=400, detail=f"Team must have at least {event.get('min_team_size')} members.")
+        if member_count > event.get("max_team_size", 5):
+            raise HTTPException(status_code=400, detail=f"Team cannot exceed {event.get('max_team_size')} members.")
+
+        # 3. Verify all members are registered participants for THIS event
+        for member in team.members:
+            p = await participants_col.find_one({"user_id": member["user_id"], "event_id": team.event_id})
+            if not p:
+                raise HTTPException(status_code=400, detail=f"User {member['user_id']} is not registered for this event.")
+            if p.get("team_id"):
+                raise HTTPException(status_code=400, detail=f"User {member['user_id']} is already in another team.")
+
+        # 4. Save Team
+        team_doc = team.dict(exclude={"id"})
+        result = await teams_col.insert_one(team_doc)
+        team_id = str(result.inserted_id)
+
+        # 5. Update Participants with team_id
+        for member in team.members:
+            await participants_col.update_one(
+                {"user_id": member["user_id"], "event_id": team.event_id},
+                {"$set": {"team_id": team_id, "updated_at": datetime.utcnow()}}
+            )
+
+        return {"status": "success", "team_id": team_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/teams/{team_id}/join")
+async def join_team(team_id: str, user_id: str = Body(embed=True)):
+    """
+    TEAM JOINING: Adds a participant to an existing team.
+    """
+    from bson import ObjectId
+    try:
+        team = await teams_col.find_one({"_id": ObjectId(team_id)})
+        if not team:
+            raise HTTPException(status_code=404, detail="Team not found")
+
+        event = await events_col.find_one({"_id": ObjectId(team["event_id"])})
+        
+        # Check size limit
+        if len(team["members"]) >= event.get("max_team_size", 5):
+            raise HTTPException(status_code=400, detail="Team is already full.")
+
+        # Check if user is registered for this event
+        p = await participants_col.find_one({"user_id": user_id, "event_id": team["event_id"]})
+        if not p:
+            raise HTTPException(status_code=400, detail="You must register for the event before joining a team.")
+        if p.get("team_id"):
+            raise HTTPException(status_code=400, detail="You are already in a team.")
+
+        # Update Team
+        new_member = {"user_id": user_id, "role": "MEMBER"}
+        await teams_col.update_one(
+            {"_id": ObjectId(team_id)},
+            {"$push": {"members": new_member}, "$set": {"updated_at": datetime.utcnow()}}
+        )
+
+        # Update Participant
+        await participants_col.update_one(
+            {"user_id": user_id, "event_id": team["event_id"]},
+            {"$set": {"team_id": team_id, "updated_at": datetime.utcnow()}}
+        )
+
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/api/participants/{p_id}/status", dependencies=[Depends(require_role(["Admin"]))])
+async def update_participant_status(p_id: str, status: str = Body(embed=True), current_user: dict = Depends(get_current_user)):
+    """
+    ADMIN: Verifies or rejects a participant registration.
+    """
+    from bson import ObjectId
+    try:
+        await participants_col.update_one(
+            {"_id": ObjectId(p_id)},
+            {"$set": {"registration_status": status, "updated_at": datetime.utcnow()}}
+        )
+        await log_admin_action(current_user["email"], "PARTICIPANT_STATUS_UPDATE", f"Updated participant {p_id} to {status}")
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/api/teams/{team_id}/status", dependencies=[Depends(require_role(["Admin"]))])
+async def update_team_status(team_id: str, status: str = Body(embed=True), current_user: dict = Depends(get_current_user)):
+    """
+    ADMIN: Approves, rejects, or disqualifies a team.
+    """
+    from bson import ObjectId
+    try:
+        await teams_col.update_one(
+            {"_id": ObjectId(team_id)},
+            {"$set": {"status": status, "updated_at": datetime.utcnow()}}
+        )
+        await log_admin_action(current_user["email"], "TEAM_STATUS_UPDATE", f"Updated team {team_id} to {status}")
+        return {"status": "success"}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/events/{event_id}/notify", dependencies=[Depends(require_role(["Admin"]))])

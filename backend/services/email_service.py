@@ -1,5 +1,6 @@
 import smtplib
 import os
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
@@ -8,53 +9,135 @@ from dotenv import load_dotenv
 root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 load_dotenv(root_env)
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("email_service")
+
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Studlyf Notifications")
 
+import asyncio
+
 async def send_notification_email(to_email: str, subject: str, body_html: str):
     """
-    Sends a professional HTML email notification.
+    Sends an email notification. 
+    Priority: 1. Resend API (HTTP - most reliable), 2. SMTP SSL (Port 465)
     """
-    if not SMTP_USER or not SMTP_PASSWORD:
-        print("[EMAIL ERROR] SMTP credentials not found in .env")
+    resend_key = os.getenv("RESEND_API_KEY")
+    brevo_key = os.getenv("BREVO_API_KEY")
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", 465))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASSWORD")
+    email_from = os.getenv("EMAIL_FROM_NAME", "Studlyf Notifications")
+
+    # --- PRIMARY: BREVO API (Best for free tier without domain) ---
+    if brevo_key:
+        try:
+            import requests
+            logger.info(f"[EMAIL] Attempting Brevo API for {to_email}")
+            response = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "sender": {"name": email_from, "email": smtp_user if smtp_user else "notifications@studlyf.com"},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": body_html,
+                },
+                timeout=10
+            )
+            if response.status_code in [200, 201, 202]:
+                logger.info(f"[EMAIL SUCCESS] Delivered via Brevo API to {to_email}")
+                return True
+            else:
+                logger.warning(f"[BREVO FAILED] Status {response.status_code}: {response.text}. Trying Resend...")
+        except Exception as e:
+            logger.error(f"[BREVO ERROR] {str(e)}")
+
+    # --- SECONDARY: RESEND API ---
+    if resend_key:
+        try:
+            import requests
+            logger.info(f"[EMAIL] Attempting Resend API for {to_email}")
+            response = requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {resend_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": "onboarding@resend.dev" if not email_from else f"{email_from} <onboarding@resend.dev>",
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body_html,
+                },
+                timeout=10
+            )
+            if response.status_code in [200, 201]:
+                logger.info(f"[EMAIL SUCCESS] Delivered via Resend API to {to_email}")
+                return True
+            else:
+                logger.warning(f"[RESEND FAILED] Status {response.status_code}: {response.text}. Falling back to SMTP...")
+        except Exception as e:
+            logger.error(f"[RESEND ERROR] {str(e)}. Falling back to SMTP...")
+
+    # --- FALLBACK: SMTP SSL (Port 465) ---
+    if not smtp_user or not smtp_pass:
+        logger.error("[EMAIL ERROR] No Resend Key and no SMTP credentials found.")
         return False
 
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = f"{EMAIL_FROM_NAME} <{SMTP_USER}>"
-        msg['To'] = to_email
-        msg['Subject'] = subject
-
-        msg.attach(MIMEText(body_html, 'html'))
-
-        # Use synchronous smtplib in an executor if needed, 
-        # but for now we'll keep it simple
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        
-        print(f"[EMAIL SUCCESS] Notification sent to {to_email}")
-        return True
-    except Exception as e:
-        print(f"[EMAIL ERROR] Failed to send email: {e}")
+    def send_sync_email():
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"[EMAIL] SMTP Fallback Attempt {attempt + 1}/{max_retries} to {to_email}")
+                # Force SSL for 465, else use STARTTLS
+                if smtp_port == 465:
+                    server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15)
+                else:
+                    server = smtplib.SMTP(smtp_server, smtp_port, timeout=15)
+                    server.starttls()
+                    
+                server.login(smtp_user, smtp_pass)
+                
+                msg = MIMEMultipart()
+                msg['From'] = f"{email_from} <{smtp_user}>"
+                msg['to'] = to_email
+                msg['Subject'] = subject
+                msg.attach(MIMEText(body_html, 'html'))
+                
+                server.send_message(msg)
+                server.quit()
+                logger.info(f"[EMAIL SUCCESS] Delivered via SMTP to {to_email}")
+                return True
+            except Exception as e:
+                logger.error(f"[SMTP ATTEMPT {attempt + 1} FAILED] {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
         return False
 
-def get_registration_template(user_name: str, event_name: str):
+    return await asyncio.to_thread(send_sync_email)
+
+def get_registration_template(user_name: str, event_name: str, custom_message: str = ""):
+    message_html = f"<p>{custom_message}</p><br>" if custom_message else ""
     return f"""
     <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
             <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
-                <h2 style="color: #4F46E5;">Registration Confirmed!</h2>
+                <h2 style="color: #6C3BFF;">Registration Confirmed!</h2>
                 <p>Hello <strong>{user_name}</strong>,</p>
                 <p>You have successfully registered for <strong>{event_name}</strong>.</p>
+                {message_html}
                 <p>We are excited to see what you build! Stay tuned for further updates regarding the schedule and submission guidelines.</p>
                 <br>
-                <p>Best Regards,<br>Studlyf Team</p>
+                <p>Best Regards,<br>Studlyf Institution Network</p>
             </div>
         </body>
     </html>

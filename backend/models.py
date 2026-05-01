@@ -1,17 +1,251 @@
+from pydantic import BaseModel, Field
+from typing import List, Optional, Union
+from datetime import datetime
+
+class Course(BaseModel):
+    id: str = Field(..., alias="_id")
+    title: str
+    description: str
+    role_tag: str  # Backend / Frontend / AI
+    difficulty: str  # Beginner / Inter / Advanced
+    image: Optional[str] = None
+    skills: Optional[List[str]] = None
+    duration: Optional[str] = None
+    standard: Optional[str] = None
+    school: Optional[str] = None
+    # Marketplace fields
+    price: float = 0.0
+    rating: float = 4.5
+    total_reviews: int = 0
+    total_hours: float = 0.0
+    category: Optional[str] = None
+    level: Optional[str] = None  # Beginner / Intermediate / Advanced
+    key_topics: Optional[List[str]] = None
+    last_updated: Optional[str] = None
+    instructor: Optional[str] = None
+    instructor_name: Optional[str] = None
+    instructor_image: Optional[str] = None
+    instructor_description: Optional[str] = None
+    is_bestseller: bool = False
+    is_premium: bool = False
+
+class Module(BaseModel):
+    id: str = Field(..., alias="_id")
+    course_id: str
+    title: str
+    order_index: int
+    estimated_time: str
+
+class Theory(BaseModel):
+    id: str = Field(..., alias="_id")
+    module_id: str
+    markdown_content: str
+    reading_time: int
+    key_takeaways: List[str]
+
+class Video(BaseModel):
+    id: str = Field(..., alias="_id")
+    module_id: str
+    video_url: str
+    duration: str
+    is_dummy: bool = True
+
+class QuizQuestion(BaseModel):
+    question: str
+    options: List[str]
+    correct_answers: List[int] # Indices of correct options
+    explanation: str
+
+class Quiz(BaseModel):
+    id: str = Field(..., alias="_id")
+    module_id: str
+    questions: List[QuizQuestion]
+    pass_mark: int = 70
+
+class Project(BaseModel):
+    id: str = Field(..., alias="_id")
+    module_id: str
+    problem_statement: str
+    requirements: List[str]
+    rubric: dict
+
+class UserProgress(BaseModel):
+    user_id: str
+    course_id: str
+    module_id: str
+    theory_completed: bool = False
+    video_completed: bool = False
+    quiz_score: float = 0.0
+    quiz_answers: List[List[int]] = [] # Index i contains list of chosen option indices for question i
+    project_status: str = "not_started" # not_started, submitted, approved
+    project_submission_link: Optional[str] = None  # GitHub/drive link for project
+    status: str = "locked" # locked, unlocked, completed
+
+# Marketplace Models
+
+class CartItem(BaseModel):
+    user_id: str
+    course_id: str
+    course_title: str
+    course_price: float
+    added_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Enrollment(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    course_id: str
+    course_title: str
+    enrolled_at: datetime = Field(default_factory=datetime.utcnow)
+    progress: float = 0.0  # 0-100
+    last_accessed: Optional[datetime] = None
+    last_accessed_module: Optional[str] = None
+
+# Mock Interview Models
+
+class InterviewerPersona(BaseModel):
+    name: str
+    role: str
+    company_style: str
+    tone: str # formal, neutral, friendly, intense
+    depth: str # structured, conversational, deep-dive
+    follow_up_style: str # aggressive, probing, gentle
+
+class InterviewRound(BaseModel):
+    round_type: str # technical, behavioral, hr_voice
+    persona: InterviewerPersona
+    status: str = "pending" # pending, active, completed
+    score: Optional[float] = None
+    feedback: Optional[str] = None
+    assessment_metrics: Optional[dict] = None
+
+class InterviewSession(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    company: str
+    role: str
+    experience_level: str # Fresher, Mid, Senior
+    rounds: List[InterviewRound] = []
+    current_round_index: int = 0
+    status: str = "setup" # setup, in_progress, completed
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ========== System Deconstruction Lab Models ==========
+
+class SDLProject(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    owner_id: str
+    owner_name: str
+    owner_avatar: Optional[str] = None
+    title: str
+    project_type: str  # system_replica, original_build, collaboration_request
+    problem_statement: str
+    architecture_focus: str
+    skills_required: List[str] = []
+    team_size: int = 1
+    timeline: str  # e.g., "4 weeks"
+    roles_needed: List[str] = []  # frontend, backend, devops, ai, ui_ux
+    tags: List[str] = []  # AI, Backend, System Design, Full Stack, DevOps, Beginner Friendly
+    github_link: Optional[str] = None
+    overview: Optional[str] = None
+    architecture_breakdown: Optional[str] = None
+    feature_checklist: List[dict] = []  # [{name, completed}]
+    progress: float = 0.0  # 0-100
+    status: str = "open"  # open, in_progress, completed, archived
+    featured: bool = False
+    trending: bool = False
+    views: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLProjectMember(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    role: str  # frontend, backend, devops, ai, ui_ux, lead
+    status: str = "active"  # active, removed
+    joined_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLTask(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    title: str
+    description: Optional[str] = None
+    assigned_to: Optional[str] = None  # user_id
+    assigned_name: Optional[str] = None
+    status: str = "todo"  # todo, in_progress, review, done
+    priority: str = "medium"  # low, medium, high, critical
+    created_by: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLComment(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SDLJoinRequest(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    project_id: str
+    user_id: str
+    user_name: str
+    user_avatar: Optional[str] = None
+    role_requested: str
+    message: Optional[str] = None
+    status: str = "pending"  # pending, accepted, rejected
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # ========== Institution Dashboard Models ==========
 
 class Institution(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     name: str
     email: str
+    domain: str
+    logo_url: Optional[str] = None
+    banner_url: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
+    
+    # Unstop-style Enhancements
+    social: Optional[dict] = {
+        "linkedin": "",
+        "twitter": "",
+        "instagram": "",
+        "website": ""
+    }
+    team: Optional[List[dict]] = [] # [{name, email, role}]
+    notifications: Optional[dict] = {
+        "admin_alerts": {
+            "new_registrations": False,
+            "new_submissions": False,
+            "judge_acceptances": True,
+            "judge_evaluations": True
+        },
+        "student_emails": {
+            "welcome_on_reg": True,
+            "submission_receipt": True,
+            "result_announcements": True
+        },
+        "judge_comms": {
+            "invitations": True,
+            "evaluation_reminders": True
+        }
+    }
+    email_custom_message: Optional[str] = ""
+    
     cached_stats: dict = {}
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-
 
 class Event(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
@@ -40,6 +274,14 @@ class Event(BaseModel):
     prize_pool: Optional[str] = None
     number_of_prizes: Optional[int] = None
     rules_guidelines: Optional[str] = None
+    
+    # Judging & Evaluation
+    judges: List[dict] = [] # [{name, email, expertise, status: 'INVITED'|'ACCEPTED'}]
+    judging_criteria: List[dict] = [] # [{name, max_points}]
+    
+    # Workflow Stages (Unstop-Style)
+    stages: List[dict] = [] 
+    # [{name, type, deadline, passing_criteria: {min_score, submission_required}}]
 
     # Features
     has_submission: bool = True
@@ -54,15 +296,6 @@ class Event(BaseModel):
     created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class DashboardStats(BaseModel):
-    total_participants: int = 0
-    active_events: int = 0
-    total_submissions: int = 0
-    upcoming_deadlines: int = 0
-    engagement_rate: float = 0.0
-
 
 class Participant(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
@@ -79,7 +312,6 @@ class Participant(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-
 class Team(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     event_id: str
@@ -90,7 +322,6 @@ class Team(BaseModel):
     formed_at: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-
 
 class Submission(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
@@ -110,14 +341,12 @@ class Submission(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-
 class Judge(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     user_id: str
     expertise_areas: List[str] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-
 
 class Score(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
@@ -130,18 +359,29 @@ class Score(BaseModel):
     evaluated_at: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-
 class LeaderboardEntry(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     event_id: str
+    participation_type: str = "TEAM" # TEAM or INDIVIDUAL
     team_id: Optional[str] = None
     participant_id: Optional[str] = None
+    team_name: Optional[str] = None
+    recipient_name: Optional[str] = None
+    project_name: Optional[str] = None
     total_score: float
     rank: int
     points: int = 0
     final_status: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class EventResult(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    event_id: str
+    winner_ids: List[str] = [] # IDs of winning teams/participants
+    final_rankings: List[dict] = [] # Full snapshot of rankings
+    prize_distribution: List[dict] = [] # Mapping of rank to prize amount
+    announcement_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class Certificate(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
@@ -154,9 +394,9 @@ class Certificate(BaseModel):
     issued_date: datetime = Field(default_factory=datetime.utcnow)
     verification_code: str
     verification_url: str
+    status: str = "ISSUED"
     qr_code: Optional[str] = None
     immutable_flag: bool = True
-
 
 class AuditLog(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
@@ -167,3 +407,21 @@ class AuditLog(BaseModel):
     details: dict = {}
     ip_address: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class DashboardStats(BaseModel):
+    total_participants: int = 0
+    active_events: int = 0 
+    total_submissions: int = 0
+    upcoming_deadlines: int = 0
+    engagement_rate: float = 0.0
+
+class Notification(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    user_id: str
+    event_id: Optional[str] = None
+    message: str
+    type: str = "update" # update, info, success, warning
+    trigger_type: str = "manual"
+    is_read: bool = False
+    delivery_status: str = "sent"
+    created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -27,14 +27,26 @@ Generates clinical-grade technical MCQ and task-based assessments based on speci
 
 ### 4. 🏫 Institution Dashboard System
 A comprehensive competition management platform for colleges and organizations.
-- **Backbone Infrastructure**: High-security backend with JWT, RBAC, and Audit Logging.
+- **Self-Managed Auth (Gmail-Only)**: Fully migrated from Firebase/GitHub to a self-managed, MongoDB-backed authentication system using JWT.
+- **Secure Onboarding (OTP)**: Two-step institutional registration flow featuring a cryptographically secure OTP verification system (`secrets` generator) with professional email templates.
+- **Strong Password Protocol**: Enforced backend validation (minimum 8 characters) with frontend strength visualization.
+- **Backbone Infrastructure**: High-security backend with JWT, RBAC (Role-Based Access Control), and Audit Logging.
 - **Smart Management**: Automation for team formation, deadline enforcement, and blind judging.
 - **Real-time Analytics**: Live statistics, registration heatmaps, and demographic tracking.
 
-### 5. 🏆 Leaderboard & Certification System
-- **Live Rankings**: Finalist ticker and high-fidelity podium for competition winners.
-- **QR-Verified Smart Certificates**: PDF generation with unique QR codes for instant employer verification.
-- **Advanced Reporting**: Demographic and performance analytics with CSV/PDF export.
+  - **Interactive Command Center & Onboarding**:
+    - **High-Fidelity Opportunities Management**: A sophisticated, data-driven table UI for managing competitions, hackathons, and scholarships with advanced filtering by visibility, registration status, and categories.
+    - **Premium Onboarding (Dashboard Tour)**: A guided tour featuring smooth animations, clear indicator arrows, and a premium dark-themed interface to onboard new institutional administrators.
+    - **Total Brand Synchronisation**: Deep integration of the Studlyf brand purple palette across all interactive elements, including custom card gradients and 3D icons.
+    - **Smart Deletion Workflow**: Robust CRUD capabilities with professional confirmation modals and automatic success toast notifications.
+
+### 6. 🏆 Leaderboard & Certification System (Fully Dynamic)
+- **Automated Aggregation Engine**: The leaderboard dynamically averages real-time judges' scores the moment an evaluation is finalized.
+- **Master Export Engine**: Bulk export capabilities for PDF and CSV, supporting specific event IDs or a "Master Institutional Standings" across all events.
+- **Live Rankings & Ticker**: A real-time finalist ticker and high-fidelity podium display that automatically updates without manual entry.
+- **QR-Verified Smart Certificates**: Automated PDF generation with unique, cryptographically verifiable IDs triggered instantly upon event finalization.
+- **Advanced Reporting Analytics**: Live registration timelines and departmental participation breakdowns with CSV/PDF export capabilities.
+- **Multi-Member Team Support**: Certificates are individually generated for every member of a winning team, intelligently adapting between "Ranked" and "Participation" modes based on the event type (Hackathon vs. Workshop).
 
 ---
 ## ⚠️ Known Issues & Limitations (For GitHub)
@@ -47,7 +59,7 @@ A comprehensive competition management platform for colleges and organizations.
 - **Local Connectivity**: The current backend is configured to look for MongoDB on `localhost:27017`. For production deployment, the `MONGO_URL` in `backend/db.py` needs to be updated to a cloud URI (like MongoDB Atlas).
 
 ### 3. PDF Generation (LaTeX)
-- **Environment Dependency**: The Resume Builder requires `pdflatex` to be installed on the host system for local compilation. While cloud fallbacks exist (`latexonline.cc`), they are subject to external uptime and may fail for extremely complex templates.
+- **Environment Dependency**: The Resume Builder requires `pdflatex` or `WeasyPrint` dependencies to be installed on the host system. While cloud fallbacks exist, they are subject to external uptime.
 
 ### 4. API Rate Limiting
 - **Groq Usage**: The platform uses high-token-count models (`llama-3.3-70b-versatile`). Users without a high-tier Groq API key may hit "Rate Limit" errors during peak usage or rapid-fire chat interactions.
@@ -62,7 +74,9 @@ A comprehensive competition management platform for colleges and organizations.
 1. **Environment**: Create a `.env` file in the root with:
    ```env
    GROQ_API_KEY=your_key_here
-   MONGO_URL=mongodb://localhost:27017/ (Optional)
+   MONGO_URL=mongodb://localhost:27017/
+   JWT_SECRET_KEY=your_hex_key
+   JWT_ALGORITHM=HS256
    ```
 2. **Backend**:
    ```bash
@@ -70,6 +84,7 @@ A comprehensive competition management platform for colleges and organizations.
    pip install -r requirements.txt
    python main.py
    ```
+3. **Frontend**:
    ```bash
    cd frontend
    npm install
@@ -81,16 +96,16 @@ A comprehensive competition management platform for colleges and organizations.
 ## 🏫 Institution Dashboard Setup
 
 ### 1. 🔐 Security & Env Setup
-Add the following to your `.env` file:
+Add the following to your `.env` file for the self-managed auth system:
 ```env
 SECRET_KEY=your_generated_hex_key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
-DB_NAME=studlyf_db
+DB_NAME=your_db_name
 ```
 
 ### 2. 🏗️ Database Initialization
-Run the mandatory index setup script to enforce system constraints:
+Run the mandatory index setup script to enforce system constraints (unique emails, user IDs):
 ```bash
 python backend/setup_indexes.py
 ```

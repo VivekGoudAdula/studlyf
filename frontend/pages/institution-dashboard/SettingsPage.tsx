@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { 
     User, 
     Bell, 
     Shield, 
-    Link2, 
     Globe, 
     Mail, 
     Phone,
@@ -11,162 +11,1006 @@ import {
     Save,
     Upload,
     ChevronRight,
-    ExternalLink
+    CheckCircle2,
+    Loader2,
+    CreditCard,
+    Zap,
+    Star,
+    Crown,
+    ArrowRight,
+    Users,
+    MessageSquare,
+    Plus,
+    Trash2,
+    ShieldCheck,
+    Gavel,
+    CreditCard as BillingIcon,
+    HelpCircle,
+    ChevronDown,
+    ChevronUp,
+    ShieldAlert
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../../apiConfig';
 
-const SettingsPage: React.FC = () => {
+interface SettingsPageProps {
+    institutionId: string;
+    onProfileUpdate?: () => void;
+}
+
+const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpdate }) => {
     const [activeSection, setActiveSection] = useState('profile');
-
     const sections = [
-        { id: 'profile', label: 'Institutional Profile', icon: Building2 },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
-        { id: 'security', label: 'Security & Auth', icon: Shield },
-        { id: 'integrations', label: 'API & Integrations', icon: Link2 },
+        { id: 'profile', label: 'My Account', icon: Building2 },
+        { id: 'team', label: 'Your Team', icon: Users },
+        { id: 'blocked', label: 'Blocked Candidates & Org.', icon: ShieldAlert },
+        { id: 'notifications', label: 'Email Notifications', icon: Mail },
+        { id: 'communications', label: 'Custom Communications', icon: MessageSquare },
+        { id: 'onboarding', label: 'Member Onboarding', icon: Plus },
+        { id: 'plan', label: 'Plans & Subscription', icon: CreditCard },
     ];
+
+    const [profile, setProfile] = useState<any>({
+        name: '',
+        website: '',
+        email: '',
+        phone: '',
+        bio: '',
+        logo_url: '',
+        banner_url: '',
+        email_custom_message: '',
+        team: [],
+        social: {
+            linkedin: '',
+            twitter: '',
+            instagram: ''
+        },
+        notifications: {
+            registrations: false,
+            submissions: true,
+            evaluations: true,
+            updates: false
+        }
+    });
+
+    const [bulkList, setBulkList] = useState<{name: string, email: string, phone: string}[]>([]);
+    const [onboardingRole, setOnboardingRole] = useState('student');
+    const [isOnboarding, setIsOnboarding] = useState(false);
+    
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        
+        // Safety Timeout: Force stop loading after 5 seconds
+        const safetyTimer = setTimeout(() => {
+            if (isMounted) setLoading(false);
+        }, 5000);
+
+        const fetchProfile = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }); 
+                if (res.ok && isMounted) {
+                    const data = await res.json();
+                    setProfile(prev => ({
+                        ...prev,
+                        ...data,
+                        // Ensure images are mapped even if backend uses CamelCase
+                        logo_url: data.logo_url || data.logoUrl || prev.logo_url,
+                        banner_url: data.banner_url || data.bannerUrl || prev.banner_url,
+                        notifications: data.notifications || prev.notifications
+                    }));
+                }
+            } catch (err) {
+                console.error("Failed to load settings.");
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                    clearTimeout(safetyTimer);
+                }
+            }
+        };
+        fetchProfile();
+        return () => { 
+            isMounted = false; 
+            clearTimeout(safetyTimer);
+        };
+    }, [institutionId]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value } = e.target;
+        setProfile(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSocialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setProfile(prev => ({
+            ...prev,
+            social: {
+                ...prev.social,
+                [id]: value
+            }
+        }));
+    };
+
+    const handleBannerClick = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e: any) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setProfile(prev => ({ ...prev, banner_url: reader.result as string }));
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        input.click();
+    };
+
+    const handleToggle = (category: string, key: string) => {
+        setProfile(prev => ({
+            ...prev,
+            notifications: {
+                ...prev.notifications,
+                [category]: {
+                    ...prev.notifications?.[category],
+                    [key]: !prev.notifications?.[category]?.[key]
+                }
+            }
+        }));
+    };
+
+    const addTeamMember = () => {
+        setProfile(prev => ({
+            ...prev,
+            team: [...(prev.team || []), { name: '', email: '', role: 'Coordinator' }]
+        }));
+    };
+
+    const updateMember = (index: number, field: string, value: string) => {
+        const newTeam = [...profile.team];
+        newTeam[index] = { ...newTeam[index], [field]: value };
+        setProfile(prev => ({ ...prev, team: newTeam }));
+    };
+
+    const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result as string;
+            const lines = content.split('\n');
+            const newMembers: any[] = [];
+            
+            const startIdx = (lines[0].toLowerCase().includes('name') || lines[0].toLowerCase().includes('email')) ? 1 : 0;
+
+            for (let i = startIdx; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length >= 2) {
+                    newMembers.push({
+                        name: parts[0],
+                        email: parts[1],
+                        role: parts[2] || 'Coordinator'
+                    });
+                }
+            }
+            
+            if (newMembers.length > 0) {
+                setProfile(prev => ({
+                    ...prev,
+                    team: [...(prev.team || []), ...newMembers]
+                }));
+            }
+        };
+        reader.readAsText(file);
+    };
+
+
+    const removeTeamMember = (index: number) => {
+        const newTeam = [...profile.team];
+        newTeam.splice(index, 1);
+        setProfile(prev => ({ ...prev, team: newTeam }));
+    };
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            const { _id, ...cleanProfile } = profile;
+            const payload = { ...cleanProfile, institution_id: institutionId };
+            
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (res.ok) {
+                setSaveSuccess(true);
+                setTimeout(() => {
+                    if (onProfileUpdate) onProfileUpdate();
+                }, 500);
+                setTimeout(() => setSaveSuccess(false), 3000);
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                alert(`Sync Failed: ${res.status}.`);
+            }
+        } catch (err) {
+            alert("Network error. Is the backend running?");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleLogoClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfile(prev => ({ ...prev, logo_url: reader.result as string }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    if (loading) return (
+        <div className="h-96 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="animate-spin text-[#6C3BFF]" size={40} />
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Loading Settings...</p>
+        </div>
+    );
 
     const renderSectionContent = () => {
         switch (activeSection) {
             case 'profile':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                        {/* Avatar Section */}
-                        <div className="flex items-center gap-8 p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
-                            <div className="relative group">
-                                <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-purple-600 overflow-hidden border-4 border-white shadow-xl">
-                                    <img src="/images/studlyf.png" alt="Logo" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform" />
+                        <div className="relative mb-20">
+                            <div 
+                                onClick={handleBannerClick}
+                                className="w-full h-48 rounded-[3rem] bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer overflow-hidden group relative"
+                            >
+                                {profile.banner_url ? (
+                                    <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="text-center">
+                                        <Plus className="mx-auto text-slate-300" size={32} />
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Upload Institutional Banner</p>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/40">
+                                        <Upload className="text-white" size={20} />
+                                    </div>
                                 </div>
-                                <button className="absolute -bottom-2 -right-2 p-3 bg-[#6C3BFF] text-white rounded-2xl shadow-lg shadow-purple-200 hover:scale-110 transition-all">
-                                    <Upload size={18} />
-                                </button>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900">Institution Logo</h3>
-                                <p className="text-slate-500 text-sm mt-1">Recommended size: 512x512px. JPG or PNG.</p>
-                                <div className="flex gap-2 mt-4">
-                                    <button className="text-xs font-bold text-[#6C3BFF] px-4 py-2 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">Change Logo</button>
-                                    <button className="text-xs font-bold text-red-500 px-4 py-2 hover:bg-red-50 rounded-lg transition-colors">Remove</button>
+
+                            <div className="absolute -bottom-12 left-10 group" onClick={handleLogoClick}>
+                                <div className="w-32 h-32 rounded-[2rem] bg-white border-8 border-white shadow-2xl flex items-center justify-center overflow-hidden relative cursor-pointer group-hover:scale-105 transition-transform">
+                                    {profile.logo_url ? (
+                                        <img src={profile.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Building2 size={32} className="text-slate-200" />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Upload className="text-white" size={20} />
+                                    </div>
                                 </div>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
                             </div>
                         </div>
 
-                        {/* Form Fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                    <Building2 size={16} className="text-slate-400" /> Institution Name
-                                </label>
-                                <input type="text" defaultValue="Stanford University" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
+                            {[
+                                { id: 'name', label: 'Institution Name', icon: Building2, placeholder: 'e.g., Stanford University' },
+                                { id: 'website', label: 'Official Website', icon: Globe, placeholder: 'https://www.university.edu' },
+                                { id: 'email', label: 'Administrative Email', icon: Mail, placeholder: 'admin@university.edu' },
+                                { id: 'phone', label: 'Contact Number', icon: Phone, placeholder: '+1 (555) 000-0000' },
+                            ].map((field) => (
+                                <div key={field.id} className="space-y-3">
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <field.icon size={14} className="text-[#6C3BFF]" /> {field.label}
+                                    </label>
+                                    <input 
+                                        id={field.id}
+                                        type="text" 
+                                        placeholder={field.placeholder}
+                                        value={profile[field.id]} 
+                                        onChange={handleInputChange}
+                                        className="w-full px-6 py-5 bg-slate-50/50 border border-slate-100 rounded-[1.5rem] focus:bg-white focus:ring-4 focus:ring-purple-50 focus:border-[#6C3BFF] outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300" 
+                                    />
+                                </div>
+                            ))}
+
+                            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-50 mt-4">
+                                {[
+                                    { id: 'linkedin', label: 'LinkedIn', placeholder: 'linkedin.com/school/...' },
+                                    { id: 'twitter', label: 'Twitter / X', placeholder: 'twitter.com/...' },
+                                    { id: 'instagram', label: 'Instagram', placeholder: 'instagram.com/...' },
+                                ].map((s) => (
+                                    <div key={s.id} className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.label}</label>
+                                        <input 
+                                            id={s.id}
+                                            type="text" 
+                                            placeholder={s.placeholder}
+                                            value={profile.social?.[s.id] || ''} 
+                                            onChange={handleSocialChange}
+                                            className="w-full px-5 py-4 bg-white border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-100 outline-none transition-all text-xs font-bold"
+                                        />
+                                    </div>
+                                ))}
                             </div>
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                    <Globe size={16} className="text-slate-400" /> Website URL
-                                </label>
-                                <input type="text" defaultValue="https://stanford.edu" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
-                            </div>
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                    <Mail size={16} className="text-slate-400" /> Contact Email
-                                </label>
-                                <input type="email" defaultValue="admin@stanford.edu" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
-                            </div>
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                    <Phone size={16} className="text-slate-400" /> Phone Number
-                                </label>
-                                <input type="tel" defaultValue="+1 (650) 723-2300" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all" />
-                            </div>
+
                             <div className="md:col-span-2 space-y-3">
-                                <label className="text-sm font-bold text-slate-700">Bio / About Institution</label>
-                                <textarea rows={4} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition-all resize-none" defaultValue="A leading research university in the heart of Silicon Valley..." />
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Institutional Bio</label>
+                                <textarea 
+                                    id="bio"
+                                    rows={5} 
+                                    placeholder="Write a brief description of your institution..."
+                                    value={profile.bio}
+                                    onChange={handleInputChange}
+                                    className="w-full px-6 py-5 bg-slate-50/50 border border-slate-100 rounded-[1.5rem] focus:bg-white focus:ring-4 focus:ring-purple-50 focus:border-[#6C3BFF] outline-none transition-all resize-none font-bold text-slate-800 placeholder:text-slate-300" 
+                                />
                             </div>
                         </div>
                     </div>
                 );
             case 'notifications':
                 return (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                        <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-6">
-                            <h3 className="font-bold text-slate-900 flex items-center gap-2 mb-4">
-                                <Bell size={20} className="text-[#6C3BFF]" /> Email Notifications
-                            </h3>
-                            {[
-                                { title: 'New Participant Registration', desc: 'Receive an email when a student joins your event' },
-                                { title: 'Event Submissions', desc: 'Get notified when a team submits their project' },
-                                { title: 'Judge Evaluation Completed', desc: 'Alert when a judge finishes scoring submissions' },
-                                { title: 'System Updates', desc: 'Stay informed about new features and maintenance' },
-                            ].map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between py-4 border-b border-slate-200 last:border-0">
+                    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 shadow-inner">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-white rounded-2xl text-amber-500 shadow-md">
+                                        <Bell size={24} />
+                                    </div>
                                     <div>
-                                        <p className="font-bold text-slate-800">{item.title}</p>
-                                        <p className="text-sm text-slate-500">{item.desc}</p>
+                                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Internal Operational Alerts</h3>
+                                        <p className="text-sm text-slate-400 mt-0.5">Control which notifications are sent to the institution staff.</p>
                                     </div>
-                                    <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 cursor-pointer">
-                                        <div className="h-4 w-4 translate-x-1 rounded-full bg-white transition shadow-sm" />
+                                </div>
+                            </div>
+                            
+                            {[
+                                { cat: 'admin_alerts', id: 'new_submissions', title: 'New Submission Alerts', desc: 'Notify admins when a team finalizes their project' },
+                                { cat: 'admin_alerts', id: 'judge_acceptances', title: 'Judge Activity', desc: 'Alert when a judge accepts an invite' },
+                                { cat: 'admin_alerts', id: 'judge_evaluations', title: 'Judge Evaluations', desc: 'Notify admins when a judge finishes scoring a project' },
+                            ].map((item) => (
+                                <div key={item.id} className="flex items-center justify-between py-6 border-b border-slate-200/50 last:border-0">
+                                    <div>
+                                        <p className="font-bold text-slate-800 text-lg">{item.title}</p>
+                                        <p className="text-sm text-slate-400 mt-0.5">{item.desc}</p>
                                     </div>
+                                    <button 
+                                        onClick={() => handleToggle(item.cat, item.id)}
+                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all cursor-pointer ${profile.notifications?.[item.cat]?.[item.id] ? 'bg-[#6C3BFF] shadow-lg shadow-purple-200' : 'bg-slate-200'}`}
+                                    >
+                                        <div className={`h-5 w-5 rounded-full bg-white transition-transform shadow-sm ${profile.notifications?.[item.cat]?.[item.id] ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 shadow-inner">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-white rounded-2xl text-emerald-500 shadow-md">
+                                        <Gavel size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Judging Panel Logic</h3>
+                                        <p className="text-sm text-slate-400 mt-0.5">Control correspondence for your evaluators.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {[
+                                { cat: 'judge_comms', id: 'invitations', title: 'Judge Invitations', desc: 'Sent when you add a judge to an event' },
+                                { cat: 'judge_comms', id: 'evaluation_reminders', title: 'Evaluation Reminders', desc: 'Automatic pings to finish scoring before the deadline' },
+                            ].map((item) => (
+                                <div key={item.id} className="flex items-center justify-between py-6 border-b border-slate-200/50 last:border-0">
+                                    <div>
+                                        <p className="font-bold text-slate-800 text-lg">{item.title}</p>
+                                        <p className="text-sm text-slate-400 mt-0.5">{item.desc}</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleToggle(item.cat, item.id)}
+                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all cursor-pointer ${profile.notifications?.[item.cat]?.[item.id] ? 'bg-[#6C3BFF] shadow-lg shadow-purple-200' : 'bg-slate-200'}`}
+                                    >
+                                        <div className={`h-5 w-5 rounded-full bg-white transition-transform shadow-sm ${profile.notifications?.[item.cat]?.[item.id] ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
                                 </div>
                             ))}
                         </div>
                     </div>
                 );
-            default:
+            case 'team':
                 return (
-                    <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-                        <div className="p-5 bg-slate-50 rounded-3xl mb-4">
-                            <ExternalLink size={32} className="text-slate-300" />
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Institutional Team</h3>
+                                <p className="text-sm text-slate-500 mt-1">Manage staff members and their administrative roles.</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => document.getElementById('bulk-member-upload')?.click()}
+                                    className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-600 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all"
+                                >
+                                    <Upload size={16} /> Bulk Upload
+                                </button>
+                                <input 
+                                    id="bulk-member-upload"
+                                    type="file"
+                                    accept=".csv,.xlsx,.xls"
+                                    className="hidden"
+                                    onChange={handleBulkUpload}
+                                />
+                                <button 
+                                    onClick={addTeamMember}
+                                    className="flex items-center gap-2 px-6 py-3 bg-[#6C3BFF] text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#5A2EE5] transition-all shadow-lg shadow-purple-100"
+                                >
+                                    <Plus size={16} /> Add Member
+                                </button>
+                            </div>
                         </div>
-                        <p className="font-medium text-slate-500">Advanced settings are coming soon.</p>
+
+                        <div className="space-y-4">
+                            {profile.team && profile.team.length > 0 ? profile.team.map((member, idx) => (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    key={idx} 
+                                    className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center gap-6"
+                                >
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
+                                            <input 
+                                                value={member.name}
+                                                onChange={(e) => updateMember(idx, 'name', e.target.value)}
+                                                placeholder="e.g. Dr. Jane Smith"
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none transition-all text-sm font-bold"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</label>
+                                            <input 
+                                                value={member.email}
+                                                onChange={(e) => updateMember(idx, 'email', e.target.value)}
+                                                placeholder="jane.smith@univ.edu"
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none transition-all text-sm font-bold"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Role</label>
+                                            <select 
+                                                value={member.role}
+                                                onChange={(e) => updateMember(idx, 'role', e.target.value)}
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none transition-all text-sm font-bold appearance-none"
+                                            >
+                                                <option value="Admin">Admin</option>
+                                                <option value="Coordinator">Coordinator</option>
+                                                <option value="Evaluator">Evaluator</option>
+                                                <option value="Editor">Editor</option>
+                                                <option value="Viewer">Viewer</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => removeTeamMember(idx)}
+                                        className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </motion.div>
+                            )) : (
+                                <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem]">
+                                    <Users className="mx-auto text-slate-200 mb-4" size={48} />
+                                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No team members added yet</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 );
+            case 'communications':
+                return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-slate-900">Custom Communications</h2>
+                        </div>
+                        <div className="p-12 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 text-center">
+                            <MessageSquare className="mx-auto text-slate-300 mb-4" size={48} />
+                            <h3 className="text-lg font-bold text-slate-900 font-['Outfit']">Premium Feature</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm">
+                                Custom email templates and SMS notifications are available for Premium institutions.
+                            </p>
+                        </div>
+                    </div>
+                );
+            case 'onboarding':
+                return (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">Member Onboarding</h2>
+                                <p className="text-slate-500 text-sm mt-1">Bulk invite judges or students via CSV upload</p>
+                            </div>
+                            <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl">
+                                {['student', 'judge'].map(r => (
+                                    <button
+                                        key={r}
+                                        onClick={() => setOnboardingRole(r)}
+                                        className={`px-6 py-2.5 rounded-xl text-xs font-black capitalize tracking-widest transition-all ${onboardingRole === r ? 'bg-white text-[#6C3BFF] shadow-sm' : 'text-slate-400'}`}
+                                    >
+                                        {r}s
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Upload Area */}
+                        <div className="p-12 bg-purple-50/50 rounded-[3rem] border-2 border-dashed border-purple-200 text-center relative group transition-all hover:bg-purple-50">
+                            <input 
+                                type="file" 
+                                accept=".csv" 
+                                className="absolute inset-0 opacity-0 cursor-pointer z-20" 
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                            const text = event.target?.result as string;
+                                            const rows = text.split('\n').slice(1);
+                                            const parsed = rows.map(row => {
+                                                const parts = row.split(',');
+                                                return { name: parts[0]?.trim(), email: parts[1]?.trim(), phone: parts[2]?.trim() };
+                                            }).filter(p => p.email && p.email.includes('@'));
+                                            setBulkList(prev => [...prev, ...parsed]);
+                                        };
+                                        reader.readAsText(file);
+                                    }
+                                }}
+                            />
+                            <div className="space-y-4 relative z-10">
+                                <div className="w-20 h-20 bg-white rounded-[2rem] shadow-2xl shadow-purple-200 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500">
+                                    <Upload className="text-[#6C3BFF]" size={32} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 font-['Outfit']">Drop CSV File Here</h3>
+                                    <p className="text-slate-400 text-xs mt-2 font-medium">
+                                        Columns required: <span className="text-[#6C3BFF] font-bold">Name, Email, Phone</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* List Preview */}
+
+                        {/* List Preview */}
+                        {bulkList.length > 0 && (
+                            <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-2xl shadow-slate-200/20 animate-in zoom-in-95 duration-500">
+                                <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-[#6C3BFF] rounded-full flex items-center justify-center text-white text-xs font-black">
+                                            {bulkList.length}
+                                        </div>
+                                        <h3 className="font-bold text-slate-900 font-['Outfit']">Detected Members</h3>
+                                    </div>
+                                    <button 
+                                        onClick={() => setBulkList([])}
+                                        className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest px-4 py-2 hover:bg-red-50 rounded-xl transition-all"
+                                    >
+                                        Clear List
+                                    </button>
+                                </div>
+                                <div className="max-h-[400px] overflow-y-auto no-scrollbar">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50/50">
+                                                <th className="px-8 py-4">Full Name</th>
+                                                <th className="px-8 py-4">Email Address</th>
+                                                <th className="px-8 py-4 text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {bulkList.map((m, i) => (
+                                                <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-8 py-5 text-sm font-bold text-slate-900">{m.name || 'N/A'}</td>
+                                                    <td className="px-8 py-5 text-sm font-medium text-slate-500">{m.email}</td>
+                                                    <td className="px-8 py-5 text-right">
+                                                        <button 
+                                                            onClick={() => setBulkList(prev => prev.filter((_, idx) => idx !== i))}
+                                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-white hover:shadow-md rounded-xl transition-all"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="p-8 bg-slate-50/50 border-t border-slate-50">
+                                    <button 
+                                        disabled={isOnboarding}
+                                        onClick={async () => {
+                                            try {
+                                                setIsOnboarding(true);
+                                                const res = await fetch(`${API_BASE_URL}/api/v1/institution/members/bulk`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        institution_id: institutionId,
+                                                        role: onboardingRole,
+                                                        members: bulkList
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    const result = await res.json();
+                                                    alert(`Successfully onboarded ${result.added} ${onboardingRole}s!`);
+                                                    setBulkList([]);
+                                                }
+                                            } catch (err) {
+                                                alert("Bulk onboarding failed");
+                                            } finally {
+                                                setIsOnboarding(false);
+                                            }
+                                        }}
+                                        className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-[#6C3BFF] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-purple-100"
+                                    >
+                                        {isOnboarding ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} className="fill-white" />}
+                                        {isOnboarding ? 'Processing...' : `Onboard All ${onboardingRole}s Now`}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            case 'blocked':
+                return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight">Blocked Candidates & Organizations</h2>
+                            <p className="text-sm text-slate-500">Manage entities that are restricted from your events.</p>
+                        </div>
+                        <div className="p-12 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 text-center">
+                            <ShieldAlert size={48} className="mx-auto text-slate-200 mb-4" />
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No blocked entities found</p>
+                        </div>
+                    </div>
+                );
+            case 'plan':
+                return (
+                    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 font-['Outfit']">
+                        <div className="space-y-1 border-b border-slate-100 pb-8">
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Plans & Subscription</h2>
+                            <p className="text-sm text-slate-400 font-medium">Compare plans and explore the benefits.</p>
+                        </div>
+
+                        <div className="text-center space-y-2 py-8">
+                            <h3 className="text-4xl font-black text-slate-800">Available Plans</h3>
+                            <p className="text-sm text-slate-400 font-medium tracking-wide">Flexible options tailored to your specific hiring needs</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 px-4">
+                            {/* Basic Plan */}
+                            <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] flex flex-col hover:shadow-xl transition-all">
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Basic Plan</h4>
+                                    <p className="text-4xl font-black text-slate-800">Free</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Auto renews every 30 days</p>
+                                </div>
+                                <button className="w-full py-4 bg-slate-100 text-slate-400 rounded-full font-black text-sm uppercase tracking-widest mb-10 cursor-default">Current Plan</button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            '2 Jobs/Internship listings',
+                                            '7 days registration window per listing',
+                                            'Upto 30 applications view access per listing',
+                                            'Access listing upto 15 days after registration window ends',
+                                            '10 interviews credits',
+                                            '0 assessments credits'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-500 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Pack of 3 */}
+                            <div className="p-8 bg-white border-2 border-blue-500 rounded-[2.5rem] shadow-2xl shadow-blue-50 flex flex-col relative scale-[1.03] z-10">
+                                <div className="absolute top-6 right-6 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-md">Recommended</div>
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Pack of 3</h4>
+                                    <p className="text-4xl font-black text-slate-800">₹4,999</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Valid for 30 days</p>
+                                </div>
+                                <button className="w-full py-4 bg-blue-600 text-white rounded-full font-black text-sm uppercase tracking-widest mb-10 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                                    <Zap size={18} className="fill-white" /> Upgrade
+                                </button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            '3 Jobs/Internship listings',
+                                            '30 days registration window per listing',
+                                            'Unlimited Application views',
+                                            'Access listing upto 15 days after registration window ends',
+                                            '50 interviews credits',
+                                            '100 assessments credits'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-600 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-500 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Pack of 7 */}
+                            <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] flex flex-col hover:shadow-xl transition-all">
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Pack of 7</h4>
+                                    <p className="text-4xl font-black text-slate-800">₹9,999</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Valid for 90 days</p>
+                                </div>
+                                <button className="w-full py-4 bg-blue-600 text-white rounded-full font-black text-sm uppercase tracking-widest mb-10 hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
+                                    <Zap size={18} className="fill-white" /> Upgrade
+                                </button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            'Upto 7 Jobs/Internship',
+                                            '30 days registration window per listing',
+                                            'Unlimited Application views',
+                                            'Access listing upto 15 days after registration window ends',
+                                            '100 interviews credits',
+                                            '200 assessments credits'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-500 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Enterprise */}
+                            <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] flex flex-col hover:shadow-xl transition-all">
+                                <div className="mb-6 space-y-2">
+                                    <h4 className="text-xl font-black text-slate-700">Enterprise</h4>
+                                    <p className="text-4xl font-black text-slate-800">Custom</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">Custom duration</p>
+                                </div>
+                                <button className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-full font-black text-sm uppercase tracking-widest mb-10 hover:bg-slate-50 transition-all shadow-sm">Contact Us</button>
+                                <div className="space-y-6 flex-1">
+                                    <p className="text-sm font-black text-slate-700">Includes:</p>
+                                    <ul className="space-y-4">
+                                        {[
+                                            'Host custom jobs/listing',
+                                            'Custom duration for registration window',
+                                            'Unlimited Application views',
+                                            'Access listing upto 30 days after registration window ends',
+                                            'Custom interviews credits',
+                                            'Custom assessments credits',
+                                            'Download access'
+                                        ].map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-500 leading-relaxed relative pl-4">
+                                                <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* FAQ Section */}
+                        <div className="pt-24 space-y-12 pb-12">
+                            <h3 className="text-4xl font-black text-slate-800 text-center font-['Outfit']">Frequently asked questions</h3>
+                            <div className="max-w-4xl mx-auto space-y-3">
+                                {[
+                                    {
+                                        q: "What is the difference between the Free and Paid Plans?",
+                                        a: "The Free Plan offers limited job/internship listings, a shorter listing duration, and lower candidate access limits. The Paid Plan extends these limits, allowing for more live listings, longer listing durations, and increased access to candidate data."
+                                    },
+                                    {
+                                        q: "How do I upgrade to a Paid Plan?",
+                                        a: "You can upgrade by purchasing a plan directly on Studylf. You can buy either Pack of 3, Pack of 7 or reach out to us via the Contact Us button under the custom plan."
+                                    },
+                                    {
+                                        q: "If I downgrade from a Paid Plan, what happens to my existing Job/Internship listings?",
+                                        a: "Existing public listings remain live until they reach their registration limit or end date. However, you won’t be able to create new public listings if you exceed the Basic Plan limit."
+                                    },
+                                    {
+                                        q: "How long can I keep a job/internship listing live?",
+                                        a: "Free Plan users can keep listings live for up to 7 days from the registration start date, while Paid Plan users can extend them as per the registration timeline defined for their plan."
+                                    },
+                                    {
+                                        q: "Can I extend a Job/Internship listing after purchasing a Paid Plan?",
+                                        a: "Yes, if you purchase a Paid Plan after listing a job, you can extend the registration period upto the defined limit within that plan."
+                                    },
+                                    {
+                                        q: "What happens if I try to list more than the allowed number of opportunities?",
+                                        a: "You will be able to list jobs and internships beyond the defined limit, however these listings would be approved only in private mode and won't be visible to candidates on the Studylf platform."
+                                    },
+                                    {
+                                        q: "How does the candidate Match Score impact my access to registration data?",
+                                        a: "The Candidate Compatibility Score is for reference only and does not impact your access to candidate data."
+                                    },
+                                    {
+                                        q: "Can I still access candidate data after my Paid Plan expires?",
+                                        a: "Yes, recruiters can access candidate data for 15 days once the opportunity is over. Post that you won't be able to access the candidate data for the specific opportunity."
+                                    },
+                                    {
+                                        q: "How many interviews can I schedule and complete?",
+                                        a: "Under Basic plan, recruiters can schedule upto 10 interviews across their live listing, while Paid Plan users can schedule interviews as per the interview credits alloted to them (1 interview credit = 1 interview schedule access)."
+                                    },
+                                    {
+                                        q: "Can I reset/reschedule an interview after the interview is completed?",
+                                        a: "Once an interview is marked completed (at least one evaluator and candidate joined), it is counted as complete. Once the interview is marked complete, you can reschedule it using your available credits."
+                                    },
+                                    {
+                                        q: "Can I reset/reschedule an upcoming interview?",
+                                        a: "You can reschedule/reset upcoming interviews. No new interview credit will be consumed in such scenario."
+                                    },
+                                    {
+                                        q: "How many candidates can complete an assessment?",
+                                        a: "You can invite as many candidates to participate/complete an assessment as per the available assessment credits in your plan (1 assessment credit = 1 candidate attempt)."
+                                    },
+                                    {
+                                        q: "Can I reset a candidate's assessment attempt?",
+                                        a: "Except for enterprise plan users, you cannot reset candidate's assessment attempt."
+                                    },
+                                    {
+                                        q: "Why should I subscribe to auto renewal my plan?",
+                                        a: "You can subscribe to Pack of 3 and Pack of 7 plans directly on Studylf. This ensures your team has uninterruppted access to the desired features at times. You can cancel the plan subscription aynytime from the payment page."
+                                    },
+                                    {
+                                        q: "What is the Enterprise Plan, and how do I get it?",
+                                        a: "The Enterprise Plan offers exclusive features and can be purchased by contacting recruit@studylf.com."
+                                    },
+                                    {
+                                        q: "Can I get refund of my payment?",
+                                        a: "Currently we do not allow refund once the payment is completed."
+                                    }
+                                ].map((item, i) => (
+                                    <div key={i} className="overflow-hidden">
+                                        <details className="group">
+                                            <summary className="flex items-center justify-between p-4 bg-[#F4F9FF] rounded-xl cursor-pointer list-none transition-all hover:bg-[#EBF5FF]">
+                                                <p className="text-sm font-bold text-slate-700 leading-relaxed">{item.q}</p>
+                                                <div className="flex-shrink-0 text-slate-400 font-light text-2xl group-open:hidden">+</div>
+                                                <div className="flex-shrink-0 text-slate-400 font-light text-2xl hidden group-open:block">−</div>
+                                            </summary>
+                                            <div className="px-5 py-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                                                    {item.a}
+                                                </p>
+                                            </div>
+                                        </details>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            default:
+                return null;
         }
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-700 pb-20">
-            <div>
-                <h1 className="text-4xl font-['Outfit'] font-black text-slate-900 tracking-tight">Settings</h1>
-                <p className="text-slate-500 mt-2 text-lg">Manage your institutional identity and preferences</p>
+        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-1000 pb-20 font-['Outfit']">
+            <div className="flex items-end justify-between px-2">
+                <div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Institutional Settings</h1>
+                    <p className="text-slate-500 mt-3 text-xl font-medium">Control your digital presence and operational preferences.</p>
+                </div>
+                <AnimatePresence>
+                    {saveSuccess && (
+                        <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className="flex items-center gap-3 px-6 py-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 shadow-lg shadow-emerald-50"
+                        >
+                            <CheckCircle2 size={20} />
+                            <span className="text-sm font-black uppercase tracking-[0.1em]">Identity Synchronized</span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-12">
                 {/* Sidebar Navigation */}
-                <div className="w-full lg:w-80 space-y-2">
+                <div className="w-full lg:w-80 space-y-3">
                     {sections.map((section) => (
                         <button
                             key={section.id}
                             onClick={() => setActiveSection(section.id)}
-                            className={`w-full flex items-center justify-between group px-6 py-4 rounded-2xl transition-all ${
+                            className={`w-full flex items-center justify-between group px-8 py-5 rounded-[2rem] transition-all ${
                                 activeSection === section.id 
-                                    ? 'bg-white text-[#6C3BFF] shadow-xl shadow-purple-100/50 border-r-4 border-[#6C3BFF]' 
-                                    : 'text-slate-500 hover:bg-white hover:text-slate-900'
+                                    ? 'bg-white text-[#6C3BFF] shadow-2xl shadow-purple-100/50 border-r-4 border-[#6C3BFF]' 
+                                    : 'text-slate-400 hover:bg-white/50 hover:text-slate-600'
                             }`}
                         >
-                            <div className="flex items-center gap-4">
-                                <div className={`p-2.5 rounded-xl transition-colors ${
-                                    activeSection === section.id ? 'bg-purple-50' : 'bg-slate-50 group-hover:bg-slate-100'
+                            <div className="flex items-center gap-5">
+                                <div className={`p-3 rounded-2xl transition-all ${
+                                    activeSection === section.id ? 'bg-purple-50 scale-110 shadow-lg shadow-purple-50' : 'bg-slate-50 group-hover:bg-white group-hover:shadow-sm'
                                 }`}>
-                                    <section.icon size={20} />
+                                    <section.icon size={22} />
                                 </div>
-                                <span className="font-bold">{section.label}</span>
+                                <span className="font-black text-sm uppercase tracking-widest">{section.label}</span>
                             </div>
-                            <ChevronRight size={18} className={`transition-transform ${activeSection === section.id ? 'translate-x-1' : 'opacity-0'}`} />
+                            <ChevronRight size={18} className={`transition-transform duration-500 ${activeSection === section.id ? 'translate-x-1 opacity-100' : 'opacity-0'}`} />
                         </button>
                     ))}
                 </div>
 
                 {/* Content Area */}
                 <div className="flex-1">
-                    <div className="bg-white/40 backdrop-blur-md p-2 rounded-[3.5rem] border border-white/40">
-                        <div className="bg-white p-10 lg:p-14 rounded-[3rem] shadow-2xl shadow-slate-200/40 border border-slate-50 relative overflow-hidden">
-                            {/* Decorative background orb */}
-                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-50 rounded-full blur-[100px] -z-10" />
+                    <div className="bg-white/40 backdrop-blur-3xl p-3 rounded-[4rem] border border-white/40 shadow-2xl shadow-slate-200/20">
+                        <div className="bg-white p-12 lg:p-16 rounded-[3.5rem] shadow-sm relative overflow-hidden">
+                            {/* Decorative elements */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-50/50 rounded-full blur-[120px] -z-10" />
+                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-50/30 rounded-full blur-[100px] -z-10" />
                             
                             {renderSectionContent()}
 
-                            <div className="mt-12 pt-8 border-t border-slate-100 flex items-center justify-between">
-                                <p className="text-sm text-slate-400">Last saved: Today at 2:45 PM</p>
-                                <button className="flex items-center gap-2 px-10 py-4 bg-[#6C3BFF] text-white rounded-2xl font-bold hover:bg-[#5A2EE5] hover:scale-105 transition-all shadow-xl shadow-purple-200">
-                                    <Save size={20} /> Save Settings
+                            <div className="mt-16 pt-10 border-t border-slate-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    {saving && (
+                                        <>
+                                            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                            <p className="text-xs font-black text-slate-300 uppercase tracking-widest">
+                                                Transmitting Data...
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                                <button 
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="flex items-center gap-3 px-12 py-5 bg-[#6C3BFF] text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-[#5A2EE5] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-purple-200 disabled:opacity-50 disabled:scale-100"
+                                >
+                                    {saving ? (
+                                        <Loader2 size={20} className="animate-spin" />
+                                    ) : (
+                                        <Save size={20} />
+                                    )}
+                                    {saving ? 'Saving...' : 'Confirm Changes'}
                                 </button>
                             </div>
                         </div>

@@ -1,5 +1,15 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../AuthContext';
+
+interface SidebarProps {
+    activeTab: string;
+    onTabChange: (tab: string) => void;
+    onPost: () => void;
+}
+
 import { 
     LayoutDashboard, 
     Briefcase, 
@@ -9,79 +19,75 @@ import {
     Download, 
     Settings,
     Plus,
-    LogOut
+    LogOut,
+    UserCheck,
+    Trophy,
+    BarChart3,
+    Award
 } from 'lucide-react';
-import { auth } from '../../firebase';
-import { useNavigate } from 'react-router-dom';
-
-
-interface SidebarProps {
-    activeTab: string;
-    setActiveTab: (tab: string) => void;
-    onPostOpportunity: () => void;
-}
 
 const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'events', label: 'Events Management', icon: Briefcase },
-    { id: 'submissions', label: 'Submissions', icon: ClipboardList },
-    { id: 'judges', label: 'Judges & Scoring', icon: Users },
-    { id: 'downloads', label: 'Downloads', icon: Download },
-    { id: 'events', label: 'Events Management', icon: Briefcase },
     { id: 'participants', label: 'Participants', icon: Users },
     { id: 'teams', label: 'Teams', icon: UserCircle },
     { id: 'submissions', label: 'Submissions', icon: ClipboardList },
-    { id: 'leaderboard', label: 'Leaderboard', icon: Plus },
-    { id: 'analytics', label: 'Reports & Analytics', icon: LayoutDashboard },
-    { id: 'judges', label: 'Judge Management', icon: UserCircle },
+    { id: 'judges', label: 'Judge Management', icon: UserCheck },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+    { id: 'analytics', label: 'Reports & Analytics', icon: BarChart3 },
+    { id: 'downloads', label: 'Downloads', icon: Download },
+    { id: 'certificates', label: 'Certificates', icon: Award },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onPostOpportunity }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onPost }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const handleLogout = async () => {
-        try {
-            await auth.signOut();
-            navigate('/login');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
+        logout();
     };
 
 
     return (
-        <div className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 pt-8">
-            <div className="p-6 flex items-center gap-3">
+        <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col shrink-0 pt-4">
+            <div className="p-8 pb-4 flex items-center gap-3">
                 <img src="/images/studlyf.png" alt="Studlyf" className="h-10" />
-                <span className="font-['Outfit'] font-black text-xl tracking-tight text-[#0f172a]">INSTITUTION</span>
             </div>
 
             <div className="px-4 mb-6">
                 <button 
-                    onClick={onPostOpportunity}
+                    onClick={onPost}
                     className="w-full py-3 bg-gradient-to-r from-[#6C3BFF] to-[#9F6BFF] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-200 hover:scale-[1.02] transition-all"
                 >
                     <Plus size={20} />
-                    Post New Event
+                    Post
                 </button>
             </div>
 
             <nav className="flex-1 px-4 space-y-1">
                 {sidebarItems.map((item) => (
-                    <button
+                    <motion.button
                         key={item.id}
-                        onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
+                        whileHover={{ x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onTabChange(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left whitespace-nowrap ${
                             activeTab === item.id 
-                                ? 'bg-purple-50 text-[#6C3BFF]' 
+                                ? 'bg-purple-50 text-[#6C3BFF] shadow-sm' 
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                     >
                         <item.icon size={20} className={activeTab === item.id ? 'text-[#6C3BFF]' : 'text-gray-400'} />
                         {item.label}
-                    </button>
+                        {activeTab === item.id && (
+                            <motion.div 
+                                layoutId="activePill"
+                                className="ml-auto w-1 h-5 bg-[#6C3BFF] rounded-full"
+                            />
+                        )}
+                    </motion.button>
                 ))}
             </nav>
 

@@ -1,5 +1,5 @@
 // Studlyf Engineering Protocol - Core Routing Engine
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 
 import Navigation from './components/Navigation';
@@ -50,6 +50,9 @@ import BSTPage from './pages/BSTPage';
 import HashTablePage from './pages/HashTablePage';
 import AITools from './pages/AITools';
 import InstitutionDashboard from './pages/institution-dashboard/InstitutionDashboard';
+import RoleFixer from './RoleFixer';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 
 // Unique Components
@@ -82,6 +85,8 @@ const ScrollToTop = () => {
   }, [pathname]);
   return null;
 };
+
+const CertificateVerification = lazy(() => import('./pages/CertificateVerification'));
 
 const App: React.FC = () => {
   const { pathname } = useLocation();
@@ -126,7 +131,7 @@ const App: React.FC = () => {
   }, [user, role, pathname, loading, navigate]);
 
   return (
-    <div className={`min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
+    <div className={`relative min-h-screen flex flex-col selection:bg-[#7C3AED] selection:text-white ${isDashboard || isAdmin ? 'bg-transparent' : 'bg-white'}`}>
 
       {(() => {
         const showNav = !isLoginPage && !isPlayer && !isCheckout && !isAdmin && !isHome && !isResume && !isVisualizer && !isCareerOnboarding && !pathname.startsWith('/institution-dashboard');
@@ -188,6 +193,10 @@ const App: React.FC = () => {
             <Route path="/login" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/ai-tools" element={<AITools />} />
+            <Route path="/verify/:id" element={<CertificateVerification />} />
+            <Route path="/fix-role" element={<RoleFixer />} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
 
             <Route path="/dashboard" element={
               <ProtectedRoute>
@@ -197,7 +206,7 @@ const App: React.FC = () => {
             <Route path="/dashboard/learner" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
-            <Route path="/institution-dashboard" element={<ProtectedRoute><InstitutionDashboard /></ProtectedRoute>} />
+            <Route path="/institution-dashboard/*" element={<ProtectedRoute><InstitutionDashboard /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
             {/* Admin */}

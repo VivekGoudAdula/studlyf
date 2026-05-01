@@ -10,7 +10,6 @@ motor
 python-dotenv
 beautifulsoup4
 bs4
-firebase-admin
 certifi
 pydantic
 weasyprint
@@ -18,3 +17,5 @@ PyJWT
 passlib[bcrypt]
 bcrypt
 slowapi
+qrcode[pil]
+reportlab
