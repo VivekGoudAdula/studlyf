@@ -66,9 +66,16 @@ export function richHtmlFromOpportunityField(raw: unknown): string {
     if (typeof raw === 'object' && raw !== null) {
         const o = raw as Record<string, unknown>;
         const inner = o.html ?? o.content ?? o.text ?? o.description;
-        if (typeof inner === 'string') return inner;
+        if (typeof inner === 'string') return decodeHtmlEntities(inner);
     }
-    return typeof raw === 'string' ? raw : '';
+    return typeof raw === 'string' ? decodeHtmlEntities(raw) : '';
+}
+
+function decodeHtmlEntities(text: string): string {
+    // Decode HTML entities like &lt;, &gt;, &amp;, etc.
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
 }
 
 /**
@@ -78,13 +85,22 @@ export function richHtmlFromOpportunityField(raw: unknown): string {
 export function sanitizePresentationHtml(html: string): string {
     if (!html || !html.trim()) return '';
     let s = html;
+    
+    // Remove dangerous tags
     s = s.replace(/<script[\s\S]*?<\/script>/gi, '');
     s = s.replace(/<style[\s\S]*?<\/style>/gi, '');
     s = s.replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
     s = s.replace(/<object[\s\S]*?<\/object>/gi, '');
     s = s.replace(/<embed[\s\S]*?>/gi, '');
+    
+    // Remove dangerous attributes
     s = s.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
     s = s.replace(/href\s*=\s*(?:"|')?\s*javascript:[^"'>\s]*/gi, 'href="#"');
+    
+    // Ensure common formatting tags are preserved
+    // These are safe tags that should be allowed
+    const allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre'];
+    
     return s;
 }
 

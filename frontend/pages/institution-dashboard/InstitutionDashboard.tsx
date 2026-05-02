@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, Info, ChevronRight } from 'lucide-react';
 import Sidebar from '../../components/institution/Sidebar';
@@ -32,7 +33,45 @@ import Footer from '../../components/institution/Footer';
 import { institutionIdFromUser, hasInstitutionScope } from '../../utils/institutionScope';
 
 const InstitutionDashboard: React.FC = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
+
+    // Handle URL-based navigation to set active tab
+    useEffect(() => {
+        const path = location.pathname;
+        if (path.includes('/judge')) {
+            setActiveTab('judges');
+        } else if (path.includes('/events')) {
+            setActiveTab('events');
+        } else if (path.includes('/opportunities')) {
+            setActiveTab('opportunities');
+        } else if (path.includes('/participants')) {
+            setActiveTab('participants');
+        } else if (path.includes('/teams')) {
+            setActiveTab('teams');
+        } else if (path.includes('/submissions')) {
+            setActiveTab('submissions');
+        } else if (path.includes('/leaderboard')) {
+            setActiveTab('leaderboard');
+        } else if (path.includes('/analytics')) {
+            setActiveTab('analytics');
+        } else if (path.includes('/downloads')) {
+            setActiveTab('downloads');
+        } else if (path.includes('/certificates')) {
+            setActiveTab('certificates');
+        } else if (path.includes('/settings')) {
+            setActiveTab('settings');
+        }
+    }, [location.pathname]);
+
+    // Update URL when tab changes
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        const basePath = '/institution-dashboard';
+        const tabPath = tab === 'dashboard' ? basePath : `${basePath}/${tab}`;
+        navigate(tabPath, { replace: true });
+    };
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isJobModalOpen, setIsJobModalOpen] = useState(false);
@@ -54,7 +93,7 @@ const InstitutionDashboard: React.FC = () => {
 
     const handleViewEvent = (eventId: string) => {
         setSelectedEventId(eventId);
-        setActiveTab('event-details');
+        handleTabChange('event-details');
     };
 
     const handleProfileUpdate = () => {
@@ -71,7 +110,7 @@ const InstitutionDashboard: React.FC = () => {
         } else if (type === 'internship') {
             setIsInternshipModalOpen(true);
         } else if (type === 'dashboard') {
-            setActiveTab('dashboard');
+            handleTabChange('dashboard');
         }
     };
 
@@ -102,7 +141,7 @@ const InstitutionDashboard: React.FC = () => {
                     />
                 );
             case 'event-details':
-                return <EventDetails institutionId={institutionId} eventId={selectedEventId} onBack={() => setActiveTab('events')} />;
+                return <EventDetails institutionId={institutionId} eventId={selectedEventId} onBack={() => handleTabChange('events')} />;
             case 'participants':
                 return <ParticipantsManagement institutionId={institutionId} />;
             case 'teams':
@@ -158,11 +197,11 @@ const InstitutionDashboard: React.FC = () => {
                                 <StatsSection 
                                     institutionId={institutionId} 
                                     key={profileRefreshTrigger} 
-                                    onUpgrade={() => setActiveTab('settings')} 
+                                    onUpgrade={() => handleTabChange('settings')} 
                                     onContact={() => setIsConsultationOpen(true)}
                                     onNavigate={(tab) => {
-                                        if (tab === 'opportunities') setActiveTab('opportunities');
-                                        else setActiveTab('events');
+                                        if (tab === 'opportunities') handleTabChange('opportunities');
+                                        else handleTabChange('events');
                                     }}
                                 />
                             </div>
@@ -200,13 +239,13 @@ const InstitutionDashboard: React.FC = () => {
                                 <RecentListings 
                                     institutionId={institutionId} 
                                     onViewEvent={handleViewEvent} 
-                                    onViewAll={() => setActiveTab('events')}
+                                    onViewAll={() => handleTabChange('events')}
                                 />
                             </div>
                             <div className="w-full lg:w-80 xl:w-96" id="alerts-panel">
                                 <AlertsPanel 
                                     institutionId={institutionId} 
-                                    onUpgrade={() => setActiveTab('settings')}
+                                    onUpgrade={() => handleTabChange('settings')}
                                 />
                             </div>
                         </div>
@@ -220,7 +259,7 @@ const InstitutionDashboard: React.FC = () => {
             {/* Sidebar: Fixed width, full height */}
             <Sidebar 
                 activeTab={activeTab} 
-                onTabChange={setActiveTab} 
+                onTabChange={handleTabChange} 
                 onPost={() => setIsSelectionModalOpen(true)}
             />
 
@@ -229,8 +268,8 @@ const InstitutionDashboard: React.FC = () => {
                 {/* Navbar: In the flow, so it cannot overlap the sidebar logo */}
                 <InstitutionNavbar 
                     refreshKey={profileRefreshTrigger}
-                    onNavigate={setActiveTab}
-                    onNavigateToSettings={() => setActiveTab('settings')}
+                    onNavigate={handleTabChange}
+                    onNavigateToSettings={() => handleTabChange('settings')}
                 />
                 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
@@ -271,7 +310,7 @@ const InstitutionDashboard: React.FC = () => {
             <PostInternshipModal 
                 isOpen={isInternshipModalOpen} 
                 onClose={() => setIsInternshipModalOpen(false)}
-                onSuccess={() => setActiveTab('opportunities')}
+                onSuccess={() => handleTabChange('opportunities')}
                 institutionId={institutionId}
             />
 
@@ -284,7 +323,7 @@ const InstitutionDashboard: React.FC = () => {
             <CreditBalanceModal 
                 isOpen={isCreditModalOpen} 
                 onClose={() => setIsCreditModalOpen(false)} 
-                onUpgrade={() => { setIsCreditModalOpen(false); setActiveTab('settings'); }} 
+                onUpgrade={() => { setIsCreditModalOpen(false); handleTabChange('settings'); }} 
             />
 
             <DashboardTour 

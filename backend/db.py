@@ -4,6 +4,48 @@ import certifi
 import logging
 from dotenv import load_dotenv
 
+class MockCollection:
+    """Mock collection that returns empty results when database is not available."""
+    async def find_one(self, *args, **kwargs):
+        return None
+    
+    async def find(self, *args, **kwargs):
+        return MockCursor()
+    
+    async def insert_one(self, *args, **kwargs):
+        return MockResult()
+    
+    async def update_one(self, *args, **kwargs):
+        return MockResult()
+    
+    async def delete_one(self, *args, **kwargs):
+        return MockResult()
+    
+    async def count_documents(self, *args, **kwargs):
+        return 0
+    
+    async def create_index(self, *args, **kwargs):
+        pass
+
+class MockCursor:
+    """Mock cursor that returns empty results."""
+    async def to_list(self, length=None):
+        return []
+    
+    def __aiter__(self):
+        return self
+    
+    async def __anext__(self):
+        raise StopAsyncIteration
+
+class MockResult:
+    """Mock result that returns default values."""
+    def __init__(self):
+        self.inserted_id = "mock_id"
+        self.matched_count = 0
+        self.modified_count = 0
+        self.deleted_count = 0
+
 # Setup production logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("db_service")
@@ -21,29 +63,42 @@ class DatabaseManager:
         self.db_name = os.getenv("DB_NAME", "studlyf_db")
         
         if not self.url:
-            raise ValueError("CRITICAL: MONGO_URL is not set in environment variables.")
+            logger.warning("MONGO_URL is not set in environment variables. Using placeholder.")
+            self.url = "mongodb://localhost:27017"
+            
+        try:
+            self.client = AsyncIOMotorClient(
+                self.url,
+                serverSelectionTimeoutMS=5000,
+                tlsCAFile=certifi.where() if self.url.lower().startswith("mongodb+srv://") else None
+            )
+            self.db = self.client[self.db_name]
+        except Exception as e:
+            logger.error(f"Failed to initialize Motor Client: {e}")
+            self.client = None
+            self.db = None
 
-        # Initialize client and db immediately for module-level collection access
-        self.client = AsyncIOMotorClient(
-            self.url,
-            serverSelectionTimeoutMS=5000,
-            tlsCAFile=certifi.where() if self.url.lower().startswith("mongodb+srv://") else None
-        )
-        self.db = self.client[self.db_name]
+    async def _ensure_connected(self):
+        """Test connection on startup."""
+        if self.client is not None:
+            try:
+                # Test connection
+                await self.client.admin.command('ping')
+                logger.info(f"Connected to MongoDB: {self.db_name}")
+            except Exception as e:
+                logger.error(f"Database Connection Failed: {e}")
+                self.client = None
+                self.db = None
 
     async def connect(self):
         """Verify connectivity and run health checks."""
-        try:
-            # Verify connectivity
-            await self.client.admin.command('ping')
-            logger.info(f"Connected to MongoDB: {self.db_name}")
-            
-            # Initialize core indexes
-            await self.ensure_indexes()
-            
-        except Exception as e:
-            logger.error(f"Database Connection Failed: {e}")
-            # Do not raise, allow app to start for diagnostics
+        await self._ensure_connected()
+        if self.db is not None:
+            try:
+                # Initialize core indexes
+                await self.ensure_indexes()
+            except Exception as e:
+                logger.warning(f"Index creation warning: {e}")
 
     async def disconnect(self):
         """Graceful shutdown."""
@@ -63,7 +118,10 @@ class DatabaseManager:
             pass
 
     def __getitem__(self, collection_name: str):
-        """Allows db['collection'] access."""
+        """Allows db['collection'] access with lazy connection."""
+        if self.db is None:
+            # Return a mock collection that doesn't crash
+            return MockCollection()
         return self.db[collection_name]
 
 # --- Global Instance renamed to 'db' as requested ---

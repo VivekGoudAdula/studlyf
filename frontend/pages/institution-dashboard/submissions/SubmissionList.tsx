@@ -242,15 +242,23 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId }) => {
                                     )}
                                 </td>
                                 <td className="px-8 py-6 text-center">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(sub.status)}`}>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${sub.status === 'Scored' ? 'bg-purple-100 text-purple-700 border-purple-200' : getStatusColor(sub.status)}`}>
                                         {sub.status || 'Submitted'}
                                     </span>
                                 </td>
                                 <td className="px-8 py-6">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <span className={`text-xs font-black ${sub.score >= 80 ? 'text-emerald-600' : 'text-slate-700'}`}>
-                                            {sub.score || '—'}
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <span className={`text-sm font-black ${sub.score >= 8 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                            {sub.score ? sub.score.toFixed(1) : '—'}
                                         </span>
+                                        {sub.score && (
+                                            <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-[#6C3BFF]" 
+                                                    style={{ width: `${(sub.score / 10) * 100}%` }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </td>
                                 <td className="px-8 py-6 text-right">

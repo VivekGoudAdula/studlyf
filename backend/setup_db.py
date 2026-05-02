@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 # Load .env
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://saieshwarerelli10:Nirvaha%25studly@nirvaha-studlfy.s1l8mvx.mongodb.net/?appName=Nirvaha-studlfy")
+MONGO_URL = os.getenv("MONGO_URL")
+if not MONGO_URL:
+    raise ValueError("CRITICAL: MONGO_URL environment variable is not set. Please configure it in your .env file.")
 DB_NAME = os.getenv("DB_NAME", "studlyf_db")
 
 async def create_indexes():

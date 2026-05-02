@@ -23,6 +23,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL, authHeaders } from '../../apiConfig';
 import { useAuth } from '../../AuthContext';
+import TeamManager from './TeamManager';
 import {
     formatOpportunityLocation,
     plainTextFromRichContent,
@@ -814,7 +815,61 @@ const OpportunityDetails: React.FC = () => {
                                                     {s.type ? (
                                                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                                                             {s.type}
+                                                            {s.roundMode || s.mode || s.round_mode ? (
+                                                                <span className="ml-2 text-slate-300">
+                                                                    • {String(s.roundMode || s.mode || s.round_mode)}
+                                                                </span>
+                                                            ) : null}
                                                         </p>
+                                                    ) : null}
+                                                    
+                                                    {(s.startDate || s.endDate || s.start_date || s.end_date) && (() => {
+                                                        const start = s.startDate || s.start_date;
+                                                        const end = s.endDate || s.end_date;
+                                                        const now = new Date();
+                                                        let statusNode = null;
+                                                        
+                                                        if (start && end) {
+                                                            const startDate = new Date(start);
+                                                            const endDate = new Date(end);
+                                                            
+                                                            if (now < startDate) {
+                                                                const days = Math.max(1, Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                                                                statusNode = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">Starts in {days} day{days !== 1 ? 's' : ''}</span>;
+                                                            } else if (now > endDate) {
+                                                                statusNode = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-400">Ended</span>;
+                                                            } else {
+                                                                const days = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                                                                statusNode = (
+                                                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 flex items-center gap-1">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                                                                        {days === 0 ? 'Ends today' : `Ends in ${days} day${days !== 1 ? 's' : ''}`}
+                                                                    </span>
+                                                                );
+                                                            }
+                                                        }
+                                                        
+                                                        return (
+                                                            <div className="mt-2.5 flex items-center gap-3">
+                                                                <div className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
+                                                                    <Calendar className="w-3.5 h-3.5 opacity-70" />
+                                                                    <span>
+                                                                        {start ? new Date(start).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'TBD'} 
+                                                                        {' — '}
+                                                                        {end ? new Date(end).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'TBD'}
+                                                                    </span>
+                                                                </div>
+                                                                {statusNode}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                    {s?.config?.quiz_id && (opportunity?.event_link_id || opportunity?.event_id) ? (
+                                                        <Link
+                                                            to={`/events/${encodeURIComponent(String(opportunity.event_link_id || opportunity.event_id))}/quiz/${encodeURIComponent(String(s.config.quiz_id))}`}
+                                                            className="inline-flex mt-2 text-[10px] font-black uppercase tracking-widest text-purple-700 hover:underline"
+                                                        >
+                                                            Start quiz
+                                                        </Link>
                                                     ) : null}
                                                 </div>
                                             </li>

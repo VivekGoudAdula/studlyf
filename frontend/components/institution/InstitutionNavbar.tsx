@@ -10,7 +10,7 @@ import { institutionIdFromUser } from '../../utils/institutionScope';
 const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: string) => void, onNavigateToSettings?: () => void }> = ({ refreshKey, onNavigate, onNavigateToSettings }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const displayName = user?.institution_name || user?.full_name || user?.displayName || 'Institutional Portal';
+    const displayName = user?.institution_name || user?.full_name || 'Institutional Portal';
     const institutionId = institutionIdFromUser(user);
     
     const [notifCount, setNotifCount] = useState(0);
@@ -96,15 +96,22 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
     // Dynamic Notifications Logic
     useEffect(() => {
         const fetchNotifications = async () => {
-            if (!institutionId) {
-                console.warn("[NOTIF] Skip: institution_id missing on user");
-                return;
-            }
             try {
-                console.log("[NOTIF] Fetching for:", institutionId);
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}?t=${Date.now()}`, {
+                // Add timeout to prevent infinite loading
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+                const endpoint = institutionId
+                    ? `${API_BASE_URL}/api/v1/institution/notifications/${institutionId}?t=${Date.now()}`
+                    : `${API_BASE_URL}/api/v1/institution/notifications/me?t=${Date.now()}`;
+
+                const res = await fetch(endpoint, {
                     headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', ...authHeaders() },
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
+                
                 if (res.ok) {
                     const data = await res.json();
                     console.log("[NOTIF] Data received:", data);
@@ -113,7 +120,12 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
                 } else {
                     console.error("[NOTIF] Error:", res.status);
                 }
-            } catch (err) { console.error("[NOTIF] Failed", err); }
+            } catch (err) { 
+                console.error("[NOTIF] Failed", err);
+                // Set empty notifications on error to prevent infinite loading
+                setNotifications([]);
+                setNotifCount(0);
+            }
         };
         fetchNotifications();
         
@@ -172,15 +184,28 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
             if (!institutionId) return;
             try {
                 // Cache bust: Force fresh data from server
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
                 const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`, {
                     headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', ...authHeaders() },
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
+                
                 if (res.ok) {
                     const data = await res.json();
                     setProfile(data);
                     setImgError(false); // Reset error state on fresh fetch
+                } else {
+                    console.error("[PROFILE] Error:", res.status);
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("[PROFILE] Failed", err);
+                // Set default profile on error to prevent infinite loading
+                setProfile({ name: 'Loading Error', logo: null });
+            }
         };
         fetchProfile();
     }, [institutionId, refreshKey]);
@@ -191,14 +216,15 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
     };
 
     const handleMarkAllAsRead = async () => {
-        if (!institutionId) return;
         try {
             // Optimistic Update
             setNotifications([]);
             setNotifCount(0);
             
-            // Backend call to clear (DELETE method as defined in your integration_routes)
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}/mark-read`, {
+            const endpoint = institutionId
+                ? `${API_BASE_URL}/api/v1/institution/notifications/${institutionId}/mark-read`
+                : `${API_BASE_URL}/api/v1/institution/notifications/me/mark-read`;
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { ...authHeaders() },
             });

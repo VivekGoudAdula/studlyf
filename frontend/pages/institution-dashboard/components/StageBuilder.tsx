@@ -26,12 +26,14 @@ interface Stage {
     endDate: string;
     status: 'Upcoming' | 'Active' | 'Locked' | 'Completed';
     visibility: 'Public' | 'Private' | 'Shortlisted Only';
+    roundMode?: 'Online' | 'Offline' | 'Hybrid';
     config?: any;
 }
 
 interface StageBuilderProps {
     stages: Stage[];
     onUpdate: (stages: Stage[]) => void;
+    onConfigureQuiz?: (stageId: string) => void;
 }
 
 const STAGE_TYPES = [
@@ -43,7 +45,7 @@ const STAGE_TYPES = [
     { id: 'Custom', icon: Settings2, color: 'text-slate-500', bg: 'bg-slate-50' },
 ];
 
-const StageBuilder: React.FC<StageBuilderProps> = ({ stages, onUpdate }) => {
+const StageBuilder: React.FC<StageBuilderProps> = ({ stages, onUpdate, onConfigureQuiz }) => {
     const [expandedStage, setExpandedStage] = useState<string | null>(null);
 
     const addStage = () => {
@@ -54,7 +56,8 @@ const StageBuilder: React.FC<StageBuilderProps> = ({ stages, onUpdate }) => {
             startDate: new Date().toISOString().split('T')[0],
             endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             status: 'Upcoming',
-            visibility: 'Public'
+            visibility: 'Public',
+            roundMode: 'Online',
         };
         onUpdate([...stages, newStage]);
         setExpandedStage(newStage.id);
@@ -202,6 +205,19 @@ const StageBuilder: React.FC<StageBuilderProps> = ({ stages, onUpdate }) => {
                                                 </select>
                                             </div>
 
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Round Mode</label>
+                                                <select
+                                                    value={stage.roundMode || 'Online'}
+                                                    onChange={(e) => updateStage(stage.id, { roundMode: e.target.value as any })}
+                                                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-100 outline-none font-bold text-slate-900"
+                                                >
+                                                    <option value="Online">Online</option>
+                                                    <option value="Offline">Offline</option>
+                                                    <option value="Hybrid">Hybrid</option>
+                                                </select>
+                                            </div>
+
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
@@ -281,6 +297,51 @@ const StageBuilder: React.FC<StageBuilderProps> = ({ stages, onUpdate }) => {
                                                     />
                                                 </div>
                                             )}
+
+                                            {stage.type === 'Quiz' ? (
+                                                <div className="md:col-span-2 p-8 bg-amber-50/30 rounded-[2rem] border border-amber-100/50 space-y-4">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <div>
+                                                            <h5 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                                                                Assessment settings
+                                                            </h5>
+                                                            <p className="text-[10px] text-slate-500 font-medium">
+                                                                Attach a single-choice/coding assessment and set pass mark.
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onConfigureQuiz?.(stage.id)}
+                                                            className="px-5 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#6C3BFF] transition-all"
+                                                        >
+                                                            Configure questions
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pass mark (%)</label>
+                                                            <input
+                                                                type="number"
+                                                                min={0}
+                                                                max={100}
+                                                                value={stage.config?.pass_mark ?? 70}
+                                                                onChange={(e) =>
+                                                                    updateStage(stage.id, {
+                                                                        config: { ...(stage.config || {}), pass_mark: Number(e.target.value) },
+                                                                    })
+                                                                }
+                                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Linked quiz</label>
+                                                            <div className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold">
+                                                                {stage.config?.quiz_id ? String(stage.config.quiz_id) : 'Not configured'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : null}
                                         </div>
                                     </motion.div>
                                 )}
