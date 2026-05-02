@@ -62,6 +62,7 @@ const BUNDLE_TAB_LABEL: Record<string, string> = {
 };
 
 const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutionId: institutionIdProp }) => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [event, setEvent] = useState<any>(null);
     const [institution, setInstitution] = useState<any>(null);
@@ -83,6 +84,8 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
     const [quizzes, setQuizzes] = useState<any[]>([]);
     const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
     const [isCreatingQuiz, setIsCreatingQuiz] = useState(false);
+    const [quizStageId, setQuizStageId] = useState<string | null>(null);
+    const [codingAttempts, setCodingAttempts] = useState<Record<string, any[]>>({});
     const [editDescription, setEditDescription] = useState(false);
     const [reviewingParticipantId, setReviewingParticipantId] = useState<string | null>(null);
     const [portalReviewNotice, setPortalReviewNotice] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -103,7 +106,14 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                 const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`, { headers: { ...authHeaders() } });
                 const eventData = await eventRes.json();
                 setEvent(eventData);
-                setStages(eventData.stages || []);
+                setStages(
+                    (Array.isArray(eventData.stages) ? eventData.stages : []).map((s: any, idx: number) => ({
+                        ...s,
+                        // Critical: ensure stable id so edits don't apply to every row
+                        id: s?.id || `${eventId}-${idx}-${Math.random().toString(36).slice(2, 9)}`,
+                        roundMode: s?.roundMode || s?.mode || s?.round_mode || 'Online',
+                    }))
+                );
 
                 // Fetch institution profile
                 const instId = eventData.institution_id;
@@ -184,6 +194,61 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
         }
     }, [eventId, activeTab, debouncedThreshold]);
 
+    useEffect(() => {
+        if (activeTab !== 'assessments' || !eventId || quizzes.length === 0) return;
+        let cancelled = false;
+        (async () => {
+            const map: Record<string, any[]> = {};
+            for (const q of quizzes) {
+                const qid = String(q?._id || '');
+                if (!qid) continue;
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes/${qid}/coding-attempts`, {
+                        headers: { ...authHeaders() },
+                    });
+                    const body = await res.json().catch(() => ({}));
+                    map[qid] = Array.isArray(body?.items) ? body.items : [];
+                } catch {
+                    map[qid] = [];
+                }
+            }
+            if (!cancelled) setCodingAttempts(map);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTab, eventId, quizzes]);
+
+    const evaluateCodingAttempt = async (quizId: string, participantUserId: string) => {
+        const scoreRaw = window.prompt('Manual score (%)', '75');
+        if (scoreRaw === null) return;
+        const score = Number(scoreRaw);
+        if (Number.isNaN(score) || score < 0 || score > 100) {
+            alert('Enter a valid score between 0 and 100.');
+            return;
+        }
+        const passed = window.confirm('Mark this coding attempt as qualified/shortlisted?');
+        setReviewingParticipantId(participantUserId);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes/${quizId}/coding-attempts/${participantUserId}/evaluate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ score, passed }),
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body?.detail || 'Failed to evaluate');
+            setPortalReviewNotice({ kind: 'success', text: 'Coding attempt evaluated successfully.' });
+            setCodingAttempts((prev) => ({
+                ...prev,
+                [quizId]: (prev[quizId] || []).filter((x: any) => String(x.user_id) !== String(participantUserId)),
+            }));
+        } catch (e: any) {
+            setPortalReviewNotice({ kind: 'error', text: e?.message || 'Evaluation failed.' });
+        } finally {
+            setReviewingParticipantId(null);
+        }
+    };
+
     const handleSaveEvent = async () => {
         setSaving(true);
         try {
@@ -200,6 +265,55 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
             console.error("Save failed");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleBack = () => {
+        // Try the provided onBack function first
+        if (onBack && typeof onBack === 'function') {
+            onBack();
+            return;
+        }
+        
+        // Fallback to browser history
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            // Final fallback to events page
+            navigate('/institution-dashboard/events');
+        }
+    };
+
+    const openQuizForStage = (stageId: string) => {
+        setQuizStageId(stageId);
+        setIsQuizModalOpen(true);
+    };
+
+    const attachQuizToStage = async (quizData: any) => {
+        if (!eventId || !quizStageId) return;
+        setIsCreatingQuiz(true);
+        try {
+            const stage = stages.find((s) => s.id === quizStageId);
+            const passMark = Number(stage?.config?.pass_mark ?? 70);
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ ...quizData, pass_mark: passMark, stage_id: quizStageId }),
+            });
+            const j = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                alert(j?.detail || 'Failed to create quiz');
+                return;
+            }
+            const qid = String(j.quiz_id);
+            setStages((prev) =>
+                prev.map((s) =>
+                    s.id === quizStageId ? { ...s, config: { ...(s.config || {}), quiz_id: qid, pass_mark: passMark } } : s
+                )
+            );
+            setIsQuizModalOpen(false);
+        } finally {
+            setIsCreatingQuiz(false);
         }
     };
 
@@ -391,23 +505,13 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
     };
 
     const handleCreateQuiz = async (quizData: any) => {
+        await attachQuizToStage(quizData);
         try {
-            setIsCreatingQuiz(true);
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...authHeaders() },
-                body: JSON.stringify(quizData)
-            });
-            if (res.ok) {
-                const updatedQuizRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes`, { headers: { ...authHeaders() } });
-                const updatedQuizzes = await updatedQuizRes.json();
-                setQuizzes(updatedQuizzes);
-                setIsQuizModalOpen(false);
-            }
-        } catch (err) {
-            console.error("Failed to create quiz");
-        } finally {
-            setIsCreatingQuiz(false);
+            const updatedQuizRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes`, { headers: { ...authHeaders() } });
+            const updatedQuizzes = await updatedQuizRes.json();
+            setQuizzes(updatedQuizzes || []);
+        } catch {
+            /* non-fatal */
         }
     };
 
@@ -512,60 +616,6 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                         </div>
                     </div>
                 );
-            case 'basic':
-                return (
-                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="p-12 bg-slate-50 border border-slate-100 rounded-[3.5rem] relative overflow-hidden shadow-inner">
-                            <h3 className="text-3xl font-black text-slate-900 tracking-tight relative z-10">Event Identity</h3>
-                            <Building2 size={160} className="absolute -right-8 -bottom-8 text-[#6C3BFF]/5 -rotate-12" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Event Title</label>
-                                <input 
-                                    value={event.title} 
-                                    onChange={(e) => setEvent({...event, title: e.target.value})} 
-                                    className="w-full px-8 py-5 bg-white border border-slate-100 rounded-[2rem] font-bold text-slate-900 outline-none focus:ring-4 focus:ring-[#6C3BFF]/5 focus:border-[#6C3BFF] transition-all shadow-sm" 
-                                />
-                            </div>
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Organisation</label>
-                                <input 
-                                    value={event.organisation} 
-                                    onChange={(e) => setEvent({...event, organisation: e.target.value})} 
-                                    className="w-full px-8 py-5 bg-white border border-slate-100 rounded-[2rem] font-bold text-slate-900 outline-none focus:ring-4 focus:ring-[#6C3BFF]/5 focus:border-[#6C3BFF] transition-all shadow-sm" 
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between px-4">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</label>
-                                <button 
-                                    onClick={() => setEditDescription(!editDescription)}
-                                    className="text-[10px] font-black text-[#6C3BFF] uppercase tracking-widest hover:underline"
-                                >
-                                    {editDescription ? 'View Visual' : 'Edit HTML'}
-                                </button>
-                            </div>
-                            
-                            {editDescription ? (
-                                <textarea 
-                                    value={event.description} 
-                                    onChange={(e) => setEvent({...event, description: e.target.value})} 
-                                    rows={10}
-                                    className="w-full px-8 py-6 bg-white border border-[#6C3BFF]/20 rounded-[2.5rem] font-medium text-slate-900 outline-none focus:ring-4 focus:ring-[#6C3BFF]/5 focus:border-[#6C3BFF] transition-all shadow-sm resize-none font-mono text-sm" 
-                                    placeholder="Enter HTML description..."
-                                />
-                            ) : (
-                                <div 
-                                    onClick={() => setEditDescription(true)}
-                                    className="w-full px-10 py-10 bg-white border border-slate-100 rounded-[3rem] text-slate-700 prose prose-slate max-w-none shadow-sm cursor-text hover:border-[#6C3BFF]/20 transition-all min-h-[200px]"
-                                    dangerouslySetInnerHTML={{ __html: event.description || '<p class="text-slate-400 italic">No description provided. Click to add one.</p>' }}
-                                />
-                            )}
-                        </div>
-                    </div>
-                );
             case 'assessments':
                 return (
                     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -608,6 +658,46 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                                 </div>
                                 <p className="font-black text-xs uppercase tracking-widest text-slate-300">Initialize New Round</p>
                             </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-black text-slate-900">Manual coding evaluations</h4>
+                            {quizzes.map((quiz) => {
+                                const qid = String(quiz?._id || '');
+                                const rows = codingAttempts[qid] || [];
+                                if (!qid) return null;
+                                return (
+                                    <div key={`coding-${qid}`} className="bg-white border border-slate-100 rounded-2xl p-5">
+                                        <div className="flex items-center justify-between gap-3 mb-3">
+                                            <p className="font-bold text-slate-900">{quiz.title || 'Assessment'}</p>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                                Pending: {rows.length}
+                                            </span>
+                                        </div>
+                                        {rows.length === 0 ? (
+                                            <p className="text-sm text-slate-500 font-medium">No pending coding attempts.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {rows.map((row: any) => (
+                                                    <div key={String(row.user_id)} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-800">User: {String(row.user_id)}</p>
+                                                            <p className="text-xs text-slate-500">Submitted: {row.submitted_at ? new Date(row.submitted_at).toLocaleString() : '-'}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => evaluateCodingAttempt(qid, String(row.user_id))}
+                                                            disabled={reviewingParticipantId === String(row.user_id)}
+                                                            className="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
+                                                        >
+                                                            {reviewingParticipantId === String(row.user_id) ? 'Saving...' : 'Evaluate'}
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         <div className="p-10 bg-blue-50/40 rounded-[3rem] border border-blue-100 flex items-center gap-10">
@@ -692,7 +782,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                     </div>
                 );
             case 'stages':
-                return <StageBuilder stages={stages} onUpdate={setStages} />;
+                return <StageBuilder stages={stages} onUpdate={setStages} onConfigureQuiz={openQuizForStage} />;
             case 'teams':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -848,24 +938,6 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                );
-            case 'prizes':
-                return (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {[
-                            { rank: '1st Division', val: event.prize_pool ? `₹${event.prize_pool * 0.6}` : 'Excellence Trophy', icon: Trophy, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-                            { rank: '2nd Division', val: event.prize_pool ? `₹${event.prize_pool * 0.3}` : 'Distinction Award', icon: Award, color: 'text-slate-500', bg: 'bg-slate-50' },
-                            { rank: 'Merit List', val: 'Digital Verifications', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' }
-                        ].map((p, i) => (
-                            <div key={i} className="p-10 bg-white border border-slate-100 rounded-[3rem] text-center shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all">
-                                <div className={`w-20 h-20 ${p.bg} ${p.color} rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner`}>
-                                    <p.icon size={40} />
-                                </div>
-                                <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest mb-2">{p.rank}</h4>
-                                <p className="text-3xl font-black text-[#6C3BFF] tracking-tight">{p.val}</p>
-                            </div>
-                        ))}
                     </div>
                 );
             case 'basic':

@@ -2,11 +2,14 @@
 JWT helpers for institution-scoped routes. Hydrates institution_id from users collection.
 """
 from typing import Optional
+import logging
 
 from fastapi import Depends, Header, HTTPException
 from auth_utils import decode_access_token
 from bson import ObjectId
 from db import users_col, events_col
+
+logger = logging.getLogger("auth_institution")
 
 
 async def get_auth_user(authorization: Optional[str] = Header(None)) -> dict:
@@ -17,11 +20,21 @@ async def get_auth_user(authorization: Optional[str] = Header(None)) -> dict:
     uid = payload.get("user_id")
     if not uid:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    user = await users_col.find_one({"user_id": uid})
-    if user:
-        payload["institution_id"] = user.get("institution_id")
-        payload["role"] = user.get("role") or payload.get("role")
-        payload["email"] = user.get("email") or payload.get("sub")
+    
+    # Try to get user data, but don't fail if database is unavailable
+    try:
+        user = await users_col.find_one({"user_id": uid})
+        if user:
+            payload["institution_id"] = user.get("institution_id")
+            payload["role"] = user.get("role") or payload.get("role")
+            payload["email"] = user.get("email") or payload.get("sub")
+        else:
+            # User not found in database, but token is valid
+            logger.warning(f"User {uid} not found in database")
+    except Exception as e:
+        # Database error, but token is still valid
+        logger.error(f"Database error in get_auth_user: {e}")
+    
     return payload
 
 

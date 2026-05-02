@@ -16,6 +16,7 @@ from db import leaderboard_col, events_col, participants_col, certificates_col, 
 from bson import ObjectId
 from services.audit_service import log_admin_action
 from notification_helpers import notify_institution
+from quiz_visibility_service import quiz_visibility_service, _check_quiz_visibility
 import logging
 
 # Ensure upload directory exists
@@ -890,6 +891,11 @@ async def verify_certificate(certificate_id: str):
         "institution": "Certified Institution Network"
     }
 
+@router.options("/notifications/{institution_id}")
+async def options_notifications(institution_id: str):
+    """Handle CORS preflight for notifications endpoint."""
+    return {"status": "ok"}
+
 @router.get("/notifications/{institution_id}")
 async def get_notifications(institution_id: str, user: dict = Depends(get_auth_user)):
     """Retrieves real-time institutional activity alerts from persistent storage."""
@@ -910,10 +916,73 @@ async def get_notifications(institution_id: str, user: dict = Depends(get_auth_u
         logger.error(f"[NOTIF ERROR] {str(e)}")
         return []
 
+
+@router.get("/notifications/me")
+async def get_my_institution_notifications(user: dict = Depends(get_auth_user)):
+    """Fallback-safe notification fetch for institution users without client-side institution_id."""
+    institution_id = str(user.get("institution_id") or "").strip()
+    if not institution_id:
+        # Resolve and persist missing institution scope for older users.
+        inst = None
+        try:
+            if user.get("institution_name"):
+                inst = await institutions_col.find_one({"name": user.get("institution_name")})
+            if not inst:
+                inst = await institutions_col.find_one({"admin_email": str(user.get("email") or "").strip().lower()})
+            if inst:
+                institution_id = str(inst.get("_id") or "")
+                await users_col.update_one(
+                    {"user_id": str(user.get("user_id") or "")},
+                    {"$set": {"institution_id": institution_id}},
+                )
+        except Exception:
+            institution_id = ""
+    if not institution_id:
+        return []
+    try:
+        cursor = notifications_col.find(
+            {"institution_id": institution_id, "is_read": {"$ne": True}}
+        ).sort("created_at", -1).limit(10)
+        notifs = []
+        async for n in cursor:
+            n["_id"] = str(n["_id"])
+            notifs.append(n)
+        return notifs
+    except Exception as e:
+        logger.error(f"[NOTIF ERROR] {str(e)}")
+        return []
+
 @router.post("/notifications/{institution_id}/mark-read")
 async def mark_notifications_read(institution_id: str, user: dict = Depends(get_auth_user)):
     """Permanently marks all unread notifications for an institution as read in DB."""
     assert_institution_scope(institution_id, user)
+    try:
+        await notifications_col.update_many(
+            {"institution_id": institution_id, "is_read": {"$ne": True}},
+            {"$set": {"is_read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "success", "message": "All notifications marked as read"}
+    except Exception as e:
+        logger.error(f"[NOTIF ERROR] Mark read failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update notifications")
+
+
+@router.post("/notifications/me/mark-read")
+async def mark_my_notifications_read(user: dict = Depends(get_auth_user)):
+    """Fallback-safe notification mark-read for institution users without client institution_id."""
+    institution_id = str(user.get("institution_id") or "").strip()
+    if not institution_id:
+        inst = None
+        try:
+            if user.get("institution_name"):
+                inst = await institutions_col.find_one({"name": user.get("institution_name")})
+            if not inst:
+                inst = await institutions_col.find_one({"admin_email": str(user.get("email") or "").strip().lower()})
+            institution_id = str((inst or {}).get("_id") or "")
+        except Exception:
+            institution_id = ""
+    if not institution_id:
+        return {"status": "success", "message": "No institution scope found"}
     try:
         await notifications_col.update_many(
             {"institution_id": institution_id, "is_read": {"$ne": True}},
@@ -1286,8 +1355,17 @@ async def get_complex_event_details(event_id: str, user: dict = Depends(get_auth
     if event:
         event["_id"] = str(event["_id"])
         # Ensure stages is always a list
-        if "stages" not in event:
+        if "stages" not in event or event["stages"] is None:
             event["stages"] = []
+        # Ensure each stage has a stable id (persist back to DB so UI edits/delete are correct)
+        if isinstance(event.get("stages"), list):
+            mutated = False
+            for s in event["stages"]:
+                if isinstance(s, dict) and not s.get("id"):
+                    s["id"] = str(uuid.uuid4())
+                    mutated = True
+            if mutated:
+                await events_col.update_one({"_id": ObjectId(event_id)}, {"$set": {"stages": event["stages"]}})
     return event
 
 @router.patch("/events/{event_id}")
@@ -1296,6 +1374,11 @@ async def update_event_details(event_id: str, update_data: dict, user: dict = De
     await assert_institution_owns_event(event_id, user)
     from db import events_col
     if "_id" in update_data: del update_data["_id"]
+    # Normalize stages: ensure stable ids are persisted.
+    if isinstance(update_data.get("stages"), list):
+        for s in update_data["stages"]:
+            if isinstance(s, dict) and not s.get("id"):
+                s["id"] = str(uuid.uuid4())
     await events_col.update_one({"_id": ObjectId(event_id)}, {"$set": update_data})
     return {"status": "success"}
 
@@ -1327,14 +1410,81 @@ async def update_event_stage(event_id: str, stage_id: str, stage_update: dict, u
 
 @router.delete("/events/{event_id}/stages/{stage_id}")
 async def delete_event_stage(event_id: str, stage_id: str, user: dict = Depends(get_auth_user)):
-    """Removes a stage from an event's workflow."""
+    """Removes a specific stage from an event's workflow and updates remaining stages' order."""
     await assert_institution_owns_event(event_id, user)
     from db import events_col
-    await events_col.update_one(
+    
+    # Get current event to check if stage exists
+    event = await events_col.find_one({"_id": ObjectId(event_id)})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    stages = event.get("stages", [])
+    stage_to_delete = None
+    
+    # Find the stage to delete
+    for stage in stages:
+        if stage.get("id") == stage_id:
+            stage_to_delete = stage
+            break
+    
+    if not stage_to_delete:
+        raise HTTPException(status_code=404, detail="Stage not found")
+    
+    # Check if this is the last stage (prevent deletion if it would break workflow)
+    if len(stages) <= 1:
+        raise HTTPException(status_code=400, detail="Cannot delete the last stage")
+    
+    # Remove the stage and reorder remaining stages
+    remaining_stages = [stage for stage in stages if stage.get("id") != stage_id]
+    
+    # Update order indices for remaining stages
+    for i, stage in enumerate(remaining_stages):
+        stage["order"] = i + 1
+        stage["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Update event with new stages list
+    result = await events_col.update_one(
         {"_id": ObjectId(event_id)},
-        {"$pull": {"stages": {"id": stage_id}}}
+        {
+            "$set": {
+                "stages": remaining_stages,
+                "stages_updated_at": datetime.now(timezone.utc).isoformat(),
+                "last_stage_deleted": {
+                    "stage_id": stage_id,
+                    "stage_name": stage_to_delete.get("name", "Unknown"),
+                    "deleted_at": datetime.now(timezone.utc).isoformat(),
+                    "deleted_by": user.get("user_id")
+                }
+            }
+        }
     )
-    return {"status": "success"}
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Failed to delete stage")
+    
+    # Create notification for institution
+    await notify_institution(
+        user.get("institution_id"),
+        f"Stage '{stage_to_delete.get('name', 'Unknown')}' deleted from event",
+        ntype="stage_deleted",
+        title="Stage Deleted",
+        meta={
+            "event_id": event_id,
+            "stage_id": stage_id,
+            "stage_name": stage_to_delete.get("name", "Unknown"),
+            "remaining_stages": len(remaining_stages)
+        }
+    )
+    
+    return {
+        "status": "success",
+        "deleted_stage": {
+            "id": stage_id,
+            "name": stage_to_delete.get("name", "Unknown")
+        },
+        "remaining_stages": len(remaining_stages)
+    }
 
 @router.patch("/events/{event_id}/advance-stage")
 async def advance_participants(event_id: str, participant_ids: list, next_stage: str, user: dict = Depends(get_auth_user)):
@@ -1389,49 +1539,32 @@ async def add_event_judge(event_id: str, judge_data: dict, user: dict = Depends(
     if any(j.get("email") == judge_data.get("email") for j in current_judges):
         return {"status": "exists", "message": "Judge already assigned"}
     
+    from judge_portal_service import judge_portal_service
+    
+    # Delegate to the new Judge Portal Service which creates the token, inserts into judges_col, and sends the rich HTML email
+    result = await judge_portal_service.create_judge_invitation(
+        event_id, judge_data, user.get("institution_id")
+    )
+    
+    # Fetch the created judge document to get the token (or generate a fallback if not returned)
+    from db import judges_col
+    judge_doc = await judges_col.find_one({"_id": ObjectId(result["judge_id"])})
+    
+    # Also push to the event['judges'] array for backwards compatibility with the frontend EventDetails page
     judge_entry = {
-        "id": str(ObjectId()),
+        "id": str(result["judge_id"]),
         "name": judge_data.get("name"),
         "email": judge_data.get("email"),
         "expertise": judge_data.get("expertise"),
         "status": "INVITED",
-        "assigned_at": datetime.utcnow().isoformat()
+        "invitation_token": judge_doc.get("invitation_token") if judge_doc else None,
+        "assigned_at": datetime.now(timezone.utc).isoformat()
     }
     
     await events_col.update_one(
         {"_id": ObjectId(event_id)},
         {"$push": {"judges": judge_entry}}
     )
-    
-    # TRIGGER EMAIL
-    subject = f"Invitation: Judge for {event['title']}"
-    body = f"""
-    <html>
-        <body style="font-family: Arial, sans-serif; color: #333;">
-            <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
-                <h2 style="color: #6C3BFF;">Judging Invitation</h2>
-                <p>Hello <strong>{judge_entry['name']}</strong>,</p>
-                <p>You have been invited by <strong>{event.get('institution_name', 'The Institution')}</strong> to be a judge for the event: <strong>{event['title']}</strong>.</p>
-                <p>Your expertise in <strong>{judge_entry['expertise']}</strong> is highly valued for this role.</p>
-                <br>
-                <p>Please log in to the Studlyf Judge Portal using your email to review submissions.</p>
-                <br>
-                <p>Best Regards,<br>Studlyf Institution Network</p>
-            </div>
-        </body>
-    </html>
-    """
-    asyncio.create_task(send_notification_email(judge_entry['email'], subject, body))
-
-    inst_notify = event.get("institution_id")
-    if inst_notify:
-        await notify_institution(
-            str(inst_notify),
-            f"Invitation emailed to judge {judge_entry.get('email')} for \"{event.get('title', 'event')}\".",
-            ntype="judge_invited",
-            title="Judge invited",
-            meta={"event_id": event_id, "judge_email": judge_entry.get("email")},
-        )
     
     return {"status": "success", "judge": judge_entry}
 
@@ -1514,6 +1647,232 @@ async def create_event_quiz(event_id: str, quiz_data: dict, user: dict = Depends
     quiz_data["created_at"] = datetime.utcnow().isoformat()
     result = await quizzes_col.insert_one(quiz_data)
     return {"quiz_id": str(result.inserted_id)}
+
+
+@router.post("/events/{event_id}/quizzes/{quiz_id}/submit")
+async def submit_event_quiz(event_id: str, quiz_id: str, payload: dict = Body(...), user: dict = Depends(get_auth_user)):
+    """Learner submits an event quiz attempt (auto-evaluates single-choice)."""
+    from db import quizzes_col, participants_col, events_col, opportunity_applications_col
+    uid = str(user.get("user_id") or "")
+    if not uid:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    quiz = await quizzes_col.find_one({"_id": ObjectId(quiz_id), "event_id": str(event_id)})
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    ev = await events_col.find_one({"_id": ObjectId(event_id)})
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Check quiz visibility based on stage visibility
+    await _check_quiz_visibility(event_id, quiz_id, uid, ev)
+
+    p = await participants_col.find_one({"event_id": str(event_id), "user_id": uid})
+    if not p:
+        raise HTTPException(status_code=400, detail="You must register/apply before attempting the assessment")
+
+    answers = payload.get("answers") or []
+    if not isinstance(answers, list):
+        raise HTTPException(status_code=400, detail="answers must be a list")
+
+    questions = quiz.get("questions") or []
+    total = 0
+    correct = 0
+    coding_pending = False
+    coding_answers = []
+    for i, q in enumerate(questions):
+        if not isinstance(q, dict):
+            continue
+        qtype = str(q.get("type") or "").upper()
+        if qtype == "SINGLE_CHOICE":
+            total += 1
+            expected = q.get("correctOptionIndex")
+            got = None
+            if i < len(answers) and isinstance(answers[i], dict):
+                got = answers[i].get("selectedIndex")
+            if isinstance(expected, int) and isinstance(got, int) and expected == got:
+                correct += 1
+        elif qtype == "CODING":
+            coding_pending = True
+            if i < len(answers) and isinstance(answers[i], dict):
+                coding_answers.append(
+                    {
+                        "q_index": i,
+                        "code": answers[i].get("code") or "",
+                        "language": answers[i].get("language") or q.get("language") or "",
+                    }
+                )
+
+    score = int(round((correct / total) * 100)) if total > 0 else 0
+    pass_mark = int(quiz.get("pass_mark") or payload.get("pass_mark") or 0)
+    passed = (total > 0 and score >= pass_mark if pass_mark > 0 else False) and (not coding_pending)
+
+    attempt = {
+        "quiz_id": str(quiz_id),
+        "score": score,
+        "pass_mark": pass_mark,
+        "passed": passed,
+        "coding_pending_review": coding_pending,
+        "coding_answers": coding_answers,
+        "submitted_at": datetime.utcnow().isoformat(),
+    }
+    await participants_col.update_one(
+        {"_id": p["_id"]},
+        {"$push": {"quiz_attempts": attempt}, "$set": {"updated_at": datetime.utcnow()}},
+    )
+
+    if passed:
+        # Mirror shortlist state into portal application + notify learner + institution
+        opp = await opportunities_col.find_one({"event_link_id": str(event_id)})
+        if opp:
+            await opportunity_applications_col.update_many(
+                {"opportunity_id": str(opp["_id"]), "user_id": uid},
+                {"$set": {"status": "shortlisted", "reviewed_at": datetime.utcnow()}},
+            )
+        await participants_col.update_many(
+            {"event_id": str(event_id), "user_id": uid},
+            {"$set": {"status": "shortlisted", "updated_at": datetime.utcnow()}},
+        )
+        # in-app learner notification
+        try:
+            await notifications_col.insert_one(
+                {
+                    "user_id": uid,
+                    "type": "stage_shortlisted",
+                    "message": f'You qualified for the next stage in "{ev.get("title")}".',
+                    "is_read": False,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "meta": {"event_id": str(event_id), "quiz_id": str(quiz_id), "score": score},
+                }
+            )
+        except Exception:
+            pass
+        # email + institution bell
+        try:
+            email = str(user.get("email") or "").strip()
+            if email:
+                subj = f"Shortlisted: {ev.get('title')}"
+                body = f"<html><body><p>You passed the assessment (score {score}%). You are shortlisted for the next stage.</p></body></html>"
+                asyncio.create_task(send_notification_email(email, subj, body))
+        except Exception:
+            pass
+        await notify_institution(
+            str(ev.get("institution_id") or ""),
+            f"A learner qualified via assessment in {ev.get('title')} (score {score}%).",
+            ntype="success",
+            title="Assessment qualified",
+            meta={"event_id": str(event_id), "quiz_id": str(quiz_id)},
+        )
+
+    return {
+        "status": "success",
+        "score": score,
+        "passed": passed,
+        "pass_mark": pass_mark,
+        "total_scored": total,
+        "coding_pending_review": coding_pending,
+    }
+
+
+@router.get("/events/{event_id}/quizzes/{quiz_id}/coding-attempts")
+async def list_coding_attempts(event_id: str, quiz_id: str, user: dict = Depends(get_auth_user)):
+    """Institution view: pending coding evaluations for a quiz."""
+    await assert_institution_owns_event(event_id, user)
+    rows = []
+    cursor = participants_col.find(
+        {
+            "event_id": str(event_id),
+            "quiz_attempts": {
+                "$elemMatch": {
+                    "quiz_id": str(quiz_id),
+                    "coding_pending_review": True,
+                }
+            },
+        }
+    )
+    async for p in cursor:
+        attempts = p.get("quiz_attempts") or []
+        latest = None
+        for a in reversed(attempts):
+            if str(a.get("quiz_id")) == str(quiz_id) and a.get("coding_pending_review"):
+                latest = a
+                break
+        if not latest:
+            continue
+        rows.append(
+            {
+                "participant_id": str(p.get("_id")),
+                "user_id": str(p.get("user_id") or ""),
+                "status": p.get("status"),
+                "current_stage": p.get("current_stage"),
+                "submitted_at": latest.get("submitted_at"),
+                "coding_answers": latest.get("coding_answers") or [],
+                "auto_score": latest.get("score", 0),
+                "pass_mark": latest.get("pass_mark", 0),
+            }
+        )
+    return {"items": rows}
+
+
+@router.post("/events/{event_id}/quizzes/{quiz_id}/coding-attempts/{participant_user_id}/evaluate")
+async def evaluate_coding_attempt(
+    event_id: str,
+    quiz_id: str,
+    participant_user_id: str,
+    payload: dict = Body(...),
+    user: dict = Depends(get_auth_user),
+):
+    """Institution action: manually score coding attempt and decide shortlist outcome."""
+    await assert_institution_owns_event(event_id, user)
+    score = int(payload.get("score", 0))
+    passed = bool(payload.get("passed", False))
+    remarks = str(payload.get("remarks") or "").strip()
+    participant = await participants_col.find_one({"event_id": str(event_id), "user_id": str(participant_user_id)})
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant not found")
+
+    attempts = participant.get("quiz_attempts") or []
+    idx = -1
+    for i in range(len(attempts) - 1, -1, -1):
+        a = attempts[i]
+        if str(a.get("quiz_id")) == str(quiz_id) and a.get("coding_pending_review"):
+            idx = i
+            break
+    if idx < 0:
+        raise HTTPException(status_code=404, detail="Pending coding attempt not found")
+
+    attempts[idx]["coding_pending_review"] = False
+    attempts[idx]["manual_reviewed"] = True
+    attempts[idx]["manual_score"] = score
+    attempts[idx]["manual_passed"] = passed
+    attempts[idx]["manual_remarks"] = remarks
+    attempts[idx]["reviewed_at"] = datetime.utcnow().isoformat()
+    attempts[idx]["reviewed_by"] = str(user.get("user_id") or "")
+    attempts[idx]["passed"] = passed
+
+    await participants_col.update_one(
+        {"_id": participant["_id"]},
+        {"$set": {"quiz_attempts": attempts, "updated_at": datetime.utcnow(), **({"status": "shortlisted"} if passed else {})}},
+    )
+
+    if passed:
+        opp = await opportunities_col.find_one({"event_link_id": str(event_id)})
+        if opp:
+            await opportunity_applications_col.update_many(
+                {"opportunity_id": str(opp["_id"]), "user_id": str(participant_user_id)},
+                {"$set": {"status": "shortlisted", "reviewed_at": datetime.utcnow()}},
+            )
+    await notifications_col.insert_one(
+        {
+            "user_id": str(participant_user_id),
+            "type": "coding_review_result",
+            "message": f"Your coding round was reviewed. Result: {'Qualified' if passed else 'Not qualified'}",
+            "is_read": False,
+            "created_at": datetime.utcnow().isoformat(),
+            "meta": {"event_id": str(event_id), "quiz_id": str(quiz_id), "manual_score": score, "passed": passed},
+        }
+    )
+    return {"status": "success", "passed": passed, "score": score}
 
 @router.post("/events/create-professional")
 async def create_pro_event(request: Request, user: dict = Depends(get_auth_user)):

@@ -1,0 +1,403 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
+import { useAuth } from '../../AuthContext';
+import { ChevronLeft, UsersRound, Link as LinkIcon, Loader2, Upload, FileText, CheckCircle2, Clock, Trophy } from 'lucide-react';
+import TeamManager from '../opportunities/components/TeamManager';
+import Leaderboard from './Leaderboard';
+
+type HubResp = { participant?: any; team?: any };
+
+const EventHub: React.FC = () => {
+    const { eventId } = useParams();
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [event, setEvent] = useState<any>(null);
+    const [participant, setParticipant] = useState<any>(null);
+    const [team, setTeam] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState('timeline');
+    
+    // Team management state
+    const [teamName, setTeamName] = useState('');
+    const [inviteCode, setInviteCode] = useState('');
+    const [working, setWorking] = useState(false);
+    const [generatedCode, setGeneratedCode] = useState('');
+
+    // Submission state
+    const [submitting, setSubmitting] = useState<string | null>(null); // stage_id
+    const [submissionData, setSubmissionData] = useState<Record<string, string>>({});
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [evRes, hubRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/v1/events/${eventId}`, { headers: { ...authHeaders() } }),
+                fetch(`${API_BASE_URL}/api/v1/events/${eventId}/hub`, { headers: { ...authHeaders() } })
+            ]);
+
+            if (evRes.ok) setEvent(await evRes.json());
+            if (hubRes.ok) {
+                const data: HubResp = await hubRes.json();
+                setParticipant(data.participant);
+                setTeam(data.team);
+            }
+        } catch (error) {
+            console.error("Failed to fetch hub data", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [eventId]);
+
+    const createTeam = async () => {
+        if (!teamName.trim()) return;
+        setWorking(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/teams`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ name: teamName })
+            });
+            if (res.ok) {
+                await fetchData();
+                setTeamName('');
+            } else {
+                const err = await res.json();
+                alert(err.detail || "Failed to create team");
+            }
+        } finally {
+            setWorking(false);
+        }
+    };
+
+    const joinByCode = async () => {
+        if (!inviteCode.trim()) return;
+        setWorking(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/teams/join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ invite_code: inviteCode })
+            });
+            if (res.ok) {
+                await fetchData();
+                setInviteCode('');
+            } else {
+                const err = await res.json();
+                alert(err.detail || "Invalid invite code");
+            }
+        } finally {
+            setWorking(false);
+        }
+    };
+
+    const generateInvite = async () => {
+        setWorking(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/teams/invite`, {
+                method: 'POST',
+                headers: { ...authHeaders() }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setGeneratedCode(data.invite_code);
+            }
+        } finally {
+            setWorking(false);
+        }
+    };
+
+    const handleSubmission = async (stageId: string) => {
+        const data = submissionData[stageId];
+        if (!data) return;
+        
+        setSubmitting(stageId);
+        setSubmissionError(null);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/opportunities/events/${eventId}/stages/${stageId}/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ data: { url: data } })
+            });
+            if (res.ok) {
+                alert("Submission successful!");
+                await fetchData();
+                setSubmissionData(prev => ({ ...prev, [stageId]: '' }));
+            } else {
+                const err = await res.json();
+                setSubmissionError(err.detail || "Submission failed");
+            }
+        } catch (e) {
+            setSubmissionError("Network error");
+        } finally {
+            setSubmitting(null);
+        }
+    };
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <Loader2 className="w-10 h-10 text-purple-600 animate-spin" />
+        </div>
+    );
+
+    if (!participant) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+            <UsersRound size={64} className="text-slate-300 mb-6" />
+            <h1 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Application Required</h1>
+            <p className="text-slate-600 max-w-md mb-8">
+                You are not registered for this event. Please apply through the opportunities portal to access this hub.
+            </p>
+            <Link 
+                to={`/opportunities/${eventId}`} 
+                className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-purple-700 transition-all shadow-xl"
+            >
+                View Opportunity Details
+            </Link>
+        </div>
+    );
+
+    const event_id_as_opp = event?.opportunity_id || eventId;
+    const isLeader = team && team.leader_id === user?.user_id;
+
+    const tabs = [
+        { id: 'timeline', label: 'Timeline', icon: <Clock size={14} /> },
+        { id: 'submissions', label: 'Submissions', icon: <FileText size={14} /> },
+        { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy size={14} /> },
+        { id: 'team', label: 'My Team', icon: <UsersRound size={14} /> }
+    ];
+
+    return (
+        <div className="min-h-screen bg-slate-50 pb-20 font-sans">
+            {/* Navigation Header */}
+            <header className="bg-white border-b border-slate-100 sticky top-0 z-30">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Link to="/opportunities/my-applications" className="p-3 hover:bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all">
+                            <ChevronLeft size={24} />
+                        </Link>
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight">{event?.title || 'Event Hub'}</h2>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Participation Protocol Alpha</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        <div className="px-4 py-2 bg-purple-50 text-purple-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-100">
+                            {participant.status || 'Active'}
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="max-w-7xl mx-auto px-6 py-12">
+                <div className="space-y-12">
+                    {/* Tab Navigation */}
+                    <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-100 rounded-[2rem] w-fit shadow-sm">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-6 py-3.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${
+                                    activeTab === tab.id 
+                                        ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' 
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                                }`}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-12">
+                        {activeTab === 'timeline' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                                <div className="lg:col-span-8 space-y-8">
+                                    <h2 className="text-2xl font-black text-slate-900">Event Timeline</h2>
+                                    <div className="relative pl-8 space-y-12 before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-slate-100 before:rounded-full">
+                                        {(event.stages || []).map((stage: any, idx: number) => {
+                                            const isCompleted = participant.last_stage_submitted && event.stages.findIndex((s: any) => s.id === participant.last_stage_submitted) >= idx;
+                                            return (
+                                                <div key={idx} className="relative">
+                                                    <div className={`absolute left-[-40px] top-0 w-6 h-6 rounded-full border-4 border-slate-50 flex items-center justify-center ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200 shadow-inner'}`}>
+                                                        {isCompleted && <CheckCircle2 size={12} className="text-white" />}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h3 className={`text-lg font-black ${isCompleted ? 'text-slate-900' : 'text-slate-400'}`}>{stage.name}</h3>
+                                                        <p className="text-sm text-slate-500 font-medium leading-relaxed">{stage.description}</p>
+                                                        <div className="flex items-center gap-4 pt-2">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-3 py-1 rounded-lg">Type: {stage.type}</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">Deadline: {new Date(stage.end_date).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <div className="lg:col-span-4">
+                                    <div className="p-8 bg-gradient-to-br from-slate-900 to-purple-900 rounded-[2.5rem] text-white shadow-2xl shadow-purple-900/20 sticky top-32">
+                                        <Trophy size={40} className="text-yellow-400 mb-6" />
+                                        <h3 className="text-2xl font-black tracking-tight mb-4">Your Progress</h3>
+                                        <p className="text-purple-200 text-sm font-medium leading-relaxed mb-8 opacity-80">
+                                            Keep track of your milestones. Every stage completed brings you closer to the championship.
+                                        </p>
+                                        <div className="space-y-4">
+                                            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                                                <div className="h-full bg-yellow-400" style={{ width: '30%' }} />
+                                            </div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-white/60">3 of 8 Milestones Cleared</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'submissions' && (
+                            <div className="space-y-8">
+                                <h2 className="text-2xl font-black text-slate-900">Submission Portal</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {(event.stages || []).filter((s: any) => s.type?.toUpperCase() === 'SUBMISSION').map((stage: any, idx: number) => {
+                                        const isCompleted = participant.last_stage_submitted === stage.id;
+                                        return (
+                                            <div key={idx} className="p-10 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                                                            <Upload size={20} />
+                                                        </div>
+                                                        <h3 className="text-lg font-black text-slate-900">{stage.name}</h3>
+                                                    </div>
+                                                    {isCompleted && <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100">Submitted</span>}
+                                                </div>
+                                                <p className="text-sm text-slate-500 font-medium leading-relaxed">{stage.description}</p>
+                                                <div className="space-y-3">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Project Asset URL (PPT/GitHub/PDF)</p>
+                                                    <input 
+                                                        disabled={isCompleted}
+                                                        value={submissionData[stage.id] || ''}
+                                                        onChange={(e) => setSubmissionData(prev => ({ ...prev, [stage.id]: e.target.value }))}
+                                                        placeholder="https://drive.google.com/..."
+                                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-purple-50 focus:border-purple-200 transition-all"
+                                                    />
+                                                    <button 
+                                                        onClick={() => handleSubmission(stage.id)}
+                                                        disabled={isCompleted || submitting === stage.id || !submissionData[stage.id]}
+                                                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-purple-700 transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
+                                                    >
+                                                        {submitting === stage.id ? 'Uploading...' : isCompleted ? 'Update Submission' : 'Confirm Submission'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'leaderboard' && (
+                            <Leaderboard eventId={eventId!} />
+                        )}
+
+                        {activeTab === 'team' && (
+                            <div className="space-y-12">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                    <div>
+                                        <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
+                                            <UsersRound className="text-purple-600" /> Team Hub
+                                        </h1>
+                                        <p className="text-slate-500 font-medium mt-2">
+                                            Manage your collaborative protocol. Create, invite, and sync with your team.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="p-10 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
+                                        <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">Team Status</h2>
+                                        {team ? (
+                                            <div className="space-y-6">
+                                                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                                                    <p className="text-2xl font-black text-slate-900">{team.team_name}</p>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Unit • {(team.members || []).length} Members</p>
+                                                </div>
+                                                
+                                                {isLeader ? (
+                                                    <div className="space-y-4">
+                                                        <button
+                                                            onClick={generateInvite}
+                                                            disabled={working}
+                                                            className="w-full py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
+                                                        >
+                                                            {working ? 'Processing...' : 'Generate New Invite Code'}
+                                                        </button>
+                                                        {generatedCode && (
+                                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-purple-50 border border-purple-100 rounded-[2rem] text-center">
+                                                                <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-2">Access Token</p>
+                                                                <p className="text-3xl font-black text-purple-700 tracking-tighter">{generatedCode}</p>
+                                                                <button onClick={() => { navigator.clipboard.writeText(generatedCode); alert('Protocol Copied'); }} className="mt-4 text-[10px] font-black text-purple-600 uppercase tracking-widest hover:underline">Copy to Clipboard</button>
+                                                            </motion.div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl">
+                                                        <p className="text-xs font-bold text-slate-500">Only the unit leader can authorize new members.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-6">
+                                                <p className="text-sm text-slate-500 font-medium">Initialize a new team to begin the collaborative phase.</p>
+                                                <input
+                                                    value={teamName}
+                                                    onChange={(e) => setTeamName(e.target.value)}
+                                                    placeholder="Unit Designation (Team Name)"
+                                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-purple-50 focus:border-purple-200"
+                                                />
+                                                <button
+                                                    onClick={createTeam}
+                                                    disabled={working || !teamName.trim()}
+                                                    className="w-full py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all"
+                                                >
+                                                    Initialize Team
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="p-10 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
+                                        <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">Join Existing</h2>
+                                        <div className="space-y-6">
+                                            <p className="text-sm text-slate-500 font-medium">Synchronize with an existing unit using a secure invite code.</p>
+                                            <input
+                                                value={inviteCode}
+                                                onChange={(e) => setInviteCode(e.target.value)}
+                                                disabled={Boolean(team)}
+                                                placeholder="Invite Code"
+                                                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-purple-50 focus:border-purple-200"
+                                            />
+                                            <button
+                                                onClick={joinByCode}
+                                                disabled={working || !inviteCode.trim() || Boolean(team)}
+                                                className="w-full py-4 rounded-2xl bg-purple-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all shadow-xl shadow-purple-900/10 disabled:opacity-50"
+                                            >
+                                                Sync with Team
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
+};
+
+export default EventHub;

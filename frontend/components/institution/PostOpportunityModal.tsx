@@ -25,12 +25,20 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
         websiteUrl: '',
         description: '',
         skills: '',
-        participationType: 'individual', 
+        participationType: 'both', 
         minTeamSize: 1,
         maxTeamSize: 5,
         opportunityMode: 'online', 
         venueAddress: '',
         city: '',
+        // Perks and Benefits
+        stipend: '',
+        salaryRange: '',
+        perks: [],
+        prizePool: '',
+        prizes: [],
+        benefits: '',
+        compensation: '',
         candidateTypes: ['Everyone can apply'], 
         collegeRestriction: 'Everyone can apply',
         genderRestriction: 'Everyone can apply',
@@ -281,6 +289,12 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
             } finally {
                 setLoading(false);
             }
+        }
+    };
+
+    const handlePrevious = () => {
+        if (step > 1) {
+            setStep(step - 1);
         }
     };
 
@@ -690,6 +704,97 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                             />
                                         </div>
 
+                                        {/* Perks and Benefits Section */}
+                                        <div className="pt-8 border-t border-slate-50">
+                                            <div className="flex items-center gap-3 mb-8">
+                                                <h4 className="text-[13px] font-black text-slate-900 uppercase tracking-widest">Perks & Benefits</h4>
+                                                <Trophy size={14} className="text-slate-300" />
+                                            </div>
+                                            
+                                            <div className="space-y-6">
+                                                {/* Prize Pool */}
+                                                <div>
+                                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Total Prize Pool (Optional)</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={formData.prizePool}
+                                                        onChange={(e) => setFormData({...formData, prizePool: e.target.value})}
+                                                        placeholder="e.g. ₹1,00,000, $5000, Worth ₹50,000"
+                                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium"
+                                                    />
+                                                    <p className="text-[10px] text-slate-400 mt-2">Total value of all prizes and rewards</p>
+                                                </div>
+
+                                                {/* Stipend/Compensation */}
+                                                <div className="grid grid-cols-2 gap-8">
+                                                    <div>
+                                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Stipend (Optional)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={formData.stipend}
+                                                            onChange={(e) => setFormData({...formData, stipend: e.target.value})}
+                                                            placeholder="e.g. ₹10,000/month"
+                                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Salary Range (Optional)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={formData.salaryRange}
+                                                            onChange={(e) => setFormData({...formData, salaryRange: e.target.value})}
+                                                            placeholder="e.g. ₹8L - ₹15L PA"
+                                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Benefits Description */}
+                                                <div>
+                                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Benefits & Perks (Optional)</label>
+                                                    <textarea 
+                                                        rows={4}
+                                                        value={formData.benefits}
+                                                        onChange={(e) => setFormData({...formData, benefits: e.target.value})}
+                                                        placeholder="List all benefits, perks, and additional rewards..."
+                                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium resize-none"
+                                                    />
+                                                    <p className="text-[10px] text-slate-400 mt-2">Certificates, internship opportunities, job offers, swag, mentorship, etc.</p>
+                                                </div>
+
+                                                {/* Common Perks Tags */}
+                                                <div>
+                                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Common Perks (Click to add)</label>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {[
+                                                            'Certificate of Participation',
+                                                            'Internship Opportunity',
+                                                            'Job Interview',
+                                                            'Swag/Merchandise',
+                                                            'Mentorship',
+                                                            'Workshop Access',
+                                                            'Free Tools/Software',
+                                                            'Networking Opportunities',
+                                                            'Publication/Recognition',
+                                                            'Travel Reimbursement'
+                                                        ].map(perk => (
+                                                            <button 
+                                                                key={perk}
+                                                                onClick={() => {
+                                                                    const currentBenefits = formData.benefits || '';
+                                                                    const newBenefits = currentBenefits ? `${currentBenefits}, ${perk}` : perk;
+                                                                    setFormData({...formData, benefits: newBenefits});
+                                                                }}
+                                                                className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[10px] font-medium text-slate-600 hover:border-[#6C3BFF] hover:bg-[#6C3BFF]/5 hover:text-[#6C3BFF] transition-all"
+                                                            >
+                                                                + {perk}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="pt-8 border-t border-slate-50">
                                             <div className="flex items-center gap-3 mb-8">
                                                 <h4 className="text-[13px] font-black text-slate-900 uppercase tracking-widest">Opportunity Mode & Participation Type</h4>
@@ -712,9 +817,15 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                         >
                                                             👥 Team Participation
                                                         </button>
+                                                        <button 
+                                                            onClick={() => setFormData({...formData, participationType: 'both'})}
+                                                            className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all ${formData.participationType === 'both' ? 'bg-white text-[#6C3BFF] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                                        >
+                                                            🤝 Both
+                                                        </button>
                                                     </div>
 
-                                                    {formData.participationType === 'team' && (
+                                                    {(formData.participationType === 'team' || formData.participationType === 'both') && (
                                                         <div className="mt-8 flex items-center gap-6 animate-in slide-in-from-top-2 duration-300">
                                                             <div className="flex-1">
                                                                 <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">Set team size</label>
@@ -1179,16 +1290,29 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                         </div>
                     </div>
 
-                    <div className="p-8 border-t border-slate-100 bg-white flex items-center justify-end gap-4 shrink-0">
-                        <button onClick={handleSaveDraft} className="px-8 py-3.5 bg-slate-50 text-slate-500 rounded-full font-bold text-sm hover:bg-slate-100 transition-all border border-slate-100">Save as Draft</button>
-                        <button 
-                            disabled={loading}
-                            onClick={handleNext} 
-                            className={`px-8 py-3.5 bg-[#6C3BFF] text-white rounded-full font-bold text-sm transition-all flex items-center gap-3 ${loading ? "opacity-50 cursor-not-allowed" : "hover:shadow-xl hover:shadow-purple-200"}`}
-                        >
-                            <span>{loading ? "Processing..." : (step === 2 ? "Publish" : "Save and next")}</span>
-                            <ChevronRight size={18} />
-                        </button>
+                    <div className="p-8 border-t border-slate-100 bg-white flex items-center justify-between gap-4 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <button onClick={handleSaveDraft} className="px-8 py-3.5 bg-slate-50 text-slate-500 rounded-full font-bold text-sm hover:bg-slate-100 transition-all border border-slate-100">Save as Draft</button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {step > 1 && (
+                                <button 
+                                    onClick={handlePrevious}
+                                    className="px-8 py-3.5 bg-white text-slate-600 rounded-full font-bold text-sm hover:bg-slate-50 transition-all border border-slate-200 flex items-center gap-3"
+                                >
+                                    <ArrowLeft size={18} />
+                                    <span>Previous</span>
+                                </button>
+                            )}
+                            <button 
+                                disabled={loading}
+                                onClick={handleNext} 
+                                className={`px-10 py-4 bg-[#6C3BFF] text-white rounded-full font-bold text-sm transition-all flex items-center gap-3 shadow-lg ${loading ? "opacity-50 cursor-not-allowed" : "hover:shadow-xl hover:shadow-purple-200 hover:scale-[1.02]"}`}
+                            >
+                                <span>{loading ? "Processing..." : (step === 2 ? "🚀 Post Opportunity" : "Save and next")}</span>
+                                {step === 2 ? <Upload size={18} /> : <ChevronRight size={18} />}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </motion.div>
