@@ -544,7 +544,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                         </div>
                         <div className="p-12 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 text-center">
                             <MessageSquare className="mx-auto text-slate-300 mb-4" size={48} />
-                            <h3 className="text-lg font-bold text-slate-900 font-['Outfit']">Premium Feature</h3>
+                            <h3 className="text-lg font-bold text-slate-900 font-sans">Premium Feature</h3>
                             <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm">
                                 Custom email templates and SMS notifications are available for Premium institutions.
                             </p>
@@ -556,7 +556,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">Member Onboarding</h2>
+                                <h2 className="text-2xl font-bold text-slate-900 font-sans">Member Onboarding</h2>
                                 <p className="text-slate-500 text-sm mt-1">Bulk invite judges or students via CSV upload</p>
                             </div>
                             <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl">
@@ -600,7 +600,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                                     <Upload className="text-[#6C3BFF]" size={32} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-900 font-['Outfit']">Drop CSV File Here</h3>
+                                    <h3 className="text-xl font-bold text-slate-900 font-sans">Drop CSV File Here</h3>
                                     <p className="text-slate-400 text-xs mt-2 font-medium">
                                         Columns required: <span className="text-[#6C3BFF] font-bold">Name, Email, Phone</span>
                                     </p>
@@ -618,7 +618,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                                         <div className="w-8 h-8 bg-[#6C3BFF] rounded-full flex items-center justify-center text-white text-xs font-black">
                                             {bulkList.length}
                                         </div>
-                                        <h3 className="font-bold text-slate-900 font-['Outfit']">Detected Members</h3>
+                                        <h3 className="font-bold text-slate-900 font-sans">Detected Members</h3>
                                     </div>
                                     <button 
                                         onClick={() => setBulkList([])}
@@ -705,7 +705,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
                 );
             case 'plan':
                 return (
-                    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 font-['Outfit']">
+                    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 font-sans">
                         <div className="space-y-1 border-b border-slate-100 pb-8">
                             <h2 className="text-2xl font-black text-slate-800 tracking-tight">Plans & Subscription</h2>
                             <p className="text-sm text-slate-400 font-medium">Compare plans and explore the benefits.</p>
@@ -838,7 +838,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
 
                         {/* FAQ Section */}
                         <div className="pt-24 space-y-12 pb-12">
-                            <h3 className="text-4xl font-black text-slate-800 text-center font-['Outfit']">Frequently asked questions</h3>
+                            <h3 className="text-4xl font-black text-slate-800 text-center font-sans">Frequently asked questions</h3>
                             <div className="max-w-4xl mx-auto space-y-3">
                                 {[
                                     {
@@ -932,7 +932,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ institutionId, onProfileUpd
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-1000 pb-20 font-['Outfit']">
+        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-1000 pb-20 font-sans">
             <div className="flex items-end justify-between px-2">
                 <div>
                     <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Institutional Settings</h1>

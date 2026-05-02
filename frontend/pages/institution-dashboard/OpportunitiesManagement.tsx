@@ -202,11 +202,11 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
 
     return (
         <>
-            <div className="space-y-8 animate-in fade-in duration-700 font-['Outfit']">
+            <div className="space-y-6 animate-in fade-in duration-700 font-sans">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-black text-slate-900">Opportunities</h1>
-                    <button onClick={onCreateEvent} className="bg-[#EBF5FF] hover:bg-[#D6E9FF] text-[#0A2E5C] px-6 py-2 rounded-full font-black text-sm transition-all flex items-center gap-2 border border-[#B8D9FF]">
-                        <Plus size={18} /> Post
+                    <h1 className="text-xl font-black text-slate-900">Opportunities</h1>
+                    <button onClick={onCreateEvent} className="bg-[#EBF5FF] hover:bg-[#D6E9FF] text-[#0A2E5C] px-5 py-2 rounded-full font-black text-sm transition-all flex items-center gap-2 border border-[#B8D9FF]">
+                        <Plus size={16} /> Post
                     </button>
                 </div>
 
@@ -267,7 +267,7 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                             initial={{ opacity: 0, x: 20, y: -20 }}
                             animate={{ opacity: 1, x: 0, y: 0 }}
                             exit={{ opacity: 0, x: 20 }}
-                            className="fixed top-8 right-8 z-[1000] flex items-center bg-white border border-green-100 rounded-lg shadow-2xl shadow-green-900/10 overflow-hidden font-['Outfit']"
+                            className="fixed top-8 right-8 z-[1000] flex items-center bg-white border border-green-100 rounded-lg shadow-2xl shadow-green-900/10 overflow-hidden font-sans"
                         >
                             <div className="bg-green-500 p-4 text-white">
                                 <div className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center">
@@ -285,24 +285,24 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                 </AnimatePresence>
 
                 {loading ? (
-                    <div className="py-20 flex flex-col items-center justify-center space-y-4">
-                        <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-                        <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Loading Opportunities...</p>
+                    <div className="py-16 flex flex-col items-center justify-center space-y-3">
+                        <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading Opportunities...</p>
                     </div>
                 ) : filteredEvents.length > 0 ? (
-                    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-[#F4F9FF] border-b border-slate-100">
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center w-16">S.No.</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest">Name</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Start Date</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">End Date</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Candidate</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Registrations</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center w-24">Action</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-16">S.No.</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Name</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Start Date</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">End Date</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Candidate</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Registrations</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-24">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -422,7 +422,7 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 font-['Outfit']"
+                        className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 font-sans"
                     >
                         <motion.div 
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}

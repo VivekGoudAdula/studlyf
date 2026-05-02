@@ -93,7 +93,7 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
         : submissions.filter(s => s.status === filterStatus);
 
     return (
-        <div className="space-y-6 font-['Outfit']">
+        <div className="space-y-6 font-sans">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight">Submissions Management</h1>

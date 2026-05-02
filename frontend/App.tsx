@@ -53,6 +53,8 @@ import InstitutionDashboard from './pages/institution-dashboard/InstitutionDashb
 import RoleFixer from './RoleFixer';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import OpportunitiesList from './pages/opportunities/OpportunitiesList';
+import OpportunityDetails from './pages/opportunities/OpportunityDetails';
 
 
 // Unique Components
@@ -207,6 +209,8 @@ const App: React.FC = () => {
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
             <Route path="/institution-dashboard/*" element={<ProtectedRoute><InstitutionDashboard /></ProtectedRoute>} />
+            <Route path="/opportunities" element={<ProtectedRoute><OpportunitiesList /></ProtectedRoute>} />
+            <Route path="/opportunities/:id" element={<ProtectedRoute><OpportunityDetails /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
             {/* Admin */}

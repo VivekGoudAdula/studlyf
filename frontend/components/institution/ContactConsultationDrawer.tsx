@@ -47,7 +47,7 @@ const ContactConsultationDrawer: React.FC<ContactConsultationDrawerProps> = ({ i
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] bg-white z-[1000] shadow-2xl overflow-y-auto font-['Outfit']"
+                        className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] bg-white z-[1000] shadow-2xl overflow-y-auto font-sans"
                     >
                         <div className="p-8">
                             <div className="flex items-center justify-between mb-8">

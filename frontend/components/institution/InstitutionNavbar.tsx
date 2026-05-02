@@ -202,11 +202,11 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
     };
 
     return (
-        <div className="w-full relative z-[100] font-['Outfit'] px-8 pt-6">
+        <div className="w-full relative z-[100] font-sans px-6 pt-4">
             <motion.div 
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="w-full bg-[#6C3BFF] h-20 rounded-[2.5rem] shadow-2xl shadow-purple-200 flex items-center px-8 relative overflow-hidden group"
+                className="w-full bg-[#6C3BFF] h-16 rounded-[1.5rem] shadow-2xl shadow-purple-200 flex items-center px-6 relative overflow-hidden group"
             >
                 {/* 1. Left (Empty to match old layout) */}
                 <div className="w-12 shrink-0 hidden lg:block" />
@@ -224,7 +224,7 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleSearchKeyDown}
                             placeholder="Search events, students, or reports..." 
-                            className="w-full pl-16 pr-6 py-4 bg-white/25 backdrop-blur-3xl border border-white/40 rounded-[2rem] text-white placeholder:text-white/60 outline-none focus:bg-white/30 focus:border-white/60 transition-all font-['Outfit'] font-medium text-sm shadow-xl"
+                            className="w-full pl-14 pr-6 py-2.5 bg-white/25 backdrop-blur-3xl border border-white/40 rounded-full text-white placeholder:text-white/60 outline-none focus:bg-white/30 focus:border-white/60 transition-all font-sans font-medium text-xs shadow-xl"
                         />
                         {/* CTRL K Badge Removed */}
  
@@ -384,33 +384,33 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
                     {/* Profile Section with Logo */}
                     <div 
                         onClick={onNavigateToSettings}
-                        className="flex items-center gap-3 p-1.5 pr-5 bg-white/10 border border-white/10 rounded-[2rem] hover:bg-white/20 transition-all cursor-pointer group"
+                        className="flex items-center gap-2.5 p-1 bg-white/10 border border-white/10 rounded-full hover:bg-white/20 transition-all cursor-pointer group"
                     >
                         {/* Logo replaces the 'N' */}
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#6C3BFF] font-black shadow-lg overflow-hidden shrink-0 border border-white/20">
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#6C3BFF] font-black shadow-lg overflow-hidden shrink-0 border border-white/20 text-xs">
                              {profile?.logo_url && !imgError ? (
                                 <img src={profile.logo_url} className="w-full h-full object-cover" onError={() => setImgError(true)} />
                              ) : (
                                 displayName.charAt(0).toUpperCase()
                              )}
                         </div>
-                        <div className="hidden sm:block max-w-[140px] overflow-hidden text-left">
-                            <p className="text-sm font-bold text-white leading-tight truncate font-['Outfit']">
+                        <div className="hidden sm:block max-w-[120px] overflow-hidden text-left">
+                            <p className="text-xs font-bold text-white leading-tight truncate font-sans">
                                 {profile?.name || displayName}
                             </p>
-                            <p className="text-[10px] font-black text-purple-200/50 uppercase tracking-widest font-['Outfit']">Admin</p>
+                            <p className="text-[9px] font-black text-purple-200/50 uppercase tracking-widest font-sans">Admin</p>
                         </div>
                         
-                        <div className="h-8 w-px bg-white/10 mx-2 hidden sm:block" />
+                        <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
                         
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleLogout();
                             }}
-                            className="p-2 text-purple-200 hover:text-white transition-colors"
+                            className="p-1.5 text-purple-200 hover:text-white transition-colors"
                         >
-                            <LogOut size={18} />
+                            <LogOut size={16} />
                         </button>
                     </div>
                 </div>

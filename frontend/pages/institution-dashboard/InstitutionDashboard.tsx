@@ -109,26 +109,26 @@ const InstitutionDashboard: React.FC = () => {
                         {/* Header Area */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
                             <div>
-                                <h1 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                                <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
                                     Welcome Back, {user?.name || 'Admin'} <span className="animate-bounce">👋</span>
                                 </h1>
                                 <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
                                     Here is the summary of overall performance <Info size={14} className="text-slate-300" />
                                 </p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div id="team-manage-icon" className="px-3 py-1 bg-slate-100 rounded-full flex items-center justify-center text-[11px] font-black text-slate-500">KN</div>
+                            <div className="flex items-center gap-2">
+                                <div id="team-manage-icon" className="px-2.5 py-1 bg-slate-100 rounded-full flex items-center justify-center text-[10px] font-black text-slate-500">KN</div>
                                 <button 
                                     onClick={() => setIsCreditModalOpen(true)}
-                                    className="px-5 py-2.5 bg-white border border-slate-200 rounded-full text-[11px] font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2"
+                                    className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2"
                                 >
                                     Credit Balance
                                 </button>
                                 <button 
                                     onClick={() => setIsTourOpen(true)}
-                                    className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-[#6C3BFF] transition-all shadow-sm"
+                                    className="w-9 h-9 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-[#6C3BFF] transition-all shadow-sm"
                                 >
-                                    <Info size={18} />
+                                    <Info size={16} />
                                 </button>
                             </div>
                         </div>
@@ -152,24 +152,24 @@ const InstitutionDashboard: React.FC = () => {
                             <motion.div 
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="w-full xl:w-[380px] bg-gradient-to-br from-[#F5F3FF] to-[#EDE9FE] rounded-3xl p-8 relative overflow-hidden group shadow-xl shadow-purple-900/5"
+                                className="w-full xl:w-[340px] bg-gradient-to-br from-[#F5F3FF] to-[#EDE9FE] rounded-2xl p-6 relative overflow-hidden group shadow-xl shadow-purple-900/5"
                             >
                                 <div className="relative z-10">
-                                    <h3 className="text-xl font-black text-slate-900 mb-2">Customise your Experience</h3>
-                                    <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6 max-w-[200px]">
+                                    <h3 className="text-lg font-black text-slate-900 mb-1">Customise your Experience</h3>
+                                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed mb-4 max-w-[180px]">
                                         Enhance your experience with tailored services designed to meet your specific requirements.
                                     </p>
                                     <button 
                                         onClick={() => setIsConsultationOpen(true)}
-                                        className="px-6 py-2.5 bg-slate-800 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-900 transition-all"
+                                        className="px-5 py-2 bg-slate-800 text-white rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-900 transition-all"
                                     >
-                                        Contact Us <ChevronRight size={14} />
+                                        Contact Us <ChevronRight size={12} />
                                     </button>
                                 </div>
                                 {/* 3D Icon Effect */}
-                                <div className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-2xl border-8 border-slate-50/50">
-                                    <div className="w-24 h-24 bg-[#7C3AED] rounded-[2rem] flex items-center justify-center text-white text-3xl font-black rotate-[-15deg]">
-                                        <span className="text-[14px] uppercase tracking-tighter">Studlyf</span>
+                                <div className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-2xl border-4 border-slate-50/50">
+                                    <div className="w-20 h-20 bg-[#7C3AED] rounded-[1.5rem] flex items-center justify-center text-white text-3xl font-black rotate-[-15deg]">
+                                        <span className="text-[12px] uppercase tracking-tighter">Studlyf</span>
                                     </div>
                                 </div>
                             </motion.div>
@@ -197,7 +197,7 @@ const InstitutionDashboard: React.FC = () => {
     };
 
     return (
-        <div className="h-screen bg-[#F8FAFC] flex overflow-hidden font-['Outfit']">
+        <div className="h-screen bg-[#F8FAFC] flex overflow-hidden font-sans">
             {/* Sidebar: Fixed width, full height */}
             <Sidebar 
                 activeTab={activeTab} 
@@ -214,8 +214,8 @@ const InstitutionDashboard: React.FC = () => {
                     onNavigateToSettings={() => setActiveTab('settings')}
                 />
                 
-                <main className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8">
-                    <div className="max-w-[1600px] mx-auto py-8">
+                <main className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
+                    <div className="max-w-[1400px] mx-auto py-6">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeTab}
@@ -228,7 +228,6 @@ const InstitutionDashboard: React.FC = () => {
                             </motion.div>
                         </AnimatePresence>
                     </div>
-                    <Footer />
                 </main>
             </div>
 

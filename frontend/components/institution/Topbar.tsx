@@ -108,7 +108,7 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
         <div className="w-full flex items-center justify-between mb-10 animate-in slide-in-from-top duration-1000 relative z-[100]">
             {/* Left Side: Greeting */}
             <div className="hidden lg:block">
-                <h1 className="text-2xl font-['Outfit'] font-bold text-slate-900 flex items-center gap-3">
+                <h1 className="text-2xl font-sans font-bold text-slate-900 flex items-center gap-3">
                     Welcome Back, <span className="text-[#6C3BFF]">{displayName}</span> 👋
                 </h1>
                 <p className="text-slate-400 text-sm font-medium mt-1">Here's your institutional overview for today.</p>

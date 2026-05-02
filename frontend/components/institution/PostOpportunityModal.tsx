@@ -159,6 +159,13 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
         };
         fetchProfile();
     }, [isOpen, institutionId]);
+    
+    // Sync editor content with formData.description without resetting cursor during typing
+    useEffect(() => {
+        if (editorRef.current && editorRef.current.innerHTML !== formData.description) {
+            editorRef.current.innerHTML = formData.description;
+        }
+    }, [formData.description]);
 
     const steps = [
         { id: 1, label: 'Opportunity details' },
@@ -314,7 +321,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                 initial={{ scale: 0.98, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.98, opacity: 0, y: 10 }}
-                className="relative w-full max-w-6xl bg-[#F8FAFC] rounded-[1rem] shadow-2xl overflow-hidden flex h-[90vh] font-['Outfit']"
+                className="relative w-full max-w-6xl bg-[#F8FAFC] rounded-[1rem] shadow-2xl overflow-hidden flex h-[90vh] font-sans"
             >
                 {/* 1. Left Sidebar */}
                 <div className="w-72 bg-white border-r border-slate-200 p-8 flex flex-col shrink-0">
@@ -380,7 +387,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Add Logo</span>
                                                 </>
                                             )}
-                                            <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+                                            <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'logo')} accept="image/*" />
                                         </label>
                                         <div className="flex-1">
                                             <p className="text-xs text-slate-400 leading-relaxed">Supported logo image JPG, JPEG, or PNG. Max 1 MB.</p>
@@ -446,18 +453,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-8">
-                                            <div>
-                                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Add Logo (700x700)</label>
-                                                <label className="group relative h-48 border-2 border-dashed border-slate-200 rounded-[2rem] flex items-center justify-center bg-white cursor-pointer hover:border-[#6C3BFF] transition-all overflow-hidden">
-                                                    {logoPreview ? (
-                                                        <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-4" />
-                                                    ) : (
-                                                        <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:scale-105 transition-transform">🏆</div>
-                                                    )}
-                                                    <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'logo')} accept="image/*" />
-                                                </label>
-                                            </div>
+                                        <div className="grid grid-cols-1">
                                             <div>
                                                 <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Add Banner (700x400)</label>
                                                 <label className="group relative h-48 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center bg-white cursor-pointer hover:border-[#6C3BFF] transition-all overflow-hidden">
@@ -538,7 +534,6 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                 contentEditable
                                                 onInput={(e) => setFormData({...formData, description: e.currentTarget.innerHTML})}
                                                 className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-b-2xl outline-none transition-all text-slate-900 font-medium min-h-[150px] focus:border-[#6C3BFF]/30 overflow-y-auto"
-                                                dangerouslySetInnerHTML={{ __html: formData.description }}
                                             />
                                         </div>
 
@@ -1211,7 +1206,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-xl bg-white rounded-[1.5rem] shadow-2xl overflow-hidden font-['Outfit']"
+                        className="relative w-full max-w-xl bg-white rounded-[1.5rem] shadow-2xl overflow-hidden font-sans"
                     >
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                             <div>
@@ -1352,7 +1347,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
             {isSupportDrawerOpen && (
                 <>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSupportDrawerOpen(false)} className="fixed inset-0 z-[400] bg-slate-900/40 backdrop-blur-sm" />
-                    <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed right-0 top-0 bottom-0 w-[450px] bg-white z-[450] shadow-2xl flex flex-col font-['Outfit']">
+                    <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed right-0 top-0 bottom-0 w-[450px] bg-white z-[450] shadow-2xl flex flex-col font-sans">
                         <div className="p-8 border-b border-slate-100 flex items-center justify-between">
                             <h3 className="text-xl font-black text-slate-900">Get in touch</h3>
                             <button onClick={() => setIsSupportDrawerOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>

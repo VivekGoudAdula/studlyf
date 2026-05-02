@@ -124,3 +124,5 @@ workflow_states_col = db["workflow_states"] # State Machine (Applied, Shortliste
 jobs_col = db["jobs"]
 internships_col = db["internships"]
 applications_col = db["applications"] # Tracks Selections, Rejections, and Status
+opportunities_col = db["opportunities"]
+opportunity_applications_col = db["opportunity_applications"]

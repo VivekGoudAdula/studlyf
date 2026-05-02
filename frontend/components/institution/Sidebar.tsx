@@ -51,35 +51,35 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onPost }) => 
 
 
     return (
-        <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col shrink-0 pt-4">
-            <div className="p-8 pb-4 flex items-center gap-3">
-                <img src="/images/studlyf.png" alt="Studlyf" className="h-10" />
+        <div className="w-60 h-screen bg-white border-r border-gray-100 flex flex-col shrink-0 sticky top-0 overflow-hidden">
+            <div className="p-6 pb-2 flex items-center gap-2">
+                <img src="/images/studlyf.png" alt="Studlyf" className="h-8" />
             </div>
 
-            <div className="px-4 mb-6">
+            <div className="px-4 mb-4">
                 <button 
                     onClick={onPost}
-                    className="w-full py-3 bg-gradient-to-r from-[#6C3BFF] to-[#9F6BFF] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-200 hover:scale-[1.02] transition-all"
+                    className="w-full py-2.5 bg-gradient-to-r from-[#6C3BFF] to-[#9F6BFF] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-200 hover:scale-[1.02] transition-all text-sm"
                 >
                     <Plus size={20} />
                     Post
                 </button>
             </div>
 
-            <nav className="flex-1 px-4 space-y-1">
+            <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto custom-scrollbar py-2">
                 {sidebarItems.map((item) => (
                     <motion.button
                         key={item.id}
-                        whileHover={{ x: 5 }}
+                        whileHover={{ x: 4 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => onTabChange(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left whitespace-nowrap ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-medium transition-all text-left whitespace-nowrap text-xs ${
                             activeTab === item.id 
                                 ? 'bg-purple-50 text-[#6C3BFF] shadow-sm' 
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                     >
-                        <item.icon size={20} className={activeTab === item.id ? 'text-[#6C3BFF]' : 'text-gray-400'} />
+                        <item.icon size={18} className={activeTab === item.id ? 'text-[#6C3BFF]' : 'text-gray-400'} />
                         {item.label}
                         {activeTab === item.id && (
                             <motion.div 
@@ -91,18 +91,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onPost }) => 
                 ))}
             </nav>
 
-            <div className="p-4 mt-auto border-t border-gray-50">
-                <div className="bg-purple-50 p-4 rounded-2xl mb-4">
-                    <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-1">Support</p>
-                    <p className="text-xs text-gray-600 mb-3">Facing any issues? Our team is here to help.</p>
-                    <button className="text-xs font-bold text-[#6C3BFF] hover:underline">Contact Support</button>
+            <div className="p-3 mt-auto border-t border-gray-50 bg-white">
+                <div className="bg-purple-50 p-3 rounded-xl mb-2">
+                    <p className="text-[9px] font-bold text-purple-600 uppercase tracking-widest mb-1">Support</p>
+                    <p className="text-[10px] text-gray-600 mb-2">Facing any issues? Our team is here to help.</p>
+                    <button className="text-[10px] font-bold text-[#6C3BFF] hover:underline">Contact Support</button>
                 </div>
 
                 <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-red-500 hover:bg-red-50 transition-all mt-2"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-medium text-red-500 hover:bg-red-50 transition-all text-xs"
                 >
-                    <LogOut size={20} className="text-red-500" />
+                    <LogOut size={18} className="text-red-500" />
                     Logout
                 </button>
             </div>

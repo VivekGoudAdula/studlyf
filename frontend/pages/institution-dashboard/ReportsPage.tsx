@@ -105,7 +105,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ institutionId = 'default_inst
     );
 
     return (
-        <div className="space-y-8 pb-12 font-['Outfit']">
+        <div className="space-y-8 pb-12 font-sans">
             <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-4xl font-black text-[#0f172a] tracking-tight">Reports & Analytics</h1>

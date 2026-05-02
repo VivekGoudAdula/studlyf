@@ -1,15 +1,25 @@
 from datetime import datetime, timezone
 import asyncio
+import os
+import uuid
+import shutil
+import json
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Form, File, UploadFile
 from services.email_service import send_notification_email
 from services.institutional_analytics_service import analytics_service
 from services.institutional_certificate_service import certificate_service
 from services.leaderboard_service import leaderboard_service
-from db import leaderboard_col, events_col, participants_col, certificates_col, notifications_col, institutions_col, users_col, teams_col, submissions_col, scores_col, results_col, audit_logs_col
+from db import leaderboard_col, events_col, participants_col, certificates_col, notifications_col, institutions_col, users_col, teams_col, submissions_col, scores_col, results_col, audit_logs_col, opportunities_col
 from bson import ObjectId
 from services.audit_service import log_admin_action
 import logging
+
+# Ensure upload directory exists
+EVENTS_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "events")
+os.makedirs(EVENTS_UPLOAD_DIR, exist_ok=True)
+
+BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
 
 logger = logging.getLogger(__name__)
 
@@ -956,11 +966,83 @@ async def create_event_quiz(event_id: str, quiz_data: dict):
     return {"quiz_id": str(result.inserted_id)}
 
 @router.post("/events/create-professional")
-async def create_pro_event(event_data: dict):
-    """Creates a high-end event with stages, fees, and prizes."""
+async def create_pro_event(request: Request):
+    """Creates a high-end event with stages, fees, and prizes, supporting multipart images."""
     from db import events_col
+    
+    # 1. Parse Form Data
+    form = await request.form()
+    event_data = {}
+    
+    # Extract all string/json fields
+    for key, value in form.items():
+        if key in ['logo_file', 'banner_file', 'festival_logo_file', 'festival_banner_file']:
+            continue
+            
+        try:
+            # Try to parse as JSON if it looks like an object/array
+            if isinstance(value, str) and (value.startswith('{') or value.startswith('[')):
+                event_data[key] = json.loads(value)
+            else:
+                # Handle numeric strings
+                if isinstance(value, str) and value.isdigit():
+                    event_data[key] = int(value)
+                elif value.lower() == 'true':
+                    event_data[key] = True
+                elif value.lower() == 'false':
+                    event_data[key] = False
+                else:
+                    event_data[key] = value
+        except:
+            event_data[key] = value
+
+    # 2. Handle Image Uploads
+    async def save_image(upload_file: UploadFile, prefix: str):
+        if not upload_file or not upload_file.filename:
+            return None
+        ext = os.path.splitext(upload_file.filename)[1].lower()
+        if ext not in ['.jpg', '.jpeg', '.png', '.webp']:
+            return None
+            
+        fname = f"{prefix}_{uuid.uuid4()}{ext}"
+        fpath = os.path.join(EVENTS_UPLOAD_DIR, fname)
+        
+        # Ensure we read the file correctly
+        content = await upload_file.read()
+        with open(fpath, "wb") as f:
+            f.write(content)
+            
+        return f"{BASE_URL}/uploads/events/{fname}"
+
+    # Process files
+    logo_file = form.get('logo_file')
+    banner_file = form.get('banner_file')
+    fest_logo_file = form.get('festival_logo_file')
+    fest_banner_file = form.get('festival_banner_file')
+    
+    if isinstance(logo_file, UploadFile):
+        url = await save_image(logo_file, "logo")
+        if url: event_data["logo_url"] = url
+        
+    if isinstance(banner_file, UploadFile):
+        url = await save_image(banner_file, "banner")
+        if url: event_data["banner_url"] = url
+
+    # Handle festival images if present
+    if "festivalData" in event_data:
+        fest_data = event_data["festivalData"]
+        if isinstance(fest_logo_file, UploadFile):
+            url = await save_image(fest_logo_file, "fest_logo")
+            if url: fest_data["logo_url"] = url
+        if isinstance(fest_banner_file, UploadFile):
+            url = await save_image(fest_banner_file, "fest_banner")
+            if url: fest_data["banner_url"] = url
+        event_data["festivalData"] = fest_data
+
+    # 3. Finalize Event Data
     event_data["created_at"] = datetime.utcnow()
     event_data["status"] = "DRAFT"
+    
     # Ensure stages structure exists
     if "stages" not in event_data:
         event_data["stages"] = [
@@ -968,9 +1050,10 @@ async def create_pro_event(event_data: dict):
             {"name": "Submission", "type": "ONLINE"},
             {"name": "Finals", "type": "OFFLINE"}
         ]
+        
     result = await events_col.insert_one(event_data)
     
-    # Production Trigger: Create a notification record for the dashboard
+    # 4. Production Trigger: Create a notification record
     from db import notifications_col
     try:
         await notifications_col.insert_one({
@@ -984,7 +1067,46 @@ async def create_pro_event(event_data: dict):
     except Exception as e:
         logger.error(f"[NOTIF ERROR] Trigger failed: {str(e)}")
 
-    return {"event_id": str(result.inserted_id)}
+    # [SYNC] Centralized Opportunity Pipeline
+    # Mirror high-level event metadata to the centralized 'opportunities' collection 
+    # for student dashboard integration.
+    try:
+        from services.opportunity_service import create_opportunity
+        
+        # Determine opportunity type from category/opportunityType
+        opp_type = event_data.get("opportunityType", "Competition")
+        if "Hackathon" in opp_type: opp_type = "Hackathon"
+        elif "Job" in opp_type: opp_type = "Job"
+        elif "Internship" in opp_type: opp_type = "Internship"
+        else: opp_type = "Competition"
+
+        opp_data = {
+            "title": event_data.get("title", "New Opportunity"),
+            "organization": event_data.get("organisation", "Partner Institution"),
+            "type": opp_type,
+            "description": event_data.get("description", ""),
+            "location": f"{event_data.get('city', 'Remote')}, {event_data.get('opportunityMode', 'Online')}",
+            "deadline": event_data.get("registrationDeadline", datetime.now(timezone.utc)),
+            "applicantsCount": 0,
+            "createdAt": datetime.utcnow(),
+            "createdBy": event_data.get("institution_id", "default_inst"),
+            "status": "active",
+            "event_link_id": str(result.inserted_id) # link back to full event
+        }
+        
+        # Ensure deadline is datetime
+        if isinstance(opp_data["deadline"], str):
+            try:
+                opp_data["deadline"] = datetime.fromisoformat(opp_data["deadline"].replace("Z", "+00:00"))
+            except:
+                opp_data["deadline"] = datetime.now(timezone.utc)
+
+        await opportunities_col.insert_one(opp_data)
+        logger.info(f"[SYNC] Event {result.inserted_id} mirrored to opportunities collection.")
+    except Exception as e:
+        logger.error(f"[SYNC ERROR] Failed to mirror event to opportunities: {str(e)}")
+
+    return {"event_id": str(result.inserted_id), "status": "success"}
 
 # ============================================================
 # EXPORT & DISTRIBUTION ENDPOINTS (Blueprint Requirements)

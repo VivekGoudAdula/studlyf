@@ -67,7 +67,7 @@ const DashboardTour: React.FC<DashboardTourProps> = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[2000] pointer-events-none font-['Outfit']">
+        <div className="fixed inset-0 z-[2000] pointer-events-none font-sans">
             {/* NO OVERLAY / NO SPOTLIGHT as requested */}
 
             {/* Tooltip */}

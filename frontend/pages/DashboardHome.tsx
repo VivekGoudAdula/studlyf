@@ -24,6 +24,7 @@ import AdsCarousel from '../components/AdsCarousel';
 import GetHiredSection from '../components/GetHiredSection';
 import { DevHeroSection } from '../components/DevHeroSection';
 import FeaturedColleges from '../components/FeaturedColleges';
+import OpportunitySlider from '../components/opportunities/OpportunitySlider';
 // import { NeonBackground } from '../components/NeonBackground';
 
 // Removed DUMMY_COURSES to only show database content.
@@ -52,6 +53,27 @@ const DashboardHome: React.FC = () => {
 
     fetchCourses();
   }, []);
+
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [appliedIds, setAppliedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchOpps = async () => {
+      try {
+        const [oppRes, appRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/opportunities`),
+          user ? fetch(`${API_BASE_URL}/api/opportunities/user/${user.user_id}/applications`) : Promise.resolve({ json: () => [] })
+        ]);
+        const opps = await oppRes.json();
+        const apps = await (appRes as any).json();
+        setOpportunities(opps);
+        setAppliedIds(apps.map((a: any) => a.opportunity_id));
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    };
+    fetchOpps();
+  }, [user]);
 
   const createSlug = (title: string, id: string) => {
     if (!title || !id) return '';
@@ -478,6 +500,20 @@ const DashboardHome: React.FC = () => {
         </section >
 
 
+
+        {/* Opportunities Section */}
+        <section className="mb-24 px-4 sm:px-0">
+          <OpportunitySlider opportunities={opportunities} appliedIds={appliedIds} />
+          <div className="flex justify-center mt-12">
+            <button 
+              onClick={() => navigate('/opportunities')}
+              className="group relative px-8 py-4 bg-white border border-purple-100 rounded-2xl text-sm font-black uppercase tracking-[0.2em] text-purple-600 hover:bg-purple-600 hover:text-white transition-all shadow-xl shadow-purple-900/5 flex items-center gap-3"
+            >
+              View More Opportunities
+              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </section>
 
         {/* Product Brief Section */}
         <section className="mb-16 mt-12 px-4 sm:px-0 relative overflow-hidden py-16 bg-[#FAFAFA] rounded-[3rem] border border-black/5" >

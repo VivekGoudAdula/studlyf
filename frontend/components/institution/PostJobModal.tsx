@@ -158,7 +158,7 @@ const PostJobModal: React.FC<PostJobModalProps> = ({ isOpen, onClose, institutio
                     initial={{ scale: 0.98, opacity: 0, y: 10 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.98, opacity: 0, y: 10 }}
-                    className="relative w-full max-w-5xl bg-[#F8FAFC] rounded-[1rem] shadow-2xl overflow-hidden flex h-[90vh] font-['Outfit']"
+                    className="relative w-full max-w-5xl bg-[#F8FAFC] rounded-[1rem] shadow-2xl overflow-hidden flex h-[90vh] font-sans"
                 >
                     {/* Sidebar */}
                     <div className="w-72 bg-white border-r border-slate-200 p-8 flex flex-col shrink-0">

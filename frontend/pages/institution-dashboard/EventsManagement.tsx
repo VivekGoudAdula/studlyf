@@ -145,11 +145,11 @@ const EventsManagement: React.FC<EventsManagementProps> = ({ institutionId = 'de
     });
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700 font-['Outfit']">
+        <div className="space-y-6 animate-in fade-in duration-700 font-sans">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-black text-slate-900">My Jobs & Internships</h1>
-                <button onClick={onCreateEvent} className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-6 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2 border border-blue-100">
-                    <Plus size={18} /> Post
+                <h1 className="text-xl font-black text-slate-900">My Jobs & Internships</h1>
+                <button onClick={onCreateEvent} className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-5 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2 border border-blue-100">
+                    <Plus size={16} /> Post
                 </button>
             </div>
 

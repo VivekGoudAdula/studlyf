@@ -280,7 +280,7 @@ def fix_progress(prog, default_status="locked"):
     # Merge defaults with actual data
     return {**defaults, **fix_id(prog)}
 
-from routes import submission_routes, judge_routes, event_routes, dashboard_routes
+from routes import submission_routes, judge_routes, event_routes, dashboard_routes, opportunity_routes
 
 
 @app.on_event("startup")
@@ -304,6 +304,7 @@ app.include_router(judge_routes.router)
 app.include_router(event_routes.router)
 app.include_router(dashboard_routes.router)
 app.include_router(integration_routes.router)
+app.include_router(opportunity_routes.router)
 
 
 @app.get("/api/user/{user_id}/badges")
