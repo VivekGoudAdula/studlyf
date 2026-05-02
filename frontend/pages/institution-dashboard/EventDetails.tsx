@@ -91,6 +91,8 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
     const [portalReviewNotice, setPortalReviewNotice] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
     const [subJudgePick, setSubJudgePick] = useState<Record<string, string[]>>({});
     const [assigningSubmission, setAssigningSubmission] = useState<string | null>(null);
+    const [stageSubmissions, setStageSubmissions] = useState<any[]>([]);
+    const [submissionSubTab, setSubmissionSubTab] = useState<'projects' | 'assets'>('projects');
 
     const portalRegistrationStatusLabel = (raw: string | undefined) => {
         const s = (raw || 'pending').toLowerCase();
@@ -191,6 +193,11 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                 .then(res => res.json())
                 .then(data => setSubmissions(Array.isArray(data) ? data : []))
                 .catch(() => setSubmissions([]));
+
+            fetch(`${API_BASE_URL}/api/opportunities/events/${eventId}/stage-submissions`, { headers: { ...authHeaders() } })
+                .then(res => res.json())
+                .then(data => setStageSubmissions(Array.isArray(data) ? data : []))
+                .catch(() => setStageSubmissions([]));
         }
     }, [eventId, activeTab, debouncedThreshold]);
 
@@ -835,111 +842,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                         </div>
                     </div>
                 );
-            case 'submissions':
-                return (
-                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="p-12 bg-slate-900 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl">
-                            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-10">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="px-4 py-1 bg-[#6C3BFF] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-purple-900/20">Review Interface</div>
-                                        <h3 className="text-4xl font-black tracking-tight">Portfolio Analysis</h3>
-                                    </div>
-                                    <p className="text-slate-400 max-w-md text-lg opacity-80 leading-relaxed">Centralized repository for all artifacts and evaluation metrics.</p>
-                                </div>
-                                <div className="flex gap-6">
-                                    <div className="text-center px-8 py-5 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-md">
-                                        <div className="text-3xl font-black text-[#6C3BFF]">{submissions?.length || 0}</div>
-                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Total Artifacts</div>
-                                    </div>
-                                    <div className="text-center px-8 py-5 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-md">
-                                        <div className="text-3xl font-black text-emerald-500">{(Array.isArray(submissions) ? submissions : []).filter(s => s.status === 'Scored').length || 0}</div>
-                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Validated</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="absolute -left-20 -top-20 w-96 h-96 bg-[#6C3BFF]/5 rounded-full blur-3xl"></div>
-                        </div>
 
-                        <div className="bg-white rounded-[3.5rem] border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/40">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50/50">
-                                    <tr>
-                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Team Identity</th>
-                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Score Aggregate</th>
-                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Protocol State</th>
-                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Judge assignment</th>
-                                        <th className="px-12 py-8 text-right text-[11px] font-black text-slate-400 uppercase tracking-widest">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {(Array.isArray(submissions) ? submissions : []).map((sub, i) => (
-                                        <tr key={sub._id || i} className="hover:bg-slate-50/50 transition-all duration-300">
-                                            <td className="px-12 py-10">
-                                                <div className="font-black text-slate-900 text-lg tracking-tight">{sub.team_name}</div>
-                                                <div className="text-xs text-slate-400 font-bold mt-1.5 flex items-center gap-2"><Layers size={12} /> {sub.project_title || 'N/A Portfolio'}</div>
-                                            </td>
-                                            <td className="px-12 py-10">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-32 h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                                        <motion.div initial={{ width: 0 }} animate={{ width: `${sub.total_score || 0}%` }} className="h-full bg-[#6C3BFF] shadow-lg shadow-purple-200" />
-                                                    </div>
-                                                    <span className="font-black text-slate-900 text-sm">{sub.total_score || 0}%</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-12 py-10 text-center">
-                                                <span className={`px-5 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-sm ${sub.status === 'Scored' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
-                                                    {sub.status || 'Pending'}
-                                                </span>
-                                            </td>
-                                            <td className="px-12 py-10 align-top">
-                                                <div className="flex flex-col gap-2 max-w-[220px]">
-                                                    <select
-                                                        multiple
-                                                        size={Math.min(4, Math.max(2, (event.judges?.length || 0)))}
-                                                        className="rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700 p-2 bg-white"
-                                                        value={subJudgePick[sub._id] ?? (sub.assigned_judge_emails as string[]) ?? []}
-                                                        onChange={(e) => {
-                                                            const v = Array.from(e.target.selectedOptions, (o) => o.value);
-                                                            setSubJudgePick((p) => ({ ...p, [sub._id]: v }));
-                                                        }}
-                                                    >
-                                                        {(event.judges || []).map((j: any) => (
-                                                            <option key={j.email} value={j.email}>
-                                                                {j.name || j.email}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <button
-                                                        type="button"
-                                                        disabled={assigningSubmission === sub._id || !(event.judges?.length)}
-                                                        onClick={() =>
-                                                            handleAssignJudgesToSubmission(
-                                                                sub._id,
-                                                                subJudgePick[sub._id] ?? (sub.assigned_judge_emails as string[]) ?? [],
-                                                            )
-                                                        }
-                                                        className="px-3 py-2 rounded-xl bg-[#6C3BFF]/10 text-[#6C3BFF] text-[9px] font-black uppercase tracking-widest disabled:opacity-40"
-                                                    >
-                                                        {assigningSubmission === sub._id ? 'Saving…' : 'Save panel'}
-                                                    </button>
-                                                    <p className="text-[9px] text-slate-400 font-medium leading-snug">
-                                                        Empty = all invited judges may review. Set names to restrict who sees this submission in the judge portal.
-                                                    </p>
-                                                </div>
-                                            </td>
-                                            <td className="px-12 py-10 text-right">
-                                                <button className="p-4 bg-slate-50 text-slate-400 hover:text-[#6C3BFF] hover:bg-purple-50 rounded-2xl transition-all shadow-sm">
-                                                    <Eye size={20} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                );
             case 'basic':
                 return (
                     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1073,7 +976,11 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                                 </table>
                             </div>
                         </div>
-
+                    </div>
+                );
+            case 'submissions':
+                return (
+                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="p-12 bg-slate-900 rounded-[3.5rem] text-white shadow-2xl relative overflow-hidden">
                             <div className="relative z-10 mb-6">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Judge pipeline</p>
@@ -1132,100 +1039,190 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutio
                             <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
                         </div>
 
-                        <div className="flex gap-6 p-2 bg-slate-100 rounded-[2.5rem] w-fit shadow-inner flex-wrap">
-                            {BUNDLE_TABS.map((tab) => (
-                                <button 
-                                    key={tab} 
-                                    onClick={() => setBundleTab(tab)} 
-                                    className={`px-12 py-4 rounded-[1.8rem] font-black text-xs uppercase tracking-widest transition-all ${bundleTab === tab ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
-                                >
-                                    {BUNDLE_TAB_LABEL[tab] || tab} ({bundleData?.[tab]?.length || 0})
-                                </button>
-                            ))}
+                        <div className="flex items-center gap-4 mb-8">
+                            <button 
+                                onClick={() => setSubmissionSubTab('projects')}
+                                className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${submissionSubTab === 'projects' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                            >
+                                Candidate Selection Bundles
+                            </button>
+                            <button 
+                                onClick={() => setSubmissionSubTab('assets')}
+                                className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${submissionSubTab === 'assets' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                            >
+                                Phase Deliverables (PPT/PDF)
+                            </button>
                         </div>
 
-                        <div className="bg-white rounded-[3.5rem] border border-slate-100 overflow-hidden shadow-sm">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50/50">
-                                    <tr>
-                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Candidate Identity</th>
-                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Score Aggregate</th>
-                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Judges Verified</th>
-                                        <th className="px-12 py-8 text-right text-[11px] font-black text-slate-400 uppercase tracking-widest">Authorization</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {(bundleData?.[bundleTab] || []).length > 0 ? (
-                                        bundleData[bundleTab].map((item: any) => (
-                                            <tr key={item.team_id} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-12 py-10">
-                                                    <div className="font-black text-slate-900 text-lg tracking-tight">{item.team_name}</div>
-                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                                                        {item.source === 'portal_application'
-                                                            ? `Portal · ${item.email || item.application_id || ''}`
-                                                            : `ID: ${String(item.team_id).slice(-8)}`}
-                                                    </div>
-                                                </td>
-                                                <td className="px-12 py-10 text-center">
-                                                    <div className="inline-flex items-center gap-3">
-                                                        <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-[#6C3BFF]" style={{ width: `${item.score}%` }}></div>
+                        {submissionSubTab === 'projects' ? (
+                            <div className="space-y-8">
+                                <div className="flex gap-6 p-2 bg-slate-100 rounded-[2.5rem] w-fit shadow-inner flex-wrap">
+                                    {BUNDLE_TABS.map((tab) => (
+                                        <button 
+                                            key={tab} 
+                                            onClick={() => setBundleTab(tab)} 
+                                            className={`px-12 py-4 rounded-[1.8rem] font-black text-xs uppercase tracking-widest transition-all ${bundleTab === tab ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            {BUNDLE_TAB_LABEL[tab] || tab} ({bundleData?.[tab]?.length || 0})
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="bg-white rounded-[3.5rem] border border-slate-100 overflow-hidden shadow-sm">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-slate-50/50">
+                                            <tr>
+                                                <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Candidate Identity</th>
+                                                <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Score Aggregate</th>
+                                                <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Judges Verified</th>
+                                                <th className="px-12 py-8 text-right text-[11px] font-black text-slate-400 uppercase tracking-widest">Authorization</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {(bundleData?.[bundleTab] || []).length > 0 ? (
+                                                bundleData[bundleTab].map((item: any) => (
+                                                    <tr key={item.team_id} className="hover:bg-slate-50/50 transition-colors group">
+                                                        <td className="px-12 py-10">
+                                                            <div className="font-black text-slate-900 text-lg tracking-tight">{item.team_name}</div>
+                                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                                                                {item.source === 'portal_application'
+                                                                    ? `Portal · ${item.email || item.application_id || ''}`
+                                                                    : `ID: ${String(item.team_id).slice(-8)}`}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-12 py-10 text-center">
+                                                            <div className="inline-flex items-center gap-3">
+                                                                <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div className="h-full bg-[#6C3BFF]" style={{ width: `${item.score}%` }}></div>
+                                                                </div>
+                                                                <span className="font-black text-slate-900 text-sm">{item.score}%</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-12 py-10 text-center">
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <CheckCircle2 size={14} className={item.is_fully_evaluated ? "text-emerald-500" : "text-slate-300"} />
+                                                                <span className="font-bold text-slate-600 text-sm">{item.judges_completed} / {event.judges?.length || 0}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-12 py-10 text-right">
+                                                            <div className="flex items-center justify-end gap-3">
+                                                                <button 
+                                                                    onClick={() =>
+                                                                        item.source === 'portal_application'
+                                                                            ? undefined
+                                                                            : handleUpdateStatus(item.team_id, 'Shortlisted', item)
+                                                                    }
+                                                                    disabled={item.source === 'portal_application'}
+                                                                    className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                                        item.source === 'portal_application'
+                                                                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default'
+                                                                            : item.status === 'Shortlisted'
+                                                                              ? 'bg-emerald-500 text-white'
+                                                                              : 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white'
+                                                                    }`}
+                                                                >
+                                                                    {item.source === 'portal_application'
+                                                                        ? 'Shortlisted (portal)'
+                                                                        : item.status === 'Shortlisted'
+                                                                          ? 'Shortlisted'
+                                                                          : 'Shortlist'}
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleUpdateStatus(item.team_id, 'Rejected', item)}
+                                                                    className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${item.status === 'Rejected' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-500 hover:text-white'}`}
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={4} className="px-12 py-32 text-center">
+                                                        <div className="flex flex-col items-center opacity-30">
+                                                            <Filter size={48} className="mb-4" />
+                                                            <p className="font-black text-xs uppercase tracking-widest">No candidates in this bundle protocol</p>
                                                         </div>
-                                                        <span className="font-black text-slate-900 text-sm">{item.score}%</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-12 py-10 text-center">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <CheckCircle2 size={14} className={item.is_fully_evaluated ? "text-emerald-500" : "text-slate-300"} />
-                                                        <span className="font-bold text-slate-600 text-sm">{item.judges_completed} / {event.judges?.length || 0}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-12 py-10 text-right">
-                                                    <div className="flex items-center justify-end gap-3">
-                                                        <button 
-                                                            onClick={() =>
-                                                                item.source === 'portal_application'
-                                                                    ? undefined
-                                                                    : handleUpdateStatus(item.team_id, 'Shortlisted', item)
-                                                            }
-                                                            disabled={item.source === 'portal_application'}
-                                                            className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                                                                item.source === 'portal_application'
-                                                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default'
-                                                                    : item.status === 'Shortlisted'
-                                                                      ? 'bg-emerald-500 text-white'
-                                                                      : 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white'
-                                                            }`}
-                                                        >
-                                                            {item.source === 'portal_application'
-                                                                ? 'Shortlisted (portal)'
-                                                                : item.status === 'Shortlisted'
-                                                                  ? 'Shortlisted'
-                                                                  : 'Shortlist'}
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleUpdateStatus(item.team_id, 'Rejected', item)}
-                                                            className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${item.status === 'Rejected' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-500 hover:text-white'}`}
-                                                        >
-                                                            Reject
-                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-[3.5rem] border border-slate-100 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50/50">
+                                        <tr>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Phase / Stage</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Submitted By</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Deliverable Asset</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Timestamp</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {stageSubmissions.length > 0 ? (
+                                            stageSubmissions.map((sub: any) => {
+                                                const stageName = (event.stages || []).find((s: any) => s.id === sub.stage_id)?.name || 'Unknown Stage';
+                                                return (
+                                                    <tr key={sub._id} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-10 py-6">
+                                                            <div className="font-black text-slate-900">{stageName}</div>
+                                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ref ID: {String(sub.stage_id).slice(0, 8)}</div>
+                                                        </td>
+                                                        <td className="px-10 py-6">
+                                                            <div className="font-bold text-slate-700">{sub.team_name || sub.user_name || 'Anonymous Participant'}</div>
+                                                            <div className="text-[10px] font-black text-purple-600 uppercase tracking-widest mt-1">{sub.team_id ? 'Unit Submission' : 'Solo Asset'}</div>
+                                                        </td>
+                                                        <td className="px-10 py-6">
+                                                            <div className="flex flex-col gap-2">
+                                                                {sub.data?.file_url && (
+                                                                    <a 
+                                                                        href={`${API_BASE_URL}${sub.data.file_url}`} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer"
+                                                                        className="inline-flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl hover:bg-blue-600 hover:text-white transition-all w-fit shadow-sm"
+                                                                    >
+                                                                        <FileText size={16} />
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest">{sub.data.filename || 'View Deliverable'}</span>
+                                                                    </a>
+                                                                )}
+                                                                {sub.data?.url && (
+                                                                    <a 
+                                                                        href={sub.data.url} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer"
+                                                                        className="inline-flex items-center gap-3 px-4 py-3 bg-slate-900 text-white rounded-2xl hover:bg-[#6C3BFF] transition-all w-fit shadow-sm"
+                                                                    >
+                                                                        <ExternalLink size={16} />
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest">External Protocol Link</span>
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-10 py-6 text-right">
+                                                            <div className="text-sm font-bold text-slate-500">{new Date(sub.submitted_at).toLocaleString()}</div>
+                                                            <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1">Live Sync Active</div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={4} className="px-12 py-32 text-center">
+                                                    <div className="flex flex-col items-center opacity-30">
+                                                        <Info size={48} className="mb-4" />
+                                                        <p className="font-black text-xs uppercase tracking-widest">No phase deliverables detected yet</p>
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={4} className="px-12 py-32 text-center">
-                                                <div className="flex flex-col items-center opacity-30">
-                                                    <Filter size={48} className="mb-4" />
-                                                    <p className="font-black text-xs uppercase tracking-widest">No candidates in this bundle protocol</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 );
             case 'judges':

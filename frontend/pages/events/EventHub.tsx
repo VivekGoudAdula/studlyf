@@ -111,6 +111,34 @@ const EventHub: React.FC = () => {
         }
     };
 
+    const handleFileUpload = async (stageId: string, file: File) => {
+        setSubmitting(stageId);
+        setSubmissionError(null);
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('stage_id', stageId);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/opportunities/events/${eventId}/stages/${stageId}/upload`, {
+                method: 'POST',
+                headers: { ...authHeaders() },
+                body: formData
+            });
+            if (res.ok) {
+                alert("File uploaded successfully!");
+                await fetchData();
+            } else {
+                const err = await res.json();
+                setSubmissionError(err.detail || "Upload failed");
+            }
+        } catch (e) {
+            setSubmissionError("Network error during upload");
+        } finally {
+            setSubmitting(null);
+        }
+    };
+
     const handleSubmission = async (stageId: string) => {
         const data = submissionData[stageId];
         if (!data) return;
@@ -222,17 +250,56 @@ const EventHub: React.FC = () => {
                                     <div className="relative pl-8 space-y-12 before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-slate-100 before:rounded-full">
                                         {(event.stages || []).map((stage: any, idx: number) => {
                                             const isCompleted = participant.last_stage_submitted && event.stages.findIndex((s: any) => s.id === participant.last_stage_submitted) >= idx;
+                                            const stype = stage.type?.toUpperCase();
+                                            
                                             return (
                                                 <div key={idx} className="relative">
                                                     <div className={`absolute left-[-40px] top-0 w-6 h-6 rounded-full border-4 border-slate-50 flex items-center justify-center ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200 shadow-inner'}`}>
                                                         {isCompleted && <CheckCircle2 size={12} className="text-white" />}
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        <h3 className={`text-lg font-black ${isCompleted ? 'text-slate-900' : 'text-slate-400'}`}>{stage.name}</h3>
-                                                        <p className="text-sm text-slate-500 font-medium leading-relaxed">{stage.description}</p>
-                                                        <div className="flex items-center gap-4 pt-2">
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <h3 className={`text-lg font-black ${isCompleted ? 'text-slate-900' : 'text-slate-400'}`}>{stage.name}</h3>
+                                                                <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-xl">{stage.description}</p>
+                                                            </div>
+                                                            
+                                                            {/* Contextual Action Button */}
+                                                            {!isCompleted && (
+                                                                <div className="shrink-0">
+                                                                    {stype === 'TEAM_FORMATION' || stage.name?.toUpperCase().includes('TEAM') ? (
+                                                                        <button 
+                                                                            onClick={() => setActiveTab('team')}
+                                                                            className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-900 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                                                                        >
+                                                                            Manage My Team
+                                                                        </button>
+                                                                    ) : stype === 'SUBMISSION' ? (
+                                                                        <button 
+                                                                            onClick={() => setActiveTab('submissions')}
+                                                                            className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-900 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                                                                        >
+                                                                            Enter Submission Portal
+                                                                        </button>
+                                                                    ) : stype === 'QUIZ' ? (
+                                                                        <Link 
+                                                                            to={`/events/${eventId}/quiz/${stage.config?.quiz_id}`}
+                                                                            className="px-6 py-3 bg-purple-600 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-purple-700 transition-all shadow-xl shadow-purple-900/20"
+                                                                        >
+                                                                            Start Assessment
+                                                                        </Link>
+                                                                    ) : null}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-3 py-1 rounded-lg">Type: {stage.type}</span>
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">Deadline: {new Date(stage.end_date).toLocaleDateString()}</span>
+                                                            {isCompleted && (
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-1">
+                                                                    <CheckCircle2 size={10} /> Completed
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -276,22 +343,51 @@ const EventHub: React.FC = () => {
                                                     {isCompleted && <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100">Submitted</span>}
                                                 </div>
                                                 <p className="text-sm text-slate-500 font-medium leading-relaxed">{stage.description}</p>
-                                                <div className="space-y-3">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Project Asset URL (PPT/GitHub/PDF)</p>
+                                                
+                                                <div className="p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center gap-4 group hover:border-purple-300 transition-all">
+                                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-purple-600 shadow-sm transition-colors">
+                                                        <FileText size={24} />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-sm font-black text-slate-900">Upload Project Assets</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">PPT, PDF, or ZIP (Max 50MB)</p>
+                                                    </div>
                                                     <input 
-                                                        disabled={isCompleted}
-                                                        value={submissionData[stage.id] || ''}
-                                                        onChange={(e) => setSubmissionData(prev => ({ ...prev, [stage.id]: e.target.value }))}
-                                                        placeholder="https://drive.google.com/..."
-                                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-purple-50 focus:border-purple-200 transition-all"
+                                                        type="file"
+                                                        id={`file-${stage.id}`}
+                                                        className="hidden"
+                                                        disabled={isCompleted || submitting === stage.id}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) handleFileUpload(stage.id, file);
+                                                        }}
                                                     />
-                                                    <button 
-                                                        onClick={() => handleSubmission(stage.id)}
-                                                        disabled={isCompleted || submitting === stage.id || !submissionData[stage.id]}
-                                                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-purple-700 transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
+                                                    <label 
+                                                        htmlFor={`file-${stage.id}`}
+                                                        className={`px-8 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer hover:bg-slate-900 hover:text-white transition-all shadow-sm ${isCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                     >
-                                                        {submitting === stage.id ? 'Uploading...' : isCompleted ? 'Update Submission' : 'Confirm Submission'}
-                                                    </button>
+                                                        {submitting === stage.id ? 'Uploading...' : 'Select File'}
+                                                    </label>
+                                                </div>
+
+                                                <div className="space-y-3 pt-4 border-t border-slate-100">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">External Project URL (Optional)</p>
+                                                    <div className="flex gap-2">
+                                                        <input 
+                                                            disabled={isCompleted}
+                                                            value={submissionData[stage.id] || ''}
+                                                            onChange={(e) => setSubmissionData(prev => ({ ...prev, [stage.id]: e.target.value }))}
+                                                            placeholder="https://github.com/..."
+                                                            className="flex-1 px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-purple-50 focus:border-purple-200 transition-all"
+                                                        />
+                                                        <button 
+                                                            onClick={() => handleSubmission(stage.id)}
+                                                            disabled={isCompleted || submitting === stage.id || !submissionData[stage.id]}
+                                                            className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-purple-700 transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
+                                                        >
+                                                            {submitting === stage.id ? '...' : 'Save'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );

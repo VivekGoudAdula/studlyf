@@ -863,14 +863,32 @@ const OpportunityDetails: React.FC = () => {
                                                             </div>
                                                         );
                                                     })()}
-                                                    {s?.config?.quiz_id && (opportunity?.event_link_id || opportunity?.event_id) ? (
-                                                        <Link
-                                                            to={`/events/${encodeURIComponent(String(opportunity.event_link_id || opportunity.event_id))}/quiz/${encodeURIComponent(String(s.config.quiz_id))}`}
-                                                            className="inline-flex mt-2 text-[10px] font-black uppercase tracking-widest text-purple-700 hover:underline"
-                                                        >
-                                                            Start quiz
-                                                        </Link>
-                                                    ) : null}
+                                                    {isApplied && (() => {
+                                                        const stype = s.type?.toUpperCase();
+                                                        const event_hub_id = String(opportunity.event_link_id || opportunity.event_id || id);
+                                                        
+                                                        if (stype === 'TEAM_FORMATION' || s.name?.toUpperCase().includes('TEAM')) {
+                                                            return (
+                                                                <Link 
+                                                                    to={`/events/${encodeURIComponent(event_hub_id)}`}
+                                                                    className="inline-flex mt-4 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all shadow-lg shadow-slate-900/10"
+                                                                >
+                                                                    Manage team & members
+                                                                </Link>
+                                                            );
+                                                        }
+                                                        if (stype === 'SUBMISSION') {
+                                                            return (
+                                                                <Link 
+                                                                    to={`/events/${encodeURIComponent(event_hub_id)}`}
+                                                                    className="inline-flex mt-4 px-4 py-2 bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all shadow-lg shadow-purple-900/10"
+                                                                >
+                                                                    Enter submission portal
+                                                                </Link>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
                                                 </div>
                                             </li>
                                         ))}
