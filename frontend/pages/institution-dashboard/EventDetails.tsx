@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 import { 
     ArrowLeft, 
     Save, 
@@ -37,7 +37,8 @@ import {
     Settings,
     Edit3,
     Eye,
-    Building2
+    Building2,
+    Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LeaderboardPage from './LeaderboardPage';
@@ -49,9 +50,18 @@ import QuizDesignerModal from './components/QuizDesignerModal';
 interface EventDetailsProps {
     eventId: string | null;
     onBack: () => void;
+    institutionId?: string;
 }
 
-const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
+const BUNDLE_TABS = ['shortlisted', 'approved', 'pending', 'rejected'] as const;
+const BUNDLE_TAB_LABEL: Record<string, string> = {
+    shortlisted: 'Shortlisted',
+    approved: 'Approved',
+    pending: 'Pending',
+    rejected: 'Rejected',
+};
+
+const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack, institutionId: institutionIdProp }) => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [event, setEvent] = useState<any>(null);
     const [institution, setInstitution] = useState<any>(null);
@@ -63,7 +73,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
     const [bundleData, setBundleData] = useState<any>(null);
     const [threshold, setThreshold] = useState(90);
     const [debouncedThreshold, setDebouncedThreshold] = useState(90);
-    const [bundleTab, setBundleTab] = useState('approved');
+    const [bundleTab, setBundleTab] = useState<string>('shortlisted');
     const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
     const [isInviting, setIsInviting] = useState(false);
     const [teams, setTeams] = useState<any[]>([]);
@@ -74,35 +84,52 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
     const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
     const [isCreatingQuiz, setIsCreatingQuiz] = useState(false);
     const [editDescription, setEditDescription] = useState(false);
+    const [reviewingParticipantId, setReviewingParticipantId] = useState<string | null>(null);
+    const [portalReviewNotice, setPortalReviewNotice] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+    const [subJudgePick, setSubJudgePick] = useState<Record<string, string[]>>({});
+    const [assigningSubmission, setAssigningSubmission] = useState<string | null>(null);
+
+    const portalRegistrationStatusLabel = (raw: string | undefined) => {
+        const s = (raw || 'pending').toLowerCase();
+        if (s === 'accepted' || s === 'shortlisted') return 'SHORTLISTED';
+        if (s === 'rejected') return 'REJECTED';
+        return s.replace(/_/g, ' ').toUpperCase();
+    };
 
     useEffect(() => {
         const fetchData = async () => {
             if (!eventId) return;
             try {
-                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`);
+                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`, { headers: { ...authHeaders() } });
                 const eventData = await eventRes.json();
                 setEvent(eventData);
                 setStages(eventData.stages || []);
 
-                if (eventData.institution_id) {
-                    const instRes = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${eventData.institution_id}`);
-                    const instData = await instRes.json();
-                    setInstitution(instData);
-
-                    const partData = await partRes.json();
-                    setParticipants(partData);
+                // Fetch institution profile
+                const instId = eventData.institution_id;
+                if (instId) {
+                    try {
+                        const instRes = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${instId}`, { headers: { ...authHeaders() } });
+                        const instData = await instRes.json();
+                        setInstitution(instData);
+                    } catch { /* non-fatal */ }
                 }
 
-                const quizRes = await fetch(`${API_BASE_URL}/api/institution/events/${eventId}/quizzes`);
+                // Fetch participants (always, even if institution_id missing)
+                try {
+                    const partRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/participants`, { headers: { ...authHeaders() } });
+                    const partData = await partRes.json();
+                    setParticipants(Array.isArray(partData) ? partData : []);
+                } catch {
+                    setParticipants([]);
+                }
+
+                const quizRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes`, { headers: { ...authHeaders() } });
                 const quizData = await quizRes.json();
                 setQuizzes(quizData || []);
                 
-                setCriteria(eventData.judging_criteria || [
-                    { id: '1', name: 'Innovation', max_points: 25 },
-                    { id: '2', name: 'UI/UX Design', max_points: 25 },
-                    { id: '3', name: 'Technical Depth', max_points: 25 },
-                    { id: '4', name: 'Completeness', max_points: 25 },
-                ]);
+                // Only use judging criteria from DB — no static fallback
+                setCriteria(eventData.judging_criteria || []);
             } catch (err) {
                 console.error("Failed to load event data");
             } finally {
@@ -114,7 +141,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
 
     const fetchBundle = async (val: number) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/qualified-bundle?threshold=${val}`);
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/qualified-bundle?threshold=${val}`, { headers: { ...authHeaders() } });
             const data = await res.json();
             setBundleData(data);
         } catch (err) {
@@ -130,17 +157,27 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
     }, [threshold]);
 
     useEffect(() => {
+        if (!eventId) return;
+        if (activeTab === 'participants') {
+            fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/participants`, { headers: { ...authHeaders() } })
+                .then((res) => res.json())
+                .then((data) => setParticipants(Array.isArray(data) ? data : []))
+                .catch(() => setParticipants([]));
+        }
+    }, [eventId, activeTab]);
+
+    useEffect(() => {
         if(activeTab === 'participants' || activeTab === 'submissions') {
             fetchBundle(debouncedThreshold);
         }
         if(activeTab === 'teams') {
-            fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/teams`)
+            fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/teams`, { headers: { ...authHeaders() } })
                 .then(res => res.json())
                 .then(data => setTeams(Array.isArray(data) ? data : []))
                 .catch(() => setTeams([]));
         }
         if(activeTab === 'submissions') {
-            fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/submissions`)
+            fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/submissions`, { headers: { ...authHeaders() } })
                 .then(res => res.json())
                 .then(data => setSubmissions(Array.isArray(data) ? data : []))
                 .catch(() => setSubmissions([]));
@@ -150,9 +187,9 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
     const handleSaveEvent = async () => {
         setSaving(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/update`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({ ...event, stages, judging_criteria: criteria })
             });
             if(res.ok) {
@@ -166,16 +203,86 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
         }
     };
 
+    const handlePublishEvent = async () => {
+        if (!eventId || !window.confirm('Publish this event? It will go Live for learners (portal listings) and allow standard event registration if you use that flow.')) return;
+        setSaving(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ status: 'LIVE' })
+            });
+            if (res.ok) {
+                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`, { headers: { ...authHeaders() } });
+                const eventData = await eventRes.json();
+                setEvent(eventData);
+                setShowSaveSuccess(true);
+                setTimeout(() => setShowSaveSuccess(false), 3000);
+            }
+        } catch (err) {
+            console.error('Publish failed');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleReviewPortalApplication = async (p: any, status: string) => {
+        const instId = event?.institution_id;
+        if (!instId || !eventId) {
+            setPortalReviewNotice({ kind: 'error', text: 'Missing institution or event.' });
+            return;
+        }
+        const src = p.source || '';
+        const appId =
+            p.opportunity_application_id ||
+            (['opportunity_application', 'opportunity_portal', 'opportunity_portal_backfill'].includes(src) ? p._id : null);
+        const body: Record<string, string> = { institution_id: instId, status };
+        if (appId) body.application_id = String(appId);
+        else if (p.user_id && p.opportunity_id) {
+            body.user_id = String(p.user_id);
+            body.opportunity_id = String(p.opportunity_id);
+        } else {
+            setPortalReviewNotice({ kind: 'error', text: 'This row is not linked to a portal application.' });
+            return;
+        }
+        const rowId = String(p._id ?? p.user_id ?? appId ?? '');
+        setReviewingParticipantId(rowId);
+        setPortalReviewNotice(null);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/opportunity-applications/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                setPortalReviewNotice({ kind: 'error', text: String((err as any).detail || 'Update failed') });
+                return;
+            }
+            const partRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/participants`, { headers: { ...authHeaders() } });
+            const data = await partRes.json();
+            setParticipants(Array.isArray(data) ? data : []);
+            const label = status === 'shortlisted' || status === 'accepted' ? 'shortlisted' : status === 'rejected' ? 'rejected' : 'marked pending';
+            setPortalReviewNotice({ kind: 'success', text: `Saved — applicant ${label}.` });
+            window.setTimeout(() => setPortalReviewNotice((n) => (n?.kind === 'success' ? null : n)), 3200);
+        } catch {
+            setPortalReviewNotice({ kind: 'error', text: 'Network error — could not update status.' });
+        } finally {
+            setReviewingParticipantId(null);
+        }
+    };
+
     const handleRemoveJudge = async (judgeEmail: string) => {
         if (!window.confirm("Are you sure you want to revoke this judge's assignment? They will be notified immediately.")) return;
         
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/judges/${judgeEmail}`, {
-                method: 'DELETE'
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/judges/${encodeURIComponent(judgeEmail)}`, {
+                method: 'DELETE',
+                headers: { ...authHeaders() },
             });
             if (res.ok) {
                 // Refresh local event state
-                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`);
+                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`, { headers: { ...authHeaders() } });
                 const eventData = await eventRes.json();
                 setEvent(eventData);
             }
@@ -189,12 +296,12 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/judges`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify(judgeData)
             });
             if(res.ok) {
                 setIsJudgeModalOpen(false);
-                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`);
+                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`, { headers: { ...authHeaders() } });
                 const eventData = await eventRes.json();
                 setEvent(eventData);
             }
@@ -208,33 +315,91 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
     if (loading) return <div className="h-96 flex items-center justify-center"><div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div></div>;
     if (!event) return <div>Event not found</div>;
 
-    const handleUpdateStatus = async (teamId: string, newStatus: string) => {
+    const handleUpdateStatus = async (teamId: string, newStatus: string, item?: any) => {
+        const instId = institutionIdProp || event?.institution_id;
+        if (teamId.startsWith('portal_app:')) {
+            const appId = teamId.replace(/^portal_app:/, '');
+            if (!instId || !eventId) return;
+            const st =
+                newStatus === 'Rejected'
+                    ? 'rejected'
+                    : newStatus === 'Shortlisted'
+                      ? 'shortlisted'
+                      : 'pending';
+            const body: Record<string, string> = {
+                institution_id: String(instId),
+                status: st,
+                application_id: appId,
+            };
+            if (item?.opportunity_id) body.opportunity_id = String(item.opportunity_id);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/opportunity-applications/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                    body: JSON.stringify(body),
+                });
+                if (res.ok) {
+                    fetchBundle(debouncedThreshold);
+                    fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/participants`, { headers: { ...authHeaders() } })
+                        .then((r) => r.json())
+                        .then((data) => setParticipants(Array.isArray(data) ? data : []))
+                        .catch(() => {});
+                }
+            } catch (err) {
+                console.error('Portal bundle status update failed', err);
+            }
+            return;
+        }
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/submissions/${teamId}/status`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/teams/${teamId}/selection`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ status: newStatus }),
             });
             if (res.ok) {
-                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/details`);
-                const eventData = await eventRes.json();
-                setEvent(eventData);
+                fetchBundle(debouncedThreshold);
             }
         } catch (err) {
             console.error("Status update failed");
         }
     };
 
+    const handleAssignJudgesToSubmission = async (submissionId: string, emails: string[]) => {
+        if (!eventId) return;
+        setAssigningSubmission(submissionId);
+        try {
+            const res = await fetch(
+                `${API_BASE_URL}/api/v1/institution/events/${eventId}/submissions/${submissionId}/assign-judges`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                    body: JSON.stringify({ judge_emails: emails }),
+                },
+            );
+            if (res.ok) {
+                const subRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/submissions`, {
+                    headers: { ...authHeaders() },
+                });
+                const data = await subRes.json();
+                setSubmissions(Array.isArray(data) ? data : []);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setAssigningSubmission(null);
+        }
+    };
+
     const handleCreateQuiz = async (quizData: any) => {
         try {
             setIsCreatingQuiz(true);
-            const res = await fetch(`${API_BASE_URL}/api/institution/events/${eventId}/quizzes`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify(quizData)
             });
             if (res.ok) {
-                const updatedQuizRes = await fetch(`${API_BASE_URL}/api/institution/events/${eventId}/quizzes`);
+                const updatedQuizRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventId}/quizzes`, { headers: { ...authHeaders() } });
                 const updatedQuizzes = await updatedQuizRes.json();
                 setQuizzes(updatedQuizzes);
                 setIsQuizModalOpen(false);
@@ -266,6 +431,25 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
             case 'dashboard':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {String(event.status || '').toUpperCase() === 'DRAFT' && (
+                            <div className="p-6 rounded-3xl border border-amber-200 bg-amber-50 text-amber-950 text-sm font-bold leading-relaxed space-y-4">
+                                <p>
+                                    This event is still <span className="uppercase">draft</span>
+                                    {(participants?.length || 0) > 0 && (
+                                        <>, but <strong>{participants.length}</strong> student(s) already registered through the portal.</>
+                                    )}
+                                    . Publish when you want it to appear in learner opportunity listings.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handlePublishEvent}
+                                    disabled={saving}
+                                    className="px-6 py-3 rounded-2xl bg-amber-600 text-white text-xs font-black uppercase tracking-widest hover:bg-amber-700 transition-colors disabled:opacity-50"
+                                >
+                                    Publish event (go Live)
+                                </button>
+                            </div>
+                        )}
                         {/* Metrics Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             {[
@@ -594,12 +778,13 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                                         <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Team Identity</th>
                                         <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Score Aggregate</th>
                                         <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Protocol State</th>
+                                        <th className="px-12 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Judge assignment</th>
                                         <th className="px-12 py-8 text-right text-[11px] font-black text-slate-400 uppercase tracking-widest">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {(Array.isArray(submissions) ? submissions : []).map((sub, i) => (
-                                        <tr key={i} className="hover:bg-slate-50/50 transition-all duration-300">
+                                        <tr key={sub._id || i} className="hover:bg-slate-50/50 transition-all duration-300">
                                             <td className="px-12 py-10">
                                                 <div className="font-black text-slate-900 text-lg tracking-tight">{sub.team_name}</div>
                                                 <div className="text-xs text-slate-400 font-bold mt-1.5 flex items-center gap-2"><Layers size={12} /> {sub.project_title || 'N/A Portfolio'}</div>
@@ -616,6 +801,42 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                                                 <span className={`px-5 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-sm ${sub.status === 'Scored' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
                                                     {sub.status || 'Pending'}
                                                 </span>
+                                            </td>
+                                            <td className="px-12 py-10 align-top">
+                                                <div className="flex flex-col gap-2 max-w-[220px]">
+                                                    <select
+                                                        multiple
+                                                        size={Math.min(4, Math.max(2, (event.judges?.length || 0)))}
+                                                        className="rounded-xl border border-slate-200 text-[10px] font-bold text-slate-700 p-2 bg-white"
+                                                        value={subJudgePick[sub._id] ?? (sub.assigned_judge_emails as string[]) ?? []}
+                                                        onChange={(e) => {
+                                                            const v = Array.from(e.target.selectedOptions, (o) => o.value);
+                                                            setSubJudgePick((p) => ({ ...p, [sub._id]: v }));
+                                                        }}
+                                                    >
+                                                        {(event.judges || []).map((j: any) => (
+                                                            <option key={j.email} value={j.email}>
+                                                                {j.name || j.email}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <button
+                                                        type="button"
+                                                        disabled={assigningSubmission === sub._id || !(event.judges?.length)}
+                                                        onClick={() =>
+                                                            handleAssignJudgesToSubmission(
+                                                                sub._id,
+                                                                subJudgePick[sub._id] ?? (sub.assigned_judge_emails as string[]) ?? [],
+                                                            )
+                                                        }
+                                                        className="px-3 py-2 rounded-xl bg-[#6C3BFF]/10 text-[#6C3BFF] text-[9px] font-black uppercase tracking-widest disabled:opacity-40"
+                                                    >
+                                                        {assigningSubmission === sub._id ? 'Saving…' : 'Save panel'}
+                                                    </button>
+                                                    <p className="text-[9px] text-slate-400 font-medium leading-snug">
+                                                        Empty = all invited judges may review. Set names to restrict who sees this submission in the judge portal.
+                                                    </p>
+                                                </div>
                                             </td>
                                             <td className="px-12 py-10 text-right">
                                                 <button className="p-4 bg-slate-50 text-slate-400 hover:text-[#6C3BFF] hover:bg-purple-50 rounded-2xl transition-all shadow-sm">
@@ -674,7 +895,122 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
             case 'participants':
                 return (
                     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                            <div className="px-10 pt-10 pb-4 border-b border-slate-50">
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Registrations</h2>
+                                <p className="text-sm text-slate-500 font-medium mt-2 max-w-2xl">
+                                    Everyone who applied through the opportunity portal or was added as a participant for this event ({participants.length} total).
+                                    Judge scoring buckets below are separate — they only list teams that have submission scores.
+                                </p>
+                                {portalReviewNotice ? (
+                                    <div
+                                        className={`mt-4 px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 ${
+                                            portalReviewNotice.kind === 'success'
+                                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                                                : 'bg-red-50 text-red-800 border border-red-100'
+                                        }`}
+                                    >
+                                        {portalReviewNotice.kind === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                                        {portalReviewNotice.text}
+                                    </div>
+                                ) : null}
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50/80">
+                                        <tr>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Source</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Registered</th>
+                                            <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Review</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {participants.length > 0 ? (
+                                            participants.map((p: any) => {
+                                                const src = p.source || '';
+                                                const canReview =
+                                                    Boolean(p.opportunity_application_id) ||
+                                                    ['opportunity_application', 'opportunity_portal', 'opportunity_portal_backfill'].includes(src) ||
+                                                    Boolean(p.user_id && p.opportunity_id);
+                                                const rowBusyId = String(p._id ?? p.user_id ?? p.opportunity_application_id ?? '');
+                                                const rowBusy = reviewingParticipantId !== null && reviewingParticipantId === rowBusyId;
+                                                return (
+                                                <tr key={p._id} className="hover:bg-slate-50/50">
+                                                    <td className="px-10 py-6 font-black text-slate-900">{p.full_name || p.name || '—'}</td>
+                                                    <td className="px-10 py-6 text-sm font-bold text-slate-600">{p.email || '—'}</td>
+                                                    <td className="px-10 py-6 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                        {src === 'opportunity_application' || src === 'opportunity_portal' || src === 'opportunity_portal_backfill'
+                                                            ? 'Portal apply'
+                                                            : 'Participant'}
+                                                    </td>
+                                                    <td className="px-10 py-6">
+                                                        <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase bg-slate-100 text-slate-700">
+                                                            {portalRegistrationStatusLabel(p.status)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-10 py-6 text-sm font-bold text-slate-500">
+                                                        {p.registered_at ? new Date(p.registered_at).toLocaleString() : '—'}
+                                                    </td>
+                                                    <td className="px-10 py-6 text-right">
+                                                        {canReview ? (
+                                                            <div className="flex flex-wrap justify-end gap-2 items-center">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={rowBusy}
+                                                                    onClick={() => handleReviewPortalApplication(p, 'shortlisted')}
+                                                                    className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-600 hover:text-white disabled:opacity-50 disabled:pointer-events-none inline-flex items-center gap-1.5"
+                                                                >
+                                                                    {rowBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                                                    Shortlist
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={rowBusy}
+                                                                    onClick={() => handleReviewPortalApplication(p, 'rejected')}
+                                                                    className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase bg-red-50 text-red-700 border border-red-100 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:pointer-events-none"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={rowBusy}
+                                                                    onClick={() => handleReviewPortalApplication(p, 'pending')}
+                                                                    className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase bg-slate-100 text-slate-600 border border-slate-200 disabled:opacity-50 disabled:pointer-events-none"
+                                                                >
+                                                                    Pending
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] font-bold text-slate-300">—</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={6} className="px-10 py-16 text-center text-slate-400 font-bold text-sm">
+                                                    No registrations yet for this event.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div className="p-12 bg-slate-900 rounded-[3.5rem] text-white shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10 mb-6">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Judge pipeline</p>
+                                <h3 className="text-xl font-black mt-1">Team scores & selection bundles</h3>
+                                <p className="text-slate-400 text-sm mt-2 max-w-xl">
+                                    <strong className="text-slate-300">Shortlisted</strong> lists portal applicants you marked shortlisted/accepted (same as Registrations).
+                                    <strong className="text-slate-300"> Approved / Pending / Rejected</strong> buckets are driven by judge scores and team rows once submissions exist.
+                                </p>
+                            </div>
                             <div className="relative z-10">
                                 <div className="flex items-center gap-4 mb-8">
                                     <div className="px-4 py-1 bg-[#6C3BFF] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-purple-900/30">Selection Intelligence</div>
@@ -724,14 +1060,14 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                             <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
                         </div>
 
-                        <div className="flex gap-6 p-2 bg-slate-100 rounded-[2.5rem] w-fit shadow-inner">
-                            {['approved', 'pending', 'rejected'].map((tab) => (
+                        <div className="flex gap-6 p-2 bg-slate-100 rounded-[2.5rem] w-fit shadow-inner flex-wrap">
+                            {BUNDLE_TABS.map((tab) => (
                                 <button 
                                     key={tab} 
                                     onClick={() => setBundleTab(tab)} 
                                     className={`px-12 py-4 rounded-[1.8rem] font-black text-xs uppercase tracking-widest transition-all ${bundleTab === tab ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
                                 >
-                                    {tab} ({bundleData?.[tab]?.length || 0})
+                                    {BUNDLE_TAB_LABEL[tab] || tab} ({bundleData?.[tab]?.length || 0})
                                 </button>
                             ))}
                         </div>
@@ -752,7 +1088,11 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                                             <tr key={item.team_id} className="hover:bg-slate-50/50 transition-colors group">
                                                 <td className="px-12 py-10">
                                                     <div className="font-black text-slate-900 text-lg tracking-tight">{item.team_name}</div>
-                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ID: {item.team_id.slice(-8)}</div>
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                                                        {item.source === 'portal_application'
+                                                            ? `Portal · ${item.email || item.application_id || ''}`
+                                                            : `ID: ${String(item.team_id).slice(-8)}`}
+                                                    </div>
                                                 </td>
                                                 <td className="px-12 py-10 text-center">
                                                     <div className="inline-flex items-center gap-3">
@@ -771,13 +1111,28 @@ const EventDetails: React.FC<EventDetailsProps> = ({ eventId, onBack }) => {
                                                 <td className="px-12 py-10 text-right">
                                                     <div className="flex items-center justify-end gap-3">
                                                         <button 
-                                                            onClick={() => handleUpdateStatus(item.team_id, 'Shortlisted')}
-                                                            className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${item.status === 'Shortlisted' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white'}`}
+                                                            onClick={() =>
+                                                                item.source === 'portal_application'
+                                                                    ? undefined
+                                                                    : handleUpdateStatus(item.team_id, 'Shortlisted', item)
+                                                            }
+                                                            disabled={item.source === 'portal_application'}
+                                                            className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                                item.source === 'portal_application'
+                                                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default'
+                                                                    : item.status === 'Shortlisted'
+                                                                      ? 'bg-emerald-500 text-white'
+                                                                      : 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white'
+                                                            }`}
                                                         >
-                                                            {item.status === 'Shortlisted' ? 'Shortlisted' : 'Shortlist'}
+                                                            {item.source === 'portal_application'
+                                                                ? 'Shortlisted (portal)'
+                                                                : item.status === 'Shortlisted'
+                                                                  ? 'Shortlisted'
+                                                                  : 'Shortlist'}
                                                         </button>
                                                         <button 
-                                                            onClick={() => handleUpdateStatus(item.team_id, 'Rejected')}
+                                                            onClick={() => handleUpdateStatus(item.team_id, 'Rejected', item)}
                                                             className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${item.status === 'Rejected' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-500 hover:text-white'}`}
                                                         >
                                                             Reject

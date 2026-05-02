@@ -1,12 +1,17 @@
-from fastapi import APIRouter, HTTPException, Body, Query
+from fastapi import APIRouter, HTTPException, Body, Query, Depends
 from typing import List, Optional
+from bson import ObjectId
+
+from auth_institution import get_auth_user
 from services.opportunity_service import (
     create_opportunity,
     get_all_opportunities,
     get_opportunity_by_id,
     apply_for_opportunity,
-    get_user_applications
+    get_user_applications,
+    get_learner_opportunity_overview,
 )
+from db import notifications_col
 
 router = APIRouter(prefix="/api/opportunities", tags=["Opportunities"])
 
@@ -32,14 +37,58 @@ async def list_opportunities(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{opportunity_id}")
-async def view_opportunity(opportunity_id: str):
-    """API to view a specific opportunity."""
+@router.get("/me/applications")
+async def my_applications(user: dict = Depends(get_auth_user)):
+    """Authenticated learner: all portal applications with titles and status."""
     try:
-        opportunity = await get_opportunity_by_id(opportunity_id)
-        if not opportunity:
-            raise HTTPException(status_code=404, detail="Opportunity not found")
-        return opportunity
+        return await get_user_applications(user["user_id"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/me/overview")
+async def my_overview(user: dict = Depends(get_auth_user), limit: int = 8):
+    """Authenticated learner: upcoming deadlines + application timeline widgets."""
+    try:
+        return await get_learner_opportunity_overview(user["user_id"], limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/me/notifications")
+async def my_notifications(user: dict = Depends(get_auth_user), limit: int = 40):
+    """In-app notifications for the current learner (e.g. application review updates)."""
+    try:
+        cap = max(1, min(int(limit), 100))
+        cur = notifications_col.find({"user_id": user["user_id"]}).sort("created_at", -1).limit(cap)
+        items = []
+        async for doc in cur:
+            doc["_id"] = str(doc["_id"])
+            items.append(doc)
+        return items
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/me/notifications/{notification_id}/read")
+async def mark_my_notification_read(notification_id: str, user: dict = Depends(get_auth_user)):
+    try:
+        await notifications_col.update_one(
+            {"_id": ObjectId(notification_id), "user_id": user["user_id"]},
+            {"$set": {"is_read": True}},
+        )
+        return {"status": "ok"}
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid notification id")
+
+
+@router.get("/user/{user_id}/applications")
+async def list_user_applications(user_id: str, user: dict = Depends(get_auth_user)):
+    """List applications for a user (self or admin only)."""
+    role = str(user.get("role") or "").lower()
+    if user.get("user_id") != user_id and role not in ("admin", "super_admin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        return await get_user_applications(user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -51,10 +100,19 @@ async def apply(data: dict = Body(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/user/{user_id}/applications")
-async def list_user_applications(user_id: str):
-    """API to list applications for a specific user."""
+@router.get("/{opportunity_id}")
+async def view_opportunity(
+    opportunity_id: str,
+    applicant_user_id: Optional[str] = Query(
+        None,
+        description="If set, draft listings remain visible when this user has already applied.",
+    ),
+):
+    """API to view a specific opportunity."""
     try:
-        return await get_user_applications(user_id)
+        opportunity = await get_opportunity_by_id(opportunity_id, applicant_user_id)
+        if not opportunity:
+            raise HTTPException(status_code=404, detail="Opportunity not found")
+        return opportunity
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

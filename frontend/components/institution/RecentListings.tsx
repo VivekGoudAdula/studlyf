@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 
 interface RecentListingsProps {
     institutionId: string;
@@ -16,7 +17,7 @@ const RecentListings: React.FC<RecentListingsProps> = ({ institutionId, onViewEv
         const fetchRecent = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/v1/institution/events/${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`, { headers: { ...authHeaders() } });
                 if (res.ok) {
                     const data = await res.json();
                     setEvents(Array.isArray(data) ? data : []);

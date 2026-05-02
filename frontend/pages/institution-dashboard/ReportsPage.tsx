@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     TrendingUp, 
@@ -27,7 +27,7 @@ interface ReportsPageProps {
     institutionId?: string;
 }
 
-const ReportsPage: React.FC<ReportsPageProps> = ({ institutionId = 'default_inst' }) => {
+const ReportsPage: React.FC<ReportsPageProps> = ({ institutionId }) => {
     const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [dateFrom, setDateFrom] = useState('');
@@ -43,23 +43,28 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ institutionId = 'default_inst
 
     useEffect(() => {
         const fetchAnalytics = async () => {
+            if (!institutionId) {
+                setSummary(null);
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
                 // 1. Fetch KPI Summary
-                const summaryRes = await fetch(`/api/v1/institution/summary/${institutionId}`);
+                const summaryRes = await fetch(`${API_BASE_URL}/api/v1/institution/summary/${institutionId}`, { headers: { ...authHeaders() } });
                 if (summaryRes.ok) setSummary(await summaryRes.json());
 
                 // 2. Fetch Extra Analytics
-                const res1 = await fetch(`/api/v1/institution/analytics/${institutionId}/timeline`);
+                const res1 = await fetch(`${API_BASE_URL}/api/v1/institution/analytics/${institutionId}/timeline`, { headers: { ...authHeaders() } });
                 if (res1.ok) setTimeline(await res1.json());
 
-                const res2 = await fetch(`/api/v1/institution/analytics/${institutionId}/departments`);
+                const res2 = await fetch(`${API_BASE_URL}/api/v1/institution/analytics/${institutionId}/departments`, { headers: { ...authHeaders() } });
                 if (res2.ok) setDepartments(await res2.json());
 
-                const res3 = await fetch(`/api/v1/institution/analytics/${institutionId}/score-distribution`);
+                const res3 = await fetch(`${API_BASE_URL}/api/v1/institution/analytics/${institutionId}/score-distribution`, { headers: { ...authHeaders() } });
                 if (res3.ok) setScoreDist(await res3.json());
 
-                const res4 = await fetch(`/api/v1/institution/analytics/${institutionId}/submission-distribution`);
+                const res4 = await fetch(`${API_BASE_URL}/api/v1/institution/analytics/${institutionId}/submission-distribution`, { headers: { ...authHeaders() } });
                 if (res4.ok) setSubDist(await res4.json());
 
             } catch (error) {
@@ -154,7 +159,22 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ institutionId = 'default_inst
                     </div>
 
                     <button 
-                        onClick={() => window.open(`/api/v1/institution/export-summary/${institutionId}`, '_blank')}
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                const r = await fetch(`${API_BASE_URL}/api/v1/institution/export-summary/${institutionId}`, { headers: { ...authHeaders() } });
+                                if (!r.ok) return;
+                                const blob = await r.blob();
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `institution-summary-${institutionId}.csv`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        }}
                         className="flex items-center gap-2 px-6 py-3 bg-[#0f172a] text-white rounded-xl font-bold text-sm hover:scale-[1.02] transition-all shadow-lg"
                     >
                         <Download size={18} />

@@ -142,10 +142,12 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
     // FETCH REAL DATA ON MOUNT
     useEffect(() => {
         const fetchProfile = async () => {
-            if (!isOpen || !institutionId || institutionId === 'default_inst') return;
+            if (!isOpen || !institutionId) return;
             try {
-                const { API_BASE_URL } = await import('../../apiConfig');
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`);
+                const { API_BASE_URL, authHeaders } = await import('../../apiConfig');
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`, {
+                    headers: { ...authHeaders() },
+                });
                 if (res.ok) {
                     const data = await res.json();
                     setFormData(prev => ({
@@ -220,7 +222,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
         } else {
             setLoading(true);
             try {
-                const { API_BASE_URL } = await import('../../apiConfig');
+                const { API_BASE_URL, authHeaders } = await import('../../apiConfig');
                 
                 // Use FormData for multipart/form-data support
                 const submitData = new FormData();
@@ -262,6 +264,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
 
                 const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/create-professional`, {
                     method: 'POST',
+                    headers: { ...authHeaders() },
                     body: submitData // browser sets correct multipart boundary
                 });
 

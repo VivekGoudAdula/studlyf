@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../apiConfig';
 import { useAuth } from '../../AuthContext';
+import { plainTextFromRichContent, formatOpportunityLocation } from '../../utils/text';
 
 const OpportunitiesList: React.FC = () => {
     const [opportunities, setOpportunities] = useState<any[]>([]);
@@ -158,7 +159,7 @@ const OpportunitiesList: React.FC = () => {
                                     </div>
 
                                     <p className="text-sm font-medium text-slate-400 line-clamp-3 leading-relaxed">
-                                        {opp.description}
+                                        {plainTextFromRichContent(opp.description)}
                                     </p>
 
                                     <div className="flex flex-wrap gap-4 pt-2">
@@ -166,12 +167,12 @@ const OpportunitiesList: React.FC = () => {
                                             <Calendar size={14} className="text-purple-500" />
                                             {new Date(opp.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </div>
-                                        {opp.location && (
+                                        {formatOpportunityLocation(opp.location) ? (
                                             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
                                                 <MapPin size={14} className="text-purple-500" />
-                                                {opp.location}
+                                                {formatOpportunityLocation(opp.location)}
                                             </div>
-                                        )}
+                                        ) : null}
                                     </div>
                                 </div>
 

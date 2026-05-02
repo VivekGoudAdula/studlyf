@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Calendar, Star, Info, ChevronRight, Zap, Clock } from 'lucide-react';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 
 interface AlertsPanelProps {
     institutionId?: string;
     onUpgrade?: () => void;
 }
 
-const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst', onUpgrade }) => {
+const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId, onUpgrade }) => {
     const [activeTab, setActiveTab] = useState('upcoming');
     const [alerts, setAlerts] = useState<any[]>([]);
     const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
@@ -17,18 +17,24 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!institutionId) {
+                setAlerts([]);
+                setUpcomingEvents([]);
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
                 
                 // Fetch Notifications (What's New)
-                const notifRes = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`);
+                const notifRes = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`, { headers: { ...authHeaders() } });
                 if (notifRes.ok) {
                     const notifData = await notifRes.json();
                     setAlerts(Array.isArray(notifData) ? notifData : []);
                 }
 
                 // Fetch Events (Upcoming Activity)
-                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`);
+                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`, { headers: { ...authHeaders() } });
                 if (eventRes.ok) {
                     const eventData = await eventRes.json();
                     if (Array.isArray(eventData)) {

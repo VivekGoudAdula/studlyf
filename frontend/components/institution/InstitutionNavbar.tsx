@@ -4,13 +4,14 @@ import { useAuth } from '../../AuthContext';
 import { Bell, Search, LogOut, Settings as SettingsIcon, Zap, Info, Clock, Building2, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
+import { institutionIdFromUser } from '../../utils/institutionScope';
 
 const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: string) => void, onNavigateToSettings?: () => void }> = ({ refreshKey, onNavigate, onNavigateToSettings }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const displayName = user?.institution_name || user?.full_name || user?.displayName || 'Institutional Portal';
-    const institutionId = user?.institution_id || user?.user_id || 'default_inst';
+    const institutionId = institutionIdFromUser(user);
     
     const [notifCount, setNotifCount] = useState(0);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -61,6 +62,13 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
                 'leaderboard': 'leaderboard',
                 'events': 'events',
                 'dashboard': 'dashboard',
+                'participants': 'participants',
+                'submissions': 'submissions',
+                'judges': 'judges',
+                'judge': 'judges',
+                'judge management': 'judges',
+                'downloads': 'downloads',
+                'certificates': 'certificates',
             };
 
             if (navMap[query]) {
@@ -88,14 +96,14 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
     // Dynamic Notifications Logic
     useEffect(() => {
         const fetchNotifications = async () => {
-            if (!institutionId || institutionId === 'default_inst') {
-                console.warn("[NOTIF] Skip: No valid ID", institutionId);
+            if (!institutionId) {
+                console.warn("[NOTIF] Skip: institution_id missing on user");
                 return;
             }
             try {
                 console.log("[NOTIF] Fetching for:", institutionId);
                 const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}?t=${Date.now()}`, {
-                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', ...authHeaders() },
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -139,7 +147,9 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
 
             setIsSearching(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/search?q=${searchQuery}&institution_id=${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/search?q=${searchQuery}&institution_id=${institutionId}`, {
+                    headers: { ...authHeaders() },
+                });
                 let data = [];
                 if (res.ok) {
                     data = await res.json();
@@ -159,11 +169,11 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
 
     useEffect(() => {
         const fetchProfile = async () => {
-            if (!institutionId || institutionId === 'default_inst') return;
+            if (!institutionId) return;
             try {
                 // Cache bust: Force fresh data from server
                 const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`, {
-                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', ...authHeaders() },
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -181,15 +191,16 @@ const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: stri
     };
 
     const handleMarkAllAsRead = async () => {
-        if (!institutionId || institutionId === 'default_inst') return;
+        if (!institutionId) return;
         try {
             // Optimistic Update
             setNotifications([]);
             setNotifCount(0);
             
             // Backend call to clear (DELETE method as defined in your integration_routes)
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`, {
-                method: 'DELETE'
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}/mark-read`, {
+                method: 'POST',
+                headers: { ...authHeaders() },
             });
             
             if (!res.ok) {

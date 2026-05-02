@@ -21,6 +21,14 @@ import time
 
 app = FastAPI()
 
+load_dotenv()
+
+
+def _super_admin_email_set() -> set:
+    """Comma-separated emails in SUPER_ADMIN_EMAILS (e.g. ops header X-Admin-Email)."""
+    raw = os.getenv("SUPER_ADMIN_EMAILS", "")
+    return {x.strip().lower() for x in raw.split(",") if x.strip()}
+
 # Setup logging
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -97,12 +105,13 @@ def require_role(allowed_roles: List[str]):
 
 # --- ADMIN SECURITY MIDDLEWARE ---
 async def admin_required(x_admin_email: str = Header(None)):
-    """Simple middleware to protect admin routes"""
-    allowed_admins = ["admin@studlyf.com", "saieshwarerelli10@gmail.com"]
-    if not x_admin_email or x_admin_email.lower() not in allowed_admins:
+    """Protect legacy admin routes via X-Admin-Email; list from env SUPER_ADMIN_EMAILS."""
+    allowed = _super_admin_email_set()
+    em = (x_admin_email or "").strip().lower()
+    if not em or em not in allowed:
         raise HTTPException(
-            status_code=403, 
-            detail=f"Forbidden: {x_admin_email} does not have super-admin privileges."
+            status_code=403,
+            detail="Forbidden: invalid super-admin header (configure SUPER_ADMIN_EMAILS).",
         )
     return x_admin_email
 from db import db, courses_col, modules_col, theories_col, videos_col, quizzes_col, projects_col, progress_col, cart_col, enrollments_col, interviews_col, certificates_col, sdl_projects_col, sdl_members_col, sdl_tasks_col, sdl_comments_col, sdl_join_requests_col, users_col, ads_col, mentors_col, companies_col, payments_col, audit_logs_col, resumes_col, institutions_col, events_col, participants_col, teams_col, submissions_col, judges_col, scores_col, notifications_col, leaderboard_col
@@ -2788,19 +2797,6 @@ async def get_interview_report(session_id: str):
     return report
 
 
-# --- ADMIN SECURITY MIDDLEWARE ---
-from fastapi import Header
-
-async def admin_required(x_admin_email: str = Header(None)):
-    """Simple middleware to protect admin routes"""
-    allowed_admins = ["admin@studlyf.com", "saieshwarerelli10@gmail.com"]
-    if not x_admin_email or x_admin_email.lower() not in allowed_admins:
-        raise HTTPException(
-            status_code=403, 
-            detail=f"Forbidden: {x_admin_email} does not have super-admin privileges."
-        )
-    return x_admin_email
-
 # --- ADMIN SYSTEM ENDPOINTS ---
 
 @app.get("/api/admin/stats", dependencies=[Depends(admin_required)])
@@ -4929,6 +4925,16 @@ async def get_judge_submissions_view(event_id: str, current_user: dict = Depends
 
         # 2. Get submissions
         subs = await submissions_col.find({"event_id": event_id}).to_list(None)
+        judge_email = (current_user.get("email") or "").strip().lower()
+        filtered = []
+        for s in subs:
+            assigned = s.get("assigned_judge_emails") or []
+            if assigned:
+                norm = [str(a).strip().lower() for a in assigned if a]
+                if judge_email and judge_email not in norm:
+                    continue
+            filtered.append(s)
+        subs = filtered
         
         # 3. Privacy Masking
         for s in subs:
@@ -5015,6 +5021,10 @@ async def register_for_event(event_id: str, participant: Participant):
         # 5. Save participant data
         p_doc = participant.dict(exclude={"id"})
         p_doc["event_id"] = event_id
+        inst_id = event.get("institution_id")
+        p_doc["institution_id"] = inst_id
+        p_doc["event_title"] = event.get("title")
+        p_doc["registered_at"] = datetime.utcnow()
         result = await participants_col.insert_one(p_doc)
         
         # 6. TRIGGER EMAIL

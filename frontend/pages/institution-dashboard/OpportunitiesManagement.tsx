@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 import { 
     Search, 
     Plus, 
@@ -96,7 +96,7 @@ const FilterDropdown = ({ label, options, value, onChange, onClear }: any) => {
     );
 };
 
-const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ institutionId = 'default_inst', onViewEvent, onCreateEvent }) => {
+const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ institutionId, onViewEvent, onCreateEvent }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [typeTab, setTypeTab] = useState('All');
     const [events, setEvents] = useState<Event[]>([]);
@@ -124,11 +124,29 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
         setShowConfirm(true);
     };
 
+    const syncPortalToParticipants = async () => {
+        if (!institutionId) return;
+        if (!window.confirm('Link older portal applications to participant records for this institution? Use this once if counts looked wrong before the latest fix.')) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/tools/backfill-portal-participants/${institutionId}`, { method: 'POST', headers: { ...authHeaders() } });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                alert(`Sync complete. New participant rows: ${data.participants_inserted ?? 0}.`);
+                window.location.reload();
+            } else {
+                alert('Sync failed. Check that the API is running.');
+            }
+        } catch {
+            alert('Sync failed.');
+        }
+    };
+
     const confirmDelete = async () => {
         if (!eventToDelete) return;
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventToDelete}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { ...authHeaders() },
             });
             if (response.ok) {
                 setEvents(prev => prev.filter(e => e.id !== eventToDelete));
@@ -145,8 +163,13 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
 
     useEffect(() => {
         const fetchEvents = async () => {
+            if (!institutionId) {
+                setEvents([]);
+                setLoading(false);
+                return;
+            }
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`);
+                const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`, { headers: { ...authHeaders() } });
                 if (!response.ok) throw new Error("Fetch failed");
                 const data = await response.json();
                 
@@ -157,24 +180,44 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                 setEvents(filteredData.map((e: any) => {
                     const rawStatus = (e.status || 'Draft').toLowerCase();
                     let displayStatus = 'Draft';
-                    if (rawStatus === 'live' || rawStatus === 'published') displayStatus = 'Live';
+                    if (rawStatus === 'live' || rawStatus === 'published' || rawStatus === 'active') displayStatus = 'Live';
                     else if (rawStatus === 'completed') displayStatus = 'Completed';
                     else if (rawStatus === 'upcoming') displayStatus = 'Upcoming';
+
+                    // Dynamic relative time from created_at
+                    const createdAt = e.created_at || e.createdAt;
+                    let lastSaved = 'Unknown';
+                    if (createdAt) {
+                        const diff = Date.now() - new Date(createdAt).getTime();
+                        const mins = Math.floor(diff / 60000);
+                        const hrs = Math.floor(diff / 3600000);
+                        const days = Math.floor(diff / 86400000);
+                        if (days > 0) lastSaved = `${days} day${days > 1 ? 's' : ''} ago`;
+                        else if (hrs > 0) lastSaved = `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
+                        else if (mins > 0) lastSaved = `${mins} minute${mins > 1 ? 's' : ''} ago`;
+                        else lastSaved = 'Just now';
+                    }
+
+                    const rawCat = (e.category || e.type || 'Hackathons') as string;
+                    const typeLabel = /hackathon/i.test(rawCat) ? 'Hackathons' : rawCat;
+                    const startRaw = e.start_date || e.startDate || e.festivalData?.startDate || e.registrationDeadline;
+                    const endRaw = e.end_date || e.endDate || e.festivalData?.endDate;
 
                     return {
                         id: e._id,
                         name: e.title,
+                        organisation: e.organisation || e.organization || e.organisation_name || 'Institution',
                         status: displayStatus,
-                        type: e.category || 'Hackathons',
-                        startDate: e.start_date ? new Date(e.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
-                        endDate: e.end_date ? new Date(e.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
+                        type: typeLabel,
+                        startDate: startRaw ? new Date(startRaw).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
+                        endDate: endRaw ? new Date(endRaw).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
                         participants: e.participant_count || 0,
-                        registrations: e.registration_count || 'N/A',
-                        candidate: '--',
+                        registrations: e.participant_count || 0,
+                        candidate: (e.participant_count || 0) > 0 ? `${e.participant_count} registered` : '—',
                         image: e.image_url || '',
                         visibility: e.visibility || 'Public',
                         registrationStatus: e.registration_status || 'Open',
-                        lastSaved: 'about 2 hours ago'
+                        lastSaved
                     };
                 }));
             } catch (err) {
@@ -203,11 +246,20 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
     return (
         <>
             <div className="space-y-6 animate-in fade-in duration-700 font-sans">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <h1 className="text-xl font-black text-slate-900">Opportunities</h1>
-                    <button onClick={onCreateEvent} className="bg-[#EBF5FF] hover:bg-[#D6E9FF] text-[#0A2E5C] px-5 py-2 rounded-full font-black text-sm transition-all flex items-center gap-2 border border-[#B8D9FF]">
-                        <Plus size={16} /> Post
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={syncPortalToParticipants}
+                            className="text-[#0A2E5C] px-4 py-2 rounded-full font-bold text-xs border border-slate-200 bg-white hover:bg-slate-50 transition-all"
+                        >
+                            Sync portal → participants
+                        </button>
+                        <button onClick={onCreateEvent} className="bg-[#EBF5FF] hover:bg-[#D6E9FF] text-[#0A2E5C] px-5 py-2 rounded-full font-black text-sm transition-all flex items-center gap-2 border border-[#B8D9FF]">
+                            <Plus size={16} /> Post
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -316,7 +368,7 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                                             <td className="px-6 py-8">
                                                 <div className="space-y-1">
                                                     <h4 className="text-[15px] font-black text-slate-800 leading-tight group-hover:text-blue-600 transition-all">{event.name}</h4>
-                                                    <p className="text-[11px] font-bold text-slate-400">Aurora Deemed to be University</p>
+                                                    <p className="text-[11px] font-bold text-slate-400">{event.organisation || 'Institution'}</p>
                                                     <div className="flex items-center gap-3 pt-1">
                                                         <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-black rounded uppercase tracking-wider">{event.type}</span>
                                                         <span className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-wider">
