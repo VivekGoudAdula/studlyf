@@ -2488,32 +2488,44 @@ async def submit_evaluation(payload: dict):
         return {"error": str(e)}, 500
 
 @router.get("/institution/leaderboard/active_event")
-async def get_leaderboard():
+async def get_leaderboard(event_id: Optional[str] = None):
     """
-    Fetches the rankings for the active event.
+    Fetches the rankings for a specific event (or the most recent one).
     """
+    from db import leaderboard_col, events_col
     try:
-        # Fetch all teams with a total_score, sorted by score DESC
-        cursor = db.teams.find({"total_score": {"$exists": True}}).sort("total_score", -1)
-        teams = await cursor.to_list(length=100)
+        query = {}
+        if event_id:
+            query["event_id"] = str(event_id)
+        else:
+            # Try to find the most recent event
+            latest_event = await events_col.find_one({}, sort=[("created_at", -1)])
+            if latest_event:
+                query["event_id"] = str(latest_event["_id"])
+            else:
+                return []
+
+        cursor = leaderboard_col.find(query).sort("rank", 1)
+        rankings = await cursor.to_list(length=100)
         
-        rankings = []
-        for i, team in enumerate(teams):
-            rankings.append({
-                "rank": i + 1,
-                "team_name": team.get("team_name"),
-                "project_title": team.get("project_title", "Innovation Project"),
-                "total_score": team.get("total_score", 0),
-                "college": team.get("institution_name", "Institution Network"),
-                "criteria_scores": {
-                    "Innovation": min(team.get("total_score", 0) // 4, 25),
-                    "UI/UX": min(team.get("total_score", 0) // 4, 25),
-                    "Technical": min(team.get("total_score", 0) // 4, 25),
-                    "Completeness": min(team.get("total_score", 0) // 4, 25),
-                }
+        # Format for frontend
+        formatted = []
+        for r in rankings:
+            formatted.append({
+                "rank": r.get("rank", 0),
+                "team_name": r.get("team_name"),
+                "project_title": r.get("project_name", "Innovation Project"),
+                "total_score": r.get("total_score", 0),
+                "college": r.get("college", "Institution Network"),
+                "criteria_scores": r.get("criteria_scores", {
+                    "Innovation": min(r.get("total_score", 0), 25),
+                    "Technical": min(r.get("total_score", 0), 25),
+                    "UI/UX": min(r.get("total_score", 0), 25),
+                    "Completeness": min(r.get("total_score", 0), 25),
+                })
             })
             
-        return rankings
+        return formatted
         
     except Exception as e:
         print(f"Error fetching leaderboard: {str(e)}")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Body, Query, Depends
+from fastapi import APIRouter, HTTPException, Body, Query, Depends, File, UploadFile
 from typing import List, Optional
 from bson import ObjectId
 from datetime import datetime
@@ -266,6 +266,95 @@ async def learner_submit_quiz(event_id: str, quiz_id: str, payload: dict = Body(
 
     return {"status": "success", "score": score, "passed": passed, "coding_pending_review": coding_pending}
 
+
+@router.get("/events/{event_id}/stage-submissions")
+async def list_event_stage_submissions(event_id: str, user: dict = Depends(get_auth_user)):
+    """
+    Admin/Institution: List all stage-specific submissions (PPTs, Files, Links).
+    """
+    from db import submission_data_col
+    try:
+        cursor = submission_data_col.find({"event_id": str(event_id)})
+        items = []
+        async for doc in cursor:
+            doc["_id"] = str(doc["_id"])
+            # Try to attach team name or user name if possible
+            if doc.get("team_id"):
+                team = await teams_col.find_one({"_id": ObjectId(doc["team_id"])})
+                if team: doc["team_name"] = team.get("team_name")
+            else:
+                user_rec = await users_col.find_one({"user_id": doc["user_id"]})
+                if user_rec: doc["user_name"] = user_rec.get("name")
+            
+            items.append(doc)
+        return items
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/events/{event_id}/stages/{stage_id}/upload")
+async def learner_upload_stage_file(
+    event_id: str, 
+    stage_id: str, 
+    file: UploadFile = File(...), 
+    user: dict = Depends(get_auth_user)
+):
+    """
+    Handle physical file uploads (PPT, PDF, ZIP) for a specific stage.
+    """
+    uid = str(user.get("user_id") or "")
+    if not uid:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    from db import submission_data_col
+    import os
+    import uuid
+    import shutil
+    
+    # 1. Verify participant
+    p = await participants_col.find_one({"event_id": str(event_id), "user_id": uid})
+    if not p:
+        raise HTTPException(status_code=403, detail="Not registered for this event")
+
+    # 2. Save file
+    STAGE_UPLOADS = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "stages")
+    os.makedirs(STAGE_UPLOADS, exist_ok=True)
+    
+    file_ext = os.path.splitext(file.filename)[1]
+    unique_filename = f"{stage_id}_{uid}_{uuid.uuid4().hex}{file_ext}"
+    file_path = os.path.join(STAGE_UPLOADS, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Generate accessible URL
+    file_url = f"/uploads/stages/{unique_filename}"
+
+    # 3. Store in DB
+    submission_entry = {
+        "event_id": str(event_id),
+        "stage_id": str(stage_id),
+        "user_id": uid,
+        "team_id": p.get("team_id"),
+        "data": {"file_url": file_url, "filename": file.filename},
+        "submitted_at": datetime.utcnow().isoformat(),
+        "status": "Submitted"
+    }
+    
+    query = {"event_id": str(event_id), "stage_id": str(stage_id)}
+    if p.get("team_id"):
+        query["team_id"] = p.get("team_id")
+    else:
+        query["user_id"] = uid
+        
+    await submission_data_col.update_one(query, {"$set": submission_entry}, upsert=True)
+    
+    # Update participant progress
+    await participants_col.update_one(
+        {"_id": p["_id"]},
+        {"$set": {"last_stage_submitted": stage_id, "updated_at": datetime.utcnow()}}
+    )
+    
+    return {"status": "success", "file_url": file_url}
 
 @router.post("/events/{event_id}/stages/{stage_id}/submit")
 async def learner_submit_stage_data(
