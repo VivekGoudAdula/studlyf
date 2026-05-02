@@ -109,3 +109,11 @@ Run the mandatory index setup script to enforce system constraints (unique email
 ```bash
 python backend/setup_indexes.py
 ```
+
+### 3. Production institution & judging (no placeholder IDs)
+- **Institution scope**: Every institution admin JWT must include a real `institution_id` (stored on the user document). The dashboard and APIs use that value only—never `user_id` or a fake default—so listings, stats, and notifications stay tenant-scoped.
+- **Dashboard stats**: `GET /api/institution/dashboard/stats` requires a Bearer token and the token’s `institution_id` must match the `institution_id` query parameter.
+- **Legacy super-admin header**: Routes protected by `X-Admin-Email` allow only emails listed in **`SUPER_ADMIN_EMAILS`** (comma-separated). If unset, no header value is accepted—set this explicitly in production.
+- **Judge assignments**: Submissions may include `assigned_judge_emails`. When that list is non-empty, only judges whose **login email** matches an entry can list or score that submission via `GET /api/v1/institution/judge/my-assignments` and `POST /api/v1/institution/judge/score`. When the list is empty, behavior stays backward-compatible (any judge with a token may see submitted rows).
+- **Judge invitations**: `POST /api/v1/institution/judge/respond-invitation` with `{ "event_id", "accept" }` updates the event’s judge panel and creates an **in-app institution notification** (navbar bell) when a judge accepts or declines.
+- **Admin alerts**: Operations such as judge scoring and invitation responses call `notify_institution`, which stores rows served by `GET /api/v1/institution/notifications/{institution_id}` for the institution navbar.

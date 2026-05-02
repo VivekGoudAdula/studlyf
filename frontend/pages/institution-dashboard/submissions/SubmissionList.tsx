@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Eye, CheckCircle, XCircle, ExternalLink, Github, Play, FileText, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL, authHeaders } from '../../../apiConfig';
 
 interface SubmissionListProps {
     institutionId?: string;
 }
 
-const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'default_inst' }) => {
+const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId }) => {
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -19,9 +20,17 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
 
     useEffect(() => {
         const fetchSubmissions = async () => {
+            if (!institutionId) {
+                setSubmissions([]);
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
-                const response = await fetch(`/api/v1/institution/submissions/${institutionId}`);
+                const response = await fetch(
+                    `${API_BASE_URL}/api/v1/institution/submissions/${encodeURIComponent(institutionId)}`,
+                    { headers: { ...authHeaders() } }
+                );
                 const data = await response.json();
                 
                 // Ensure data is an array
@@ -41,6 +50,45 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
         fetchSubmissions();
     }, [institutionId]);
 
+    useEffect(() => {
+        if (!isAssigning) {
+            setJudges([]);
+            return;
+        }
+        const sub = submissions.find((s) => s._id === isAssigning);
+        const eventId = sub?.event_id;
+        if (!eventId) {
+            setJudges([]);
+            return;
+        }
+        (async () => {
+            try {
+                const res = await fetch(
+                    `${API_BASE_URL}/api/v1/institution/events/${encodeURIComponent(String(eventId))}/details`,
+                    { headers: { ...authHeaders() } }
+                );
+                if (!res.ok) {
+                    setJudges([]);
+                    return;
+                }
+                const ev = await res.json();
+                const panel = Array.isArray(ev?.judges) ? ev.judges : [];
+                setJudges(
+                    panel
+                        .filter((j: any) => j?.email)
+                        .map((j: any) => ({
+                            _id: j.id || j.email,
+                            full_name: j.name || j.email || 'Judge',
+                            email: j.email,
+                            specialization: j.expertise,
+                        }))
+                );
+            } catch {
+                setJudges([]);
+            }
+        })();
+    }, [isAssigning, submissions]);
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'Approved': return 'bg-green-100 text-green-700';
@@ -53,9 +101,9 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
 
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
-            const response = await fetch(`/api/v1/institution/submissions/${id}/status`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/institution/submissions/${id}/status`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({ status: newStatus })
             });
             if (response.ok) {
@@ -339,13 +387,13 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                                     <button 
                                         key={j._id}
                                         onClick={async () => {
-                                            const res = await fetch(`/api/v1/institution/submissions/${isAssigning}/assign-judge`, {
+                                            const res = await fetch(`${API_BASE_URL}/api/v1/institution/submissions/${isAssigning}/assign-judge`, {
                                                 method: 'PATCH',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ judge_id: j._id })
+                                                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                                                body: JSON.stringify({ judge_email: j.email, judge_id: j._id })
                                             });
                                             if (res.ok) {
-                                                setSubmissions(submissions.map(s => s._id === isAssigning ? { ...s, judge_id: j._id, judge_name: j.full_name, status: 'Under Review' } : s));
+                                                setSubmissions(submissions.map(s => s._id === isAssigning ? { ...s, judge_id: j._id, judge_name: j.full_name, assigned_judge_emails: [j.email], status: 'Under Review' } : s));
                                                 setIsAssigning(null);
                                             }
                                         }}

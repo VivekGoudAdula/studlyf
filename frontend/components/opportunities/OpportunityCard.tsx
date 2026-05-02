@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, MapPin, Briefcase, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { plainTextFromRichContent, formatOpportunityLocation } from '../../utils/text';
 
 interface OpportunityCardProps {
     opportunity: {
@@ -61,16 +62,16 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, isApplie
                 </div>
 
                 <p className="text-xs font-medium text-slate-400 line-clamp-2 leading-relaxed">
-                    {opportunity.description}
+                    {plainTextFromRichContent(opportunity.description)}
                 </p>
 
                 <div className="flex flex-wrap gap-3 pt-2">
-                    {opportunity.location && (
+                    {formatOpportunityLocation(opportunity.location) ? (
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
                             <MapPin size={12} className="text-slate-400" />
-                            {opportunity.location}
+                            {formatOpportunityLocation(opportunity.location)}
                         </div>
-                    )}
+                    ) : null}
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
                         <Calendar size={12} className="text-slate-400" />
                         {new Date(opportunity.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}

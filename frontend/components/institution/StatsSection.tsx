@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Briefcase, Trophy, ClipboardCheck, Lock } from 'lucide-react';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 
 interface StatsSectionProps {
     institutionId?: string;
@@ -9,16 +10,23 @@ interface StatsSectionProps {
     onNavigate?: (tab: string) => void;
 }
 
-const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_inst', onUpgrade, onContact, onNavigate }) => {
+const StatsSection: React.FC<StatsSectionProps> = ({ institutionId, onUpgrade, onContact, onNavigate }) => {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
+            if (!institutionId) {
+                setStats(null);
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
-                const { API_BASE_URL } = await import('../../apiConfig');
-                const res = await fetch(`${API_BASE_URL}/api/institution/dashboard/stats?institution_id=${institutionId}`);
+                const res = await fetch(
+                    `${API_BASE_URL}/api/institution/dashboard/stats?institution_id=${encodeURIComponent(institutionId)}`,
+                    { headers: { ...authHeaders() } }
+                );
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
                 setStats(data);
@@ -30,6 +38,14 @@ const StatsSection: React.FC<StatsSectionProps> = ({ institutionId = 'default_in
         };
         fetchStats();
     }, [institutionId]);
+
+    if (!institutionId) {
+        return (
+            <div className="mb-8 rounded-2xl border border-slate-100 bg-slate-50 p-6 text-sm text-slate-600">
+                Stats load after your account is linked to an institution.
+            </div>
+        );
+    }
 
     if (loading) return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">

@@ -173,6 +173,20 @@ const Navigation: React.FC = () => {
                 >
                   AI TOOLS
                 </Link>
+                <Link
+                  to="/opportunities"
+                  className="flex items-center transition-all h-full uppercase tracking-[0.25em] font-bold text-[11px] text-white/80 hover:text-white"
+                >
+                  OPPORTUNITIES
+                </Link>
+                {user && role !== 'institution' ? (
+                  <Link
+                    to="/opportunities/my-applications"
+                    className="flex items-center transition-all h-full uppercase tracking-[0.25em] font-bold text-[11px] text-white/80 hover:text-white"
+                  >
+                    MY APPLICATIONS
+                  </Link>
+                ) : null}
               </div>
             </div>
 

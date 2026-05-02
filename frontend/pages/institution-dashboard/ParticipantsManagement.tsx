@@ -11,9 +11,9 @@ interface Participant {
     status: string;
 }
 
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 
-const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institutionId = 'default_inst' }) => {
+const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institutionId }) => {
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -24,9 +24,14 @@ const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institut
 
     React.useEffect(() => {
         const fetchParticipants = async () => {
+            if (!institutionId) {
+                setParticipants([]);
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/participants/${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/participants/${institutionId}`, { headers: { ...authHeaders() } });
                 if (res.ok) {
                     const data = await res.json();
                     setParticipants(data.map((p: any) => ({
@@ -36,8 +41,9 @@ const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institut
                         phone: p.phone || 'N/A',
                         event: p.event_title || p.event_id,
                         team: p.team_name || 'Individual',
-                        regDate: new Date(p.registered_at).toLocaleDateString(),
-                        status: p.status || 'Registered'
+                        regDate: new Date(p.registered_at || p.applied_at).toLocaleDateString(),
+                        status: p.status || 'Registered',
+                        resume: p.resume_url || p.resume // Capture resume URL
                     })));
                 }
             } catch (err) {
@@ -188,6 +194,7 @@ const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institut
                                         <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Event</th>
                                         <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Team</th>
                                         <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Registration Date</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Resume</th>
                                         <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                                         <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
@@ -204,6 +211,20 @@ const ParticipantsManagement: React.FC<{ institutionId?: string }> = ({ institut
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{participant.event}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{participant.team}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{participant.regDate}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {(participant as any).resume ? (
+                                                        <a 
+                                                            href={(participant as any).resume} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-indigo-600 hover:text-indigo-900 font-bold flex items-center gap-1"
+                                                        >
+                                                            View Resume
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-gray-400">No Resume</span>
+                                                    )}
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(participant.status)}`}>
                                                         {participant.status}

@@ -6,9 +6,13 @@ import { X, Plus, Trash2, Save, HelpCircle, Target, Clock, AlertCircle } from 'l
 interface Question {
     id: string;
     text: string;
-    type: 'MCQ' | 'Multiple' | 'Technical';
-    options: string[];
-    correctAnswer: string;
+    type: 'SINGLE_CHOICE' | 'CODING';
+    options?: string[];
+    correctOptionIndex?: number | null;
+    language?: string;
+    starterCode?: string;
+    sampleInput?: string;
+    sampleOutput?: string;
 }
 
 interface QuizDesignerModalProps {
@@ -21,18 +25,40 @@ interface QuizDesignerModalProps {
 const QuizDesignerModal: React.FC<QuizDesignerModalProps> = ({ isOpen, onClose, onSave, loading }) => {
     const [title, setTitle] = useState('New Assessment Round');
     const [questions, setQuestions] = useState<Question[]>([
-        { id: '1', text: '', type: 'MCQ', options: ['', '', '', ''], correctAnswer: '' }
+        { id: '1', text: '', type: 'SINGLE_CHOICE', options: ['', '', '', ''], correctOptionIndex: null }
     ]);
     const [duration, setDuration] = useState(30);
 
+    const normalizeQuestion = (q: Question): Question => {
+        if (q.type === 'SINGLE_CHOICE') {
+            return {
+                ...q,
+                options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
+                correctOptionIndex:
+                    typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : q.correctOptionIndex ?? null,
+                language: undefined,
+                starterCode: undefined,
+                sampleInput: undefined,
+                sampleOutput: undefined,
+            };
+        }
+        // CODING
+        return {
+            ...q,
+            options: undefined,
+            correctOptionIndex: undefined,
+            language: q.language || 'python',
+            starterCode: q.starterCode || '',
+            sampleInput: q.sampleInput || '',
+            sampleOutput: q.sampleOutput || '',
+        };
+    };
+
     const addQuestion = () => {
-        setQuestions([...questions, { 
-            id: Date.now().toString(), 
-            text: '', 
-            type: 'MCQ', 
-            options: ['', '', '', ''], 
-            correctAnswer: '' 
-        }]);
+        setQuestions([
+            ...questions,
+            { id: Date.now().toString(), text: '', type: 'SINGLE_CHOICE', options: ['', '', '', ''], correctOptionIndex: null },
+        ]);
     };
 
     const removeQuestion = (id: string) => {
@@ -40,13 +66,22 @@ const QuizDesignerModal: React.FC<QuizDesignerModalProps> = ({ isOpen, onClose, 
     };
 
     const updateQuestion = (id: string, field: string, value: any) => {
-        setQuestions(questions.map(q => q.id === id ? { ...q, [field]: value } : q));
+        setQuestions(
+            questions.map((q) => {
+                if (q.id !== id) return q;
+                if (field === 'type') {
+                    const next = normalizeQuestion({ ...q, type: value });
+                    return next;
+                }
+                return { ...q, [field]: value };
+            })
+        );
     };
 
     const updateOption = (qId: string, optIdx: number, value: string) => {
         setQuestions(questions.map(q => {
             if (q.id === qId) {
-                const newOpts = [...q.options];
+                const newOpts = [...(q.options || ['', '', '', ''])];
                 newOpts[optIdx] = value;
                 return { ...q, options: newOpts };
             }
@@ -155,32 +190,97 @@ const QuizDesignerModal: React.FC<QuizDesignerModalProps> = ({ isOpen, onClose, 
                                                         onChange={(e) => updateQuestion(q.id, 'type', e.target.value)}
                                                         className="w-full px-8 py-5 bg-slate-50 border border-slate-50 rounded-[1.8rem] font-bold text-slate-900 outline-none focus:bg-white transition-all appearance-none"
                                                     >
-                                                        <option>MCQ</option>
-                                                        <option>Technical</option>
-                                                        <option>Scenario</option>
+                                                        <option value="SINGLE_CHOICE">Single choice</option>
+                                                        <option value="CODING">Coding</option>
                                                     </select>
                                                 </div>
                                             </div>
 
-                                            {/* Options Grid */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {q.options.map((opt, optIdx) => (
-                                                    <div key={optIdx} className="relative group/opt">
-                                                        <input 
-                                                            value={opt}
-                                                            onChange={(e) => updateOption(q.id, optIdx, e.target.value)}
-                                                            placeholder={`Option ${optIdx + 1}`}
-                                                            className={`w-full pl-14 pr-8 py-4 bg-slate-50 border ${q.correctAnswer === opt && opt !== '' ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-50'} rounded-2xl font-medium text-slate-700 outline-none focus:bg-white transition-all`}
-                                                        />
-                                                        <button 
-                                                            onClick={() => updateQuestion(q.id, 'correctAnswer', opt)}
-                                                            className={`absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center transition-all ${q.correctAnswer === opt && opt !== '' ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-transparent group-hover/opt:text-slate-400'}`}
-                                                        >
-                                                            <Target size={14} />
-                                                        </button>
+                                            {q.type === 'SINGLE_CHOICE' ? (
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <h4 className="text-sm font-black text-slate-900">Answer options</h4>
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                            Select exactly one correct answer
+                                                        </p>
                                                     </div>
-                                                ))}
-                                            </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        {(q.options || ['', '', '', '']).map((opt, optIdx) => (
+                                                            <div key={optIdx} className="relative group/opt">
+                                                                <input 
+                                                                    value={opt}
+                                                                    onChange={(e) => updateOption(q.id, optIdx, e.target.value)}
+                                                                    placeholder={`Option ${optIdx + 1}`}
+                                                                    className={`w-full pl-14 pr-8 py-4 bg-slate-50 border ${
+                                                                        q.correctOptionIndex === optIdx && opt !== '' ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-50'
+                                                                    } rounded-2xl font-medium text-slate-700 outline-none focus:bg-white transition-all`}
+                                                                />
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => updateQuestion(q.id, 'correctOptionIndex', optIdx)}
+                                                                    className={`absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                                                                        q.correctOptionIndex === optIdx && opt !== '' ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-transparent group-hover/opt:text-slate-400'
+                                                                    }`}
+                                                                    title="Mark as correct"
+                                                                >
+                                                                    <Target size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                        <div className="md:col-span-1 space-y-3">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Language</label>
+                                                            <select
+                                                                value={q.language || 'python'}
+                                                                onChange={(e) => updateQuestion(q.id, 'language', e.target.value)}
+                                                                className="w-full px-8 py-5 bg-slate-50 border border-slate-50 rounded-[1.8rem] font-bold text-slate-900 outline-none focus:bg-white transition-all appearance-none"
+                                                            >
+                                                                <option value="python">Python</option>
+                                                                <option value="javascript">JavaScript</option>
+                                                                <option value="java">Java</option>
+                                                                <option value="cpp">C++</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="md:col-span-2 space-y-3">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Starter code (optional)</label>
+                                                            <textarea
+                                                                value={q.starterCode || ''}
+                                                                onChange={(e) => updateQuestion(q.id, 'starterCode', e.target.value)}
+                                                                placeholder="Provide a starter function/template for candidates…"
+                                                                className="w-full px-8 py-5 bg-slate-50 border border-slate-50 rounded-[1.8rem] font-mono text-xs text-slate-800 outline-none focus:bg-white focus:ring-4 focus:ring-[#6C3BFF]/5 transition-all resize-none"
+                                                                rows={4}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="space-y-3">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Sample input (optional)</label>
+                                                            <textarea
+                                                                value={q.sampleInput || ''}
+                                                                onChange={(e) => updateQuestion(q.id, 'sampleInput', e.target.value)}
+                                                                placeholder="Input example…"
+                                                                className="w-full px-8 py-5 bg-slate-50 border border-slate-50 rounded-[1.8rem] font-mono text-xs text-slate-800 outline-none focus:bg-white transition-all resize-none"
+                                                                rows={3}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Sample output (optional)</label>
+                                                            <textarea
+                                                                value={q.sampleOutput || ''}
+                                                                onChange={(e) => updateQuestion(q.id, 'sampleOutput', e.target.value)}
+                                                                placeholder="Expected output…"
+                                                                className="w-full px-8 py-5 bg-slate-50 border border-slate-50 rounded-[1.8rem] font-mono text-xs text-slate-800 outline-none focus:bg-white transition-all resize-none"
+                                                                rows={3}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <button 
@@ -210,7 +310,7 @@ const QuizDesignerModal: React.FC<QuizDesignerModalProps> = ({ isOpen, onClose, 
                     <div className="p-10 border-t border-slate-50 flex justify-end gap-6 bg-slate-50/20">
                         <button onClick={onClose} className="px-10 py-5 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">Discard</button>
                         <button 
-                            onClick={() => onSave({ title, questions, duration })}
+                            onClick={() => onSave({ title, questions: questions.map(normalizeQuestion), duration })}
                             disabled={loading}
                             className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#6C3BFF] transition-all shadow-2xl shadow-black/10 flex items-center gap-3 disabled:opacity-50"
                         >

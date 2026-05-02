@@ -67,6 +67,9 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ institutionId }) =>
         );
     }
 
+    const today = new Date().toDateString();
+    const verifiedTodayCount = certificates.filter(cert => new Date(cert.issue_date).toDateString() === today).length;
+
     return (
         <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-1000 pb-20 font-sans">
             {/* Header Area */}
@@ -94,7 +97,7 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ institutionId }) =>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
                     { label: 'Total Issued', value: certificates.length, icon: Award, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { label: 'Verified Today', value: '24', icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Verified Today', value: verifiedTodayCount, icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                     { label: 'Pending Requests', value: '0', icon: CheckCircle2, color: 'text-amber-600', bg: 'bg-amber-50' }
                 ].map((stat, i) => (
                     <div key={i} className="p-10 bg-white rounded-[3rem] border border-slate-50 shadow-xl shadow-slate-100/20 flex items-center gap-8">

@@ -29,6 +29,7 @@ import ReportsPage from './ReportsPage';
 import CertificatesPage from './CertificatesPage';
 import DownloadsPage from './DownloadsPage';
 import Footer from '../../components/institution/Footer';
+import { institutionIdFromUser, hasInstitutionScope } from '../../utils/institutionScope';
 
 const InstitutionDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -43,7 +44,13 @@ const InstitutionDashboard: React.FC = () => {
     const [profileRefreshTrigger, setProfileRefreshTrigger] = useState(0);
 
     const { user } = useAuth();
-    const institutionId = user?.institution_id || user?.user_id || 'default_inst';
+    const institutionId = institutionIdFromUser(user);
+
+    React.useEffect(() => {
+        if (user && !hasInstitutionScope(user)) {
+            console.warn('[Dashboard] Institution users should have institution_id set on their profile', user?.user_id);
+        }
+    }, [user]);
 
     const handleViewEvent = (eventId: string) => {
         setSelectedEventId(eventId);
@@ -69,6 +76,14 @@ const InstitutionDashboard: React.FC = () => {
     };
 
     const renderContent = () => {
+        console.log("[NAV] Rendering Content for Tab:", activeTab);
+        if (!institutionId) {
+            return (
+                <div className="p-10 max-w-xl mx-auto rounded-3xl border border-amber-200 bg-amber-50 text-amber-950 text-sm font-bold leading-relaxed">
+                    Your account is missing an <strong>institution_id</strong>. Ask your Studlyf administrator to link this login to your institution profile so dashboards load real data (no placeholder IDs).
+                </div>
+            );
+        }
         switch (activeTab) {
             case 'events':
                 return (

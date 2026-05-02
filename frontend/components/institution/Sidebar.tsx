@@ -92,19 +92,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onPost }) => 
             </nav>
 
             <div className="p-3 mt-auto border-t border-gray-50 bg-white">
-                <div className="bg-purple-50 p-3 rounded-xl mb-2">
+                <div className="bg-purple-50 p-3 rounded-xl">
                     <p className="text-[9px] font-bold text-purple-600 uppercase tracking-widest mb-1">Support</p>
                     <p className="text-[10px] text-gray-600 mb-2">Facing any issues? Our team is here to help.</p>
-                    <button className="text-[10px] font-bold text-[#6C3BFF] hover:underline">Contact Support</button>
+                    <a 
+                        href={`mailto:${import.meta.env.VITE_SUPPORT_EMAIL || 'support@studlyf.com'}`}
+                        className="text-[10px] font-bold text-[#6C3BFF] hover:underline"
+                    >
+                        Contact Support
+                    </a>
                 </div>
-
-                <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-medium text-red-500 hover:bg-red-50 transition-all text-xs"
-                >
-                    <LogOut size={18} className="text-red-500" />
-                    Logout
-                </button>
             </div>
         </div>
 
