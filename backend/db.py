@@ -50,8 +50,8 @@ class MockResult:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("db_service")
 
-# Load explicitly from the parent directory .env
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+# Load from current directory .env
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 class DatabaseManager:
     """
