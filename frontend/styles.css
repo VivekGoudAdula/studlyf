@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --font-family-sans: 'Outfit', sans-serif;
-  --font-family-serif: 'Outfit', sans-serif;
-  --font-family-display: 'Outfit', sans-serif;
-  --font-family-mono: 'Outfit', sans-serif;
-  --font-family-poppins: 'Outfit', sans-serif;
-  --font-family-syne: 'Outfit', sans-serif;
+  --font-family-sans: 'Poppins', sans-serif;
+  --font-family-serif: 'Poppins', sans-serif;
+  --font-family-display: 'Poppins', sans-serif;
+  --font-family-mono: 'Poppins', sans-serif;
+  --font-family-poppins: 'Poppins', sans-serif;
+  --font-family-syne: 'Poppins', sans-serif;
 }
 
 .glass-panel {

@@ -12,6 +12,9 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
     const editorRef = React.useRef<HTMLDivElement>(null);
     const [step, setStep] = useState(1);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [festivalLogoPreview, setFestivalLogoPreview] = useState<string | null>(null);
+    const [festivalBannerPreview, setFestivalBannerPreview] = useState<string | null>(null);
+    const [opportunityBannerPreview, setOpportunityBannerPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
@@ -22,18 +25,27 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
         websiteUrl: '',
         description: '',
         skills: '',
-        participationType: 'individual', 
+        participationType: 'both', 
         minTeamSize: 1,
         maxTeamSize: 5,
         opportunityMode: 'online', 
         venueAddress: '',
         city: '',
+        // Perks and Benefits
+        stipend: '',
+        salaryRange: '',
+        perks: [],
+        prizePool: '',
+        prizes: [],
+        benefits: '',
+        compensation: '',
         candidateTypes: ['Everyone can apply'], 
         collegeRestriction: 'Everyone can apply',
         genderRestriction: 'Everyone can apply',
         eligibleGenders: ['Allow All'],
         eligibleOrganizations: ['Allow All'],
         sameOrgTeam: false,
+        registrationLevel: 'both', // 'festival', 'both', 'competition'
         // Festival Creation Fields
         festivalData: {
             name: '',
@@ -138,10 +150,12 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
     // FETCH REAL DATA ON MOUNT
     useEffect(() => {
         const fetchProfile = async () => {
-            if (!isOpen || !institutionId || institutionId === 'default_inst') return;
+            if (!isOpen || !institutionId) return;
             try {
-                const { API_BASE_URL } = await import('../../apiConfig');
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`);
+                const { API_BASE_URL, authHeaders } = await import('../../apiConfig');
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`, {
+                    headers: { ...authHeaders() },
+                });
                 if (res.ok) {
                     const data = await res.json();
                     setFormData(prev => ({
@@ -155,6 +169,13 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
         };
         fetchProfile();
     }, [isOpen, institutionId]);
+    
+    // Sync editor content with formData.description without resetting cursor during typing
+    useEffect(() => {
+        if (editorRef.current && editorRef.current.innerHTML !== formData.description) {
+            editorRef.current.innerHTML = formData.description;
+        }
+    }, [formData.description]);
 
     const steps = [
         { id: 1, label: 'Opportunity details' },
@@ -171,12 +192,33 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
 
     if (!isOpen) return null;
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'mobileBanner') => {
         const file = e.target.files?.[0];
         if (file) {
+            setFormData(prev => ({ 
+                ...prev, 
+                festivalData: { ...prev.festivalData, [field]: file } 
+            }));
             const reader = new FileReader();
             reader.onloadend = () => {
-                setLogoPreview(reader.result as string);
+                if (field === 'logo') setLogoPreview(reader.result as string);
+                else setOpportunityBannerPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleFestivalFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'mobileBanner') => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setFormData(prev => ({
+                ...prev,
+                festivalData: { ...prev.festivalData, [field]: file }
+            }));
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (field === 'logo') setFestivalLogoPreview(reader.result as string);
+                else setFestivalBannerPreview(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
@@ -188,12 +230,52 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
         } else {
             setLoading(true);
             try {
-                const { API_BASE_URL } = await import('../../apiConfig');
+                const { API_BASE_URL, authHeaders } = await import('../../apiConfig');
+                
+                // Use FormData for multipart/form-data support
+                const submitData = new FormData();
+                
+                // Append all regular fields
+                Object.entries(formData).forEach(([key, value]) => {
+                    if (key !== 'festivalData' && key !== 'registrationFields') {
+                        submitData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+                    }
+                });
+
+                submitData.append('registrationLevel', formData.registrationLevel);
+
+                submitData.append('registrationFields', JSON.stringify(formData.registrationFields));
+                submitData.append('institution_id', institutionId || '');
+
+                // Append Opportunity Assets if exists
+                if (formData.festivalData.logo instanceof File) {
+                    submitData.append('logo_file', formData.festivalData.logo);
+                }
+                if (formData.festivalData.mobileBanner instanceof File) {
+                    submitData.append('banner_file', formData.festivalData.mobileBanner);
+                }
+
+                // Append Festival Data if active
+                if (isCreatingFestival) {
+                    const festClean = { ...formData.festivalData };
+                    delete festClean.logo;
+                    delete festClean.mobileBanner;
+                    submitData.append('festivalData', JSON.stringify(festClean));
+                    
+                    if (formData.festivalData.logo instanceof File) {
+                        submitData.append('festival_logo_file', formData.festivalData.logo);
+                    }
+                    if (formData.festivalData.mobileBanner instanceof File) {
+                        submitData.append('festival_banner_file', formData.festivalData.mobileBanner);
+                    }
+                }
+
                 const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/create-professional`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...formData, institution_id: institutionId })
+                    headers: { ...authHeaders() },
+                    body: submitData // browser sets correct multipart boundary
                 });
+
                 if (response.ok) {
                     alert("Opportunity Created Successfully!");
                     onClose();
@@ -207,6 +289,12 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
             } finally {
                 setLoading(false);
             }
+        }
+    };
+
+    const handlePrevious = () => {
+        if (step > 1) {
+            setStep(step - 1);
         }
     };
 
@@ -250,7 +338,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                 initial={{ scale: 0.98, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.98, opacity: 0, y: 10 }}
-                className="relative w-full max-w-6xl bg-[#F8FAFC] rounded-[1rem] shadow-2xl overflow-hidden flex h-[90vh] font-['Outfit']"
+                className="relative w-full max-w-6xl bg-[#F8FAFC] rounded-[1rem] shadow-2xl overflow-hidden flex h-[90vh] font-sans"
             >
                 {/* 1. Left Sidebar */}
                 <div className="w-72 bg-white border-r border-slate-200 p-8 flex flex-col shrink-0">
@@ -316,7 +404,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Add Logo</span>
                                                 </>
                                             )}
-                                            <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+                                            <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'logo')} accept="image/*" />
                                         </label>
                                         <div className="flex-1">
                                             <p className="text-xs text-slate-400 leading-relaxed">Supported logo image JPG, JPEG, or PNG. Max 1 MB.</p>
@@ -379,6 +467,24 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                         <option key={sub} value={sub}>{sub}</option>
                                                     ))}
                                                 </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1">
+                                            <div>
+                                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Add Banner (700x400)</label>
+                                                <label className="group relative h-48 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center bg-white cursor-pointer hover:border-[#6C3BFF] transition-all overflow-hidden">
+                                                    {opportunityBannerPreview ? (
+                                                        <img src={opportunityBannerPreview} alt="Banner" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <>
+                                                            <div className="mb-4 text-slate-200"><UploadCloud size={40} /></div>
+                                                            <div className="px-6 py-2.5 bg-[#007BFF] text-white rounded-lg text-[11px] font-black uppercase mb-3 pointer-events-none">Click here to upload a banner</div>
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Recommended resolution is 700x400</p>
+                                                        </>
+                                                    )}
+                                                    <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'mobileBanner')} accept="image/*" />
+                                                </label>
                                             </div>
                                         </div>
 
@@ -445,7 +551,6 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                 contentEditable
                                                 onInput={(e) => setFormData({...formData, description: e.currentTarget.innerHTML})}
                                                 className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-b-2xl outline-none transition-all text-slate-900 font-medium min-h-[150px] focus:border-[#6C3BFF]/30 overflow-y-auto"
-                                                dangerouslySetInnerHTML={{ __html: formData.description }}
                                             />
                                         </div>
 
@@ -499,56 +604,90 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
 
                                                 <div>
                                                     <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Organisation *</label>
-                                                    <input type="text" value={formData.organisation} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl outline-none" />
+                                                    <input 
+                                                        type="text" 
+                                                        value={formData.organisation} 
+                                                        onChange={(e) => setFormData({...formData, organisation: e.target.value})}
+                                                        placeholder="Enter organisation name"
+                                                        className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-[#6C3BFF] transition-all" 
+                                                    />
                                                     <p className="text-[9px] text-orange-600 font-bold mt-1.5 uppercase text-right">Mandatory Field</p>
                                                 </div>
 
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-3">
-                                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Details</label>
+                                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Details *</label>
                                                         <Info size={14} className="text-slate-300" />
                                                     </div>
-                                                    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                                    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden focus-within:border-[#6C3BFF] transition-all">
                                                         <div className="p-3 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
                                                             {['B', 'I', 'U', '≡', '≡', '≡', '≡', '✂️', '📋', '•', '1.', '↺', '↻', '🖼️'].map((btn, i) => (
                                                                 <button key={i} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-slate-500 font-bold transition-all">{btn}</button>
                                                             ))}
                                                         </div>
-                                                        <textarea rows={8} className="w-full p-6 outline-none text-sm resize-none" placeholder="Enter festival details..."></textarea>
+                                                        <textarea 
+                                                            rows={8} 
+                                                            value={formData.description}
+                                                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                                            className="w-full p-6 outline-none text-sm resize-none" 
+                                                            placeholder="Enter festival details..."
+                                                        ></textarea>
                                                     </div>
                                                     <p className="text-[9px] text-orange-600 font-bold mt-1.5 uppercase text-right">Mandatory Field</p>
                                                 </div>
 
-                                                {/* Assets with Placeholders */}
+                                                {/* Assets with Real Uploads */}
                                                 <div className="grid grid-cols-2 gap-8">
                                                     <div>
                                                         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Upload Festival Logo</label>
-                                                        <div className="h-48 border-2 border-dashed border-slate-200 rounded-[2rem] flex items-center justify-center bg-white group hover:border-[#6C3BFF] transition-all">
-                                                            <div className="w-32 h-32 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 group-hover:scale-105 transition-transform">🏆</div>
-                                                        </div>
+                                                        <label className="group relative h-48 border-2 border-dashed border-slate-200 rounded-[2rem] flex items-center justify-center bg-white cursor-pointer hover:border-[#6C3BFF] transition-all overflow-hidden">
+                                                            {festivalLogoPreview ? (
+                                                                <img src={festivalLogoPreview} alt="Fest Logo" className="w-full h-full object-contain p-4" />
+                                                            ) : (
+                                                                <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:scale-105 transition-transform">🏆</div>
+                                                            )}
+                                                            <input type="file" className="hidden" onChange={(e) => handleFestivalFileChange(e, 'logo')} accept="image/*" />
+                                                        </label>
                                                     </div>
                                                     <div>
                                                         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Upload Festival Mobile Banner (700x400)</label>
-                                                        <div className="h-48 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center bg-white group hover:border-[#6C3BFF] transition-all">
-                                                            <div className="mb-4 text-slate-200"><UploadCloud size={40} /></div>
-                                                            <button className="px-6 py-2.5 bg-[#007BFF] text-white rounded-lg text-[11px] font-black uppercase mb-3">Click here to upload a mobile Banner</button>
-                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Recommended image resolution is 700x400</p>
-                                                        </div>
+                                                        <label className="group relative h-48 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center bg-white cursor-pointer hover:border-[#6C3BFF] transition-all overflow-hidden">
+                                                            {festivalBannerPreview ? (
+                                                                <img src={festivalBannerPreview} alt="Fest Banner" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <>
+                                                                    <div className="mb-4 text-slate-200"><UploadCloud size={40} /></div>
+                                                                    <div className="px-6 py-2.5 bg-[#007BFF] text-white rounded-lg text-[11px] font-black uppercase mb-3 pointer-events-none">Click here to upload a mobile Banner</div>
+                                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Recommended image resolution is 700x400</p>
+                                                                </>
+                                                            )}
+                                                            <input type="file" className="hidden" onChange={(e) => handleFestivalFileChange(e, 'mobileBanner')} accept="image/*" />
+                                                        </label>
                                                     </div>
                                                 </div>
 
                                                 <div className="space-y-4">
                                                     <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Registration open in festival</p>
-                                                    <div className="space-y-3">
-                                                        {[
-                                                            'Yes: Registrations will be open only at festival level.',
-                                                            'Both: Registration will be open on both festival and Competitions.',
-                                                            'No: Registration will be open only at competition level.'
-                                                        ].map((text, i) => (
-                                                            <button key={i} className="w-full p-6 bg-white border border-slate-100 rounded-2xl text-left text-[11px] font-bold text-slate-600 hover:border-[#6C3BFF] hover:bg-slate-50 transition-all">
-                                                                {text}
-                                                            </button>
-                                                        ))}
+                                                    
+                                                    <div 
+                                                        onClick={() => setFormData({...formData, registrationLevel: 'festival'})}
+                                                        className={`p-6 border-2 rounded-[1.5rem] cursor-pointer transition-all ${formData.registrationLevel === 'festival' ? 'border-[#6C3BFF] bg-[#6C3BFF]/5 shadow-sm' : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'}`}
+                                                    >
+                                                        <p className={`text-[12px] font-bold ${formData.registrationLevel === 'festival' ? 'text-[#6C3BFF]' : 'text-slate-600'}`}>Yes: Registrations will be open only at festival level.</p>
+                                                    </div>
+
+                                                    <div 
+                                                        onClick={() => setFormData({...formData, registrationLevel: 'both'})}
+                                                        className={`p-6 border-2 rounded-[1.5rem] cursor-pointer transition-all ${formData.registrationLevel === 'both' ? 'border-[#6C3BFF] bg-[#6C3BFF]/5 shadow-sm' : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'}`}
+                                                    >
+                                                        <p className={`text-[12px] font-bold ${formData.registrationLevel === 'both' ? 'text-[#6C3BFF]' : 'text-slate-600'}`}>Both: Registration will be open on both festival and Competitions.</p>
+                                                    </div>
+
+                                                    <div 
+                                                        onClick={() => setFormData({...formData, registrationLevel: 'competition'})}
+                                                        className={`p-6 border-2 rounded-[1.5rem] cursor-pointer transition-all ${formData.registrationLevel === 'competition' ? 'border-[#6C3BFF] bg-[#6C3BFF]/5 shadow-sm' : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'}`}
+                                                    >
+                                                        <p className={`text-[12px] font-bold ${formData.registrationLevel === 'competition' ? 'text-[#6C3BFF]' : 'text-slate-600'}`}>No: Registration will be open only at competition level.</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -563,6 +702,97 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                 placeholder="e.g. Photoshop, React, Python (Comma separated)"
                                                 className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium"
                                             />
+                                        </div>
+
+                                        {/* Perks and Benefits Section */}
+                                        <div className="pt-8 border-t border-slate-50">
+                                            <div className="flex items-center gap-3 mb-8">
+                                                <h4 className="text-[13px] font-black text-slate-900 uppercase tracking-widest">Perks & Benefits</h4>
+                                                <Trophy size={14} className="text-slate-300" />
+                                            </div>
+                                            
+                                            <div className="space-y-6">
+                                                {/* Prize Pool */}
+                                                <div>
+                                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Total Prize Pool (Optional)</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={formData.prizePool}
+                                                        onChange={(e) => setFormData({...formData, prizePool: e.target.value})}
+                                                        placeholder="e.g. ₹1,00,000, $5000, Worth ₹50,000"
+                                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium"
+                                                    />
+                                                    <p className="text-[10px] text-slate-400 mt-2">Total value of all prizes and rewards</p>
+                                                </div>
+
+                                                {/* Stipend/Compensation */}
+                                                <div className="grid grid-cols-2 gap-8">
+                                                    <div>
+                                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Stipend (Optional)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={formData.stipend}
+                                                            onChange={(e) => setFormData({...formData, stipend: e.target.value})}
+                                                            placeholder="e.g. ₹10,000/month"
+                                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Salary Range (Optional)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={formData.salaryRange}
+                                                            onChange={(e) => setFormData({...formData, salaryRange: e.target.value})}
+                                                            placeholder="e.g. ₹8L - ₹15L PA"
+                                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Benefits Description */}
+                                                <div>
+                                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Benefits & Perks (Optional)</label>
+                                                    <textarea 
+                                                        rows={4}
+                                                        value={formData.benefits}
+                                                        onChange={(e) => setFormData({...formData, benefits: e.target.value})}
+                                                        placeholder="List all benefits, perks, and additional rewards..."
+                                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none transition-all text-slate-900 font-medium resize-none"
+                                                    />
+                                                    <p className="text-[10px] text-slate-400 mt-2">Certificates, internship opportunities, job offers, swag, mentorship, etc.</p>
+                                                </div>
+
+                                                {/* Common Perks Tags */}
+                                                <div>
+                                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Common Perks (Click to add)</label>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {[
+                                                            'Certificate of Participation',
+                                                            'Internship Opportunity',
+                                                            'Job Interview',
+                                                            'Swag/Merchandise',
+                                                            'Mentorship',
+                                                            'Workshop Access',
+                                                            'Free Tools/Software',
+                                                            'Networking Opportunities',
+                                                            'Publication/Recognition',
+                                                            'Travel Reimbursement'
+                                                        ].map(perk => (
+                                                            <button 
+                                                                key={perk}
+                                                                onClick={() => {
+                                                                    const currentBenefits = formData.benefits || '';
+                                                                    const newBenefits = currentBenefits ? `${currentBenefits}, ${perk}` : perk;
+                                                                    setFormData({...formData, benefits: newBenefits});
+                                                                }}
+                                                                className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[10px] font-medium text-slate-600 hover:border-[#6C3BFF] hover:bg-[#6C3BFF]/5 hover:text-[#6C3BFF] transition-all"
+                                                            >
+                                                                + {perk}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="pt-8 border-t border-slate-50">
@@ -587,9 +817,15 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                                                         >
                                                             👥 Team Participation
                                                         </button>
+                                                        <button 
+                                                            onClick={() => setFormData({...formData, participationType: 'both'})}
+                                                            className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all ${formData.participationType === 'both' ? 'bg-white text-[#6C3BFF] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                                        >
+                                                            🤝 Both
+                                                        </button>
                                                     </div>
 
-                                                    {formData.participationType === 'team' && (
+                                                    {(formData.participationType === 'team' || formData.participationType === 'both') && (
                                                         <div className="mt-8 flex items-center gap-6 animate-in slide-in-from-top-2 duration-300">
                                                             <div className="flex-1">
                                                                 <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">Set team size</label>
@@ -1054,16 +1290,29 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                         </div>
                     </div>
 
-                    <div className="p-8 border-t border-slate-100 bg-white flex items-center justify-end gap-4 shrink-0">
-                        <button onClick={handleSaveDraft} className="px-8 py-3.5 bg-slate-50 text-slate-500 rounded-full font-bold text-sm hover:bg-slate-100 transition-all border border-slate-100">Save as Draft</button>
-                        <button 
-                            disabled={loading}
-                            onClick={handleNext} 
-                            className={`px-8 py-3.5 bg-[#6C3BFF] text-white rounded-full font-bold text-sm transition-all flex items-center gap-3 ${loading ? "opacity-50 cursor-not-allowed" : "hover:shadow-xl hover:shadow-purple-200"}`}
-                        >
-                            <span>{loading ? "Processing..." : (step === 2 ? "Publish" : "Save and next")}</span>
-                            <ChevronRight size={18} />
-                        </button>
+                    <div className="p-8 border-t border-slate-100 bg-white flex items-center justify-between gap-4 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <button onClick={handleSaveDraft} className="px-8 py-3.5 bg-slate-50 text-slate-500 rounded-full font-bold text-sm hover:bg-slate-100 transition-all border border-slate-100">Save as Draft</button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {step > 1 && (
+                                <button 
+                                    onClick={handlePrevious}
+                                    className="px-8 py-3.5 bg-white text-slate-600 rounded-full font-bold text-sm hover:bg-slate-50 transition-all border border-slate-200 flex items-center gap-3"
+                                >
+                                    <ArrowLeft size={18} />
+                                    <span>Previous</span>
+                                </button>
+                            )}
+                            <button 
+                                disabled={loading}
+                                onClick={handleNext} 
+                                className={`px-10 py-4 bg-[#6C3BFF] text-white rounded-full font-bold text-sm transition-all flex items-center gap-3 shadow-lg ${loading ? "opacity-50 cursor-not-allowed" : "hover:shadow-xl hover:shadow-purple-200 hover:scale-[1.02]"}`}
+                            >
+                                <span>{loading ? "Processing..." : (step === 2 ? "🚀 Post Opportunity" : "Save and next")}</span>
+                                {step === 2 ? <Upload size={18} /> : <ChevronRight size={18} />}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </motion.div>
@@ -1084,7 +1333,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-xl bg-white rounded-[1.5rem] shadow-2xl overflow-hidden font-['Outfit']"
+                        className="relative w-full max-w-xl bg-white rounded-[1.5rem] shadow-2xl overflow-hidden font-sans"
                     >
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                             <div>
@@ -1225,7 +1474,7 @@ const PostOpportunityModal: React.FC<PostOpportunityModalProps> = ({ isOpen, onC
             {isSupportDrawerOpen && (
                 <>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSupportDrawerOpen(false)} className="fixed inset-0 z-[400] bg-slate-900/40 backdrop-blur-sm" />
-                    <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed right-0 top-0 bottom-0 w-[450px] bg-white z-[450] shadow-2xl flex flex-col font-['Outfit']">
+                    <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed right-0 top-0 bottom-0 w-[450px] bg-white z-[450] shadow-2xl flex flex-col font-sans">
                         <div className="p-8 border-b border-slate-100 flex items-center justify-between">
                             <h3 className="text-xl font-black text-slate-900">Get in touch</h3>
                             <button onClick={() => setIsSupportDrawerOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>

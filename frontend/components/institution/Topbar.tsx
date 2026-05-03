@@ -4,13 +4,14 @@ import { useAuth } from '../../AuthContext';
 import { Bell, Search, User, CreditCard, LogOut, Settings as SettingsIcon, Menu, Info, Zap, Clock, X, Filter, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
+import { institutionIdFromUser } from '../../utils/institutionScope';
 
 const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToSettings }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const displayName = user?.full_name || user?.displayName || 'User';
-    const institutionId = user?.user_id || 'default_inst';
+    const institutionId = institutionIdFromUser(user);
     
     const [notifCount, setNotifCount] = useState(0);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -21,9 +22,9 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
     const notifRef = useRef<HTMLDivElement>(null);
 
     const fetchProfile = async () => {
-        if (!institutionId || institutionId === 'undefined') return;
+        if (!institutionId) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`);
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}`, { headers: { ...authHeaders() } });
             if (res.ok) {
                 const data = await res.json();
                 if (data.logo_url) {
@@ -38,9 +39,9 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
     };
 
     const fetchNotifications = async () => {
-        if (!institutionId || institutionId === 'undefined') return;
+        if (!institutionId) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`);
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`, { headers: { ...authHeaders() } });
             if (res.ok) {
                 const data = await res.json();
                 const list = Array.isArray(data) ? data : [];
@@ -53,11 +54,11 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
     };
 
     const handleMarkAsRead = async () => {
-        if (!institutionId || institutionId === 'undefined') return;
+        if (!institutionId) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}/mark-read`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
             });
             if (res.ok) {
                 setNotifications([]);
@@ -108,7 +109,7 @@ const Topbar: React.FC<{ onNavigateToSettings?: () => void }> = ({ onNavigateToS
         <div className="w-full flex items-center justify-between mb-10 animate-in slide-in-from-top duration-1000 relative z-[100]">
             {/* Left Side: Greeting */}
             <div className="hidden lg:block">
-                <h1 className="text-2xl font-['Outfit'] font-bold text-slate-900 flex items-center gap-3">
+                <h1 className="text-2xl font-sans font-bold text-slate-900 flex items-center gap-3">
                     Welcome Back, <span className="text-[#6C3BFF]">{displayName}</span> 👋
                 </h1>
                 <p className="text-slate-400 text-sm font-medium mt-1">Here's your institutional overview for today.</p>

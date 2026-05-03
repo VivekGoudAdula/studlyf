@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Calendar, Star, Info, ChevronRight, Zap, Clock } from 'lucide-react';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 
 interface AlertsPanelProps {
     institutionId?: string;
     onUpgrade?: () => void;
 }
 
-const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst', onUpgrade }) => {
+const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId, onUpgrade }) => {
     const [activeTab, setActiveTab] = useState('upcoming');
     const [alerts, setAlerts] = useState<any[]>([]);
     const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
@@ -17,18 +17,24 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!institutionId) {
+                setAlerts([]);
+                setUpcomingEvents([]);
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
                 
                 // Fetch Notifications (What's New)
-                const notifRes = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`);
+                const notifRes = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`, { headers: { ...authHeaders() } });
                 if (notifRes.ok) {
                     const notifData = await notifRes.json();
                     setAlerts(Array.isArray(notifData) ? notifData : []);
                 }
 
                 // Fetch Events (Upcoming Activity)
-                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`);
+                const eventRes = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`, { headers: { ...authHeaders() } });
                 if (eventRes.ok) {
                     const eventData = await eventRes.json();
                     if (Array.isArray(eventData)) {
@@ -74,13 +80,13 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst
     };
 
     return (
-        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/20 border border-slate-100 overflow-hidden h-full flex flex-col font-['Outfit']">
+        <div className="bg-white rounded-2xl shadow-2xl shadow-slate-200/20 border border-slate-100 overflow-hidden h-full flex flex-col font-sans">
             {/* Tab Header */}
-            <div className="p-8 pb-0">
-                <div className="flex items-center gap-8 border-b border-slate-50">
+            <div className="p-6 pb-0">
+                <div className="flex items-center gap-6 border-b border-slate-50">
                     <button 
                         onClick={() => setActiveTab('upcoming')}
-                        className={`text-xs font-black uppercase tracking-[0.2em] relative pb-5 transition-all ${activeTab === 'upcoming' ? 'text-[#6C3BFF]' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`text-[11px] font-black uppercase tracking-[0.2em] relative pb-4 transition-all ${activeTab === 'upcoming' ? 'text-[#6C3BFF]' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         Upcoming Activity
                         {activeTab === 'upcoming' && (
@@ -89,7 +95,7 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst
                     </button>
                     <button 
                         onClick={() => setActiveTab('new')}
-                        className={`text-xs font-black uppercase tracking-[0.2em] relative pb-5 transition-all ${activeTab === 'new' ? 'text-[#6C3BFF]' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`text-[11px] font-black uppercase tracking-[0.2em] relative pb-4 transition-all ${activeTab === 'new' ? 'text-[#6C3BFF]' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         What's New
                         {activeTab === 'new' && (
@@ -100,7 +106,7 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({ institutionId = 'default_inst
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 p-8 overflow-y-auto no-scrollbar">
+            <div className="flex-1 p-6 overflow-y-auto no-scrollbar">
                 <AnimatePresence mode="wait">
                     {activeTab === 'upcoming' ? (
                         <motion.div 

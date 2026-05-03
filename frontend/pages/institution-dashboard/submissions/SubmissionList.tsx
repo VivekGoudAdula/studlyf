@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Eye, CheckCircle, XCircle, ExternalLink, Github, Play, FileText, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL, authHeaders } from '../../../apiConfig';
 
 interface SubmissionListProps {
     institutionId?: string;
 }
 
-const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'default_inst' }) => {
+const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId }) => {
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -19,9 +20,17 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
 
     useEffect(() => {
         const fetchSubmissions = async () => {
+            if (!institutionId) {
+                setSubmissions([]);
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
-                const response = await fetch(`/api/v1/institution/submissions/${institutionId}`);
+                const response = await fetch(
+                    `${API_BASE_URL}/api/v1/institution/submissions/${encodeURIComponent(institutionId)}`,
+                    { headers: { ...authHeaders() } }
+                );
                 const data = await response.json();
                 
                 // Ensure data is an array
@@ -41,6 +50,45 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
         fetchSubmissions();
     }, [institutionId]);
 
+    useEffect(() => {
+        if (!isAssigning) {
+            setJudges([]);
+            return;
+        }
+        const sub = submissions.find((s) => s._id === isAssigning);
+        const eventId = sub?.event_id;
+        if (!eventId) {
+            setJudges([]);
+            return;
+        }
+        (async () => {
+            try {
+                const res = await fetch(
+                    `${API_BASE_URL}/api/v1/institution/events/${encodeURIComponent(String(eventId))}/details`,
+                    { headers: { ...authHeaders() } }
+                );
+                if (!res.ok) {
+                    setJudges([]);
+                    return;
+                }
+                const ev = await res.json();
+                const panel = Array.isArray(ev?.judges) ? ev.judges : [];
+                setJudges(
+                    panel
+                        .filter((j: any) => j?.email)
+                        .map((j: any) => ({
+                            _id: j.id || j.email,
+                            full_name: j.name || j.email || 'Judge',
+                            email: j.email,
+                            specialization: j.expertise,
+                        }))
+                );
+            } catch {
+                setJudges([]);
+            }
+        })();
+    }, [isAssigning, submissions]);
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'Approved': return 'bg-green-100 text-green-700';
@@ -53,9 +101,9 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
 
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
-            const response = await fetch(`/api/v1/institution/submissions/${id}/status`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/institution/submissions/${id}/status`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({ status: newStatus })
             });
             if (response.ok) {
@@ -93,7 +141,7 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
         : submissions.filter(s => s.status === filterStatus);
 
     return (
-        <div className="space-y-6 font-['Outfit']">
+        <div className="space-y-6 font-sans">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight">Submissions Management</h1>
@@ -194,15 +242,23 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                                     )}
                                 </td>
                                 <td className="px-8 py-6 text-center">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(sub.status)}`}>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${sub.status === 'Scored' ? 'bg-purple-100 text-purple-700 border-purple-200' : getStatusColor(sub.status)}`}>
                                         {sub.status || 'Submitted'}
                                     </span>
                                 </td>
                                 <td className="px-8 py-6">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <span className={`text-xs font-black ${sub.score >= 80 ? 'text-emerald-600' : 'text-slate-700'}`}>
-                                            {sub.score || '—'}
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <span className={`text-sm font-black ${sub.score >= 8 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                            {sub.score ? sub.score.toFixed(1) : '—'}
                                         </span>
+                                        {sub.score && (
+                                            <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-[#6C3BFF]" 
+                                                    style={{ width: `${(sub.score / 10) * 100}%` }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </td>
                                 <td className="px-8 py-6 text-right">
@@ -339,13 +395,13 @@ const SubmissionList: React.FC<SubmissionListProps> = ({ institutionId = 'defaul
                                     <button 
                                         key={j._id}
                                         onClick={async () => {
-                                            const res = await fetch(`/api/v1/institution/submissions/${isAssigning}/assign-judge`, {
+                                            const res = await fetch(`${API_BASE_URL}/api/v1/institution/submissions/${isAssigning}/assign-judge`, {
                                                 method: 'PATCH',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ judge_id: j._id })
+                                                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                                                body: JSON.stringify({ judge_email: j.email, judge_id: j._id })
                                             });
                                             if (res.ok) {
-                                                setSubmissions(submissions.map(s => s._id === isAssigning ? { ...s, judge_id: j._id, judge_name: j.full_name, status: 'Under Review' } : s));
+                                                setSubmissions(submissions.map(s => s._id === isAssigning ? { ...s, judge_id: j._id, judge_name: j.full_name, assigned_judge_emails: [j.email], status: 'Under Review' } : s));
                                                 setIsAssigning(null);
                                             }
                                         }}

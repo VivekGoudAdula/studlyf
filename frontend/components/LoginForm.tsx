@@ -27,12 +27,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        const emailClean = email.trim().toLowerCase();
+        const passwordClean = password.trim();
+        if (!emailClean) {
+            setError('Email is required.');
+            return;
+        }
+        if (!passwordClean) {
+            setError('Password is required.');
+            return;
+        }
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email: emailClean, password: passwordClean })
             });
 
             const data = await response.json();
@@ -45,6 +55,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                     navigate('/admin');
                 } else if (data.user.role === 'institution') {
                     navigate('/institution-dashboard');
+                } else if (data.user.role === 'judge') {
+                    navigate('/judge-portal');
                 } else {
                     navigate('/dashboard/learner');
                 }
@@ -74,6 +86,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                     <label className={labelClasses}>Email Address</label>
                     <input
                         type="email"
+                        name="email"
+                        autoComplete="email"
                         placeholder={selectedRole === 'institution' ? "admin@institution.edu" : "shiva@gmail.com"}
                         className={inputClasses}
                         value={email}
@@ -89,6 +103,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, transparent = f
                     <div className="relative">
                         <input
                             type={showPassword ? "text" : "password"}
+                            name="password"
+                            autoComplete="current-password"
                             placeholder="••••••••"
                             className={inputClasses}
                             value={password}

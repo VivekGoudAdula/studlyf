@@ -126,14 +126,14 @@ const GetHiredSection: React.FC = () => {
 
             {/* Bottom bar for stipend, startup hirings, and success rate */}
             <div className="hidden lg:grid w-full absolute left-1/2 -translate-x-1/2 bottom-12 z-30 pointer-events-none grid-cols-3 items-center max-w-[1400px] px-6 sm:px-12 lg:px-20">
-                <div className="text-white text-xl font-bold pointer-events-auto text-left tracking-wide" style={{fontFamily: 'Times New Roman, Times, serif'}}>
-                    Stipend starts at 10K+
+                <div className="text-white text-xl font-bold pointer-events-auto text-left tracking-wide" style={{fontFamily: "'Poppins', sans-serif"}}>
+                    <span className="text-blue-400">#</span> Tech
                 </div>
-                <div className="text-white text-xl font-bold pointer-events-auto text-center tracking-wide" style={{fontFamily: 'Times New Roman, Times, serif'}}>
-                    Startup hirings 10+
+                <div className="text-white text-xl font-bold pointer-events-auto text-center tracking-wide" style={{fontFamily: "'Poppins', sans-serif"}}>
+                    <span className="text-pink-400">#</span> Business
                 </div>
-                <div className="text-white text-xl font-bold pointer-events-auto text-right tracking-wide" style={{fontFamily: 'Times New Roman, Times, serif'}}>
-                    80% success rate
+                <div className="text-white text-xl font-bold pointer-events-auto text-right tracking-wide" style={{fontFamily: "'Poppins', sans-serif"}}>
+                    <span className="text-amber-400">#</span> Creative
                 </div>
             </div>
         </section>

@@ -48,6 +48,12 @@ A comprehensive competition management platform for colleges and organizations.
 - **Advanced Reporting Analytics**: Live registration timelines and departmental participation breakdowns with CSV/PDF export capabilities.
 - **Multi-Member Team Support**: Certificates are individually generated for every member of a winning team, intelligently adapting between "Ranked" and "Participation" modes based on the event type (Hackathon vs. Workshop).
 
+### 7. 🧑‍🤝‍🧑 Learner Team Hub (Production-ready)
+- **Team creation**: Registered learners can create a team for an event (leader auto-assigned).
+- **Invite codes**: Team leaders generate time-limited invite codes to share privately.
+- **Join by code**: Registered learners can join a team using an invite code (no public member lists).
+- **Enforced rules**: Min/max team size and “already in team / not registered” constraints are enforced server-side.
+
 ---
 ## ⚠️ Known Issues & Limitations (For GitHub)
 
@@ -92,6 +98,30 @@ A comprehensive competition management platform for colleges and organizations.
    ```
 
 ---
+## 🧑‍🤝‍🧑 Teams & Invitations (Learner)
+
+### Learner Team Hub UI
+- Open **My applications** → click **Team hub** for a hackathon.
+- Route: `/events/:eventId`
+
+### API (JWT required)
+- **Get my team for an event**
+  - `GET /api/teams/me?event_id=<eventId>`
+- **Create team (secure)**
+  - `POST /api/teams/create-secure`
+  - Body: `{ "event_id": "<eventId>", "team_name": "My Team" }`
+- **Generate invite code (leader only)**
+  - `POST /api/teams/{team_id}/invites`
+  - Body: `{ "ttl_hours": 72 }`
+- **Join team by invite**
+  - `POST /api/teams/join-by-invite`
+  - Body: `{ "code": "<inviteCode>" }`
+
+### Notes
+- The legacy endpoints in `backend/main.py` (`/api/teams/create`, `/api/teams/{team_id}/join`) exist, but the UI uses the secure routes above.
+- Team features are intended for **team participation** listings; individual participation should not use teams.
+
+---
 
 ## 🏫 Institution Dashboard Setup
 
@@ -109,3 +139,26 @@ Run the mandatory index setup script to enforce system constraints (unique email
 ```bash
 python backend/setup_indexes.py
 ```
+
+### 3. Production institution & judging (no placeholder IDs)
+- **Institution scope**: Every institution admin JWT must include a real `institution_id` (stored on the user document). The dashboard and APIs use that value only—never `user_id` or a fake default—so listings, stats, and notifications stay tenant-scoped.
+- **Dashboard stats**: `GET /api/institution/dashboard/stats` requires a Bearer token and the token’s `institution_id` must match the `institution_id` query parameter.
+- **Legacy super-admin header**: Routes protected by `X-Admin-Email` allow only emails listed in **`SUPER_ADMIN_EMAILS`** (comma-separated). If unset, no header value is accepted—set this explicitly in production.
+- **Judge assignments**: Submissions may include `assigned_judge_emails`. When that list is non-empty, only judges whose **login email** matches an entry can list or score that submission via `GET /api/v1/institution/judge/my-assignments` and `POST /api/v1/institution/judge/score`. When the list is empty, behavior stays backward-compatible (any judge with a token may see submitted rows).
+- **Judge invitations**: `POST /api/v1/institution/judge/respond-invitation` with `{ "event_id", "accept" }` updates the event’s judge panel and creates an **in-app institution notification** (navbar bell) when a judge accepts or declines.
+- **Admin alerts**: Operations such as judge scoring and invitation responses call `notify_institution`, which stores rows served by `GET /api/v1/institution/notifications/{institution_id}` for the institution navbar.
+
+### 4. Learner Quiz + Visibility + Manual Coding Review
+- **Learner quiz page**: `frontend/pages/events/EventQuizPage.tsx` mounted at `GET /events/:eventId/quiz/:quizId`.
+- **Visibility lock**: `GET /api/opportunities/events/{event_id}/quizzes/{quiz_id}` enforces stage visibility (`Public`, `Private`, `Shortlisted Only`) before returning quiz payload.
+- **Learner submit**: `POST /api/opportunities/events/{event_id}/quizzes/{quiz_id}/submit` auto-scores `SINGLE_CHOICE` and marks `CODING` attempts as `coding_pending_review`.
+- **Institution manual coding workflow**:
+  - `GET /api/v1/institution/events/{event_id}/quizzes/{quiz_id}/coding-attempts`
+  - `POST /api/v1/institution/events/{event_id}/quizzes/{quiz_id}/coding-attempts/{participant_user_id}/evaluate`
+- **Institution UI**: The `Assessments` tab in `EventDetails.tsx` now includes a pending coding review list with evaluate actions.
+
+### 5. Authentication Hardening
+- Login now supports safe migration for legacy plaintext password rows: if legacy match succeeds, the password is immediately re-hashed and stored using the secure hash flow.
+- For institution users missing `institution_id`, login attempts automatic institution resolution and persists the resolved `institution_id` to prevent dashboard/notification scope issues.
+- Login now tolerates legacy email formatting in DB (case/whitespace) and normalizes successful accounts back to canonical lowercase email.
+- One-time user cleanup tool: `python backend/normalize_auth_users.py --dry-run` (preview) then `python backend/normalize_auth_users.py --apply` to normalize emails/passwords and report duplicate canonical emails.

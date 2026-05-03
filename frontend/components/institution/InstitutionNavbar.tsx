@@ -4,13 +4,14 @@ import { useAuth } from '../../AuthContext';
 import { Bell, Search, LogOut, Settings as SettingsIcon, Zap, Info, Clock, Building2, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
+import { institutionIdFromUser } from '../../utils/institutionScope';
 
-const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNavigateToSettings?: () => void }> = ({ onNavigate, onNavigateToSettings }) => {
+const InstitutionNavbar: React.FC<{ refreshKey?: number, onNavigate?: (tab: string) => void, onNavigateToSettings?: () => void }> = ({ refreshKey, onNavigate, onNavigateToSettings }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const displayName = user?.full_name || user?.displayName || 'User';
-    const institutionId = user?.user_id || 'default_inst';
+    const displayName = user?.institution_name || user?.full_name || 'Institutional Portal';
+    const institutionId = institutionIdFromUser(user);
     
     const [notifCount, setNotifCount] = useState(0);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -61,6 +62,13 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                 'leaderboard': 'leaderboard',
                 'events': 'events',
                 'dashboard': 'dashboard',
+                'participants': 'participants',
+                'submissions': 'submissions',
+                'judges': 'judges',
+                'judge': 'judges',
+                'judge management': 'judges',
+                'downloads': 'downloads',
+                'certificates': 'certificates',
             };
 
             if (navMap[query]) {
@@ -88,42 +96,76 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
     // Dynamic Notifications Logic
     useEffect(() => {
         const fetchNotifications = async () => {
-            if (!institutionId || institutionId === 'default_inst') return;
             try {
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`);
+                // Add timeout to prevent infinite loading
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+                const endpoint = institutionId
+                    ? `${API_BASE_URL}/api/v1/institution/notifications/${institutionId}?t=${Date.now()}`
+                    : `${API_BASE_URL}/api/v1/institution/notifications/me?t=${Date.now()}`;
+
+                const res = await fetch(endpoint, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', ...authHeaders() },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (res.ok) {
                     const data = await res.json();
+                    console.log("[NOTIF] Data received:", data);
                     setNotifications(data);
                     setNotifCount(data.length);
+                } else {
+                    console.error("[NOTIF] Error:", res.status);
                 }
-            } catch (err) { console.error("Failed to load notifications", err); }
+            } catch (err) { 
+                console.error("[NOTIF] Failed", err);
+                // Set empty notifications on error to prevent infinite loading
+                setNotifications([]);
+                setNotifCount(0);
+            }
         };
         fetchNotifications();
+        
+        // Poll every 30 seconds for new alerts
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
     }, [institutionId]);
+
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
 
     // Dynamic Search Logic
     useEffect(() => {
         const performSearch = async () => {
+            // Define all pages
+            const pages = [
+                { id: 'dashboard', title: 'Main Dashboard', type: 'Page', link: '#' },
+                { id: 'events', title: 'Events Management', type: 'Page', link: '#' },
+                { id: 'participants', title: 'Participants', type: 'Page', link: '#' },
+                { id: 'submissions', title: 'Submissions', type: 'Page', link: '#' },
+                { id: 'judges', title: 'Judge Management', type: 'Page', link: '#' },
+                { id: 'analytics', title: 'Reports & Analytics', type: 'Page', link: '#' },
+                { id: 'downloads', title: 'Data Downloads', type: 'Page', link: '#' },
+                { id: 'settings', title: 'Account Settings', type: 'Page', link: '#' },
+            ];
+
             if (searchQuery.length < 2) {
-                setSearchResults([]);
+                // When query is small/empty, show all default pages
+                setSearchResults(pages);
                 return;
             }
+
             setIsSearching(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/search?q=${searchQuery}&institution_id=${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/search?q=${searchQuery}&institution_id=${institutionId}`, {
+                    headers: { ...authHeaders() },
+                });
                 let data = [];
                 if (res.ok) {
                     data = await res.json();
                 }
-
-                // Add static pages to results for quick navigation
-                const pages = [
-                    { id: 'settings', title: 'Account Settings', type: 'Page', link: '#' },
-                    { id: 'analytics', title: 'Reports & Analytics', type: 'Page', link: '#' },
-                    { id: 'events', title: 'Events Management', icon: 'Briefcase', type: 'Page', link: '#' },
-                    { id: 'participants', title: 'Participants', type: 'Page', link: '#' },
-                    { id: 'dashboard', title: 'Main Dashboard', type: 'Page', link: '#' },
-                ];
 
                 const matchedPages = pages.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
                 setSearchResults([...matchedPages, ...data]);
@@ -135,19 +177,38 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
         };
         const timer = setTimeout(performSearch, 300);
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery, institutionId]);
 
     useEffect(() => {
         const fetchProfile = async () => {
-            if (!institutionId || institutionId === 'default_inst') return;
+            if (!institutionId) return;
             try {
-                // Cache bust: Add timestamp to force fresh data
-                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`);
-                if (res.ok) setProfile(await res.json());
-            } catch (err) { console.error(err); }
+                // Cache bust: Force fresh data from server
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/profile/${institutionId}?t=${Date.now()}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', ...authHeaders() },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfile(data);
+                    setImgError(false); // Reset error state on fresh fetch
+                } else {
+                    console.error("[PROFILE] Error:", res.status);
+                }
+            } catch (err) { 
+                console.error("[PROFILE] Failed", err);
+                // Set default profile on error to prevent infinite loading
+                setProfile({ name: 'Loading Error', logo: null });
+            }
         };
         fetchProfile();
-    }, [institutionId]);
+    }, [institutionId, refreshKey]);
 
     const handleLogout = async () => {
         await logout();
@@ -155,15 +216,17 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
     };
 
     const handleMarkAllAsRead = async () => {
-        if (!institutionId || institutionId === 'default_inst') return;
         try {
             // Optimistic Update
             setNotifications([]);
             setNotifCount(0);
             
-            // Backend call to clear (DELETE method as defined in your integration_routes)
-            const res = await fetch(`${API_BASE_URL}/api/v1/institution/notifications/${institutionId}`, {
-                method: 'DELETE'
+            const endpoint = institutionId
+                ? `${API_BASE_URL}/api/v1/institution/notifications/${institutionId}/mark-read`
+                : `${API_BASE_URL}/api/v1/institution/notifications/me/mark-read`;
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { ...authHeaders() },
             });
             
             if (!res.ok) {
@@ -176,11 +239,11 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
     };
 
     return (
-        <div className="w-full relative z-[100] font-['Outfit'] px-8 pt-6">
+        <div className="w-full relative z-[100] font-sans px-6 pt-4">
             <motion.div 
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="w-full bg-[#6C3BFF] h-20 rounded-[2.5rem] shadow-2xl shadow-purple-200 flex items-center px-8 relative overflow-hidden group"
+                className="w-full bg-[#6C3BFF] h-16 rounded-[1.5rem] shadow-2xl shadow-purple-200 flex items-center px-6 relative overflow-hidden group"
             >
                 {/* 1. Left (Empty to match old layout) */}
                 <div className="w-12 shrink-0 hidden lg:block" />
@@ -193,16 +256,18 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                             ref={searchInputRef}
                             type="text" 
                             value={searchQuery}
+                            onFocus={() => setIsSearchFocused(true)}
+                            onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleSearchKeyDown}
                             placeholder="Search events, students, or reports..." 
-                            className="w-full pl-16 pr-6 py-4 bg-white/25 backdrop-blur-3xl border border-white/40 rounded-[2rem] text-white placeholder:text-white/60 outline-none focus:bg-white/30 focus:border-white/60 transition-all font-['Outfit'] font-medium text-sm shadow-xl"
+                            className="w-full pl-14 pr-6 py-2.5 bg-white/25 backdrop-blur-3xl border border-white/40 rounded-full text-white placeholder:text-white/60 outline-none focus:bg-white/30 focus:border-white/60 transition-all font-sans font-medium text-xs shadow-xl"
                         />
                         {/* CTRL K Badge Removed */}
-
+ 
                         {/* Search Results Dropdown */}
                         <AnimatePresence>
-                            {searchQuery.length >= 2 && (
+                            {isSearchFocused && (
                                 <motion.div 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -219,6 +284,9 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                                                             onNavigateToSettings();
                                                         } else if (result.type === 'Page' && onNavigate) {
                                                             onNavigate(result.id);
+                                                        } else if (result.type === 'Event' || result.type === 'Student') {
+                                                            // Logic for deep links
+                                                            navigate(result.link);
                                                         } else {
                                                             navigate(result.link);
                                                         }
@@ -353,33 +421,33 @@ const InstitutionNavbar: React.FC<{ onNavigate?: (tab: string) => void, onNaviga
                     {/* Profile Section with Logo */}
                     <div 
                         onClick={onNavigateToSettings}
-                        className="flex items-center gap-3 p-1.5 pr-5 bg-white/10 border border-white/10 rounded-[2rem] hover:bg-white/20 transition-all cursor-pointer group"
+                        className="flex items-center gap-2.5 p-1 bg-white/10 border border-white/10 rounded-full hover:bg-white/20 transition-all cursor-pointer group"
                     >
                         {/* Logo replaces the 'N' */}
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#6C3BFF] font-black shadow-lg overflow-hidden shrink-0 border border-white/20">
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#6C3BFF] font-black shadow-lg overflow-hidden shrink-0 border border-white/20 text-xs">
                              {profile?.logo_url && !imgError ? (
                                 <img src={profile.logo_url} className="w-full h-full object-cover" onError={() => setImgError(true)} />
                              ) : (
                                 displayName.charAt(0).toUpperCase()
                              )}
                         </div>
-                        <div className="hidden sm:block max-w-[140px] overflow-hidden text-left">
-                            <p className="text-sm font-bold text-white leading-tight truncate font-['Outfit']">
+                        <div className="hidden sm:block max-w-[120px] overflow-hidden text-left">
+                            <p className="text-xs font-bold text-white leading-tight truncate font-sans">
                                 {profile?.name || displayName}
                             </p>
-                            <p className="text-[10px] font-black text-purple-200/50 uppercase tracking-widest font-['Outfit']">Admin</p>
+                            <p className="text-[9px] font-black text-purple-200/50 uppercase tracking-widest font-sans">Admin</p>
                         </div>
                         
-                        <div className="h-8 w-px bg-white/10 mx-2 hidden sm:block" />
+                        <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
                         
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleLogout();
                             }}
-                            className="p-2 text-purple-200 hover:text-white transition-colors"
+                            className="p-1.5 text-purple-200 hover:text-white transition-colors"
                         >
-                            <LogOut size={18} />
+                            <LogOut size={16} />
                         </button>
                     </div>
                 </div>

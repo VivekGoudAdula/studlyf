@@ -17,26 +17,91 @@ interface Judge {
     email: string;
     expertise: string[];
     assigned: boolean;
+    institutionId: string;
+    institutionName: string;
+    department?: string;
+    position?: string;
 }
 
 interface JudgeAssignmentProps {
     assignedJudgeIds: string[];
     onUpdate: (judgeIds: string[]) => void;
+    currentInstitutionId?: string;
+    showInstitutionFilter?: boolean;
 }
 
-const JudgeAssignment: React.FC<JudgeAssignmentProps> = ({ assignedJudgeIds, onUpdate }) => {
-    const [availableJudges, setAvailableJudges] = useState<Judge[]>([
-        { id: 'j1', name: 'Dr. Sarah Wilson', email: 'sarah@ai-corp.com', expertise: ['AI', 'ML'], assigned: false },
-        { id: 'j2', name: 'Mark Chen', email: 'mark@dev.tech', expertise: ['Web3', 'System Design'], assigned: false },
-        { id: 'j3', name: 'Elena Rodriguez', email: 'elena@design.io', expertise: ['UI/UX', 'Product'], assigned: false },
-        { id: 'j4', name: 'Alex Thompson', email: 'alex@security.net', expertise: ['Cybersecurity'], assigned: false },
-    ]);
+const JudgeAssignment: React.FC<JudgeAssignmentProps> = ({ 
+    assignedJudgeIds, 
+    onUpdate, 
+    currentInstitutionId,
+    showInstitutionFilter = true 
+}) => {
+    const [selectedInstitution, setSelectedInstitution] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [availableJudges, setAvailableJudges] = useState<Judge[]>([
+        { 
+            id: 'j1', 
+            name: 'Dr. Sarah Wilson', 
+            email: 'sarah@ai-corp.com', 
+            expertise: ['AI', 'ML'], 
+            assigned: false,
+            institutionId: 'inst1',
+            institutionName: 'MIT',
+            department: 'Computer Science',
+            position: 'Professor'
+        },
+        { 
+            id: 'j2', 
+            name: 'Mark Chen', 
+            email: 'mark@dev.tech', 
+            expertise: ['Web3', 'System Design'], 
+            assigned: false,
+            institutionId: 'inst2',
+            institutionName: 'Stanford University',
+            department: 'Computer Science',
+            position: 'Assistant Professor'
+        },
+        { 
+            id: 'j3', 
+            name: 'Elena Rodriguez', 
+            email: 'elena@design.io', 
+            expertise: ['UI/UX', 'Product'], 
+            assigned: false,
+            institutionId: 'inst3',
+            institutionName: 'Harvard University',
+            department: 'Design School',
+            position: 'Lecturer'
+        },
+        { 
+            id: 'j4', 
+            name: 'Alex Thompson', 
+            email: 'alex@security.net', 
+            expertise: ['Cybersecurity'], 
+            assigned: false,
+            institutionId: 'inst4',
+            institutionName: 'UC Berkeley',
+            department: 'Electrical Engineering',
+            position: 'Research Scientist'
+        },
+    ]);
 
-    const filteredJudges = availableJudges.filter(judge => 
-        judge.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        judge.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Get unique institutions for filter
+    const institutions = Array.from(new Set(availableJudges.map(j => j.institutionName)));
+    
+    const filteredJudges = availableJudges.filter(judge => {
+        const matchesSearch = judge.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            judge.email.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesInstitution = selectedInstitution === 'all' || 
+                                  judge.institutionId === selectedInstitution ||
+                                  judge.institutionName === selectedInstitution;
+        
+        // If currentInstitutionId is provided, only show judges from that institution
+        const matchesCurrentInstitution = !currentInstitutionId || 
+                                         judge.institutionId === currentInstitutionId;
+        
+        return matchesSearch && matchesInstitution && matchesCurrentInstitution;
+    });
 
     const toggleJudge = (id: string) => {
         if (assignedJudgeIds.includes(id)) {
@@ -48,6 +113,24 @@ const JudgeAssignment: React.FC<JudgeAssignmentProps> = ({ assignedJudgeIds, onU
 
     return (
         <div className="space-y-6">
+            {/* Institution Filter */}
+            {showInstitutionFilter && !currentInstitutionId && (
+                <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Filter by Institution</label>
+                    <select 
+                        value={selectedInstitution}
+                        onChange={(e) => setSelectedInstitution(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium"
+                    >
+                        <option value="all">All Institutions</option>
+                        {institutions.map(inst => (
+                            <option key={inst} value={inst}>{inst}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Search */}
             <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-600 transition-colors" size={16} />
                 <input 
@@ -86,6 +169,16 @@ const JudgeAssignment: React.FC<JudgeAssignmentProps> = ({ assignedJudgeIds, onU
                                 <p className="text-[10px] text-slate-500 flex items-center gap-1">
                                     <Mail size={10} /> {judge.email}
                                 </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-md text-[8px] font-bold">
+                                        {judge.institutionName}
+                                    </span>
+                                    {judge.department && (
+                                        <span className="text-[8px] text-slate-500">
+                                            {judge.department}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex flex-wrap gap-1 mt-2">
                                     {judge.expertise.map(exp => (
                                         <span key={exp} className="px-2 py-0.5 bg-white border border-slate-100 rounded-md text-[8px] font-bold text-slate-500 uppercase">

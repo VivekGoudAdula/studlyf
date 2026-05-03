@@ -1,0 +1,677 @@
+import asyncio
+
+from db import db, events_col, users_col, notifications_col, institutions_col
+from models import Opportunity, OpportunityApplication
+from bson import ObjectId
+from datetime import datetime
+from typing import List, Optional
+
+from services.email_service import send_notification_email
+
+opportunities_col = db["opportunities"]
+opportunity_applications_col = db["opportunity_applications"]
+participants_col = db["participants"]
+
+async def _hydrate_public_process_stats(doc: dict) -> None:
+    """Add counts-only process stats for learner view (no PII)."""
+    if not doc:
+        return
+    eid = doc.get("event_link_id")
+    if not eid:
+        return
+    try:
+        # Total registered is the safest, already mirrored via applicantsCount, but we also compute from participants.
+        total_registered = await participants_col.count_documents({"event_id": str(eid)})
+        by_status_cur = participants_col.aggregate(
+            [
+                {"$match": {"event_id": str(eid)}},
+                {"$group": {"_id": {"status": "$status", "stage": "$current_stage"}, "count": {"$sum": 1}}},
+            ]
+        )
+        by_status: dict = {}
+        by_stage: dict = {}
+        async for row in by_status_cur:
+            key = row.get("_id") or {}
+            st = str(key.get("status") or "pending").lower()
+            stage = str(key.get("stage") or "").strip()
+            c = int(row.get("count") or 0)
+            by_status[st] = by_status.get(st, 0) + c
+            if stage:
+                by_stage[stage] = by_stage.get(stage, 0) + c
+        doc["processStats"] = {
+            "registered": int(total_registered),
+            "byStatus": by_status,
+            "byStage": by_stage,
+        }
+    except Exception:
+        doc["processStats"] = {"registered": int(doc.get("applicantsCount") or 0), "byStatus": {}, "byStage": {}}
+
+
+async def _notify_portal_review(app: dict, opp: dict, new_status: str) -> None:
+    uid = str(app.get("user_id") or "")
+    if not uid or not opp:
+        return
+    title = opp.get("title") or "your opportunity"
+    st = (new_status or "").lower()
+    human = {
+        "shortlisted": "shortlisted",
+        "accepted": "accepted",
+        "rejected": "rejected",
+        "pending": "set back to pending",
+    }.get(st, st)
+    msg = f'Your application to "{title}" was updated: {human}.'
+    oid = str(opp.get("_id") or "")
+    try:
+        await notifications_col.insert_one(
+            {
+                "user_id": uid,
+                "type": "opportunity_application_review",
+                "message": msg,
+                "is_read": False,
+                "created_at": datetime.utcnow().isoformat(),
+                "meta": {"opportunity_id": oid, "application_id": str(app.get("_id")), "status": st},
+            }
+        )
+    except Exception:
+        pass
+    user = await users_col.find_one({"user_id": uid})
+    email = (user or {}).get("email")
+    if email:
+        subj = f"Application update: {title}"
+        body = f"""<html><body style="font-family:system-ui,sans-serif;color:#111827"><p>{msg}</p>
+        <p>Open Studlyf → Opportunities → My applications to review your status.</p></body></html>"""
+        asyncio.create_task(send_notification_email(email, subj, body))
+
+# Event must be published-like for learners to see the mirrored listing
+_LISTABLE_EVENT_STATUSES = frozenset({"LIVE", "PUBLISHED", "ACTIVE", "UPCOMING"})
+
+
+def _event_status_listable(status) -> bool:
+    if status is None:
+        return False
+    return str(status).strip().upper() in _LISTABLE_EVENT_STATUSES
+
+
+def _apply_event_snapshot_to_opportunity(doc: dict, ev: dict) -> None:
+    """Use the source event as the authority for student-visible copy (stages, description, etc.)."""
+    if not doc or not ev:
+        return
+    if ev.get("title"):
+        doc["title"] = ev["title"]
+    if ev.get("description") is not None:
+        doc["description"] = ev.get("description") or ""
+    org = ev.get("organisation")
+    if org:
+        doc["organization"] = org
+        doc["organisation"] = org
+    if ev.get("skills") is not None:
+        doc["skills"] = ev.get("skills")
+    stages = ev.get("stages")
+    if isinstance(stages, list) and len(stages) > 0:
+        doc["stages"] = stages
+    fd = ev.get("festivalData") if isinstance(ev.get("festivalData"), dict) else {}
+    if ev.get("festivalName"):
+        doc["festivalName"] = ev.get("festivalName")
+    elif fd.get("name"):
+        doc["festivalName"] = fd.get("name")
+    if fd.get("startDate"):
+        doc["eventStartDate"] = fd.get("startDate")
+    if fd.get("endDate"):
+        doc["eventEndDate"] = fd.get("endDate")
+    # Some events store timeline directly on the event payload (not inside festivalData)
+    if ev.get("startDate") or ev.get("start_date"):
+        doc["eventStartDate"] = ev.get("startDate") or ev.get("start_date")
+    if ev.get("endDate") or ev.get("end_date"):
+        doc["eventEndDate"] = ev.get("endDate") or ev.get("end_date")
+    if fd.get("details"):
+        doc["festivalDetails"] = fd.get("details")
+    if ev.get("websiteUrl"):
+        doc["websiteUrl"] = ev.get("websiteUrl")
+    mode = ev.get("opportunityMode")
+    if mode:
+        doc["opportunityMode"] = mode
+    city = (ev.get("city") or ev.get("venueAddress") or "").strip()
+    m = (mode or doc.get("opportunityMode") or "online").strip()
+    if city:
+        doc["location"] = f"{city}, {m}"
+    elif m:
+        doc["location"] = m
+    rd = ev.get("registrationDeadline")
+    if rd is not None:
+        doc["deadline"] = rd
+
+    # Prizes (optional; only show if institution provided)
+    if ev.get("prize_pool") is not None:
+        doc["prize_pool"] = ev.get("prize_pool")
+    elif ev.get("prizePool") is not None:
+        doc["prize_pool"] = ev.get("prizePool")
+    if ev.get("prize_distribution") is not None:
+        doc["prize_distribution"] = ev.get("prize_distribution")
+    elif ev.get("prizeDistribution") is not None:
+        doc["prize_distribution"] = ev.get("prizeDistribution")
+    elif ev.get("prizes") is not None:
+        doc["prize_distribution"] = ev.get("prizes")
+
+    # Attachments / organiser contact (optional)
+    if ev.get("attachments") is not None:
+        doc["attachments"] = ev.get("attachments")
+    elif ev.get("documents") is not None:
+        doc["attachments"] = ev.get("documents")
+    if ev.get("contact") is not None:
+        doc["contact"] = ev.get("contact")
+    elif ev.get("organiserContact") is not None:
+        doc["contact"] = ev.get("organiserContact")
+    if ev.get("category"):
+        doc["category"] = ev["category"]
+    rf = ev.get("registrationFields")
+    if isinstance(rf, list) and len(rf) > 0:
+        doc["registrationFields"] = rf
+    ot = ev.get("opportunityType") or ev.get("category")
+    if ot:
+        s = str(ot)
+        if "Hackathon" in s:
+            doc["type"] = "Hackathon"
+        elif "Internship" in s:
+            doc["type"] = "Internship"
+        elif "Job" in s:
+            doc["type"] = "Job"
+        elif doc.get("type") in (None, "", "Competition"):
+            doc["type"] = "Competition"
+
+    # Learner-facing extras (logos, venue line, team rules, eligibility) from the source event
+    va = (ev.get("venueAddress") or "").strip()
+    ct = (ev.get("city") or "").strip()
+    if va or ct:
+        doc["venueAddress"] = va
+        doc["city"] = ct
+        parts = []
+        if va:
+            parts.append(va)
+        if ct and ct.lower() not in va.lower():
+            parts.append(ct)
+        doc["venueDisplay"] = ", ".join(parts)
+    if ev.get("logo_url"):
+        doc["logo_url"] = ev.get("logo_url")
+    if not doc.get("logo_url") and fd.get("logo_url"):
+        doc["logo_url"] = fd.get("logo_url")
+    if ev.get("image_url"):
+        doc["image_url"] = ev.get("image_url")
+    if ev.get("banner_url"):
+        doc["banner_url"] = ev.get("banner_url")
+    for k in (
+        "minTeamSize",
+        "maxTeamSize",
+        "participationType",
+        "candidateTypes",
+        "collegeRestriction",
+        "genderRestriction",
+        "judging_criteria",
+    ):
+        if ev.get(k) is not None:
+            doc[k] = ev.get(k)
+
+
+async def _hydrate_institution_branding(doc: dict) -> None:
+    """Attach institution profile logo/name for public opportunity pages."""
+    if not doc:
+        return
+    inst_key = doc.get("institution_id") or doc.get("createdBy")
+    if not inst_key:
+        return
+    try:
+        inst = await institutions_col.find_one({"institution_id": str(inst_key)})
+    except Exception:
+        inst = None
+    if not inst:
+        return
+    if inst.get("logo_url"):
+        doc["institution_logo_url"] = inst.get("logo_url")
+    if inst.get("name"):
+        doc["institution_profile_name"] = inst.get("name")
+
+
+async def _hydrate_opportunity_list_from_events(docs: List[dict]) -> List[dict]:
+    """Batch-load source events for mirrored opportunities (list/cards)."""
+    oids = []
+    for d in docs:
+        eid = d.get("event_link_id")
+        if not eid:
+            continue
+        try:
+            oids.append(ObjectId(str(eid)))
+        except Exception:
+            continue
+    if not oids:
+        return docs
+    ev_map = {}
+    cursor = events_col.find({"_id": {"$in": oids}})
+    async for ev in cursor:
+        ev_map[str(ev["_id"])] = ev
+    for d in docs:
+        eid = d.get("event_link_id")
+        if eid and str(eid) in ev_map:
+            _apply_event_snapshot_to_opportunity(d, ev_map[str(eid)])
+    return docs
+
+
+async def _filter_public_opportunities(docs: List[dict]) -> List[dict]:
+    """Omit mirrored listings while the source event is still DRAFT (or missing)."""
+    link_ids = []
+    for d in docs:
+        eid = d.get("event_link_id")
+        if not eid:
+            continue
+        try:
+            link_ids.append(ObjectId(str(eid)))
+        except Exception:
+            continue
+
+    event_by_id = {}
+    if link_ids:
+        cursor = events_col.find({"_id": {"$in": link_ids}})
+        async for ev in cursor:
+            event_by_id[str(ev["_id"])] = ev
+
+    out = []
+    for d in docs:
+        eid = d.get("event_link_id")
+        if not eid:
+            out.append(d)
+            continue
+        ev = event_by_id.get(str(eid))
+        if ev and _event_status_listable(ev.get("status")):
+            out.append(d)
+    return out
+
+async def create_opportunity(data: dict) -> dict:
+    """Creates a new opportunity in the database."""
+    # Ensure applicantsCount is 0 for new opportunities
+    data["applicantsCount"] = 0
+    data["createdAt"] = datetime.utcnow()
+    data["status"] = "active"
+    
+    # Handle deadline if it's a string
+    if isinstance(data.get("deadline"), str):
+        data["deadline"] = datetime.fromisoformat(data["deadline"].replace("Z", "+00:00"))
+        
+    result = await opportunities_col.insert_one(data)
+    data["_id"] = str(result.inserted_id)
+    return data
+
+async def get_all_opportunities(filters: dict = None) -> List[dict]:
+    """Retrieves all opportunities from the database with optional filtering and automated sync."""
+    # 1. Automated Sync Check (If collection is empty, populate from events)
+    opp_count = await opportunities_col.count_documents({})
+    if opp_count == 0:
+        cursor = events_col.find({"opportunityType": {"$exists": True}})
+        async for event in cursor:
+            # Simple mapping logic
+            inst = event.get("institution_id")
+            if not inst:
+                continue
+            opp_type = event.get("opportunityType", "Competition")
+            if "Hackathon" in opp_type: opp_type = "Hackathon"
+            elif "Job" in opp_type: opp_type = "Job"
+            elif "Internship" in opp_type: opp_type = "Internship"
+            else: opp_type = "Competition"
+
+            opp_data = {
+                "title": event.get("title", "New Opportunity"),
+                "organization": event.get("organisation", event.get("institution_name", "Partner Institution")),
+                "type": opp_type,
+                "description": event.get("description", ""),
+                "location": f"{event.get('city', 'Remote')}, {event.get('opportunityMode', 'Online')}",
+                "deadline": event.get("registrationDeadline", datetime.utcnow()),
+                "applicantsCount": 0,
+                "createdAt": event.get("created_at", datetime.utcnow()),
+                "createdBy": str(inst),
+                "institution_id": str(inst),
+                "status": "active",
+                "event_link_id": str(event["_id"])
+            }
+            await opportunities_col.insert_one(opp_data)
+
+    # 2. Regular Fetching
+    query = {"status": "active"}
+    if filters:
+        if filters.get("type"):
+            query["type"] = filters["type"]
+        if filters.get("institution_id"):
+            query["createdBy"] = filters["institution_id"]
+            
+    cursor = opportunities_col.find(query).sort("createdAt", -1)
+    opportunities = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        opportunities.append(doc)
+    filtered = await _filter_public_opportunities(opportunities)
+    return await _hydrate_opportunity_list_from_events(filtered)
+
+async def get_opportunity_by_id(
+    opportunity_id: str, applicant_user_id: Optional[str] = None
+) -> Optional[dict]:
+    """Retrieves a single opportunity by its ID.
+
+    Mirrored listings stay hidden until the source event is published, except applicants
+    who already applied may still open the record (see ``listingPendingPublish``).
+    """
+    doc = await opportunities_col.find_one({"_id": ObjectId(opportunity_id)})
+    if not doc:
+        return None
+    doc["_id"] = str(doc["_id"])
+    eid = doc.get("event_link_id")
+    if eid:
+        try:
+            ev = await events_col.find_one({"_id": ObjectId(str(eid))})
+        except Exception:
+            ev = None
+        if not ev:
+            return None
+        if not _event_status_listable(ev.get("status")):
+            if applicant_user_id:
+                has_app = await opportunity_applications_col.count_documents(
+                    {"opportunity_id": str(doc["_id"]), "user_id": applicant_user_id}
+                )
+                if has_app:
+                    doc["listingPendingPublish"] = True
+                    doc["sourceEventStatus"] = str(ev.get("status") or "")
+                    _apply_event_snapshot_to_opportunity(doc, ev)
+                    await _hydrate_institution_branding(doc)
+                    await _hydrate_public_process_stats(doc)
+                    return doc
+            return None
+        _apply_event_snapshot_to_opportunity(doc, ev)
+        await _hydrate_institution_branding(doc)
+        await _hydrate_public_process_stats(doc)
+        return doc
+    await _hydrate_institution_branding(doc)
+    return doc
+
+async def apply_for_opportunity(application_data: dict) -> dict:
+    """Saves a new application for an opportunity."""
+    oid = str(application_data.get("opportunity_id", ""))
+    uid = str(application_data.get("user_id", ""))
+    if oid and uid:
+        existing = await opportunity_applications_col.find_one(
+            {"opportunity_id": oid, "user_id": uid}
+        )
+        if existing:
+            existing["_id"] = str(existing["_id"])
+            return existing
+
+    application_data["applied_at"] = datetime.utcnow()
+    application_data["status"] = "pending"
+
+    result = await opportunity_applications_col.insert_one(application_data)
+    app_id_str = str(result.inserted_id)
+
+    await opportunities_col.update_one(
+        {"_id": ObjectId(oid)},
+        {"$inc": {"applicantsCount": 1}},
+    )
+
+    # Mirror into participants_col when this opportunity is tied to an event (institution dashboards).
+    try:
+        opp = await opportunities_col.find_one({"_id": ObjectId(oid)})
+        eid = opp.get("event_link_id") if opp else None
+        if eid and uid:
+            ev = await events_col.find_one({"_id": ObjectId(str(eid))})
+            if ev:
+                inst = application_data.get("institution_id") or ev.get("institution_id")
+                dup = await participants_col.find_one({"event_id": str(eid), "user_id": uid})
+                if not dup:
+                    # Set initial stage if the host defined stages.
+                    first_stage = None
+                    try:
+                        st = ev.get("stages")
+                        if isinstance(st, list) and st:
+                            first_stage = st[0].get("name") or st[0].get("id")
+                    except Exception:
+                        first_stage = None
+                    await participants_col.insert_one(
+                        {
+                            "event_id": str(eid),
+                            "institution_id": inst,
+                            "user_id": uid,
+                            "full_name": application_data.get("name"),
+                            "name": application_data.get("name"),
+                            "email": application_data.get("email"),
+                            "event_title": ev.get("title"),
+                            "registered_at": application_data["applied_at"],
+                            "status": "pending",
+                            "current_stage": first_stage or "Registration",
+                            "resume_url": application_data.get("resume_url"),
+                            "source": "opportunity_portal",
+                            "opportunity_application_id": app_id_str,
+                        }
+                    )
+    except Exception:
+        pass
+
+    application_data["_id"] = str(result.inserted_id)
+    return application_data
+
+async def get_user_applications(user_id: str) -> List[dict]:
+    """All portal applications for a learner, with opportunity and host labels."""
+    cursor = opportunity_applications_col.find({"user_id": user_id})
+    applications = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        oid = str(doc.get("opportunity_id") or "")
+        if oid:
+            try:
+                opp = await opportunities_col.find_one({"_id": ObjectId(oid)})
+            except Exception:
+                opp = None
+            if opp:
+                doc["opportunity_title"] = opp.get("title")
+                doc["opportunity_type"] = opp.get("type")
+                eid = opp.get("event_link_id")
+                if eid:
+                    doc["event_id"] = str(eid)
+                inst_key = opp.get("institution_id") or opp.get("createdBy")
+                if inst_key:
+                    inst = await institutions_col.find_one({"institution_id": str(inst_key)})
+                    if inst:
+                        doc["institution_name"] = inst.get("name")
+        applications.append(doc)
+    applications.sort(key=lambda x: str(x.get("applied_at") or x.get("reviewed_at") or ""), reverse=True)
+    return applications
+
+
+def _safe_dt(val):
+    if not val:
+        return None
+    if isinstance(val, datetime):
+        return val
+    try:
+        # iso string (allow Z)
+        return datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+async def get_learner_opportunity_overview(user_id: str, limit: int = 8) -> dict:
+    """Aggregated learner dashboard overview for portal opportunities.
+
+    Returns only the data needed for widgets: next deadlines, stage hints, and status labels.
+    """
+    cap = max(1, min(int(limit), 50))
+    apps = await get_user_applications(user_id)
+    # Keep newest first for timeline.
+    timeline = apps[: cap]
+
+    upcoming = []
+    now = datetime.utcnow()
+    for a in apps:
+        oid = str(a.get("opportunity_id") or "")
+        if not oid:
+            continue
+        try:
+            opp = await opportunities_col.find_one({"_id": ObjectId(oid)})
+        except Exception:
+            opp = None
+        if not opp:
+            continue
+        opp["_id"] = str(opp["_id"])
+
+        eid = opp.get("event_link_id")
+        ev = None
+        if eid:
+            try:
+                ev = await events_col.find_one({"_id": ObjectId(str(eid))})
+            except Exception:
+                ev = None
+        if ev:
+            _apply_event_snapshot_to_opportunity(opp, ev)
+
+        # Find nearest deadline in future: prefer stage deadlines, else registration deadline.
+        next_deadline = _safe_dt(opp.get("deadline"))
+        next_label = "Registration deadline"
+        stages = opp.get("stages") if isinstance(opp.get("stages"), list) else []
+        for s in stages:
+            if not isinstance(s, dict):
+                continue
+            cand = _safe_dt(s.get("deadline") or s.get("endDate") or s.get("end_date") or s.get("end") or s.get("end_time"))
+            if cand and cand >= now and (not next_deadline or cand < next_deadline):
+                next_deadline = cand
+                next_label = str(s.get("name") or s.get("title") or "Stage deadline")
+
+        if not next_deadline:
+            continue
+        if next_deadline < now:
+            continue
+
+        days_left = max(0, int(((next_deadline - now).total_seconds() + 86400 - 1) // 86400))
+        upcoming.append(
+            {
+                "opportunity_id": opp["_id"],
+                "title": opp.get("title"),
+                "organization": opp.get("organization") or opp.get("institution_profile_name"),
+                "type": opp.get("type"),
+                "status": a.get("status") or "pending",
+                "next_deadline": next_deadline.isoformat(),
+                "next_label": next_label,
+                "days_left": days_left,
+            }
+        )
+
+    upcoming.sort(key=lambda x: x.get("next_deadline") or "")
+    upcoming = upcoming[: cap]
+
+    return {"upcoming": upcoming, "timeline": timeline}
+
+
+async def backfill_portal_participants_for_institution(institution_id: str) -> dict:
+    """Create ``participants`` rows for existing portal applications (mirrored opps)."""
+    inserted = 0
+    ev_cursor = events_col.find({"institution_id": institution_id})
+    async for ev in ev_cursor:
+        eid = str(ev["_id"])
+        opp = await opportunities_col.find_one({"event_link_id": eid})
+        if not opp:
+            continue
+        oid = str(opp["_id"])
+        inst = ev.get("institution_id")
+        a_cursor = opportunity_applications_col.find({"opportunity_id": oid})
+        async for app in a_cursor:
+            uid = str(app.get("user_id") or "")
+            if not uid:
+                continue
+            dup = await participants_col.find_one({"event_id": eid, "user_id": uid})
+            if dup:
+                continue
+            await participants_col.insert_one(
+                {
+                    "event_id": eid,
+                    "institution_id": app.get("institution_id") or inst,
+                    "user_id": uid,
+                    "full_name": app.get("name"),
+                    "name": app.get("name"),
+                    "email": app.get("email"),
+                    "event_title": ev.get("title"),
+                    "registered_at": app.get("applied_at") or datetime.utcnow(),
+                    "status": app.get("status", "pending"),
+                    "resume_url": app.get("resume_url"),
+                    "source": "opportunity_portal_backfill",
+                    "opportunity_application_id": str(app["_id"]),
+                }
+            )
+            inserted += 1
+    return {"status": "success", "participants_inserted": inserted}
+
+
+_ALLOWED_APP_STATUSES = frozenset({"pending", "accepted", "rejected", "shortlisted"})
+
+
+async def _institution_owns_opportunity(opp: dict, institution_id: str) -> bool:
+    if not opp or not institution_id:
+        return False
+    if str(opp.get("createdBy") or "") == institution_id:
+        return True
+    if str(opp.get("institution_id") or "") == institution_id:
+        return True
+    eid = opp.get("event_link_id")
+    if not eid:
+        return False
+    try:
+        ev = await events_col.find_one({"_id": ObjectId(str(eid))})
+    except Exception:
+        ev = None
+    return bool(ev and str(ev.get("institution_id") or "") == institution_id)
+
+
+async def set_opportunity_application_review_status(
+    institution_id: str,
+    new_status: str,
+    application_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    opportunity_id: Optional[str] = None,
+) -> Optional[dict]:
+    """Institution updates portal application status; mirrors to ``participants`` when linked to an event."""
+    st = (new_status or "pending").strip().lower()
+    if st not in _ALLOWED_APP_STATUSES:
+        raise ValueError("Invalid status")
+
+    app = None
+    if application_id:
+        try:
+            app = await opportunity_applications_col.find_one({"_id": ObjectId(str(application_id))})
+        except Exception:
+            app = None
+    elif user_id and opportunity_id:
+        app = await opportunity_applications_col.find_one(
+            {"user_id": str(user_id), "opportunity_id": str(opportunity_id)}
+        )
+
+    if not app:
+        return None
+
+    oid = str(app.get("opportunity_id") or "")
+    if not oid:
+        return None
+
+    opp = await opportunities_col.find_one({"_id": ObjectId(oid)})
+    if not await _institution_owns_opportunity(opp, institution_id):
+        raise PermissionError("Institution not authorized for this application")
+
+    await opportunity_applications_col.update_one(
+        {"_id": app["_id"]},
+        {"$set": {"status": st, "reviewed_at": datetime.utcnow()}},
+    )
+
+    uid = str(app.get("user_id") or "")
+    eid = opp.get("event_link_id") if opp else None
+    if eid and uid:
+        await participants_col.update_many(
+            {"event_id": str(eid), "user_id": uid},
+            {"$set": {"status": st}},
+        )
+
+    app["status"] = st
+    app["_id"] = str(app["_id"])
+    try:
+        await _notify_portal_review(dict(app), opp or {}, st)
+    except Exception:
+        pass
+    return app

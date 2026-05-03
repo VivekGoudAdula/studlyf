@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../../apiConfig';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 import { 
     Search, 
     Plus, 
@@ -96,7 +96,7 @@ const FilterDropdown = ({ label, options, value, onChange, onClear }: any) => {
     );
 };
 
-const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ institutionId = 'default_inst', onViewEvent, onCreateEvent }) => {
+const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ institutionId, onViewEvent, onCreateEvent }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [typeTab, setTypeTab] = useState('All');
     const [events, setEvents] = useState<Event[]>([]);
@@ -124,11 +124,29 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
         setShowConfirm(true);
     };
 
+    const syncPortalToParticipants = async () => {
+        if (!institutionId) return;
+        if (!window.confirm('Link older portal applications to participant records for this institution? Use this once if counts looked wrong before the latest fix.')) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/institution/tools/backfill-portal-participants/${institutionId}`, { method: 'POST', headers: { ...authHeaders() } });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                alert(`Sync complete. New participant rows: ${data.participants_inserted ?? 0}.`);
+                window.location.reload();
+            } else {
+                alert('Sync failed. Check that the API is running.');
+            }
+        } catch {
+            alert('Sync failed.');
+        }
+    };
+
     const confirmDelete = async () => {
         if (!eventToDelete) return;
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${eventToDelete}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { ...authHeaders() },
             });
             if (response.ok) {
                 setEvents(prev => prev.filter(e => e.id !== eventToDelete));
@@ -145,8 +163,13 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
 
     useEffect(() => {
         const fetchEvents = async () => {
+            if (!institutionId) {
+                setEvents([]);
+                setLoading(false);
+                return;
+            }
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`);
+                const response = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`, { headers: { ...authHeaders() } });
                 if (!response.ok) throw new Error("Fetch failed");
                 const data = await response.json();
                 
@@ -154,21 +177,49 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                     e.category !== 'Job' && e.category !== 'Internship'
                 );
 
-                setEvents(filteredData.map((e: any) => ({
-                    id: e._id,
-                    name: e.title,
-                    status: e.status || 'Draft',
-                    type: e.category || 'Hackathons',
-                    startDate: new Date(e.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }),
-                    endDate: e.end_date ? new Date(e.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
-                    participants: e.participant_count || 0,
-                    registrations: e.registration_count || 'N/A',
-                    candidate: '--',
-                    image: e.image_url || '',
-                    visibility: e.visibility || 'Public',
-                    registrationStatus: e.registration_status || 'Open',
-                    lastSaved: 'about 2 hours ago'
-                })));
+                setEvents(filteredData.map((e: any) => {
+                    const rawStatus = (e.status || 'Draft').toLowerCase();
+                    let displayStatus = 'Draft';
+                    if (rawStatus === 'live' || rawStatus === 'published' || rawStatus === 'active') displayStatus = 'Live';
+                    else if (rawStatus === 'completed') displayStatus = 'Completed';
+                    else if (rawStatus === 'upcoming') displayStatus = 'Upcoming';
+
+                    // Dynamic relative time from created_at
+                    const createdAt = e.created_at || e.createdAt;
+                    let lastSaved = 'Unknown';
+                    if (createdAt) {
+                        const diff = Date.now() - new Date(createdAt).getTime();
+                        const mins = Math.floor(diff / 60000);
+                        const hrs = Math.floor(diff / 3600000);
+                        const days = Math.floor(diff / 86400000);
+                        if (days > 0) lastSaved = `${days} day${days > 1 ? 's' : ''} ago`;
+                        else if (hrs > 0) lastSaved = `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
+                        else if (mins > 0) lastSaved = `${mins} minute${mins > 1 ? 's' : ''} ago`;
+                        else lastSaved = 'Just now';
+                    }
+
+                    const rawCat = (e.category || e.type || 'Hackathons') as string;
+                    const typeLabel = /hackathon/i.test(rawCat) ? 'Hackathons' : rawCat;
+                    const startRaw = e.start_date || e.startDate || e.festivalData?.startDate || e.registrationDeadline;
+                    const endRaw = e.end_date || e.endDate || e.festivalData?.endDate;
+
+                    return {
+                        id: e._id,
+                        name: e.title,
+                        organisation: e.organisation || e.organization || e.organisation_name || 'Institution',
+                        status: displayStatus,
+                        type: typeLabel,
+                        startDate: startRaw ? new Date(startRaw).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
+                        endDate: endRaw ? new Date(endRaw).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A',
+                        participants: e.participant_count || 0,
+                        registrations: e.participant_count || 0,
+                        candidate: (e.participant_count || 0) > 0 ? `${e.participant_count} registered` : '—',
+                        image: e.image_url || '',
+                        visibility: e.visibility || 'Public',
+                        registrationStatus: e.registration_status || 'Open',
+                        lastSaved
+                    };
+                }));
             } catch (err) {
                 console.error("Dynamic opportunities fetch error:", err);
             } finally {
@@ -194,12 +245,21 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
 
     return (
         <>
-            <div className="space-y-8 animate-in fade-in duration-700 font-['Outfit']">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-black text-slate-900">Opportunities</h1>
-                    <button onClick={onCreateEvent} className="bg-[#EBF5FF] hover:bg-[#D6E9FF] text-[#0A2E5C] px-6 py-2 rounded-full font-black text-sm transition-all flex items-center gap-2 border border-[#B8D9FF]">
-                        <Plus size={18} /> Post
-                    </button>
+            <div className="space-y-6 animate-in fade-in duration-700 font-sans">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h1 className="text-xl font-black text-slate-900">Opportunities</h1>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={syncPortalToParticipants}
+                            className="text-[#0A2E5C] px-4 py-2 rounded-full font-bold text-xs border border-slate-200 bg-white hover:bg-slate-50 transition-all"
+                        >
+                            Sync portal → participants
+                        </button>
+                        <button onClick={onCreateEvent} className="bg-[#EBF5FF] hover:bg-[#D6E9FF] text-[#0A2E5C] px-5 py-2 rounded-full font-black text-sm transition-all flex items-center gap-2 border border-[#B8D9FF]">
+                            <Plus size={16} /> Post
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -259,7 +319,7 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                             initial={{ opacity: 0, x: 20, y: -20 }}
                             animate={{ opacity: 1, x: 0, y: 0 }}
                             exit={{ opacity: 0, x: 20 }}
-                            className="fixed top-8 right-8 z-[1000] flex items-center bg-white border border-green-100 rounded-lg shadow-2xl shadow-green-900/10 overflow-hidden font-['Outfit']"
+                            className="fixed top-8 right-8 z-[1000] flex items-center bg-white border border-green-100 rounded-lg shadow-2xl shadow-green-900/10 overflow-hidden font-sans"
                         >
                             <div className="bg-green-500 p-4 text-white">
                                 <div className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center">
@@ -277,34 +337,38 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                 </AnimatePresence>
 
                 {loading ? (
-                    <div className="py-20 flex flex-col items-center justify-center space-y-4">
-                        <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-                        <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Loading Opportunities...</p>
+                    <div className="py-16 flex flex-col items-center justify-center space-y-3">
+                        <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading Opportunities...</p>
                     </div>
                 ) : filteredEvents.length > 0 ? (
-                    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-[#F4F9FF] border-b border-slate-100">
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center w-16">S.No.</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest">Name</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Start Date</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">End Date</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Candidate</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Registrations</th>
-                                        <th className="px-6 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center w-24">Action</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-16">S.No.</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Name</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Start Date</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">End Date</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Candidate</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Registrations</th>
+                                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-24">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {filteredEvents.map((event, idx) => (
-                                        <tr key={event.id} className="hover:bg-slate-50/50 transition-all group">
+                                        <tr 
+                                            key={event.id} 
+                                            onClick={() => onViewEvent(event.id)}
+                                            className="hover:bg-slate-50/50 transition-all group cursor-pointer"
+                                        >
                                             <td className="px-6 py-8 text-sm font-bold text-slate-400 text-center">{idx + 1}</td>
                                             <td className="px-6 py-8">
                                                 <div className="space-y-1">
                                                     <h4 className="text-[15px] font-black text-slate-800 leading-tight group-hover:text-blue-600 transition-all">{event.name}</h4>
-                                                    <p className="text-[11px] font-bold text-slate-400">Aurora Deemed to be University</p>
+                                                    <p className="text-[11px] font-bold text-slate-400">{event.organisation || 'Institution'}</p>
                                                     <div className="flex items-center gap-3 pt-1">
                                                         <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-black rounded uppercase tracking-wider">{event.type}</span>
                                                         <span className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-wider">
@@ -339,7 +403,13 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                                             <td className="px-6 py-8 text-center text-sm font-black text-slate-700">{event.registrations}</td>
                                             <td className="px-6 py-8">
                                                 <div className="flex items-center justify-center gap-2 relative">
-                                                    <button className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onViewEvent(event.id);
+                                                        }}
+                                                        className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                                                    >
                                                         <Edit2 size={14} />
                                                     </button>
                                                     <div className="relative group/menu">
@@ -404,7 +474,7 @@ const OpportunitiesManagement: React.FC<OpportunitiesManagementProps> = ({ insti
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 font-['Outfit']"
+                        className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 font-sans"
                     >
                         <motion.div 
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}

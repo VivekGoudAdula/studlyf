@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { ChevronRight } from 'lucide-react';
+import { API_BASE_URL, authHeaders } from '../../apiConfig';
 
 interface RecentListingsProps {
     institutionId: string;
@@ -15,7 +17,7 @@ const RecentListings: React.FC<RecentListingsProps> = ({ institutionId, onViewEv
         const fetchRecent = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/v1/institution/events/${institutionId}`);
+                const res = await fetch(`${API_BASE_URL}/api/v1/institution/events/${institutionId}`, { headers: { ...authHeaders() } });
                 if (res.ok) {
                     const data = await res.json();
                     setEvents(Array.isArray(data) ? data : []);
@@ -30,12 +32,12 @@ const RecentListings: React.FC<RecentListingsProps> = ({ institutionId, onViewEv
     }, [institutionId]);
 
     return (
-        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm min-h-[550px] flex flex-col font-['Outfit']">
-            <div className="p-8">
-                <h3 className="text-xl font-bold text-slate-700">Recent Listing</h3>
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm min-h-[450px] flex flex-col font-sans">
+            <div className="p-6">
+                <h3 className="text-lg font-bold text-slate-700">Recent Listing</h3>
             </div>
             
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8 pb-8">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-6">
                 {events.length > 0 ? (
                     <div className="space-y-4">
                         {events.slice(0, 5).map((event, idx) => (

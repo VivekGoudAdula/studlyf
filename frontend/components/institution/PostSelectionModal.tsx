@@ -104,7 +104,7 @@ const PostSelectionModal: React.FC<PostSelectionModalProps> = ({ isOpen, onClose
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden font-['Outfit']"
+                        className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden font-sans"
                     >
                         <div className="p-8 pb-4 flex items-center justify-between">
                             <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">

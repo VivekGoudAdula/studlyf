@@ -425,3 +425,29 @@ class Notification(BaseModel):
     is_read: bool = False
     delivery_status: str = "sent"
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# ========== Opportunity Models ==========
+
+class Opportunity(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    title: str
+    organization: str
+    type: str  # Hackathon / Internship / Job / Competition
+    description: str
+    location: Optional[str] = None
+    deadline: datetime
+    applicantsCount: int = 0
+    createdAt: datetime = Field(default_factory=datetime.utcnow)
+    createdBy: str  # institutionId
+    status: str = "active"  # active / closed
+
+class OpportunityApplication(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    opportunity_id: str
+    user_id: str
+    name: str
+    email: str
+    resume_url: Optional[str] = None
+    interest_reason: str
+    status: str = "pending" # pending, accepted, rejected
+    applied_at: datetime = Field(default_factory=datetime.utcnow)

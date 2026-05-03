@@ -99,7 +99,7 @@ const CreditBalanceModal: React.FC<CreditBalanceModalProps> = ({ isOpen, onClose
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className={`relative w-full ${view === 'overview' ? 'max-w-lg' : 'max-w-6xl my-10'} bg-white rounded-[2.5rem] shadow-2xl overflow-hidden font-['Outfit'] transition-all duration-500`}
+                        className={`relative w-full ${view === 'overview' ? 'max-w-lg' : 'max-w-6xl my-10'} bg-white rounded-[2.5rem] shadow-2xl overflow-hidden font-sans transition-all duration-500`}
                     >
                         {view === 'overview' ? (
                             <div className="p-8">
@@ -294,7 +294,7 @@ const CreditBalanceModal: React.FC<CreditBalanceModalProps> = ({ isOpen, onClose
 
                                     {/* FAQ Section */}
                                     <div className="space-y-12 pb-12">
-                                        <h3 className="text-4xl font-black text-slate-800 text-center font-['Outfit']">Frequently asked questions</h3>
+                                        <h3 className="text-4xl font-black text-slate-800 text-center font-sans">Frequently asked questions</h3>
                                         <div className="max-w-4xl mx-auto space-y-3">
                                             {faqs.map((item, i) => (
                                                 <div key={i} className="overflow-hidden">

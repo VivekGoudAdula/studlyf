@@ -28,6 +28,7 @@ import PlayLearnEarn from './pages/PlayLearnEarn';
 import GoalSelector from './pages/GoalSelector';
 import About from './pages/About';
 import UnifiedAuth from './pages/UnifiedAuth';
+import JudgeInvitation from './pages/JudgeInvitation';
 import LearnerDashboard from './pages/LearnerDashboard';
 import PartnerDashboard from './pages/PartnerDashboard';
 import DashboardHome from './pages/DashboardHome';
@@ -53,6 +54,12 @@ import InstitutionDashboard from './pages/institution-dashboard/InstitutionDashb
 import RoleFixer from './RoleFixer';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import OpportunitiesList from './pages/opportunities/OpportunitiesList';
+import OpportunityDetails from './pages/opportunities/OpportunityDetails';
+import MyApplications from './pages/opportunities/MyApplications';
+import EventHub from './pages/events/EventHub';
+import EventQuizPage from './pages/events/EventQuizPage';
+import JudgePortalLayout from './pages/judge/JudgePortalLayout';
 
 
 // Unique Components
@@ -122,8 +129,12 @@ const App: React.FC = () => {
         if (!pathname.startsWith('/institution-dashboard') && (pathname.startsWith('/dashboard') || pathname === '/')) {
           navigate('/institution-dashboard', { replace: true });
         }
+      } else if (role === 'judge') {
+        if (!pathname.startsWith('/judge-portal') && (pathname.startsWith('/dashboard') || pathname === '/')) {
+          navigate('/judge-portal', { replace: true });
+        }
       } else if (role === 'student') {
-        if (pathname.startsWith('/institution-dashboard')) {
+        if (pathname.startsWith('/institution-dashboard') || pathname.startsWith('/judge-portal')) {
           navigate('/dashboard/learner', { replace: true });
         }
       }
@@ -192,6 +203,7 @@ const App: React.FC = () => {
             <Route path="/feature-preview/:id" element={<PublicRoute><FeaturePreview /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><UnifiedAuth /></PublicRoute>} />
+            <Route path="/judge-invitation" element={<JudgeInvitation />} />
             <Route path="/ai-tools" element={<AITools />} />
             <Route path="/verify/:id" element={<CertificateVerification />} />
             <Route path="/fix-role" element={<RoleFixer />} />
@@ -207,6 +219,12 @@ const App: React.FC = () => {
             <Route path="/dashboard/partner" element={<ProtectedRoute><PartnerDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
             <Route path="/institution-dashboard/*" element={<ProtectedRoute><InstitutionDashboard /></ProtectedRoute>} />
+            <Route path="/judge-portal/*" element={<ProtectedRoute><JudgePortalLayout /></ProtectedRoute>} />
+            <Route path="/opportunities" element={<ProtectedRoute><OpportunitiesList /></ProtectedRoute>} />
+            <Route path="/opportunities/my-applications" element={<ProtectedRoute><MyApplications /></ProtectedRoute>} />
+            <Route path="/opportunities/:id" element={<ProtectedRoute><OpportunityDetails /></ProtectedRoute>} />
+            <Route path="/events/:eventId" element={<ProtectedRoute><EventHub /></ProtectedRoute>} />
+            <Route path="/events/:eventId/quiz/:quizId" element={<ProtectedRoute><EventQuizPage /></ProtectedRoute>} />
             <Route path="/learn/career-onboarding" element={<ProtectedRoute><CareerOnboarding /></ProtectedRoute>} />
 
             {/* Admin */}
